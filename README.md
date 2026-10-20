@@ -31,3 +31,7 @@ Dominio elegido: `vencira.es`; pedido OVHcloud 20/10/2026 pendiente de confirmac
 Autenticación provisional por sesión Django y API v1 de vencimientos restringida a miembros. Flutter dispone de una pantalla de consulta (organizaciones, vencimientos, paginación, estados de error y sesión), pendiente de conectar **extremo a extremo mediante un proxy de mismo origen**. Consulta [clients/flutter/README.md](clients/flutter/README.md).
 
 **No habilitar públicamente** mientras falten límites al inicio de sesión, MFA, auditoría y verificación de seguridad y cumplimiento.
+
+## Web y API desde una sola dirección local
+
+Se añade `compose.web.yaml` con proxy Nginx en `http://127.0.0.1:18732`. Compila Flutter Web antes de arrancar el proxy. Procedimiento, verificación HTTP autenticada y limitaciones en [docs/WEB_LOCAL.md](docs/WEB_LOCAL.md).

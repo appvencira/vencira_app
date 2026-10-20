@@ -33,3 +33,7 @@ CI ejecutará pruebas del backend y cliente Flutter cuando GitHub Actions esté 
 Con los contenedores locales activos, crea usuarios de prueba en Django y asigna membresías desde Django shell, nunca con datos reales. El acceso de navegador utiliza `http://127.0.0.1:18731/accounts/login/`, y tras inicio de sesión `/api/v1/me/` y `/api/v1/workspaces/`. La sesión se basa en CSRF para modificaciones; no usar `curl` con contraseñas introducidas en historial de shell.
 
 Todas las rutas disponibles y restricciones están documentadas en [API_MVP.md](API_MVP.md).
+
+## Probar navegador + API en un mismo origen
+
+Consulta [WEB_LOCAL.md](WEB_LOCAL.md). Requiere compilar Flutter Web y añadir `compose.web.yaml`; sirve `/`, `/api/` y `/accounts/` a través de `http://127.0.0.1:18732` sin abrir CORS ni puertos públicos.

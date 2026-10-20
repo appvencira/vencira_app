@@ -19,16 +19,13 @@ flutter analyze
 flutter test
 ```
 
-Para probar la navegación web, genera primero los proyectos host con una instalación local de Flutter estable:
+Para compilar Flutter Web, ahora existe `web/index.html`:
 
 ```bash
-flutter create --platforms=web .
-flutter run -d chrome
+flutter build web --release --pwa-strategy=none
 ```
 
-**Limitación importante:** el servidor de desarrollo de Flutter usa normalmente otro origen/puerto distinto a Django, por lo que la sesión de Django no se comparte. Verás un error de carga, no la API autenticada. Esto es normal y no se soluciona abriendo CORS indiscriminadamente ni exponiendo cookies entre dominios.
-
-La **integración real de navegador** requerirá configurar un proxy *same-origin* en un entorno local aislado: el mismo `https://host/` debe servir Flutter y enrutar `/api/` y `/accounts/` a Django. Todavía **no existe** ese proxy ni hay despliegue. No emplear `vencira.es` para pruebas con datos de usuarios.
+Hay un **proxy Nginx local opcional** en `compose.web.yaml` para servir el cliente y Django desde el mismo origen `http://127.0.0.1:18732`, evitando problemas de cookies entre puertos y CORS. Instrucciones completas en [WEB_LOCAL.md](../../docs/WEB_LOCAL.md). Si ejecutas `flutter run -d chrome` directamente, usa otro origen y el flujo autenticado no funcionará como en el proxy. No emplear `vencira.es` para pruebas con datos reales.
 
 En Android/iOS/desktop hace falta un mecanismo de autenticación nativo revisado (OAuth/OIDC con PKCE o equivalente), almacenamiento seguro de tokens y cierre de sesión. El prototipo actual NO lo implementa y no debe considerarse listo para móvil.
 

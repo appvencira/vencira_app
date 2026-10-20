@@ -66,3 +66,43 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
+      - name: Compilar Flutter Web para integración
+        run: flutter build web --release --pwa-strategy=none
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vencira-web-build
+          path: clients/flutter/build/web/
+          if-no-files-found: error
+          retention-days: 3
+  web_integration:
+    name: Web same-origin
+    runs-on: ubuntu-latest
+    needs: [flutter]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: vencira-web-build
+          path: clients/flutter/build/web/
+      - name: Generar secretos locales
+        run: python3 scripts/init_env.py
+      - name: Validar Compose y arrancar stack local
+        run: |
+          docker compose -f compose.yaml -f compose.web.yaml config --quiet
+          docker compose -f compose.yaml -f compose.web.yaml up --build -d
+      - name: Crear datos sintéticos para el test E2E
+        run: |
+          echo "VENCIRA_E2E_USERNAME=vencira_e2e_ci" >> "$GITHUB_ENV"
+          DEMO_PASSWORD="$(python3 -c 'import secrets; print(secrets.token_urlsafe(30))')"
+          echo "VENCIRA_E2E_PASSWORD=$DEMO_PASSWORD" >> "$GITHUB_ENV"
+          docker compose -f compose.yaml -f compose.web.yaml exec -T -e VENCIRA_E2E_PASSWORD="$DEMO_PASSWORD" api python manage.py shell -c "import os; from django.contrib.auth import get_user_model; from reminders.models import Workspace, WorkspaceMember, Renewal; from datetime import date; u=get_user_model().objects.create_user(username='vencira_e2e_ci', password=os.environ['VENCIRA_E2E_PASSWORD']); w=Workspace.objects.create(name='Equipo E2E'); WorkspaceMember.objects.create(user=u, workspace=w, role='owner'); Renewal.objects.create(workspace=w, customer_reference='PRUEBA-E2E-001', expires_on=date(2027,1,31))"
+      - name: Probar sesión, CSRF, aislamiento de acceso anónimo y datos sintéticos
+        run: python3 scripts/smoke_same_origin.py
+      - name: Logs técnicos en caso de fallo
+        if: failure()
+        run: docker compose -f compose.yaml -f compose.web.yaml logs --tail=60
+      - name: Eliminar contenedores y datos efímeros CI
+        if: always()
+        run: docker compose -f compose.yaml -f compose.web.yaml down -v --remove-orphans

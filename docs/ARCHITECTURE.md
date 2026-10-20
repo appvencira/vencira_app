@@ -16,7 +16,7 @@ La autorización por membresía se aplica y prueba en lecturas y escrituras de l
 
 - El backend dispone de sesiones Django + CSRF.
 - El cliente Flutter web inicia la navegación a `/accounts/login/` desde el **mismo origen** y consume GET con cookies gestionadas por el navegador.
-- Falta configurar el proxy/local web que sirva frontend y API desde el mismo origen. **No existe flujo integrado de inicio de sesión ni uso real de datos desde Flutter todavía**.
+- Se añade un proxy Nginx local opcional (`compose.web.yaml`) que sirve frontend y API desde el mismo origen y permite ensayar el login con sesión Django. El smoke test HTTP automatizado se define en `scripts/smoke_same_origin.py`. **Todavía faltan pruebas visuales con navegador real, hardening y despliegue seguro**.
 - Una futura aplicación Android/iOS necesitará un flujo de identidad nativo, no la solución provisional por cookie web.
 
 ## Pendiente obligatorio
