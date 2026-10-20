@@ -153,6 +153,34 @@ class ScopedRenewalApiTests(APITestCase):
         }, format="json", HTTP_X_CSRFTOKEN=csrf)
         self.assertEqual(allowed.status_code, 201)
 
+    def test_csrf_bootstrap_allows_authenticated_create_and_patch(self):
+        client = APIClient(enforce_csrf_checks=True)
+        client.force_login(self.owner_a)
+        token_response = client.get(reverse("api-csrf"))
+        self.assertEqual(token_response.status_code, 200)
+        self.assertEqual(token_response["Cache-Control"], "no-store")
+        token = token_response.json()["csrfToken"]
+        self.assertGreaterEqual(len(token), 32)
+        create = client.post(
+            self.list_url(self.workspace_a),
+            {"customer_reference": "CSRF-NEW", "expires_on": "2027-06-15"},
+            format="json", HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(create.status_code, 201)
+        item = Renewal.objects.get(pk=create.data["id"])
+        patched = client.patch(
+            self.detail_url(self.workspace_a, item),
+            {"status": "contacted"}, format="json", HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(patched.status_code, 200)
+        item.refresh_from_db()
+        self.assertEqual(item.status, "contacted")
+        denied = client.patch(
+            self.detail_url(self.workspace_a, item),
+            {"status": "closed"}, format="json",
+        )
+        self.assertEqual(denied.status_code, 403)
+
     def test_login_and_logout_browser_flow(self):
         client = Client(enforce_csrf_checks=True)
         page = client.get(reverse("login"))

@@ -84,6 +84,25 @@ if username:
     renewal = json.loads(renewal_raw)
     assert renewal["count"] == 1
     assert renewal["results"][0]["customer_reference"] == "PRUEBA-E2E-001"
+    # Prueba E2E también de escrituras autenticadas, CSRF y auditoría de API.
+    status, token_body = read(client, "/api/v1/csrf/")
+    assert status == 200, "No hay endpoint CSRF"
+    token = json.loads(token_body)["csrfToken"]
+    create_path = f"/api/v1/workspaces/{workspace_id}/renewals/"
+    status, created_raw = read(
+        client, create_path,
+        data=json.dumps({
+            "customer_reference": "PRUEBA-E2E-ESCRITURA",
+            "expires_on": "2027-05-01",
+            "notice_deadline_on": "2027-03-31",
+        }).encode("utf-8"),
+        headers={"Content-Type": "application/json", "X-CSRFToken": token},
+    )
+    assert status == 201, f"Alta fallida: {status}"
+    created = json.loads(created_raw)
+    assert created["notice_deadline_on"] == "2027-03-31"
+    status, after_create_raw = read(client, create_path)
+    assert status == 200 and json.loads(after_create_raw)["count"] == 2
     status, _ = read(
         client, "/accounts/logout/",
         data=b"",
