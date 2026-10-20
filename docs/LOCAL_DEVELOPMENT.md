@@ -27,3 +27,9 @@ python backend/manage.py test
 ```
 
 CI ejecutará pruebas del backend y cliente Flutter cuando GitHub Actions esté disponible.
+
+## Verificar API privada
+
+Con los contenedores locales activos, crea usuarios de prueba en Django y asigna membresías desde Django shell, nunca con datos reales. El acceso de navegador utiliza `http://127.0.0.1:18731/accounts/login/`, y tras inicio de sesión `/api/v1/me/` y `/api/v1/workspaces/`. La sesión se basa en CSRF para modificaciones; no usar `curl` con contraseñas introducidas en historial de shell.
+
+Todas las rutas disponibles y restricciones están documentadas en [API_MVP.md](API_MVP.md).

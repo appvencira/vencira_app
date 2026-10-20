@@ -25,3 +25,7 @@ curl -fsS http://127.0.0.1:18731/api/ready/
 Documentación: [desarrollo](docs/LOCAL_DEVELOPMENT.md), [arquitectura](docs/ARCHITECTURE.md), [seguridad](docs/SECURITY.md).
 
 Dominio elegido: `vencira.es`; pedido OVHcloud 20/10/2026 pendiente de confirmación de activación. Correo previsto: `soporte@vencira.es`, aún no configurado.
+
+## API local en desarrollo
+
+Se ha añadido autenticación provisional mediante sesión web y API de vencimientos restringida a membresías. Consultar [docs/API_MVP.md](docs/API_MVP.md). **No habilitar públicamente** mientras falten mitigación de fuerza bruta, MFA, auditoría y validación de aislamiento.
