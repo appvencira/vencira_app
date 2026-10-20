@@ -11,7 +11,7 @@ Estado: **base técnica en desarrollo**. No introducir datos reales de clientes 
 ## Tecnología
 - Django 5.2 LTS, Python 3.12 y Django REST Framework.
 - PostgreSQL 17 en red interna.
-- Flutter (web y móvil) en fase de arranque.
+- Flutter para web y, en fases posteriores, móvil.
 - Docker Compose local y GitHub Actions.
 
 ## Primer arranque
@@ -22,10 +22,12 @@ curl -fsS http://127.0.0.1:18731/api/health/
 curl -fsS http://127.0.0.1:18731/api/ready/
 ```
 
-Documentación: [desarrollo](docs/LOCAL_DEVELOPMENT.md), [arquitectura](docs/ARCHITECTURE.md), [seguridad](docs/SECURITY.md).
+Documentación: [desarrollo](docs/LOCAL_DEVELOPMENT.md), [arquitectura](docs/ARCHITECTURE.md), [seguridad](docs/SECURITY.md), [API](docs/API_MVP.md).
 
 Dominio elegido: `vencira.es`; pedido OVHcloud 20/10/2026 pendiente de confirmación de activación. Correo previsto: `soporte@vencira.es`, aún no configurado.
 
-## API local en desarrollo
+## API y cliente Flutter
 
-Se ha añadido autenticación provisional mediante sesión web y API de vencimientos restringida a membresías. Consultar [docs/API_MVP.md](docs/API_MVP.md). **No habilitar públicamente** mientras falten mitigación de fuerza bruta, MFA, auditoría y validación de aislamiento.
+Autenticación provisional por sesión Django y API v1 de vencimientos restringida a miembros. Flutter dispone de una pantalla de consulta (organizaciones, vencimientos, paginación, estados de error y sesión), pendiente de conectar **extremo a extremo mediante un proxy de mismo origen**. Consulta [clients/flutter/README.md](clients/flutter/README.md).
+
+**No habilitar públicamente** mientras falten límites al inicio de sesión, MFA, auditoría y verificación de seguridad y cumplimiento.

@@ -1,13 +1,14 @@
 # Estado del proyecto VENCIRA — 20/10/2026
 
-Bootstrap de código inicial, pendiente de validación CI. Ningún despliegue ni datos reales.
+Bootstrap de código y primeras integraciones, todavía en **PR borrador**, sin despliegue ni datos reales.
 
 - Nombre VENCIRA y repositorio privado exclusivo `appvencira/vencira_app` confirmados.
 - Dominio `vencira.es`: pedido OVHcloud del 20/10/2026 por 7,25 € con IVA; justificante en estado «Validando...», pendiente de activación final.
-- Correo previsto `soporte@vencira.es`, no configurado.
-- Backend: modelos mínimos, pruebas y health/readiness; API v1 local con sesiones, CSRF y CRUD parcial de vencimientos limitado por membresía.
-- Flutter: pantalla inicial con estado vacío, pendiente de generar host platforms.
-- Motor de avisos, integración de autenticación en Flutter, MFA, limitación de login, RGPD, copias externas y producción: pendientes.
+- Correo previsto `soporte@vencira.es`, aún no configurado.
+- Backend: modelos mínimos, pruebas y health/readiness; API v1 de vencimientos limitada por pertenencia a organización, con sesiones web y CSRF.
+- Tests backend SQLite y PostgreSQL 17: superados en la ejecución anterior.
+- Flutter: interfaz de consulta de organizaciones y vencimientos mediante API; lista paginada, estados de sesión, cambio de organización y pruebas de contrato/widget. **No hay todavía proxy de mismo origen ni integración real de sesión con Django en un navegador**.
+- Motor de avisos, alta/edición web, MFA, limitación de login, RGPD, copias externas y producción: pendientes.
 - No comprar VPS hasta necesitar pruebas externas o despliegue real.
 
-Documentación nueva: `docs/API_MVP.md`. Validación CI del cambio API pendiente.
+Documentación: `docs/API_MVP.md` y `clients/flutter/README.md`. CI del último cambio Flutter: pendiente de verificación.
