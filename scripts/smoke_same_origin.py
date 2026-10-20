@@ -71,6 +71,9 @@ if username:
     status, after_login = read(client, "/accounts/login/?next=/", data=payload,
                                headers={"Content-Type": "application/x-www-form-urlencoded"})
     assert status == 200 and "flutter_bootstrap.js" in after_login, "Inicio de sesión fallido"
+    # Django rota el secreto CSRF al iniciar sesión; usar el valor nuevo.
+    csrf = next((cookie.value for cookie in jar if cookie.name == "csrftoken"), None)
+    assert csrf, "Falta cookie CSRF después del inicio de sesión"
     status, workspaces_raw = read(client, "/api/v1/workspaces/")
     assert status == 200, "No se obtuvo la lista privada de organizaciones"
     workspaces = json.loads(workspaces_raw)
