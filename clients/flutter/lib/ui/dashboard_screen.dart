@@ -36,7 +36,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
   void dispose() {
     _sequence++;
     if (_api is HttpVenciraApi && widget.api == null) {
-      (_api as HttpVenciraApi).close();
+      _api.close();
     }
     super.dispose();
   }
