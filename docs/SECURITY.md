@@ -16,3 +16,7 @@ Actualmente: repositorio privado, `.env` fuera de Git, secretos aleatorios por i
 8. Endurecer /admin/ y el acceso a endpoints técnicos.
 
 No mezclar código, datos ni credenciales de otras cuentas de GitHub.
+
+## Previsión de avisos
+
+Las reglas se crean desactivadas y los candidatos se preparan manualmente sin canal de salida, destinatarios ni integración externa. Hay aislamiento por organización en el servicio y clave única de deduplicación. No se han activado avisos reales. Ver `docs/REMINDER_ENGINE.md`.

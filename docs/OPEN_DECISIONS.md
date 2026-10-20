@@ -15,6 +15,6 @@
 - [ ] Autenticación robusta: MFA, gestión de sesiones y protección de login frente a abuso.
 - [ ] Montar proxy de mismo origen para integrar Flutter web con sesión Django; comprobar extremo a extremo.
 - [ ] Diseñar identidad OAuth/OIDC o equivalente para apps nativas.
-- [ ] Motor de avisos seguro, auditoría y controles RGPD.
+- [ ] Definir las reglas de negocio y destinatarios de avisos. Motor de candidatos internos implementado, sin envío ni programación automática; pendientes auditoría y RGPD.
 - [ ] Copias externas, observabilidad y plan de recuperación.
 - [ ] VPS cuando se requiera entorno público.
