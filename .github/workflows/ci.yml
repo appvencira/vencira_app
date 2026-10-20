@@ -112,3 +112,20 @@ jobs:
       - name: Eliminar contenedores y datos efímeros CI
         if: always()
         run: docker compose -f compose.yaml -f compose.web.yaml down -v --remove-orphans
+
+  preview_image:
+    name: Preview Docker build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Comprobar sintaxis de los scripts
+        run: bash -n scripts/preview-up.sh scripts/preview-down.sh scripts/preview-seed.sh
+      - name: Preparar configuración temporal
+        run: python3 scripts/init_env.py
+      - name: Validar Compose aislado
+        run: docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml config --quiet
+      - name: Compilar imagen auto-contenida de Flutter Web
+        run: docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml build web_preview
