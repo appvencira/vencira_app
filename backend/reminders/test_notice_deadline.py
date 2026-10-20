@@ -1,6 +1,7 @@
 """Separación explícita entre vencimiento y preaviso sin envíos ni supuestos legales."""
 from datetime import date
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError, transaction
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -117,3 +118,20 @@ class NoticeDeadlineTests(TestCase):
         self.item.save(update_fields=["status"])
         result = refresh_candidates(self.a.id, today=date(2027, 4, 15), horizon_days=30)
         self.assertEqual(result["created"], 0)
+
+    def test_database_rejects_incoherent_notice_deadline(self):
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                Renewal.objects.create(
+                    workspace=self.a, customer_reference="INVALIDO",
+                    expires_on=date(2027, 3, 1),
+                    notice_deadline_on=date(2027, 4, 1),
+                )
+
+    def test_database_rejects_unknown_rule_basis(self):
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                ReminderPolicy.objects.create(
+                    workspace=self.a, days_before=7,
+                    basis="no-es-un-basis-valido",
+                )

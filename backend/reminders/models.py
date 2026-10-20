@@ -41,6 +41,15 @@ class Renewal(models.Model):
 
     class Meta:
         indexes = [models.Index(fields=["workspace", "expires_on"], name="renewal_ws_exp_idx")]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(notice_deadline_on__isnull=True)
+                    | models.Q(notice_deadline_on__lte=models.F("expires_on"))
+                ),
+                name="renewal_notice_lte_expiry",
+            ),
+        ]
         ordering = ["expires_on", "id"]
 
     def __str__(self):
@@ -71,6 +80,10 @@ class ReminderPolicy(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["workspace", "basis", "days_before"], name="uniq_policy_workspace_basis_day"),
             models.CheckConstraint(condition=models.Q(days_before__lte=365), name="policy_days_lte_365"),
+            models.CheckConstraint(
+                condition=models.Q(basis__in=["expiry", "notice_deadline"]),
+                name="policy_basis_valid",
+            ),
         ]
 
 
