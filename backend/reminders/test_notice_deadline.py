@@ -133,5 +133,5 @@ class NoticeDeadlineTests(TestCase):
             with transaction.atomic():
                 ReminderPolicy.objects.create(
                     workspace=self.a, days_before=7,
-                    basis="no-es-un-basis-valido",
+                    basis="invalido",
                 )
