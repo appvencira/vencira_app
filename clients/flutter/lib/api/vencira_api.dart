@@ -195,14 +195,12 @@ class HttpVenciraApi implements VenciraApi {
     }
   }
 
-  bool _validUuid(String id) => RegExp(
-        r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
-        r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}
-    if (_ownsClient) _client.close();
+  bool _validUuid(String id) {
+    return RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
+      r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    ).hasMatch(id);
   }
-}
-,
-      ).hasMatch(id);
 
   Future<String> _csrf() async {
     final response = await _fetch('/api/v1/csrf/') as Map<String, dynamic>;
