@@ -20,3 +20,7 @@ No mezclar código, datos ni credenciales de otras cuentas de GitHub.
 ## Previsión de avisos
 
 Las reglas se crean desactivadas y los candidatos se preparan manualmente sin canal de salida, destinatarios ni integración externa. Hay aislamiento por organización en el servicio y clave única de deduplicación. No se han activado avisos reales. Ver `docs/REMINDER_ENGINE.md`.
+
+## Auditoría mínima de operaciones API
+
+POST/PATCH en la API v1 de vencimientos genera eventos internos transaccionales y con tenant obligatorio. No se almacenan los valores de referencia de cliente en el evento. **No es un registro inmutable y no cubre escrituras fuera de la API**. Antes de producción hacen falta trazabilidad de administradores, garantías de retención y políticas de acceso a logs. Ver `docs/AUDIT.md`.

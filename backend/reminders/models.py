@@ -90,3 +90,32 @@ class ReminderCandidate(models.Model):
             ),
         ]
         indexes = [models.Index(fields=["scheduled_for", "state"], name="candidate_due_idx")]
+
+class RenewalAuditEvent(models.Model):
+    """Rastro interno de cambios realizados por API; sin referencia de cliente en texto."""
+    class Action(models.TextChoices):
+        CREATED = "created", "Creado"
+        UPDATED = "updated", "Modificado"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    workspace = models.ForeignKey(
+        Workspace, on_delete=models.PROTECT, related_name="renewal_audit_events"
+    )
+    renewal = models.ForeignKey(
+        Renewal, on_delete=models.PROTECT, related_name="audit_events"
+    )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="vencira_renewal_events",
+    )
+    action = models.CharField(max_length=12, choices=Action.choices)
+    changed_fields = models.JSONField(default=list)
+    metadata = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["workspace", "created_at"], name="audit_ws_time_idx"),
+            models.Index(fields=["renewal", "created_at"], name="audit_renew_time_idx"),
+        ]
+        ordering = ["created_at", "id"]

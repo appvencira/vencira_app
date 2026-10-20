@@ -11,8 +11,12 @@ Bootstrap de código y primeras integraciones, todavía en **PR borrador**, sin 
 - Envío de avisos, alta/edición web, MFA, límites adicionales por IP y seguridad de login Admin, RGPD, copias externas y producción: pendientes.
 - No comprar VPS hasta necesitar pruebas externas o despliegue real.
 
-Documentación: `docs/API_MVP.md`, `docs/WEB_LOCAL.md` y `clients/flutter/README.md`. CI anterior de compilación web e integración same-origin: superada. En esta iteración, CI del refuerzo de login pendiente de verificación.
+Documentación: `docs/API_MVP.md`, `docs/WEB_LOCAL.md` y `clients/flutter/README.md`. CI anterior de compilación web e integración same-origin: superada. CI del refuerzo de login y candidatos internos: superada (27 tests en SQLite y PostgreSQL, además de Flutter y web).
 
 - Login provisional: límite por cuenta HMAC persistido en BD, 5 fallos/15 minutos -> bloqueo 15 minutos. Sin MFA ni protección frente a abuso distribuido.
 
 - Base de avisos: reglas inactivas por defecto, candidatos futuros deduplicados y conciliación manual por organización. **Nunca envía mensajes**.
+
+- Auditoría API v1: eventos de creación y cambios de vencimientos registrados en la misma transacción, sin conservar valores de referencias de clientes. Cobertura limitada a API v1, sin salida pública. Ver `docs/AUDIT.md`.
+- Reglas comerciales: opciones y dudas documentadas en `docs/REMINDER_RULES_DRAFT.md`; sin aprobación de parámetros comerciales ni entregas reales.
+- CI del nuevo registro de auditoría: pendiente de comprobar.

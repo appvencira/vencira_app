@@ -20,7 +20,12 @@ class RenewalSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "created_at", "updated_at")
 
     def validate(self, attrs):
-        # Ni la organización ni el propietario pueden asignarse mediante JSON.
-        if "workspace" in self.initial_data or "workspace_id" in self.initial_data:
-            raise serializers.ValidationError({"workspace": "La organización procede de la URL autorizada."})
+        # Rechazo explícito de claves no editables y campos desconocidos:
+        # no aceptar silenciosamente identificadores ajenos ni intentos de mass assignment.
+        writable = {"customer_reference", "expires_on", "status"}
+        forbidden = set(self.initial_data) - writable
+        if forbidden:
+            raise serializers.ValidationError({
+                "fields": "No se permiten campos no editables o desconocidos."
+            })
         return attrs
