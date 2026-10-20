@@ -21,4 +21,4 @@ Documentación: `docs/API_MVP.md`, `docs/WEB_LOCAL.md` y `clients/flutter/README
 - Reglas comerciales: opciones y dudas documentadas en `docs/REMINDER_RULES_DRAFT.md`; sin aprobación de parámetros comerciales ni entregas reales.
 - CI del registro de auditoría: superada con 34 tests SQLite + 34 PostgreSQL, y Flutter/Web.
 
-- Se añaden fecha opcional de límite contractual de preaviso, base de regla seleccionable y visualización Flutter separada. No se infieren plazos legales ni cambian reglas de destinatarios. CI de esta revisión: por verificar.
+- Se añaden fecha opcional de límite contractual de preaviso, base de regla seleccionable y visualización Flutter separada. No se infieren plazos legales ni cambian reglas de destinatarios. CI de código y pruebas de esta revisión: 43 tests en SQLite y 43 en PostgreSQL, Flutter y Nginx-Django, todo correcto en GitHub Actions #35. Consultar siempre el estado del último commit antes de fusionar.
