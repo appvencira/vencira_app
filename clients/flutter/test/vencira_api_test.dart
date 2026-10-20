@@ -42,6 +42,21 @@ void main() {
     expect(result.items.single.expiresOn.day, 11);
   });
 
+  test('interpreta límite contractual explícito opcional', () async {
+    const data = <String, dynamic>{
+      'id': 'b2222222-2222-4222-8222-222222222222',
+      'customer_reference': 'DEMO',
+      'expires_on': '2027-05-01',
+      'notice_deadline_on': '2027-03-31',
+      'status': 'pending',
+    };
+    final renewal = VenciraRenewal.fromJson(data);
+    expect(renewal.noticeDeadlineOn, DateTime(2027, 3, 31));
+    expect(renewal.expiresOn, DateTime(2027, 5, 1));
+    final without = VenciraRenewal.fromJson({...data, 'notice_deadline_on': null});
+    expect(without.noticeDeadlineOn, isNull);
+  });
+
   test('rechaza identificadores manipulados antes de hacer peticiones', () async {
     var calls = 0;
     final client = MockClient((_) async {

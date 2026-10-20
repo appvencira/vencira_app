@@ -19,4 +19,6 @@ Documentación: `docs/API_MVP.md`, `docs/WEB_LOCAL.md` y `clients/flutter/README
 
 - Auditoría API v1: eventos de creación y cambios de vencimientos registrados en la misma transacción, sin conservar valores de referencias de clientes. Cobertura limitada a API v1, sin salida pública. Ver `docs/AUDIT.md`.
 - Reglas comerciales: opciones y dudas documentadas en `docs/REMINDER_RULES_DRAFT.md`; sin aprobación de parámetros comerciales ni entregas reales.
-- CI del nuevo registro de auditoría: pendiente de comprobar.
+- CI del registro de auditoría: superada con 34 tests SQLite + 34 PostgreSQL, y Flutter/Web.
+
+- Se añaden fecha opcional de límite contractual de preaviso, base de regla seleccionable y visualización Flutter separada. No se infieren plazos legales ni cambian reglas de destinatarios. CI de esta revisión: por verificar.

@@ -5,7 +5,7 @@ Cliente **de solo lectura** del primer panel real de datos para la API Django, c
 ## Qué existe
 
 - Peticiones HTTP GET a `/api/v1/workspaces/` y `/api/v1/workspaces/{id}/renewals/?page=N`.
-- Selector de organización; lista de vencimientos y paginación.
+- Selector de organización; lista de vencimientos y paginación. Se presentan por separado el vencimiento y el límite contractual de preaviso cuando viene informado; nunca se infiere.
 - Estado de carga, error y sesión caducada, con enlace al formulario Django.
 - No conserva contraseñas, tokens ni cookies explícitamente; delega la sesión en el navegador.
 - Pruebas de contrato HTTP y widget tests con datos de prueba falsos.

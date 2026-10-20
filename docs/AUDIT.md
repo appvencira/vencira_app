@@ -7,7 +7,7 @@
 Las peticiones POST/PATCH autenticadas a la API v1 de vencimientos generan eventos `RenewalAuditEvent` en la **misma transacción** que la escritura.
 
 - Identificador de organización y vencimiento, usuario de la acción (FK con SET_NULL), momento y operación (`created`/`updated`).
-- Campos modificados; para `expires_on` y `status`, valores anteriores y posteriores.
+- Campos modificados; para `expires_on`, `notice_deadline_on` y `status`, valores anteriores y posteriores (o `null` cuando se borra el límite).
 - La referencia del cliente **nunca se incluye en el payload de auditoría**, aunque sí consta el nombre del campo cuando cambia.
 - Las solicitudes rechazadas y los PATCH sin cambio efectivo no generan eventos; los registros preexistentes no reciben historial retroactivo.
 

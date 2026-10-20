@@ -43,12 +43,14 @@ class VenciraRenewal {
     required this.id,
     required this.reference,
     required this.expiresOn,
+    this.noticeDeadlineOn,
     required this.status,
   });
 
   final String id;
   final String reference;
   final DateTime expiresOn;
+  final DateTime? noticeDeadlineOn;
   final String status;
 
   factory VenciraRenewal.fromJson(Map<String, dynamic> json) {
@@ -56,6 +58,9 @@ class VenciraRenewal {
       id: json['id'] as String,
       reference: json['customer_reference'] as String,
       expiresOn: DateTime.parse(json['expires_on'] as String),
+      noticeDeadlineOn: json['notice_deadline_on'] == null
+          ? null
+          : DateTime.parse(json['notice_deadline_on'] as String),
       status: json['status'] as String,
     );
   }

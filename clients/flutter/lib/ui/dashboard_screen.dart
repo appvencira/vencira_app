@@ -295,12 +295,17 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
 
   String get _totalLabel => _renewals?.total.toString() ?? '0';
 
-  Widget _renewalTile(VenciraRenewal item, ColorScheme colors) {
-    final date = item.expiresOn;
-    final expiration =
-        '${date.day.toString().padLeft(2, '0')}/'
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/'
         '${date.month.toString().padLeft(2, '0')}/'
         '${date.year}';
+  }
+
+  Widget _renewalTile(VenciraRenewal item, ColorScheme colors) {
+    final expiration = _formatDate(item.expiresOn);
+    final notice = item.noticeDeadlineOn == null
+        ? null
+        : _formatDate(item.noticeDeadlineOn!);
     final label = switch (item.status) {
       'pending' => 'Pendiente',
       'contacted' => 'Contactado',
@@ -311,7 +316,14 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       child: ListTile(
         leading: Icon(Icons.event_available_outlined, color: colors.primary),
         title: Text(item.reference),
-        subtitle: Text('Vence el $expiration'),
+        subtitle: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Vence el $expiration'),
+            if (notice != null) Text('Límite de preaviso: $notice'),
+          ],
+        ),
         trailing: Chip(label: Text(label)),
       ),
     );

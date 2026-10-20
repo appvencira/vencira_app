@@ -15,7 +15,7 @@
 - [ ] Autenticación robusta: MFA, gestión de sesiones y protección de login frente a abuso.
 - [ ] Montar proxy de mismo origen para integrar Flutter web con sesión Django; comprobar extremo a extremo.
 - [ ] Diseñar identidad OAuth/OIDC o equivalente para apps nativas.
-- [ ] Aprobar reglas de negocio y destinatarios (ver `docs/REMINDER_RULES_DRAFT.md`); el motor solo prepara candidatos, sin programación ni envío.
+- [ ] Aprobar reglas de negocio y destinatarios (ver `docs/REMINDER_RULES_DRAFT.md`). El motor ya distingue vencimiento de límite explícito de preaviso, pero solo prepara candidatos sin programación ni envío. Pendiente concretar para cada producto qué plazo jurídico/contractual debe capturarse y el comportamiento `contacted`.
 - [ ] Completar auditoría: cobertura de accesos administrativos/escrituras fuera API, retención, inmutabilidad, y derechos RGPD. Registro mínimo de POST/PATCH API en desarrollo.
 - [ ] Copias externas, observabilidad y plan de recuperación.
 - [ ] VPS cuando se requiera entorno público.

@@ -46,6 +46,32 @@ void main() {
     expect(find.text('Aún no hay vencimientos en esta página.'), findsOneWidget);
   });
 
+  testWidgets('expone por separado vencimiento y límite de preaviso', (tester) async {
+    await tester.pumpWidget(VenciraApp(
+      api: FakeVenciraApi(
+        workspaces: [workspaceA],
+        pages: {
+          workspaceA.id: VenciraRenewalPage(
+            total: 1,
+            hasNext: false,
+            items: [
+              VenciraRenewal(
+                id: 'b2222222-2222-4222-8222-222222222222',
+                reference: 'CASO-DEMO',
+                expiresOn: DateTime(2027, 5, 1),
+                noticeDeadlineOn: DateTime(2027, 3, 31),
+                status: 'pending',
+              ),
+            ],
+          ),
+        },
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('Vence el 01/05/2027'), findsOneWidget);
+    expect(find.text('Límite de preaviso: 31/03/2027'), findsOneWidget);
+  });
+
   testWidgets('muestra estado de autenticación obligatoria', (tester) async {
     await tester.pumpWidget(VenciraApp(
       api: FakeVenciraApi(workspaces: [], pages: {}, auth: true),
