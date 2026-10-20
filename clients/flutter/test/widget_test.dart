@@ -22,6 +22,9 @@ class FakeVenciraApi implements VenciraApi {
   }
 
   @override
+  Future<void> logout() async {}
+
+  @override
   Future<VenciraRenewal> createRenewal(String workspaceId, VenciraRenewalInput input) async {
     throw UnimplementedError('Las pruebas de consulta no crean datos');
   }
@@ -63,6 +66,34 @@ void main() {
     await tester.tap(find.text('Cancelar'));
     await tester.pumpAndSettle();
     expect(find.text('Nuevo vencimiento'), findsNothing);
+  });
+
+  testWidgets('logout limpia los vencimientos de pantalla', (tester) async {
+    await tester.pumpWidget(VenciraApp(
+      api: FakeVenciraApi(
+        workspaces: [workspaceA],
+        pages: {
+          workspaceA.id: VenciraRenewalPage(
+            total: 1,
+            hasNext: false,
+            items: [
+              VenciraRenewal(
+                id: 'b2222222-2222-4222-8222-222222222222',
+                reference: 'NO-DEBE-QUEDAR-VISIBLE',
+                expiresOn: DateTime(2027, 5, 1),
+                status: 'pending',
+              ),
+            ],
+          ),
+        },
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('NO-DEBE-QUEDAR-VISIBLE'), findsOneWidget);
+    await tester.tap(find.text('Salir'));
+    await tester.pumpAndSettle();
+    expect(find.text('NO-DEBE-QUEDAR-VISIBLE'), findsNothing);
+    expect(find.textContaining('Necesitas iniciar sesión'), findsOneWidget);
   });
 
   testWidgets('muestra estado vacío sin datos reales', (tester) async {

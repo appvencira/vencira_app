@@ -161,6 +161,30 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     }
   }
 
+  Future<void> _logout() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      await _api.logout();
+      if (!mounted) return;
+      setState(() {
+        _sequence++;
+        _selected = null;
+        _workspaces = [];
+        _renewals = null;
+        _unauthorized = true;
+        _failed = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo cerrar la sesión.')),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -168,6 +192,12 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       appBar: AppBar(
         title: const Text('VENCIRA'),
         actions: [
+          if (_selected != null)
+            TextButton.icon(
+              onPressed: _saving ? null : _logout,
+              icon: const Icon(Icons.logout),
+              label: const Text('Salir'),
+            ),
           IconButton(
             tooltip: 'Actualizar',
             icon: const Icon(Icons.refresh),

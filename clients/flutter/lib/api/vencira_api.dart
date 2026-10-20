@@ -13,6 +13,8 @@ abstract class VenciraApi {
 
   Future<VenciraRenewal> updateRenewal(
       String workspaceId, String renewalId, VenciraRenewalInput input);
+
+  Future<void> logout();
 }
 
 class VenciraUnauthorized implements Exception {
@@ -263,6 +265,28 @@ class HttpVenciraApi implements VenciraApi {
   Future<VenciraRenewal> updateRenewal(
           String workspaceId, String renewalId, VenciraRenewalInput input) =>
       _write(workspaceId, input, renewalId: renewalId);
+
+  @override
+  Future<void> logout() async {
+    final token = await _csrf();
+    late http.Response response;
+    try {
+      response = await _client.post(
+        _baseUri.resolve('/accounts/logout/'),
+        headers: {
+          'X-CSRFToken': token,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: '',
+      );
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+    // Django redirige tras terminar la sesión; el cliente puede seguir 302.
+    if (response.statusCode != 200 && response.statusCode != 302) {
+      throw const VenciraApiException();
+    }
+  }
 
   void close() {
     if (_ownsClient) _client.close();

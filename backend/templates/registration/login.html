@@ -3,22 +3,46 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Acceso a VENCIRA</title>
+  <meta name="robots" content="noindex,nofollow">
+  <title>Entrar — VENCIRA</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 24px;
+      background: linear-gradient(135deg, #e8f4f4, #f7fafc 55%, #ddeaf2); color: #162b36; }
+    main { width: min(100%, 425px); padding: clamp(22px, 6vw, 38px); background: white; border-radius: 20px;
+      box-shadow: 0 16px 48px #174d621b; }
+    .brand { font-size: 26px; font-weight: 800; letter-spacing: .09em; color: #145c75; }
+    h1 { font-size: 26px; margin: 25px 0 8px; }
+    p { color: #4b6571; font-size: 14px; line-height: 1.55; }
+    label { display: block; font-size: 14px; font-weight: 650; margin: 17px 0 7px; }
+    input { width: 100%; padding: 12px 14px; border: 1px solid #b9cdd7; border-radius: 10px;
+      font: inherit; background: #fff; }
+    input:focus-visible, button:focus-visible { outline: 3px solid #62a9c1; outline-offset: 2px; }
+    button { width: 100%; cursor: pointer; border: 0; border-radius: 11px; background: #145c75; color: white;
+      padding: 13px 16px; margin-top: 24px; font: inherit; font-weight: 700; }
+    .error { background: #fff0ef; color: #9c2831; padding: 12px; border-radius: 10px; }
+    .foot { border-top: 1px solid #e3edf2; padding-top: 14px; margin-top: 24px; font-size: 12px; }
+  </style>
 </head>
 <body>
   <main>
-    <h1>VENCIRA</h1>
-    <p>Acceso de desarrollo. No introducir datos reales de clientes.</p>
-    {% if form.errors %}<p role="alert">Usuario o contraseña incorrectos.</p>{% endif %}
-    <form method="post">
+    <div class="brand">VENCIRA</div>
+    <h1>Acceso a tu agenda</h1>
+    <p>Anticipamos vencimientos. Creamos oportunidades.</p>
+    {% if form.errors %}
+      <p role="alert" class="error">Usuario o contraseña incorrectos.</p>
+    {% endif %}
+    <form method="post" autocomplete="on">
       {% csrf_token %}
       <label for="{{ form.username.id_for_label }}">Usuario</label>
       {{ form.username }}
       <label for="{{ form.password.id_for_label }}">Contraseña</label>
       {{ form.password }}
       <input type="hidden" name="next" value="{{ next }}">
-      <button type="submit">Entrar</button>
+      <button type="submit">Entrar en VENCIRA</button>
     </form>
+    <p class="foot">Entorno de desarrollo. Utiliza únicamente datos ficticios de prueba.</p>
   </main>
 </body>
 </html>

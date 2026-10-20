@@ -124,6 +124,24 @@ void main() {
     expect(updated.status, 'closed');
   });
 
+  test('logout usa POST con CSRF para cerrar la sesión', () async {
+    var posts = 0;
+    final client = MockClient((request) async {
+      if (request.url.path == '/api/v1/csrf/') {
+        return http.Response('{"csrfToken":"abcdefghijklmnopqrstuvwxyz123456"}', 200);
+      }
+      posts += 1;
+      expect(request.url.path, '/accounts/logout/');
+      expect(request.method, 'POST');
+      expect(request.headers['x-csrftoken'], isNotEmpty);
+      return http.Response('', 200);
+    });
+    final api = HttpVenciraApi(client: client,
+        baseUri: Uri.parse('http://localhost:18731/'));
+    await api.logout();
+    expect(posts, 1);
+  });
+
   test('sin sesión no muestra datos', () async {
     final client = MockClient((_) async => http.Response('{"detail":"No"}', 403));
     final api = HttpVenciraApi(client: client, baseUri: Uri.parse('http://localhost:18731/'));
