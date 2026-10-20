@@ -1,49 +1,28 @@
 import 'package:flutter/material.dart';
 
+import 'api/vencira_api.dart';
+import 'ui/dashboard_screen.dart';
+
 void main() => runApp(const VenciraApp());
 
 class VenciraApp extends StatelessWidget {
-  const VenciraApp({super.key});
+  const VenciraApp({super.key, this.api});
+
+  /// Inyección de datos simulados solo para pruebas automáticas.
+  final VenciraApi? api;
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-        title: 'VENCIRA',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF145C75)),
-          useMaterial3: true,
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'VENCIRA',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF145C75),
         ),
-        home: const DashboardScreen(),
-      );
-}
-
-class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('VENCIRA')),
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 640),
-            child: const Padding(
-              padding: EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Anticipa cada vencimiento', style: TextStyle(fontSize: 26)),
-                  SizedBox(height: 12),
-                  Text('Anticipamos vencimientos. Creamos oportunidades.'),
-                  SizedBox(height: 24),
-                  Card(child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text('Aún no hay vencimientos. Esta versión es una base técnica, sin acceso a datos de clientes.'),
-                  )),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
+        useMaterial3: true,
+      ),
+      home: VenciraDashboardScreen(api: api),
+    );
+  }
 }
