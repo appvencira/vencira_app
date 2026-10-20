@@ -22,3 +22,13 @@ Documentación: `docs/API_MVP.md`, `docs/WEB_LOCAL.md` y `clients/flutter/README
 - CI del registro de auditoría: superada con 34 tests SQLite + 34 PostgreSQL, y Flutter/Web.
 
 - Se añaden fecha opcional de límite contractual de preaviso, base de regla seleccionable y visualización Flutter separada. No se infieren plazos legales ni cambian reglas de destinatarios. CI de código y pruebas de esta revisión: 43 tests en SQLite y 43 en PostgreSQL, Flutter y Nginx-Django, todo correcto en GitHub Actions #35. Consultar siempre el estado del último commit antes de fusionar.
+
+## Preparación de primera prueba en servidor — 21/10/2026
+
+- Frontend Flutter Web con **alta/edición de vencimientos**, validación de fechas y cierre de sesión.
+- Django ofrece un endpoint CSRF de mismo origen y mantiene la autorización por organización y auditoría de escrituras.
+- `compose.preview.yaml` compila Flutter dentro de Docker y levanta una preview independiente `vencira_preview`, solo puertos 127.0.0.1:18731/18732.
+- Comando `seed_preview` disponible exclusivamente en preview de desarrollo, crea una organización y seis vencimientos **ficticios**, además de credenciales de usuario sin privilegios.
+- Guía y scripts en `docs/SERVER_PREVIEW.md`, `scripts/preview-up.sh`, `scripts/preview-seed.sh` y `scripts/preview-down.sh`.
+- CI integra construcción del Docker de preview y smoke de login, alta, edición y logout sobre los servicios reales. Ver último workflow de la PR antes de utilizar.
+- **No desplegado en el servidor del usuario** por falta de acceso SSH desde las herramientas disponibles. No se ha contratado VPS ni cambiado DNS.

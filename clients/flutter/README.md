@@ -1,12 +1,12 @@
 # Flutter — VENCIRA
 
-Cliente **de solo lectura** del primer panel real de datos para la API Django, con inyección de repositorio simulado exclusivamente en tests.
+Cliente Flutter de **consulta, alta y edición de vencimientos** mediante API Django en mismo origen, con datos sintéticos exclusivamente en tests.
 
 ## Qué existe
 
-- Peticiones HTTP GET a `/api/v1/workspaces/` y `/api/v1/workspaces/{id}/renewals/?page=N`.
+- Peticiones GET de organizaciones y vencimientos; POST/PATCH con formulario validado y CSRF obtenido de `/api/v1/csrf/`.
 - Selector de organización; lista de vencimientos y paginación. Se presentan por separado el vencimiento y el límite contractual de preaviso cuando viene informado; nunca se infiere.
-- Estado de carga, error y sesión caducada, con enlace al formulario Django.
+- Estado de carga, error y sesión caducada, enlace al formulario Django, cierre de sesión con POST/CSRF, editor con calendario de fechas y estados.
 - No conserva contraseñas, tokens ni cookies explícitamente; delega la sesión en el navegador.
 - Pruebas de contrato HTTP y widget tests con datos de prueba falsos.
 
@@ -33,6 +33,8 @@ En Android/iOS/desktop hace falta un mecanismo de autenticación nativo revisado
 
 - Autenticación web endurecida, limitación de intentos, MFA.
 - Proxy local de integración para comprobar cookies de sesión y CSRF.
-- Pantallas de alta/edición tras diseñar auditoría y permisos comerciales.
+- Mejorar permisos comerciales granulares, validación de negocio, accesibilidad y flujos de edición.
 - Accesibilidad, internacionalización ES/EN, filtros y métricas fiables de negocio.
 - Configuración host para las plataformas y builds firmadas, sin publicar todavía.
+
+La primera demo instalable en servidor está documentada en [SERVER_PREVIEW.md](../../docs/SERVER_PREVIEW.md). No requiere Flutter SDK en el host si se construye mediante Docker.

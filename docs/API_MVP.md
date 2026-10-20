@@ -4,7 +4,7 @@ Fecha: 20/10/2026. **Solo uso local para pruebas; NO producción**.
 
 ## Sesiones y autenticación
 
-La autenticación provisional emplea sesiones Django, cookies HttpOnly y verificación CSRF en modificaciones. El navegador se identifica mediante `GET/POST /accounts/login/` y finaliza sesión mediante `POST /accounts/logout/`. No existen altas públicas, tokens de API ni integración Flutter; estos puntos requieren una decisión de identidad (MFA, passkeys, etc.). Django Admin tampoco es una interfaz de negocio para esta fase.
+La autenticación provisional emplea sesiones Django, cookies HttpOnly y verificación CSRF en modificaciones. El navegador se identifica mediante `GET/POST /accounts/login/` y finaliza sesión mediante `POST /accounts/logout/`. No existen altas públicas ni tokens móviles; Flutter Web ya integra lectura y escrituras con cookie de sesión y CSRF desde el mismo origen. Django Admin tampoco es una interfaz de negocio para esta fase.
 
 **El inicio de sesión cuenta con un limitador provisional por identificador**, pero carece de MFA, defensa frente a abuso distribuido y protección equivalente para Django Admin. No está listo para producción; todas las pruebas deben ejecutarse en loopback.
 
@@ -12,6 +12,7 @@ La autenticación provisional emplea sesiones Django, cookies HttpOnly y verific
 
 | Método y ruta | Requisitos |
 |---|---|
+| `GET /api/v1/csrf/` | Obtener token CSRF de formulario/mutaciones web (sin datos del usuario) |
 | `GET /api/v1/me/` | Usuario autenticado; ID y nombre de usuario |
 | `GET /api/v1/workspaces/` | Únicamente membresías propias y roles |
 | `GET /api/v1/workspaces/{uuid}/renewals/` | Miembro del workspace; resultados paginados hasta 100/página |
@@ -40,3 +41,5 @@ No hay DELETE ni API de administración de usuarios, membresías o espacios de t
 - Paginación, métodos y validaciones básicos.
 
 **Limitaciones conocidas:** hay auditoría transaccional de cambios vía API, pero no es inmutable ni cubre modificaciones fuera de la API. Faltan políticas de borrado/retención, limitación integral de peticiones, MFA, gestión avanzada de sesiones y controles granulares de permisos. No cargar datos personales ni habilitar el tráfico público.
+
+La interfaz Flutter Web implementa la creación, actualización y cierre de sesión. No expone un endpoint de borrado. La API de negocio continúa restringida a usuarios con membresía.

@@ -80,3 +80,7 @@ Para conservar los datos de prueba no uses `down -v`. No ejecutar comandos globa
 ## No listo para producción
 
 Pendientes: protección ante fuerza bruta, MFA, recuperación de cuenta, TLS, secretos de producción, control de sesiones y roles, auditoría, backup/restauración y RGPD. Las apps Android/iOS aún necesitarán autenticación propia.
+
+## Alternativa recomendada para servidor
+
+La ruta de servidor de prueba (sin instalar Flutter SDK en el host) se encuentra en [SERVER_PREVIEW.md](SERVER_PREVIEW.md). Utiliza el `Dockerfile.web` multi-stage y un proyecto Compose propio, para no interferir con otros contenedores del servidor.

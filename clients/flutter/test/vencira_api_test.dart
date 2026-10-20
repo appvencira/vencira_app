@@ -79,7 +79,9 @@ void main() {
         return http.Response('{"csrfToken":"abcdefghijklmnopqrstuvwxyz123456"}', 200);
       }
       expect(request.method, 'POST');
-      expect(request.headers['x-csrftoken'], 'abcdefghijklmnopqrstuvwxyz123456');
+      expect(request.headers.entries.any((header) =>
+          header.key.toLowerCase() == 'x-csrftoken' &&
+          header.value == 'abcdefghijklmnopqrstuvwxyz123456'), isTrue);
       expect(request.body, contains('"customer_reference":"DEMO"'));
       expect(request.body, contains('"notice_deadline_on":"2027-03-31"'));
       return http.Response('{"id":"b2222222-2222-4222-8222-222222222222",'
@@ -108,7 +110,8 @@ void main() {
       }
       writes += 1;
       expect(request.method, 'PATCH');
-      expect(request.headers['x-csrftoken'], isNotEmpty);
+      expect(request.headers.entries.any((header) =>
+          header.key.toLowerCase() == 'x-csrftoken' && header.value.isNotEmpty), isTrue);
       return http.Response('{"id":"b2222222-2222-4222-8222-222222222222",'
           '"customer_reference":"DEMO","expires_on":"2027-05-01",'
           '"notice_deadline_on":null,"status":"closed"}', 200);
@@ -133,7 +136,8 @@ void main() {
       posts += 1;
       expect(request.url.path, '/accounts/logout/');
       expect(request.method, 'POST');
-      expect(request.headers['x-csrftoken'], isNotEmpty);
+      expect(request.headers.entries.any((header) =>
+          header.key.toLowerCase() == 'x-csrftoken' && header.value.isNotEmpty), isTrue);
       return http.Response('', 200);
     });
     final api = HttpVenciraApi(client: client,

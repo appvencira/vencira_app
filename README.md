@@ -28,10 +28,14 @@ Dominio elegido: `vencira.es`; pedido OVHcloud 20/10/2026 pendiente de confirmac
 
 ## API y cliente Flutter
 
-Autenticación provisional por sesión Django y API v1 de vencimientos restringida a miembros. Flutter dispone de una pantalla de consulta (organizaciones, vencimientos, paginación, estados de error y sesión), pendiente de conectar **extremo a extremo mediante un proxy de mismo origen**. Consulta [clients/flutter/README.md](clients/flutter/README.md).
+Autenticación provisional por sesión Django y API v1 de vencimientos restringida a miembros. Flutter dispone de un panel para consultar, crear y editar vencimientos, con acceso por sesión, CSRF, paginación, distinción entre vencimiento y preaviso y cierre de sesión. El proxy de mismo origen y su integración HTTP se verifican en CI. Consulta [clients/flutter/README.md](clients/flutter/README.md).
 
-**No habilitar públicamente** mientras falten límites al inicio de sesión, MFA, auditoría y verificación de seguridad y cumplimiento.
+**No habilitar públicamente ni usar datos reales.** El login solo tiene una defensa provisional, la auditoría se limita a la API y faltan MFA, controles RGPD, retención y copias externas.
 
 ## Web y API desde una sola dirección local
 
 Se añade `compose.web.yaml` con proxy Nginx en `http://127.0.0.1:18732`. Compila Flutter Web antes de arrancar el proxy. Procedimiento, verificación HTTP autenticada y limitaciones en [docs/WEB_LOCAL.md](docs/WEB_LOCAL.md).
+
+## Primera prueba en servidor aislado
+
+Para probar sin instalar Flutter en el anfitrión, existe [**docs/SERVER_PREVIEW.md**](docs/SERVER_PREVIEW.md) con `compose.preview.yaml`, build Docker multi-stage, usuario y contratos sintéticos, y acceso por túnel SSH. Los puertos locales 18731/18732 no interfieren con MASBITCOIN. **No se ha ejecutado ningún despliegue remoto ni se ha modificado `vencira.es`.**
