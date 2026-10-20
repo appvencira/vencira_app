@@ -34,6 +34,7 @@ class Renewal(models.Model):
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="renewals")
     customer_reference = models.CharField(max_length=160)
     expires_on = models.DateField()
+    notice_deadline_on = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -57,13 +58,18 @@ class ReminderPolicy(models.Model):
     """Regla voluntaria por organización. Deshabilitada por defecto."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="reminder_policies")
+    class Basis(models.TextChoices):
+        EXPIRY = "expiry", "Vencimiento"
+        NOTICE_DEADLINE = "notice_deadline", "Límite de preaviso"
+
+    basis = models.CharField(max_length=16, choices=Basis.choices, default=Basis.EXPIRY)
     days_before = models.PositiveSmallIntegerField(validators=[MaxValueValidator(365)])
     enabled = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["workspace", "days_before"], name="uniq_reminder_policy_ws_day"),
+            models.UniqueConstraint(fields=["workspace", "basis", "days_before"], name="uniq_policy_workspace_basis_day"),
             models.CheckConstraint(condition=models.Q(days_before__lte=365), name="policy_days_lte_365"),
         ]
 

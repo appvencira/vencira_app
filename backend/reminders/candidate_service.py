@@ -2,6 +2,7 @@
 from datetime import timedelta
 
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from .models import ReminderCandidate, ReminderPolicy, Renewal, Workspace
@@ -28,9 +29,10 @@ def refresh_candidates(workspace_id, *, today=None, horizon_days=30):
         Renewal.objects.filter(
             workspace=workspace,
             status=Renewal.Status.PENDING,
-            expires_on__gte=now,
-            expires_on__lte=through + timedelta(days=365),
-        ).only("id", "workspace_id", "expires_on")
+        ).filter(
+            Q(expires_on__gte=now, expires_on__lte=through + timedelta(days=365))
+            | Q(notice_deadline_on__gte=now, notice_deadline_on__lte=through + timedelta(days=365))
+        ).only("id", "workspace_id", "expires_on", "notice_deadline_on")
     )
 
     current_ids = set()
@@ -38,7 +40,15 @@ def refresh_candidates(workspace_id, *, today=None, horizon_days=30):
     restored = 0
     for policy in policies:
         for renewal in renewals:
-            scheduled = renewal.expires_on - timedelta(days=policy.days_before)
+            anchor = (
+                renewal.notice_deadline_on
+                if policy.basis == ReminderPolicy.Basis.NOTICE_DEADLINE
+                else renewal.expires_on
+            )
+            # Nunca inferir un preaviso: sin fecha explícita no hay candidato.
+            if anchor is None:
+                continue
+            scheduled = anchor - timedelta(days=policy.days_before)
             if scheduled < now or scheduled > through:
                 continue
             candidate, new = ReminderCandidate.objects.get_or_create(

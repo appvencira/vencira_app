@@ -78,6 +78,7 @@ def renewal_detail(request, workspace_id, renewal_id):
         before = Renewal(
             customer_reference=renewal.customer_reference,
             expires_on=renewal.expires_on,
+            notice_deadline_on=renewal.notice_deadline_on,
             status=renewal.status,
         )
         serializer = RenewalSerializer(renewal, data=request.data, partial=True)
