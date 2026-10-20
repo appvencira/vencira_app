@@ -8,7 +8,9 @@ Bootstrap de código y primeras integraciones, todavía en **PR borrador**, sin 
 - Backend: modelos mínimos, pruebas y health/readiness; API v1 de vencimientos limitada por pertenencia a organización, con sesiones web y CSRF.
 - Tests backend SQLite y PostgreSQL 17: superados en la ejecución anterior.
 - Flutter: interfaz de consulta de organizaciones y vencimientos mediante API; lista paginada, estados de sesión, cambio de organización y pruebas de contrato/widget. **Proxy de mismo origen añadido para pruebas locales con Nginx; la prueba HTTP autenticada E2E está en CI y las pruebas visuales reales de navegador continúan pendientes**.
-- Motor de avisos, alta/edición web, MFA, limitación de login, RGPD, copias externas y producción: pendientes.
+- Motor de avisos, alta/edición web, MFA, límites adicionales por IP y seguridad de login Admin, RGPD, copias externas y producción: pendientes.
 - No comprar VPS hasta necesitar pruebas externas o despliegue real.
 
-Documentación: `docs/API_MVP.md`, `docs/WEB_LOCAL.md` y `clients/flutter/README.md`. CI de compilación web e integración same-origin: pendiente de verificación.
+Documentación: `docs/API_MVP.md`, `docs/WEB_LOCAL.md` y `clients/flutter/README.md`. CI anterior de compilación web e integración same-origin: superada. En esta iteración, CI del refuerzo de login pendiente de verificación.
+
+- Login provisional: límite por cuenta HMAC persistido en BD, 5 fallos/15 minutos -> bloqueo 15 minutos. Sin MFA ni protección frente a abuso distribuido.

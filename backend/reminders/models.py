@@ -43,3 +43,11 @@ class Renewal(models.Model):
 
     def __str__(self):
         return f"{self.customer_reference} — {self.expires_on}"
+
+class LoginAttemptBucket(models.Model):
+    """Contador compartido entre workers; clave HMAC, sin almacenar nombre."""
+    key = models.CharField(max_length=64, primary_key=True)
+    failures = models.PositiveSmallIntegerField(default=0)
+    started_at = models.DateTimeField()
+    blocked_until = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)

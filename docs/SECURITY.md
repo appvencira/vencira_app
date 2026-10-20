@@ -6,7 +6,7 @@ Actualmente: repositorio privado, `.env` fuera de Git, secretos aleatorios por i
 
 ## Antes de producción
 
-1. MFA, recuperación de cuentas, bloqueo por abuso y control de sesiones (la pantalla provisional de login aún NO tiene protección frente a fuerza bruta).
+1. El login web ahora utiliza un contador por identificador anonimizado con HMAC, compartido mediante PostgreSQL; 5 fallos en 15 minutos bloquean nuevas peticiones 15 minutos (HTTP 429). **Esto es provisional y susceptible a bloqueo malicioso de cuentas:** siguen pendientes MFA, recuperación, rate-limiting IP en el proxy, limpieza del registro y protección del Django Admin, que no pasa por esta pantalla.
 2. Revisar independientemente el aislamiento por organización implementado y probado en lecturas y escrituras, así como permisos diferenciados por rol.
 3. TLS y proxy seguro, cabeceras, logs sanitizados, protección contra ataques.
 4. Copias externas cifradas, restauración ensayada, RPO/RTO y políticas de retención.
