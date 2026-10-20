@@ -92,10 +92,12 @@ jobs:
         run: |
           docker compose -f compose.yaml -f compose.web.yaml config --quiet
           docker compose -f compose.yaml -f compose.web.yaml up --build -d
+          docker compose -f compose.yaml -f compose.web.yaml exec -T web nginx -t
       - name: Crear datos sintéticos para el test E2E
         run: |
           echo "VENCIRA_E2E_USERNAME=vencira_e2e_ci" >> "$GITHUB_ENV"
           DEMO_PASSWORD="$(python3 -c 'import secrets; print(secrets.token_urlsafe(30))')"
+          echo "::add-mask::$DEMO_PASSWORD"
           echo "VENCIRA_E2E_PASSWORD=$DEMO_PASSWORD" >> "$GITHUB_ENV"
           docker compose -f compose.yaml -f compose.web.yaml exec -T -e VENCIRA_E2E_PASSWORD="$DEMO_PASSWORD" api python manage.py shell -c "import os; from django.contrib.auth import get_user_model; from reminders.models import Workspace, WorkspaceMember, Renewal; from datetime import date; u=get_user_model().objects.create_user(username='vencira_e2e_ci', password=os.environ['VENCIRA_E2E_PASSWORD']); w=Workspace.objects.create(name='Equipo E2E'); WorkspaceMember.objects.create(user=u, workspace=w, role='owner'); Renewal.objects.create(workspace=w, customer_reference='PRUEBA-E2E-001', expires_on=date(2027,1,31))"
       - name: Probar sesión, CSRF, aislamiento de acceso anónimo y datos sintéticos
