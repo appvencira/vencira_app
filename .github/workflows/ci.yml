@@ -129,3 +129,28 @@ jobs:
         run: docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml config --quiet
       - name: Compilar imagen auto-contenida de Flutter Web
         run: docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml build web_preview
+      - name: Arrancar preview Docker aislada
+        run: |
+          docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml up --build -d
+          docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml exec -T web_preview nginx -t
+      - name: Crear demo y validar alta-edición vía proxy real
+        run: |
+          umask 077
+          CRED_FILE="$(mktemp)"
+          trap 'rm -f "$CRED_FILE"' EXIT
+          docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml exec -T api python manage.py seed_preview > "$CRED_FILE"
+          DEMO_PASSWORD="$(sed -n 's/^CONTRASEÑA DE PRUEBA (se muestra una vez): //p' "$CRED_FILE")"
+          if [ -z "$DEMO_PASSWORD" ]; then echo "No se pudieron crear credenciales de pruebas"; exit 1; fi
+          echo "::add-mask::$DEMO_PASSWORD"
+          VENCIRA_E2E_USERNAME=vencira_demo \
+          VENCIRA_E2E_PASSWORD="$DEMO_PASSWORD" \
+          VENCIRA_E2E_WORKSPACE="VENCIRA / DEMOSTRACIÓN" \
+          VENCIRA_E2E_COUNT=6 \
+          VENCIRA_E2E_REFERENCE="DEMO-HOGAR-001" \
+          python3 scripts/smoke_same_origin.py
+      - name: Registrar logs de preview si falla
+        if: failure()
+        run: docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml logs --tail=50
+      - name: Destruir contenedores de preview efímeros
+        if: always()
+        run: docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml down -v --remove-orphans

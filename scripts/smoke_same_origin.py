@@ -18,12 +18,12 @@ if BASE not in ("http://127.0.0.1:18732", "http://localhost:18732"):
     raise SystemExit("Este test solo admite el proxy local en el puerto 18732")
 
 
-def read(opener, path, *, data=None, headers=None):
+def read(opener, path, *, data=None, headers=None, method=None):
     request = urllib.request.Request(
         BASE + path,
         data=data,
         headers=headers or {},
-        method="POST" if data is not None else "GET",
+        method=method or ("POST" if data is not None else "GET"),
     )
     try:
         with opener.open(request, timeout=6) as response:
@@ -77,13 +77,16 @@ if username:
     status, workspaces_raw = read(client, "/api/v1/workspaces/")
     assert status == 200, "No se obtuvo la lista privada de organizaciones"
     workspaces = json.loads(workspaces_raw)
-    assert len(workspaces) == 1 and workspaces[0]["name"] == "Equipo E2E", "Organización errónea"
+    expected_workspace = os.getenv("VENCIRA_E2E_WORKSPACE", "Equipo E2E")
+    expected_count = int(os.getenv("VENCIRA_E2E_COUNT", "1"))
+    expected_reference = os.getenv("VENCIRA_E2E_REFERENCE", "PRUEBA-E2E-001")
+    assert len(workspaces) == 1 and workspaces[0]["name"] == expected_workspace, "Organización errónea"
     workspace_id = workspaces[0]["id"]
     status, renewal_raw = read(client, f"/api/v1/workspaces/{workspace_id}/renewals/")
     assert status == 200, "No se obtuvieron vencimientos desde la sesión"
     renewal = json.loads(renewal_raw)
-    assert renewal["count"] == 1
-    assert renewal["results"][0]["customer_reference"] == "PRUEBA-E2E-001"
+    assert renewal["count"] == expected_count
+    assert renewal["results"][0]["customer_reference"] == expected_reference
     # Prueba E2E también de escrituras autenticadas, CSRF y auditoría de API.
     status, token_body = read(client, "/api/v1/csrf/")
     assert status == 200, "No hay endpoint CSRF"
@@ -101,8 +104,15 @@ if username:
     assert status == 201, f"Alta fallida: {status}"
     created = json.loads(created_raw)
     assert created["notice_deadline_on"] == "2027-03-31"
+    status, edited_raw = read(
+        client, f"{create_path}{created['id']}/",
+        data=json.dumps({"status": "contacted"}).encode("utf-8"),
+        headers={"Content-Type": "application/json", "X-CSRFToken": token},
+        method="PATCH",
+    )
+    assert status == 200 and json.loads(edited_raw)["status"] == "contacted"
     status, after_create_raw = read(client, create_path)
-    assert status == 200 and json.loads(after_create_raw)["count"] == 2
+    assert status == 200 and json.loads(after_create_raw)["count"] == expected_count + 1
     status, _ = read(
         client, "/accounts/logout/",
         data=b"",

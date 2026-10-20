@@ -13,6 +13,7 @@ El despliegue:
 - PostgreSQL 17 sin puertos públicos.
 - Build Flutter Web en una imagen multi-stage usando SDK 3.44.0; el host **no necesita Flutter instalado**.
 - Acceso solo mediante **túnel SSH** de tu equipo al host de pruebas.
+- En CI se valida el mismo Docker Compose de servidor, los servicios iniciados y el flujo HTTP de login, alta y edición con credenciales y datos exclusivamente sintéticos.
 
 ## Requisitos del servidor
 
