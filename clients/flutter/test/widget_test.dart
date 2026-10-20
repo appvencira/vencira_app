@@ -20,6 +20,17 @@ class FakeVenciraApi implements VenciraApi {
   Future<VenciraRenewalPage> fetchRenewals(String workspaceId, {int page = 1}) async {
     return pages[workspaceId]!;
   }
+
+  @override
+  Future<VenciraRenewal> createRenewal(String workspaceId, VenciraRenewalInput input) async {
+    throw UnimplementedError('Las pruebas de consulta no crean datos');
+  }
+
+  @override
+  Future<VenciraRenewal> updateRenewal(
+      String workspaceId, String renewalId, VenciraRenewalInput input) async {
+    throw UnimplementedError('Las pruebas de consulta no editan datos');
+  }
 }
 
 void main() {
@@ -33,6 +44,26 @@ void main() {
     name: 'Correduría de prueba B',
     role: 'member',
   );
+
+  testWidgets('permite abrir y cancelar el editor sin modificar datos', (tester) async {
+    await tester.pumpWidget(VenciraApp(
+      api: FakeVenciraApi(
+        workspaces: [workspaceA],
+        pages: {
+          workspaceA.id: const VenciraRenewalPage(
+              total: 0, items: [], hasNext: false),
+        },
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Añadir vencimiento'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nuevo vencimiento'), findsOneWidget);
+    expect(find.text('Referencia'), findsOneWidget);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nuevo vencimiento'), findsNothing);
+  });
 
   testWidgets('muestra estado vacío sin datos reales', (tester) async {
     await tester.pumpWidget(VenciraApp(

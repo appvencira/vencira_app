@@ -70,6 +70,60 @@ void main() {
     expect(calls, 0);
   });
 
+  test('crear vencimiento solicita CSRF y envía JSON válido', () async {
+    var calls = 0;
+    final client = MockClient((request) async {
+      calls += 1;
+      if (request.url.path == '/api/v1/csrf/') {
+        expect(request.method, 'GET');
+        return http.Response('{"csrfToken":"abcdefghijklmnopqrstuvwxyz123456"}', 200);
+      }
+      expect(request.method, 'POST');
+      expect(request.headers['x-csrftoken'], 'abcdefghijklmnopqrstuvwxyz123456');
+      expect(request.body, contains('"customer_reference":"DEMO"'));
+      expect(request.body, contains('"notice_deadline_on":"2027-03-31"'));
+      return http.Response('{"id":"b2222222-2222-4222-8222-222222222222",'
+          '"customer_reference":"DEMO","expires_on":"2027-05-01",'
+          '"notice_deadline_on":"2027-03-31","status":"pending"}', 201);
+    });
+    final api = HttpVenciraApi(client: client,
+        baseUri: Uri.parse('http://localhost:18731/'));
+    final created = await api.createRenewal(
+      workspaceId,
+      VenciraRenewalInput(
+        reference: 'DEMO',
+        expiresOn: DateTime(2027, 5, 1),
+        noticeDeadlineOn: DateTime(2027, 3, 31),
+      ),
+    );
+    expect(calls, 2);
+    expect(created.noticeDeadlineOn, DateTime(2027, 3, 31));
+  });
+
+  test('editar vencimiento usa PATCH con CSRF', () async {
+    var writes = 0;
+    final client = MockClient((request) async {
+      if (request.url.path == '/api/v1/csrf/') {
+        return http.Response('{"csrfToken":"abcdefghijklmnopqrstuvwxyz123456"}', 200);
+      }
+      writes += 1;
+      expect(request.method, 'PATCH');
+      expect(request.headers['x-csrftoken'], isNotEmpty);
+      return http.Response('{"id":"b2222222-2222-4222-8222-222222222222",'
+          '"customer_reference":"DEMO","expires_on":"2027-05-01",'
+          '"notice_deadline_on":null,"status":"closed"}', 200);
+    });
+    final api = HttpVenciraApi(client: client,
+        baseUri: Uri.parse('http://localhost:18731/'));
+    final updated = await api.updateRenewal(
+      workspaceId, 'b2222222-2222-4222-8222-222222222222',
+      VenciraRenewalInput(reference: 'DEMO',
+          expiresOn: DateTime(2027, 5, 1), status: 'closed'),
+    );
+    expect(writes, 1);
+    expect(updated.status, 'closed');
+  });
+
   test('sin sesión no muestra datos', () async {
     final client = MockClient((_) async => http.Response('{"detail":"No"}', 403));
     final api = HttpVenciraApi(client: client, baseUri: Uri.parse('http://localhost:18731/'));

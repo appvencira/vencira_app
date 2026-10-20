@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/link.dart';
 
 import '../api/vencira_api.dart';
+import 'renewal_editor.dart';
 
 class VenciraDashboardScreen extends StatefulWidget {
   const VenciraDashboardScreen({super.key, this.api});
@@ -22,6 +23,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
   bool _loadingRenewals = false;
   bool _unauthorized = false;
   bool _failed = false;
+  bool _saving = false;
   int _page = 1;
   int _sequence = 0;
 
@@ -123,6 +125,42 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     }
   }
 
+  Future<void> _editRenewal([VenciraRenewal? current]) async {
+    final selected = _selected;
+    if (selected == null || _saving || _loadingRenewals) return;
+    final input = await showDialog<VenciraRenewalInput>(
+      context: context,
+      builder: (_) => VenciraRenewalEditor(existing: current),
+    );
+    if (input == null || !mounted || _selected?.id != selected.id) return;
+    setState(() => _saving = true);
+    try {
+      if (current == null) {
+        await _api.createRenewal(selected.id, input);
+      } else {
+        await _api.updateRenewal(selected.id, current.id, input);
+      }
+      if (!mounted || _selected?.id != selected.id) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vencimiento guardado correctamente.')),
+      );
+      await _loadRenewals(1);
+    } on VenciraUnauthorized {
+      if (!mounted) return;
+      setState(() {
+        _unauthorized = true;
+        _renewals = null;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo guardar. Revisa los datos e inténtalo otra vez.')),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -154,6 +192,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                   const SizedBox(height: 8),
                   const Text('Anticipamos vencimientos. Creamos oportunidades.'),
                   const SizedBox(height: 26),
+                  if (_saving) const LinearProgressIndicator(),
                   if (_loadingWorkspaces || _loadingRenewals)
                     const Center(
                       child: Padding(
@@ -251,7 +290,16 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
               ),
             )
             .toList(),
-        onChanged: _loadingRenewals ? null : _selectWorkspace,
+        onChanged: _loadingRenewals || _saving ? null : _selectWorkspace,
+      ),
+      const SizedBox(height: 18),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: FilledButton.icon(
+          onPressed: _loadingRenewals || _saving ? null : () => _editRenewal(),
+          icon: const Icon(Icons.add),
+          label: const Text('Añadir vencimiento'),
+        ),
       ),
       const SizedBox(height: 18),
       if (!_loadingRenewals && _renewals != null) ...[
@@ -324,7 +372,17 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
             if (notice != null) Text('Límite de preaviso: $notice'),
           ],
         ),
-        trailing: Chip(label: Text(label)),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Chip(label: Text(label)),
+            IconButton(
+              tooltip: 'Editar vencimiento',
+              onPressed: _saving ? null : () => _editRenewal(item),
+              icon: const Icon(Icons.edit_outlined),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -8,6 +8,11 @@ abstract class VenciraApi {
   Future<List<VenciraWorkspace>> fetchWorkspaces();
 
   Future<VenciraRenewalPage> fetchRenewals(String workspaceId, {int page = 1});
+
+  Future<VenciraRenewal> createRenewal(String workspaceId, VenciraRenewalInput input);
+
+  Future<VenciraRenewal> updateRenewal(
+      String workspaceId, String renewalId, VenciraRenewalInput input);
 }
 
 class VenciraUnauthorized implements Exception {
@@ -64,6 +69,35 @@ class VenciraRenewal {
       status: json['status'] as String,
     );
   }
+}
+
+class VenciraRenewalInput {
+  const VenciraRenewalInput({
+    required this.reference,
+    required this.expiresOn,
+    this.noticeDeadlineOn,
+    this.status = 'pending',
+  });
+
+  final String reference;
+  final DateTime expiresOn;
+  final DateTime? noticeDeadlineOn;
+  final String status;
+
+  static String _isoDate(DateTime date) {
+    final y = date.year.toString().padLeft(4, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  Map<String, dynamic> toJson() => {
+        'customer_reference': reference.trim(),
+        'expires_on': _isoDate(expiresOn),
+        'notice_deadline_on':
+            noticeDeadlineOn == null ? null : _isoDate(noticeDeadlineOn!),
+        'status': status,
+      };
 }
 
 class VenciraRenewalPage {
@@ -160,6 +194,77 @@ class HttpVenciraApi implements VenciraApi {
       throw const VenciraApiException();
     }
   }
+
+  bool _validUuid(String id) => RegExp(
+        r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
+        r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}
+    if (_ownsClient) _client.close();
+  }
+}
+,
+      ).hasMatch(id);
+
+  Future<String> _csrf() async {
+    final response = await _fetch('/api/v1/csrf/') as Map<String, dynamic>;
+    final token = response['csrfToken'];
+    if (token is! String || token.length < 32) {
+      throw const VenciraApiException();
+    }
+    return token;
+  }
+
+  Future<VenciraRenewal> _write(
+    String workspaceId,
+    VenciraRenewalInput input, {
+    String? renewalId,
+  }) async {
+    if (!_validUuid(workspaceId) ||
+        (renewalId != null && !_validUuid(renewalId))) {
+      throw const VenciraApiException();
+    }
+    final csrfToken = await _csrf();
+    final target = renewalId == null
+        ? '/api/v1/workspaces/$workspaceId/renewals/'
+        : '/api/v1/workspaces/$workspaceId/renewals/$renewalId/';
+    final uri = _baseUri.resolve(target);
+    late http.Response response;
+    try {
+      final headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+      };
+      final body = jsonEncode(input.toJson());
+      response = renewalId == null
+          ? await _client.post(uri, headers: headers, body: body)
+          : await _client.patch(uri, headers: headers, body: body);
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const VenciraUnauthorized();
+    }
+    if (response.statusCode != (renewalId == null ? 201 : 200)) {
+      throw const VenciraApiException();
+    }
+    try {
+      return VenciraRenewal.fromJson(
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>,
+      );
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<VenciraRenewal> createRenewal(
+      String workspaceId, VenciraRenewalInput input) =>
+      _write(workspaceId, input);
+
+  @override
+  Future<VenciraRenewal> updateRenewal(
+          String workspaceId, String renewalId, VenciraRenewalInput input) =>
+      _write(workspaceId, input, renewalId: renewalId);
 
   void close() {
     if (_ownsClient) _client.close();
