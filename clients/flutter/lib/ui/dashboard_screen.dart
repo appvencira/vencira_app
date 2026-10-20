@@ -207,7 +207,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
             const SizedBox(height: 12),
             if (kIsWeb)
               Link(
-                uri: Uri.base.resolve('/accounts/login/'),
+                uri: Uri.base.resolve('/accounts/login/?next=/'),
                 target: LinkTarget.self,
                 builder: (context, followLink) => FilledButton(
                   onPressed: followLink,
