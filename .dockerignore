@@ -1,0 +1,17 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+.venv
+__pycache__
+*.pyc
+docs
+scripts
+backend
+clients/flutter/build
+clients/flutter/.dart_tool
+clients/flutter/.pub-cache
+clients/flutter/.flutter-plugins-dependencies
+README.md
+compose*.yaml

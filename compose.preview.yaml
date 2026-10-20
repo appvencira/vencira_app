@@ -1,0 +1,22 @@
+# Usar con compose.yaml y -p vencira_preview.
+# No modifica servicios existentes del host.
+services:
+  api:
+    environment:
+      VENCIRA_ENV: development
+      VENCIRA_PREVIEW_MODE: "1"
+  web_preview:
+    build:
+      context: .
+      dockerfile: deploy/preview/Dockerfile.web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${VENCIRA_WEB_BIND_PORT:-18732}:8080"
+    networks:
+      - internal
+    security_opt:
+      - no-new-privileges:true
+
