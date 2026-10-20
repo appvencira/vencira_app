@@ -10,6 +10,20 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: vencira_ci
+          POSTGRES_USER: vencira_ci
+          POSTGRES_PASSWORD: ci-local-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vencira_ci -d vencira_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     env:
       VENCIRA_ENV: test
       DJANGO_DEBUG: "1"
@@ -26,7 +40,17 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python manage.py check
       - run: python manage.py makemigrations --check --dry-run
-      - run: python manage.py test
+      - name: Tests Django (SQLite)
+        run: python manage.py test
+      - name: Tests Django (PostgreSQL 17)
+        run: python manage.py test
+        env:
+          VENCIRA_DB_ENGINE: postgresql
+          POSTGRES_DB: vencira_ci
+          POSTGRES_USER: vencira_ci
+          POSTGRES_PASSWORD: ci-local-only
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_PORT: "5432"
   flutter:
     runs-on: ubuntu-latest
     defaults:
