@@ -17,8 +17,10 @@ jobs:
       DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
       VENCIRA_DB_ENGINE: sqlite
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
@@ -31,7 +33,9 @@ jobs:
       run:
         working-directory: clients/flutter
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
