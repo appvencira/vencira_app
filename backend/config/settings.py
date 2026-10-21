@@ -86,6 +86,13 @@ CSRF_COOKIE_NAME = "vencira_csrftoken"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
+# Solo cuando el acceso HTTPS termina en Caddy, que sobreescribe
+# X-Forwarded-Proto, y el proxy Nginx interno escucha únicamente en loopback.
+HTTPS_BEHIND_TRUSTED_PROXY = os.getenv("DJANGO_HTTPS_BEHIND_PROXY", "0") == "1"
+if HTTPS_BEHIND_TRUSTED_PROXY:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 if VENCIRA_ENV == "production":

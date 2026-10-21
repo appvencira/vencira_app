@@ -341,3 +341,72 @@ Mantener abierta la ventana del túnel, navegar a `http://127.0.0.1:18732/` desd
 Tras completar el primer despliegue healthy de Django/PostgreSQL/Flutter y superar el smoke sin sesión, el usuario indicó **«done»** después de recibir las instrucciones para generar el usuario `vencira_demo` y establecer el túnel desde Windows a `127.0.0.1:18732`. Se registra como **confirmación del acceso inicial desde Windows**, no como ejecución independiente de los tests de edición/búsqueda ni de login E2E por el asistente. No se recibieron contraseñas.
 
 **Próxima etapa:** configurar `dev.vencira.es` con acceso perimetral restringido y TLS, **sin** abrir a Internet `18731`, `18732` ni `5432`, manteniendo `vencira.es` sin despliegue comercial. Primero verificar que el dominio está activo y ubicar su **zona DNS activa** (puede no ser OVH); crear **solo** el registro `A` de `dev` apuntando a `93.93.112.172`. No abrir puertos 80/443 ni publicar proxy inverso hasta tener HTTPS y control de acceso configurados, revisar además Django `ALLOWED_HOSTS`, origen CSRF y encabezados de proxy. Seguir con datos sintéticos y PR en borrador.
+
+
+## DNS confirmado y preparación HTTPS privado (21/10/2026)
+
+El usuario comprobó desde Windows `nslookup dev.vencira.es 1.1.1.1`, con resultado `93.93.112.172`. Es **resolución DNS**, no certificación de que HTTPS esté activo.
+
+### Cambios del código para Caddy
+
+- `compose.yaml` transmite de manera opcional a Django:
+  - `DJANGO_CSRF_TRUSTED_ORIGINS`;
+  - `DJANGO_HTTPS_BEHIND_PROXY` (predeterminado 0, para no alterar CI/túnel HTTP).
+- Si `DJANGO_HTTPS_BEHIND_PROXY=1` Django entiende `X-Forwarded-Proto: https` **solo cuando procede del proxy privado de confianza**, y emite cookies de sesión/CSRF con `Secure`.
+- El Nginx interno preserva `X-Forwarded-Proto: https` entregado por Caddy, con lista blanca `https`/valor local. **No publicar Nginx directamente**, ni permitir que un proxy no confiable controle ese encabezado.
+- Para el dominio externo, editar `.env` privada local (no hacer `cat` del fichero ni subirlo al repositorio):
+  ```dotenv
+  DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,dev.vencira.es
+  DJANGO_CSRF_TRUSTED_ORIGINS=https://dev.vencira.es
+  DJANGO_HTTPS_BEHIND_PROXY=1
+  ```
+- Al activar cookies Secure, el login por HTTP en el túnel local dejará de funcionar; es deliberado. El acceso remoto será el HTTPS externo.
+
+### Caddy en el host Ubuntu 24.04 (pendiente de ejecución manual)
+
+Instalación recomendada: paquete estable oficial https://caddyserver.com/docs/install
+
+```bash
+sudo apt-get update
+sudo apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl gnupg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null
+sudo chmod o+r /usr/share/keyrings/caddy-stable-archive-keyring.gpg /etc/apt/sources.list.d/caddy-stable.list
+sudo apt-get update
+sudo apt-get install -y caddy
+```
+
+La instalación puede arrancar el servicio con una configuración predeterminada; no abrir 80/443 aún. Generar contraseña perimetral de forma interactiva (no incluir contraseña en parámetros, comandos ni conversación):
+
+```bash
+CADDY_HASH="$(caddy hash-password)"
+sudo tee /etc/caddy/Caddyfile >/dev/null <<EOF
+dev.vencira.es {
+    basic_auth {
+        vencira_dev $CADDY_HASH
+    }
+    reverse_proxy 127.0.0.1:18732 {
+        header_up -Authorization
+    }
+}
+EOF
+unset CADDY_HASH
+sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+```
+
+Caddy requiere **puertos públicos TCP 80 y 443** tanto en el firewall IONOS como en UFW para HTTPS automático. Solo habilitarlos cuando el Caddyfile haya sido validado y autenticación activada:
+
+```bash
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo systemctl restart caddy
+sudo systemctl status caddy --no-pager
+```
+
+Verificar externamente desde Windows sin credenciales:
+```powershell
+curl.exe -I https://dev.vencira.es/
+```
+Debe obtener `HTTP/2 401` (o 401 en HTTP/1.1), demostrando protección perimetral, **sin desactivar validación TLS**. En el navegador se solicitará usuario `vencira_dev` y contraseña perimetral; tras introducirla, aparecerá el login independiente de `vencira_demo`. Comprobar alta/edición y que no hay errores CSRF.
+
+**Importante:** autenticación Basic sobre HTTPS es adecuada como barrera provisional de desarrollo, pero no sustituye MFA, control de acceso completo ni seguridad de producción. Seguir exclusivamente con datos sintéticos. Si IONOS o proveedor bloquea 80/443, revisar políticas y `journalctl -u caddy` antes de cambiar código. Comprobar que ningún otro proceso escucha 80/443 (`sudo ss -ltnp`).
