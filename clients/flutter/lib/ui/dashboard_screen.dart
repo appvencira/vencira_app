@@ -197,7 +197,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(_t.saveError)),
+        SnackBar(content: Text(_t.saveError)),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -221,7 +221,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(_t.logoutError)),
+        SnackBar(content: Text(_t.logoutError)),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
