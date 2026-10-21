@@ -1,6 +1,6 @@
 # VENCIRA · VPS de desarrollo en IONOS
 
-Estado: **Docker y UFW operativos, GitHub confirma autenticación SSH en el VPS; pendiente distinguir clave de cuenta frente a Deploy Key, comprobar acceso al repositorio privado, clonar y desplegar**.
+Estado: **Docker/UFW operativos y lectura del repositorio GitHub confirmada; la clave actual pertenece a la cuenta appvencira, pendiente sustituirla por Deploy Key de solo lectura antes de clonar/desplegar**.
 Fuente de inventario: información del panel IONOS proporcionada por el titular (21/10/2026).
 Este documento describe el objetivo y los pasos previstos, no certifica su ejecución remota.
 
@@ -263,3 +263,27 @@ git ls-remote --heads git@github-vencira:appvencira/vencira_app.git chore/bootst
 ```
 
 Si la clave está asociada a una cuenta de GitHub, preferir Deploy Key **read-only**; revisar dónde se registró la pública y corregir la asociación, sin divulgar la privada. No clonar ni desplegar todavía hasta verificar `git ls-remote`.
+
+## Comprobación real de lectura y alcance de clave (21/10/2026)
+
+El usuario ejecutó en el VPS:
+
+```text
+ssh -T github-vencira
+Hi appvencira! You've successfully authenticated, but GitHub does not provide shell access.
+git ls-remote --heads git@github-vencira:appvencira/vencira_app.git chore/bootstrap-vencira
+b62390a71eeba4cd7674edc7c349f6d94b7f29fb refs/heads/chore/bootstrap-vencira
+ssh -T -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519_vencira_github git@github.com
+Hi appvencira! You've successfully authenticated, but GitHub does not provide shell access.
+```
+
+Conclusiones: SSH funciona, acceso a lectura del repo privado y referencia remota coinciden; **la clave obligada por -i autentica la cuenta appvencira**, no una Deploy Key de alcance mínimo. La documentación oficial GitHub indica que un saludo `Hi USERNAME!` significa clave vinculada a cuenta; `Hi USERNAME/REPO!` significa clave vinculada a repositorio (Deploy Key). Ver https://docs.github.com/en/authentication/troubleshooting-ssh/error-key-already-in-use
+
+**Corrección recomendada sin interrumpir acceso vigente:**
+1. Crear un par de claves adicional en VPS: `~/.ssh/id_ed25519_vencira_deploy_ro`.
+2. Pegar solamente la pública en `appvencira/vencira_app > Settings > Deploy keys`, SIN `Allow write access`.
+3. Usar alias independiente `github-vencira-ro` con `HostName github.com`, `User git`, `IdentityFile ~/.ssh/id_ed25519_vencira_deploy_ro` e `IdentitiesOnly yes`.
+4. Verificar `ssh -T github-vencira-ro` (saludo `Hi appvencira/vencira_app!`) y `git ls-remote --heads git@github-vencira-ro:appvencira/vencira_app.git chore/bootstrap-vencira`.
+5. **Solo después** clonar/operar usando alias `github-vencira-ro`; posteriormente revocar la clave de cuenta anterior en GitHub si no se utiliza para otros fines. No compartir la privada.
+
+No se ha instalado ni arrancado VENCIRA en el VPS todavía.
