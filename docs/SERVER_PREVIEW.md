@@ -119,3 +119,27 @@ Network del navegador únicamente los nombres de cookies presentes y el valor
 de Origin/Referer (sin publicar las cookies ni sus tokens). Si el fallo es
 `CSRF cookie not set`, revisar que no se bloquee `vencira_csrftoken`; si es
 `Origin checking failed`, revisar el host utilizado y el proxy.
+
+## Incidencia real del login local: `Origin: null`
+
+Diagnóstico confirmado en navegador: `VENCIRA_CSRF WARNING Forbidden (Origin checking failed - null ...)`.
+
+**Causa original:** `deploy/local-web/nginx.conf` emitía
+`Referrer-Policy: no-referrer` en la página de login. La política obliga a navegadores
+a enviar `Origin: null` para determinados POST de formularios HTML, que Django
+rechaza correctamente. **No era un fallo de contraseñas ni de la cookie CSRF**.
+
+**Corrección:** usar `Referrer-Policy: same-origin` en todos los bloques Nginx
+y ocultar el encabezado Referrer-Policy del upstream Django antes de enviar uno
+único desde el proxy. La política no revela datos de navegación a orígenes externos
+y permite el POST de login en el mismo origen.
+
+Aplicación rápida en servidor (sin destruir volumen ni reconstruir Flutter):
+```bash
+cd ~/vencira-preview
+git pull --ff-only origin chore/bootstrap-vencira
+docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml \
+  up -d --build --no-deps web_preview
+curl -fsSI 'http://127.0.0.1:18732/accounts/login/?next=/' | grep -i '^Referrer-Policy:'
+```
+Debe indicar `Referrer-Policy: same-origin`, nunca `no-referrer`. La imagen Docker incorpora la configuración al construir `web_preview`; por eso se necesita `--build`. No cambiar el Nginx global del sistema ni activar DEBUG.
