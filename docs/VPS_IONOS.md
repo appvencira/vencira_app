@@ -129,6 +129,20 @@ IONOS permite modificar reglas en Servidores & Cloud > Red > Políticas de firew
 - No activar todavía avisos externos, correo transaccional ni datos personales de clientes.
 - Antes de apertura pública: HTTPS, control de acceso adicional, MFA, límites por IP, backups externos, recuperación, revisión de RGPD, retención y seguridad.
 
+## Diagnóstico confirmado por consola (21/10/2026)
+
+Sesión real aportada por el usuario en la cuenta `vencira`:
+
+- `whoami`: `vencira`.
+- Docker Engine: **no instalado**; Docker Compose: **no instalado**.
+- UFW: **inactive**; por tanto falta activar firewall local.
+- Memoria: 7,7 GiB totales; 7,2 GiB disponibles; **sin swap**.
+- Disco: 232 GiB partición raíz `/dev/vda1`, 230 GiB libres.
+- Git: versión **2.43.0**.
+- `sudo` solicita la contraseña de `vencira`: acceso con sudo aparentemente operativo, pendiente confirmar una operación concreta.
+
+**Orden seguro:** revisar que funciona un nuevo acceso SSH desde Windows por clave; abrir primero TCP/22 en UFW, activarlo, comprobar un segundo SSH. Instalar luego Docker desde su repositorio apt oficial (Ubuntu noble) y verificar `sudo docker run --rm hello-world`. Aún no exponer servicios en Internet ni añadir el usuario al grupo Docker: ese grupo otorga privilegios equivalentes a root.
+
 ## Continuación de instalación (usuario confirma «done», 21/10/2026)
 
 El usuario confirma que ha completado la creación del usuario `vencira` y el acceso con clave SSH y `sudo`, sin proporcionar logs de validación. La protección de `root`/contraseñas, firewall y Docker aún **no** se han confirmado como ejecutados.
