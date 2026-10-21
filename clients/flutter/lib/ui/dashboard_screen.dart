@@ -230,6 +230,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         title: const Text('VENCIRA'),
@@ -316,11 +317,11 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
               child: ListView(
                 children: [
                   Text(
-                    'Anticipa cada vencimiento',
+                    l10n.headline,
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 8),
-                  const Text('Anticipamos vencimientos. Creamos oportunidades.'),
+                  Text(l10n.tagline),
                   const SizedBox(height: 26),
                   if (_saving) const LinearProgressIndicator(),
                   if (_loadingWorkspaces || _loadingRenewals)
@@ -372,7 +373,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Necesitas iniciar sesión para acceder a VENCIRA.'),
+            Text(AppLocalizations.of(context)!.loginRequired),
             const SizedBox(height: 12),
             if (kIsWeb)
               Link(
@@ -496,7 +497,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
               padding: const EdgeInsets.all(24),
               child: Text(_appliedSearch.isNotEmpty || _statusFilter.isNotEmpty
                   ? 'No hay vencimientos que coincidan con los filtros.'
-                  : 'Aún no hay vencimientos en esta página.'),
+                  : AppLocalizations.of(context)!.emptyPage),
             ),
           )
         else
