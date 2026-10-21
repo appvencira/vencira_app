@@ -74,7 +74,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
     }
     if (_notice != null && _notice!.isAfter(_expiration!)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(
+        SnackBar(content: Text(
           _t.invalidNotice,
         )),
       );
@@ -136,7 +136,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: _status,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: _t.status,
                     border: OutlineInputBorder(),
                   ),
@@ -157,7 +157,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
       actions: [
         TextButton(onPressed: () => Navigator.of(context).pop(),
           child: Text(_t.cancel)),
-        FilledButton(onPressed: _submit, child: const Text(_t.save)),
+        FilledButton(onPressed: _submit, child: Text(_t.save)),
       ],
     );
   }
