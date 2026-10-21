@@ -1,6 +1,6 @@
 # VENCIRA · VPS de desarrollo en IONOS
 
-Estado: **Preview Django/PostgreSQL/Flutter Web desplegada y healthy en IONOS, smoke HTTP no autenticado superado. Pendientes seed de datos de demostración, login manual y túnel SSH desde Windows; no apto para producción.**
+Estado: **Preview operativa en IONOS; usuario confirmó 'done' tras preparar usuario de demo y acceder a la web desde Windows mediante túnel SSH. Validación independiente de flujo de edición pendiente; todavía no apto para producción ni expuesto por Internet.**
 Fuente de inventario: información del panel IONOS proporcionada por el titular (21/10/2026).
 Este documento describe el objetivo y los pasos previstos, no certifica su ejecución remota.
 
@@ -335,3 +335,9 @@ ssh -i "$env:USERPROFILE\.ssh\id_ed25519_vencira_windows" -N -L 18732:127.0.0.1:
 ```
 
 Mantener abierta la ventana del túnel, navegar a `http://127.0.0.1:18732/` desde **Windows**; iniciar sesión con `vencira_demo`, comprobar seis vencimientos ficticios, buscar, filtrar, crear/editar y cerrar sesión. Si el puerto 18732 está ocupado en Windows, usar `-L 18733:127.0.0.1:18732` y navegar a `http://127.0.0.1:18733/`. La preview no está expuesta por HTTP público; no crear aún el DNS A a esta web sin HTTPS y protección perimetral.
+
+## Acceso de prueba desde Windows confirmado por usuario (21/10/2026)
+
+Tras completar el primer despliegue healthy de Django/PostgreSQL/Flutter y superar el smoke sin sesión, el usuario indicó **«done»** después de recibir las instrucciones para generar el usuario `vencira_demo` y establecer el túnel desde Windows a `127.0.0.1:18732`. Se registra como **confirmación del acceso inicial desde Windows**, no como ejecución independiente de los tests de edición/búsqueda ni de login E2E por el asistente. No se recibieron contraseñas.
+
+**Próxima etapa:** configurar `dev.vencira.es` con acceso perimetral restringido y TLS, **sin** abrir a Internet `18731`, `18732` ni `5432`, manteniendo `vencira.es` sin despliegue comercial. Primero verificar que el dominio está activo y ubicar su **zona DNS activa** (puede no ser OVH); crear **solo** el registro `A` de `dev` apuntando a `93.93.112.172`. No abrir puertos 80/443 ni publicar proxy inverso hasta tener HTTPS y control de acceso configurados, revisar además Django `ALLOWED_HOSTS`, origen CSRF y encabezados de proxy. Seguir con datos sintéticos y PR en borrador.
