@@ -1,6 +1,6 @@
 # VENCIRA · VPS de desarrollo en IONOS
 
-Estado: **SSH accesible, servidor Ubuntu verificado; pendientes usuario de administración, firewall y despliegue**.
+Estado: **Usuario administrador con SSH y sudo configurado (confirmación del usuario); pendientes verificación de acceso exclusivamente con clave, endurecimiento de SSH, firewall, Docker y despliegue**.
 Fuente de inventario: información del panel IONOS proporcionada por el titular (21/10/2026).
 Este documento describe el objetivo y los pasos previstos, no certifica su ejecución remota.
 
@@ -128,3 +128,45 @@ IONOS permite modificar reglas en Servidores & Cloud > Red > Políticas de firew
 - GitHub Actions CI de una revisión no equivale a prueba del navegador real.
 - No activar todavía avisos externos, correo transaccional ni datos personales de clientes.
 - Antes de apertura pública: HTTPS, control de acceso adicional, MFA, límites por IP, backups externos, recuperación, revisión de RGPD, retención y seguridad.
+
+## Continuación de instalación (usuario confirma «done», 21/10/2026)
+
+El usuario confirma que ha completado la creación del usuario `vencira` y el acceso con clave SSH y `sudo`, sin proporcionar logs de validación. La protección de `root`/contraseñas, firewall y Docker aún **no** se han confirmado como ejecutados.
+
+1. **Antes de restringir SSH:** abrir acceso desde el ordenador mediante
+   `ssh -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no -i ~/.ssh/id_ed25519_vencira_vps vencira@93.93.112.172`.
+2. Mantener abierta una sesión existente mientras se establece
+   `/etc/ssh/sshd_config.d/01-vencira.conf` con:
+   ```text
+   PubkeyAuthentication yes
+   PasswordAuthentication no
+   KbdInteractiveAuthentication no
+   PermitRootLogin no
+   PermitEmptyPasswords no
+   ```
+   Validar `sudo sshd -t`, aplicar `sudo systemctl reload ssh` y confirmar un segundo login independiente. `sshd -T` permite inspeccionar los valores efectivos. No dejar fuera al administrador.
+3. UFW: `sudo ufw default deny incoming`, `sudo ufw default allow outgoing`, `sudo ufw allow 22/tcp`, `sudo ufw --force enable`. Verificar `ufw status verbose`. Revisar por separado firewall IONOS sin cerrar SSH.
+4. Instalar Docker desde repositorio apt **oficial**, no script `get.docker.com`:
+   https://docs.docker.com/engine/install/ubuntu/
+   ```bash
+   sudo apt-get update
+   sudo apt-get install -y ca-certificates curl git
+   sudo install -m 0755 -d /etc/apt/keyrings
+   sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+   sudo chmod a+r /etc/apt/keyrings/docker.asc
+   sudo tee /etc/apt/sources.list.d/docker.sources >/dev/null <<EOF
+   Types: deb
+   URIs: https://download.docker.com/linux/ubuntu
+   Suites: noble
+   Components: stable
+   Architectures: amd64
+   Signed-By: /etc/apt/keyrings/docker.asc
+   EOF
+   sudo apt-get update
+   sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+   sudo systemctl enable --now docker
+   sudo docker run --rm hello-world
+   sudo docker compose version
+   ```
+5. No añadir `vencira` al grupo `docker` de forma automática: da privilegios equivalentes a root. Para la preview usar `sudo docker compose` o un mecanismo específico más adelante. **Nota**: el script `scripts/preview-up.sh` asume `docker compose` sin sudo; adaptar primero cómo ejecutar la preview y permisos de los archivos `.env` y volumen sin hacer `sudo bash scripts/preview-up.sh` a ciegas.
+6. El servicio seguirá en loopback y solo se accederá por túnel SSH. No permitir 18731, 18732 ni 5432 en IONOS o UFW.
