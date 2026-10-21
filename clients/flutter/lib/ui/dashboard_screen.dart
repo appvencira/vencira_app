@@ -18,6 +18,7 @@ class VenciraDashboardScreen extends StatefulWidget {
 
 class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
   late final VenciraApi _api;
+  AppLocalizations get _t => AppLocalizations.of(context)!;
   final TextEditingController _searchController = TextEditingController();
   String _appliedSearch = '';
   String _statusFilter = '';
@@ -184,7 +185,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         });
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vencimiento guardado correctamente.')),
+        SnackBar(content: Text(_t.saved)),
       );
       await _loadRenewals(1);
     } on VenciraUnauthorized {
@@ -196,7 +197,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo guardar. Revisa los datos e inténtalo otra vez.')),
+        const SnackBar(content: Text(_t.saveError)),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -220,7 +221,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo cerrar la sesión.')),
+        const SnackBar(content: Text(_t.logoutError)),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -297,10 +298,10 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
             TextButton.icon(
               onPressed: _saving ? null : _logout,
               icon: const Icon(Icons.logout),
-              label: const Text('Salir'),
+              label: Text(_t.logout),
             ),
           IconButton(
-            tooltip: 'Actualizar',
+            tooltip: _t.refresh,
             icon: const Icon(Icons.refresh),
             onPressed: _loadingWorkspaces || _loadingRenewals
                 ? null
@@ -338,13 +339,13 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                         padding: const EdgeInsets.all(20),
                         child: Column(
                           children: [
-                            const Text('No se han podido cargar los datos.'),
+                            Text(_t.loadError),
                             const SizedBox(height: 8),
                             TextButton(
                               onPressed: _selected == null
                                   ? () => _loadWorkspaces()
                                   : () => _loadRenewals(_page),
-                              child: const Text('Reintentar'),
+                              child: Text(_t.retry),
                             ),
                           ],
                         ),
@@ -381,7 +382,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                 target: LinkTarget.self,
                 builder: (context, followLink) => FilledButton(
                   onPressed: followLink,
-                  child: const Text('Iniciar sesión'),
+                  child: Text(_t.login),
                 ),
               )
             else
@@ -397,10 +398,10 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
   List<Widget> _workspaceContent(ColorScheme colors) {
     if (_workspaces.isEmpty) {
       return [
-        const Card(
+        Card(
           child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Text('Todavía no perteneces a ninguna organización.'),
+            padding: const EdgeInsets.all(24),
+            child: Text(_t.noWorkspace),
           ),
         ),
       ];
@@ -409,9 +410,9 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       DropdownButtonFormField<VenciraWorkspace>(
         key: ValueKey(_selected?.id),
         initialValue: _selected,
-        decoration: const InputDecoration(
-          border: OutlineInputBorder(),
-          labelText: 'Organización',
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          labelText: _t.workspace,
         ),
         items: _workspaces
             .map(
@@ -429,7 +430,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         child: FilledButton.icon(
           onPressed: _loadingRenewals || _saving ? null : () => _editRenewal(),
           icon: const Icon(Icons.add),
-          label: const Text('Añadir vencimiento'),
+          label: Text(_t.addRenewal),
         ),
       ),
       const SizedBox(height: 18),
@@ -445,11 +446,11 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
               maxLength: 80,
               enabled: !_loadingRenewals && !_saving,
               onSubmitted: (_) => _applySearch(),
-              decoration: const InputDecoration(
-                labelText: 'Buscar referencia',
-                hintText: 'Ej. DEMO-HOGAR',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: _t.searchReference,
+                hintText: _t.exampleReference,
+                prefixIcon: const Icon(Icons.search),
+                border: const OutlineInputBorder(),
                 counterText: '',
               ),
             ),
@@ -460,15 +461,15 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
               key: ValueKey('status:${_selected?.id}:$_statusFilter'),
               isExpanded: true,
               initialValue: _statusFilter,
-              decoration: const InputDecoration(
-                labelText: 'Estado',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: _t.status,
+                border: const OutlineInputBorder(),
               ),
-              items: const [
-                DropdownMenuItem(value: '', child: Text('Todos')),
-                DropdownMenuItem(value: 'pending', child: Text('Pendiente')),
-                DropdownMenuItem(value: 'contacted', child: Text('Contactado')),
-                DropdownMenuItem(value: 'closed', child: Text('Cerrado')),
+              items: [
+                DropdownMenuItem(value: '', child: Text(_t.all)),
+                DropdownMenuItem(value: 'pending', child: Text(_t.pending)),
+                DropdownMenuItem(value: 'contacted', child: Text(_t.contacted)),
+                DropdownMenuItem(value: 'closed', child: Text(_t.closed)),
               ],
               onChanged: _loadingRenewals || _saving ? null : _changeStatus,
             ),
@@ -476,11 +477,11 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
           FilledButton.tonalIcon(
             onPressed: _loadingRenewals || _saving ? null : _applySearch,
             icon: const Icon(Icons.search),
-            label: const Text('Buscar'),
+            label: Text(_t.search),
           ),
           TextButton(
             onPressed: _loadingRenewals || _saving ? null : _clearFilters,
-            child: const Text('Limpiar filtros'),
+            child: Text(_t.clearFilters),
           ),
         ],
       ),
@@ -508,7 +509,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
             OutlinedButton.icon(
               onPressed: _page > 1 ? () => _loadRenewals(_page - 1) : null,
               icon: const Icon(Icons.chevron_left),
-              label: const Text('Anterior'),
+              label: Text(_t.previous),
             ),
             const SizedBox(width: 14),
             Text('Página $_page'),
@@ -518,7 +519,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                   ? () => _loadRenewals(_page + 1)
                   : null,
               icon: const Icon(Icons.chevron_right),
-              label: const Text('Siguiente'),
+              label: Text(_t.next),
             ),
           ],
         ),
@@ -540,10 +541,10 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         ? null
         : _formatDate(item.noticeDeadlineOn!);
     final label = switch (item.status) {
-      'pending' => 'Pendiente',
-      'contacted' => 'Contactado',
-      'closed' => 'Cerrado',
-      _ => 'Sin clasificar',
+      'pending' => _t.pending,
+      'contacted' => _t.contacted,
+      'closed' => _t.closed,
+      _ => _t.unknown,
     };
     return Card(
       child: ListTile(
@@ -562,7 +563,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
           children: [
             Chip(label: Text(label)),
             IconButton(
-              tooltip: 'Editar vencimiento',
+              tooltip: _t.editRenewal,
               onPressed: _saving ? null : () => _editRenewal(item),
               icon: const Icon(Icons.edit_outlined),
             ),
