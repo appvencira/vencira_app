@@ -502,16 +502,17 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         else
           ..._renewals!.items.map((item) => _renewalTile(item, colors)),
         const SizedBox(height: 12),
-        Row(
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             OutlinedButton.icon(
               onPressed: _page > 1 ? () => _loadRenewals(_page - 1) : null,
               icon: const Icon(Icons.chevron_left),
               label: Text(_t.previous),
             ),
-            const SizedBox(width: 14),
             Text('${_t.page} $_page'),
-            const SizedBox(width: 14),
             OutlinedButton.icon(
               onPressed: _renewals!.hasNext
                   ? () => _loadRenewals(_page + 1)
