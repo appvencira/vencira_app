@@ -1,6 +1,6 @@
 # VENCIRA · VPS de desarrollo en IONOS
 
-Estado: **Docker/UFW operativos y lectura del repositorio GitHub confirmada; la clave actual pertenece a la cuenta appvencira, pendiente sustituirla por Deploy Key de solo lectura antes de clonar/desplegar**.
+Estado: **Docker y UFW operativos; Deploy Key SSH de repositorio verificada y repositorio privado clonado en /home/vencira/vencira-preview. Pendiente levantar los contenedores y comprobar la web.**
 Fuente de inventario: información del panel IONOS proporcionada por el titular (21/10/2026).
 Este documento describe el objetivo y los pasos previstos, no certifica su ejecución remota.
 
@@ -287,3 +287,14 @@ Conclusiones: SSH funciona, acceso a lectura del repo privado y referencia remot
 5. **Solo después** clonar/operar usando alias `github-vencira-ro`; posteriormente revocar la clave de cuenta anterior en GitHub si no se utiliza para otros fines. No compartir la privada.
 
 No se ha instalado ni arrancado VENCIRA en el VPS todavía.
+
+## Clonación real del repositorio verificada (21/10/2026)
+
+El VPS devolvió `Hi appvencira/vencira_app!` al conectarse por SSH a GitHub; saludo de **Deploy Key de repositorio**. `git ls-remote` con el alias `github-vencira-ro` devolvió:
+```text
+c327f99f924b2b50f38087c3c0eed642772254b0 refs/heads/chore/bootstrap-vencira
+```
+
+Clonado satisfactorio a `/home/vencira/vencira-preview`, 464 objetos recibidos y deltas resueltos. Sigue pendiente confirmar en la configuración GitHub que **Allow write access está desmarcado** (no se deduce del saludo).
+
+**Siguiente ejecución prevista** (no ejecutada por el asistente): desde `~/vencira-preview`, generar `.env` local en la cuenta `vencira` con `python3 scripts/init_env.py` (si aún no existe); comprobar `sudo docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml config --quiet`; levantar `sudo docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml up --build -d`; comprobar `ps`, `python3 scripts/smoke_same_origin.py`, `curl` en loopback; poblar solo datos ficticios con `sudo docker compose ... exec -T api python manage.py seed_preview` y proteger la contraseña impresa. Estos comandos usan `sudo` en Docker para no añadir la cuenta al grupo `docker` ni ejecutar ciegamente scripts enteros como root. Mantener puertos 18731/18732 vinculados solo a loopback; acceso desde Windows por túnel SSH.
