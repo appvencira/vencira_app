@@ -1,6 +1,6 @@
 # VENCIRA · VPS de desarrollo en IONOS
 
-Estado: **Docker y UFW operativos; Deploy Key SSH de repositorio verificada y repositorio privado clonado en /home/vencira/vencira-preview. Pendiente levantar los contenedores y comprobar la web.**
+Estado: **Preview Django/PostgreSQL/Flutter Web desplegada y healthy en IONOS, smoke HTTP no autenticado superado. Pendientes seed de datos de demostración, login manual y túnel SSH desde Windows; no apto para producción.**
 Fuente de inventario: información del panel IONOS proporcionada por el titular (21/10/2026).
 Este documento describe el objetivo y los pasos previstos, no certifica su ejecución remota.
 
@@ -298,3 +298,40 @@ c327f99f924b2b50f38087c3c0eed642772254b0 refs/heads/chore/bootstrap-vencira
 Clonado satisfactorio a `/home/vencira/vencira-preview`, 464 objetos recibidos y deltas resueltos. Sigue pendiente confirmar en la configuración GitHub que **Allow write access está desmarcado** (no se deduce del saludo).
 
 **Siguiente ejecución prevista** (no ejecutada por el asistente): desde `~/vencira-preview`, generar `.env` local en la cuenta `vencira` con `python3 scripts/init_env.py` (si aún no existe); comprobar `sudo docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml config --quiet`; levantar `sudo docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml up --build -d`; comprobar `ps`, `python3 scripts/smoke_same_origin.py`, `curl` en loopback; poblar solo datos ficticios con `sudo docker compose ... exec -T api python manage.py seed_preview` y proteger la contraseña impresa. Estos comandos usan `sudo` en Docker para no añadir la cuenta al grupo `docker` ni ejecutar ciegamente scripts enteros como root. Mantener puertos 18731/18732 vinculados solo a loopback; acceso desde Windows por túnel SSH.
+
+## Primer despliegue satisfactorio en VPS (21/10/2026)
+
+El usuario confirmó ejecución local en IONOS de revisión **`0c89a76`** (`fix(flutter): evitar overflow de dropdown de estado en pruebas y pantallas estrechas`) con:
+
+- `vencira_preview-api-1`: **healthy**, `127.0.0.1:18731 → 8000`.
+- `vencira_preview-db-1`: **healthy**, `5432/tcp` interno, sin puerto del host publicado.
+- `vencira_preview-web_preview-1`: **healthy**, `127.0.0.1:18732 → 8080`.
+- `python3 scripts/smoke_same_origin.py`: `OK: Flutter, proxy Django, login HTML y denegación anónima. Login E2E omitido.`
+- GitHub Actions **#61** en el mismo código (`0c89a76`): **success**: https://github.com/appvencira/vencira_app/actions/runs/39674572984.
+
+No interpretar "healthy" o smoke anónimo como login E2E satisfactorio. Se mantienen pendientes la creación/validación de demo, inspección visual real y autenticación desde Windows.
+
+### Próxima aceptación (solo datos sintéticos)
+
+Desde SSH del VPS, como `vencira`:
+
+```bash
+cd ~/vencira-preview
+sudo docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml exec -T api python manage.py seed_preview
+```
+
+Guardar contraseña en gestor privado, no publicarla; **cada ejecución de seed puede renovarla**.
+
+Desde **PowerShell Windows**, abrir una ventana dedicada:
+
+```powershell
+ssh -N -L 18732:127.0.0.1:18732 vencira@93.93.112.172
+```
+
+En caso de utilizar clave específica:
+
+```powershell
+ssh -i "$env:USERPROFILE\.ssh\id_ed25519_vencira_windows" -N -L 18732:127.0.0.1:18732 vencira@93.93.112.172
+```
+
+Mantener abierta la ventana del túnel, navegar a `http://127.0.0.1:18732/` desde **Windows**; iniciar sesión con `vencira_demo`, comprobar seis vencimientos ficticios, buscar, filtrar, crear/editar y cerrar sesión. Si el puerto 18732 está ocupado en Windows, usar `-L 18733:127.0.0.1:18732` y navegar a `http://127.0.0.1:18733/`. La preview no está expuesta por HTTP público; no crear aún el DNS A a esta web sin HTTPS y protección perimetral.
