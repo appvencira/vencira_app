@@ -1,6 +1,6 @@
 # VENCIRA · VPS de desarrollo en IONOS
 
-Estado: **VPS creado, pendiente de acceso SSH verificado y despliegue**.
+Estado: **SSH accesible, servidor Ubuntu verificado; pendientes usuario de administración, firewall y despliegue**.
 Fuente de inventario: información del panel IONOS proporcionada por el titular (21/10/2026).
 Este documento describe el objetivo y los pasos previstos, no certifica su ejecución remota.
 
@@ -32,6 +32,15 @@ Este documento describe el objetivo y los pasos previstos, no certifica su ejecu
 - API `127.0.0.1:18731`, web `127.0.0.1:18732`; PostgreSQL sin puerto expuesto.
 - Acceso remoto **primero por túnel SSH**, sin abrir 18731/18732 ni 5432 en el firewall.
 - Objetivo posterior `dev.vencira.es` **con HTTPS y autenticación perimetral**, previa comprobación del dominio y DNS. No publicar preview de Django en HTTP público.
+
+
+## Verificación real del VPS (21/10/2026, según salida proporcionada)
+
+- Ubuntu **24.04.5 LTS** (`noble`), arquitectura `x86_64`.
+- Servicio `ssh` **active**.
+- Firewall local `ufw`: **inactive**.
+- La salida no incluye todavía `whoami`, memoria/disco, versión de Docker ni reglas de firewall de IONOS; no asumir que están comprobados.
+- Próximo paso acordado: crear cuenta administrativa `vencira`, introducir clave SSH generada localmente, validar un segundo acceso y `sudo` antes de modificar restricciones de SSH. No activar `ufw` ni deshabilitar `root` a ciegas.
 
 ## Etapa 1: verificación SSH y host limpio
 
