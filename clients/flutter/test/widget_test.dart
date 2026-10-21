@@ -75,7 +75,9 @@ void main() {
     expect(Theme.of(tester.element(find.text('VENCIRA'))).brightness,
         Brightness.dark);
     tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
-    await tester.pump();
+    // Emular la notificación del sistema además del cambio de valor simulado.
+    tester.binding.handlePlatformBrightnessChanged();
+    await tester.pumpAndSettle();
     expect(Theme.of(tester.element(find.text('VENCIRA'))).brightness,
         Brightness.light);
   });
