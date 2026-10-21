@@ -510,7 +510,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
               label: Text(_t.previous),
             ),
             const SizedBox(width: 14),
-            Text('Página $_page'),
+            Text('${_t.page} $_page'),
             const SizedBox(width: 14),
             OutlinedButton.icon(
               onPressed: _renewals!.hasNext
@@ -552,8 +552,8 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Vence el $expiration'),
-            if (notice != null) Text('Límite de preaviso: $notice'),
+            Text('${_t.expiresOn} $expiration'),
+            if (notice != null) Text('${_t.noticeLabel}: $notice'),
           ],
         ),
         trailing: Row(
