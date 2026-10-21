@@ -134,7 +134,7 @@ y ocultar el encabezado Referrer-Policy del upstream Django antes de enviar uno
 único desde el proxy. La política no revela datos de navegación a orígenes externos
 y permite el POST de login en el mismo origen.
 
-Aplicación rápida en servidor (sin destruir volumen ni reconstruir Flutter):
+Aplicación rápida en servidor (sin borrar el volumen de PostgreSQL ni modificar la API):
 ```bash
 cd ~/vencira-preview
 git pull --ff-only origin chore/bootstrap-vencira
