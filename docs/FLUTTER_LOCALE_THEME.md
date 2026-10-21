@@ -80,3 +80,12 @@ Criterios de aceptación:
 - [Issue #3](https://github.com/appvencira/vencira_app/issues/3): diseño, temas y Flaticon.
 - [PR #4](https://github.com/appvencira/vencira_app/pull/4): implementación en revisión.
 - `docs/PRODUCT_DECISIONS.md`: acuerdos transversales y asuntos aún pendientes.
+
+## Verificación automática incorporada
+
+- Workflow GitHub Actions: `.github/workflows/flutter-i18n.yml`.
+- Disparo: PR hacia `chore/bootstrap-vencira` con cambios en Flutter o scripts de i18n; también `workflow_dispatch`.
+- Ejecuta: verificador de ARB → instalación Flutter estable → dependencias → generación l10n → análisis → pruebas → compilación web.
+- Primer run: [Flutter ES-CA validation #1](https://github.com/appvencira/vencira_app/actions/runs/39687941162). **La ejecución inicial fue iniciada, pero su resultado aún no estaba disponible al documentar esta revisión.**
+- La prueba de validación de estructura de catálogos terminó correctamente en el primer run; no confundir este paso con aprobar toda la compilación.
+- La revisión estática detectó 58 claves traducibles por idioma, sin nombres de claves divergentes ni referencias faltantes en dashboard y editor.
