@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../api/vencira_api.dart';
+import '../l10n/app_localizations.dart';
 
 /// Editor local: devuelve una solicitud validada, sin credenciales ni red.
 class VenciraRenewalEditor extends StatefulWidget {
@@ -14,6 +15,7 @@ class VenciraRenewalEditor extends StatefulWidget {
 
 class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
   final _formKey = GlobalKey<FormState>();
+  AppLocalizations get _t => AppLocalizations.of(context)!;
   late final TextEditingController _reference;
   DateTime? _expiration;
   DateTime? _notice;
@@ -35,7 +37,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
   }
 
   String _displayDate(DateTime? day) {
-    if (day == null) return 'No definida';
+    if (day == null) return _t.notDefined;
     final d = day.day.toString().padLeft(2, '0');
     final m = day.month.toString().padLeft(2, '0');
     return '$d/$m/${day.year}';
@@ -50,7 +52,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
       initialDate: initial,
-      helpText: notice ? 'Límite de preaviso contractual' : 'Fecha de vencimiento',
+      helpText: notice ? _t.noticeDate : _t.expiryDate,
     );
     if (!mounted || date == null) return;
     setState(() {
@@ -66,14 +68,14 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
     if (!_formKey.currentState!.validate()) return;
     if (_expiration == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Indica una fecha de vencimiento.')),
+        SnackBar(content: Text(_t.missingExpiry)),
       );
       return;
     }
     if (_notice != null && _notice!.isAfter(_expiration!)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text(
-          'El límite de preaviso no puede ser posterior al vencimiento.',
+          _t.invalidNotice,
         )),
       );
       return;
@@ -89,7 +91,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.existing == null ? 'Nuevo vencimiento' : 'Editar vencimiento'),
+      title: Text(widget.existing == null ? _t.newRenewal : _t.editRenewal),
       content: SizedBox(
         width: 430,
         child: Form(
@@ -99,49 +101,49 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Solo referencias ficticias durante la fase de pruebas.'),
+                Text(_t.demoOnly),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _reference,
                   maxLength: 160,
                   autofocus: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Referencia',
-                    helperText: 'No introduzcas nombres reales de clientes',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: _t.reference,
+                    helperText: _t.referenceHelper,
+                    border: const OutlineInputBorder(),
                   ),
                   validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'La referencia es obligatoria' : null,
+                      v == null || v.trim().isEmpty ? _t.referenceRequired : null,
                 ),
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
                   onPressed: () => _chooseDate(notice: false),
                   icon: const Icon(Icons.event),
-                  label: Text('Vencimiento: ${_displayDate(_expiration)}'),
+                  label: Text('${_t.expiryLabel}: ${_displayDate(_expiration)}'),
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: () => _chooseDate(notice: true),
                   icon: const Icon(Icons.event_note),
-                  label: Text('Límite de preaviso: ${_displayDate(_notice)}'),
+                  label: Text('${_t.noticeLabel}: ${_displayDate(_notice)}'),
                 ),
                 if (_notice != null)
                   TextButton.icon(
                     onPressed: () => setState(() => _notice = null),
                     icon: const Icon(Icons.clear),
-                    label: const Text('Quitar preaviso'),
+                    label: Text(_t.removeNotice),
                   ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: _status,
                   decoration: const InputDecoration(
-                    labelText: 'Estado',
+                    labelText: _t.status,
                     border: OutlineInputBorder(),
                   ),
-                  items: const [
-                    DropdownMenuItem(value: 'pending', child: Text('Pendiente')),
-                    DropdownMenuItem(value: 'contacted', child: Text('Contactado')),
-                    DropdownMenuItem(value: 'closed', child: Text('Cerrado')),
+                  items: [
+                    DropdownMenuItem(value: 'pending', child: Text(_t.pending)),
+                    DropdownMenuItem(value: 'contacted', child: Text(_t.contacted)),
+                    DropdownMenuItem(value: 'closed', child: Text(_t.closed)),
                   ],
                   onChanged: (v) {
                     if (v != null) setState(() => _status = v);
@@ -154,8 +156,8 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
       ),
       actions: [
         TextButton(onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar')),
-        FilledButton(onPressed: _submit, child: const Text('Guardar')),
+          child: Text(_t.cancel)),
+        FilledButton(onPressed: _submit, child: const Text(_t.save)),
       ],
     );
   }
