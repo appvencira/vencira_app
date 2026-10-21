@@ -55,5 +55,7 @@
   "missingExpiry": "Indica una data de venciment.",
   "invalidNotice": "El límit de preavís no pot ser posterior al venciment.",
   "expiryLabel": "Venciment",
-  "noticeLabel": "Límit de preavís"
+  "noticeLabel": "Límit de preavís",
+  "page": "Pàgina",
+  "expiresOn": "Venç el"
 }
