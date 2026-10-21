@@ -185,7 +185,7 @@ void main() {
       throwsA(isA<VenciraApiException>()),
     );
     await expectLater(
-      api.fetchRenewals(workspaceId, search: 'A' * 81),
+      api.fetchRenewals(workspaceId, search: List.filled(81, 'A').join()),
       throwsA(isA<VenciraApiException>()),
     );
     expect(calls, 0);
