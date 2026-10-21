@@ -104,3 +104,11 @@ Criterios de aceptación:
 La primera ejecución falló por una prueba de brillo que cambiaba el valor simulado pero no disparaba la notificación a widgets. Corregida en commit `da3afd6` usando `tester.binding.handlePlatformBrightnessChanged()`; las pruebas se han repetido con éxito.
 
 **Alcance:** CI acredita compilación, tests y análisis del cliente, no revisión visual real en navegador, autenticación móvil ni preparación para producción. Mantener PR #4 como borrador hasta inspección visual y aceptación de integración.
+
+## Refuerzo de integración y usabilidad — 22/10/2026
+
+- Se han añadido casos de prueba para recuperar las preferencias `ca/dark` y aplicar fallback `es/system` ante valores almacenados desconocidos (`test/widget_test.dart`).
+- La paginación en el panel usa `Wrap` para que los controles puedan saltar de línea en tamaños estrechos; no garantiza por sí solo ausencia de overflow en toda la pantalla.
+- Ejecución de CI posterior a estos cambios: [workflow #6](https://github.com/appvencira/vencira_app/actions/runs/39688991620). **No marcar completado hasta ver su resultado.**
+- Inspección visual real pendiente: 320/375/768/1440 px, zoom y escala de texto 200 %, ES y CA, Claro/Oscuro/Sistema, teclado, avisos y formulario de edición; verificar explícitamente que no aparecen datos de una organización distinta durante transiciones.
+- Servidor HTTPS privado y BD quedan intactos hasta cerrar PR #4 y aprobar despliegue.
