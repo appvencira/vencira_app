@@ -394,9 +394,10 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
             ),
           ),
           SizedBox(
-            width: 195,
+            width: 240,
             child: DropdownButtonFormField<String>(
               key: ValueKey('status:${_selected?.id}:$_statusFilter'),
+              isExpanded: true,
               initialValue: _statusFilter,
               decoration: const InputDecoration(
                 labelText: 'Estado',
