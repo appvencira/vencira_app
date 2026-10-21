@@ -26,6 +26,8 @@ class _VenciraAppState extends State<VenciraApp> {
 
   ThemeMode _themeMode = ThemeMode.system;
   Locale _locale = const Locale('es');
+  bool _themeChangedByUser = false;
+  bool _localeChangedByUser = false;
 
   @override
   void initState() {
@@ -40,12 +42,17 @@ class _VenciraAppState extends State<VenciraApp> {
       final savedTheme = prefs.getString(_themeKey);
       final savedLocale = prefs.getString(_localeKey);
       setState(() {
-        _themeMode = switch (savedTheme) {
-          'light' => ThemeMode.light,
-          'dark' => ThemeMode.dark,
-          _ => ThemeMode.system,
-        };
-        _locale = Locale(savedLocale == 'ca' ? 'ca' : 'es');
+        // No sobrescribir elecciones hechas mientras se leía el almacenamiento.
+        if (!_themeChangedByUser) {
+          _themeMode = switch (savedTheme) {
+            'light' => ThemeMode.light,
+            'dark' => ThemeMode.dark,
+            _ => ThemeMode.system,
+          };
+        }
+        if (!_localeChangedByUser) {
+          _locale = Locale(savedLocale == 'ca' ? 'ca' : 'es');
+        }
       });
     } catch (_) {
       // Preferencias opcionales: el fallo de almacenamiento no bloquea la app.
@@ -53,6 +60,7 @@ class _VenciraAppState extends State<VenciraApp> {
   }
 
   void _setThemeMode(ThemeMode value) {
+    _themeChangedByUser = true;
     setState(() => _themeMode = value);
     _saveTheme(value);
   }
@@ -68,6 +76,7 @@ class _VenciraAppState extends State<VenciraApp> {
 
   void _setLocale(Locale value) {
     if (value.languageCode != 'es' && value.languageCode != 'ca') return;
+    _localeChangedByUser = true;
     setState(() => _locale = value);
     _saveLocale(value);
   }
