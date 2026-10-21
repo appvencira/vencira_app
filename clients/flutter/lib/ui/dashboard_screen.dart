@@ -4,7 +4,7 @@ import 'package:url_launcher/link.dart';
 
 import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
-import '../main.dart';
+import 'vencira_preferences.dart';
 import 'renewal_editor.dart';
 
 class VenciraDashboardScreen extends StatefulWidget {
