@@ -430,9 +430,9 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         ),
         const SizedBox(height: 10),
         if (_renewals!.items.isEmpty)
-          const Card(
+          Card(
             child: Padding(
-              padding: EdgeInsets.all(24),
+              padding: const EdgeInsets.all(24),
               child: Text(_appliedSearch.isNotEmpty || _statusFilter.isNotEmpty
                   ? 'No hay vencimientos que coincidan con los filtros.'
                   : 'Aún no hay vencimientos en esta página.'),
