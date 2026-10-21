@@ -40,3 +40,12 @@ Documentación: `docs/API_MVP.md`, `docs/WEB_LOCAL.md` y `clients/flutter/README
 - **Próxima aceptación manual:** confirmar login, visualizar seis registros sintéticos, crear, editar, filtrar, cerrar sesión.
 - Se incorpora API y UI de búsqueda por referencia y filtro por estado, con aislamiento multi-organización y pruebas. Los filtros no modifican datos ni notifican.
 - La PR de trabajo sigue en borrador, sin fusionar con `main` ni despliegue público. Los datos de prueba no deben contener clientes reales.
+
+### Procedimiento de aceptación — filtros web
+
+1. Actualizar rama de preview con `git pull --ff-only origin chore/bootstrap-vencira` y reconstruir el contenedor web y API (ver `scripts/preview-up.sh`).
+2. Acceder como `vencira_demo` por `http://127.0.0.1:18732/`, solo con datos ficticios.
+3. Buscar una referencia parcial, cambiar estado, comprobar que limpiar filtros devuelve la lista completa y que paginación preserva filtros.
+4. Crear una referencia DEMO, editarla y cerrar sesión. Confirmar que no hay fuga entre organizaciones ni envíos de avisos.
+
+Nota: la primera prueba manual del navegador sigue siendo necesaria; CI no sustituye al uso real.
