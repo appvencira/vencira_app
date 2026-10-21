@@ -1,8 +1,8 @@
 # Estado del proyecto VENCIRA — actualizado 21/10/2026
 
-**Último hito:** VPS de desarrollo IONOS creado en España con Ubuntu 24.04, 4 vCore, 8 GB y 240 GB NVMe, IP 93.93.112.172. **Pendiente conexión SSH y despliegue en ese VPS; la preview local de Ubuntu sí funciona** según confirmó el usuario. Ver `docs/VPS_IONOS.md`. La indicación anterior de no contratar VPS ha quedado superada por este hito.
+**Último hito:** VPS IONOS España (Ubuntu 24.04, 4 vCore, 8 GB RAM, 240 GB NVMe, IP 93.93.112.172) con Django + PostgreSQL 17 + Flutter Web **desplegados y healthy** en puertos solo loopback. Usuario confirma acceso inicial desde Windows por túnel SSH; smoke sin sesión correcto, GitHub CI #61 verde sobre commit `0c89a76`. No hay despliegue público ni datos reales. Próxima etapa: DNS de `dev.vencira.es`, proxy HTTPS privado y protección perimetral. Ver `docs/VPS_IONOS.md`. La indicación antigua de no contratar VPS queda superada.
 
-Bootstrap de código y primeras integraciones, todavía en **PR borrador**, sin despliegue ni datos reales.
+Bootstrap de código y primeras integraciones, todavía en **PR borrador**, con **preview privada desplegada en VPS**, sin producción ni datos reales.
 
 - Nombre VENCIRA y repositorio privado exclusivo `appvencira/vencira_app` confirmados.
 - Dominio `vencira.es`: pedido OVHcloud del 20/10/2026 por 7,25 € con IVA; justificante en estado «Validando...», pendiente de activación final.
