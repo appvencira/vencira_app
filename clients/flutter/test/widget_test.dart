@@ -43,6 +43,8 @@ class FakeVenciraApi implements VenciraApi {
 }
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
   const workspaceA = VenciraWorkspace(
     id: '11111111-1111-4111-8111-111111111111',
     name: 'Correduría de prueba A',
