@@ -6,36 +6,9 @@ import 'api/vencira_api.dart';
 import 'l10n/app_localizations.dart';
 import 'ui/dashboard_screen.dart';
 import 'ui/vencira_theme.dart';
+import 'ui/vencira_preferences.dart';
 
 void main() => runApp(const VenciraApp());
-
-/// Preferencias de interfaz. No contienen datos de clientes ni credenciales.
-/// En una futura app con cuentas personales podrán sincronizarse con el backend.
-class VenciraPreferences extends InheritedWidget {
-  const VenciraPreferences({
-    super.key,
-    required super.child,
-    required this.themeMode,
-    required this.locale,
-    required this.setThemeMode,
-    required this.setLocale,
-  });
-
-  final ThemeMode themeMode;
-  final Locale locale;
-  final ValueChanged<ThemeMode> setThemeMode;
-  final ValueChanged<Locale> setLocale;
-
-  static VenciraPreferences of(BuildContext context) {
-    final value = context.dependOnInheritedWidgetOfExactType<VenciraPreferences>();
-    assert(value != null, 'VenciraPreferences is missing');
-    return value!;
-  }
-
-  @override
-  bool updateShouldNotify(VenciraPreferences oldWidget) =>
-      themeMode != oldWidget.themeMode || locale != oldWidget.locale;
-}
 
 class VenciraApp extends StatefulWidget {
   const VenciraApp({super.key, this.api});
