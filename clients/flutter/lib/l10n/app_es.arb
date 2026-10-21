@@ -55,5 +55,7 @@
   "missingExpiry": "Indica una fecha de vencimiento.",
   "invalidNotice": "El límite de preaviso no puede ser posterior al vencimiento.",
   "expiryLabel": "Vencimiento",
-  "noticeLabel": "Límite de preaviso"
+  "noticeLabel": "Límite de preaviso",
+  "page": "Página",
+  "expiresOn": "Vence el"
 }
