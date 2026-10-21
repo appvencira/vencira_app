@@ -98,6 +98,7 @@ void main() {
     await tester.pumpAndSettle();
     final appInCatalan = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(appInCatalan.locale?.languageCode, 'ca');
+    expect(find.text('Anticipa cada venciment'), findsOneWidget);
     await tester.tap(find.byTooltip('Preferències'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Fosc').last);
