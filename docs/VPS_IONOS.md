@@ -1,6 +1,6 @@
 # VENCIRA · VPS de desarrollo en IONOS
 
-Estado: **Usuario administrador con SSH y sudo configurado (confirmación del usuario); pendientes verificación de acceso exclusivamente con clave, endurecimiento de SSH, firewall, Docker y despliegue**.
+Estado: **Docker operativo y UFW activo (diagnóstico aportado por el usuario). Pendientes clave Deploy Key SSH GitHub, clonación, despliegue de preview y revisión final SSH/HTTPS**.
 Fuente de inventario: información del panel IONOS proporcionada por el titular (21/10/2026).
 Este documento describe el objetivo y los pasos previstos, no certifica su ejecución remota.
 
@@ -184,3 +184,69 @@ El usuario confirma que ha completado la creación del usuario `vencira` y el ac
    ```
 5. No añadir `vencira` al grupo `docker` de forma automática: da privilegios equivalentes a root. Para la preview usar `sudo docker compose` o un mecanismo específico más adelante. **Nota**: el script `scripts/preview-up.sh` asume `docker compose` sin sudo; adaptar primero cómo ejecutar la preview y permisos de los archivos `.env` y volumen sin hacer `sudo bash scripts/preview-up.sh` a ciegas.
 6. El servicio seguirá en loopback y solo se accederá por túnel SSH. No permitir 18731, 18732 ni 5432 en IONOS o UFW.
+
+## Diagnóstico posterior: Docker y UFW verificados (21/10/2026)
+
+Salida real aportada por el usuario, sin acceso autónomo del asistente al VPS:
+
+- Docker Engine: **29.9.2**, funcionando.
+- Docker Compose: **v5.6.1**, instalado.
+- `systemctl is-active docker`: **active**.
+- `sudo docker run --rm hello-world`: **ejecutado correctamente**, descarga y ejecución completadas.
+- UFW: **active**; política **deny incoming**, **allow outgoing** y **deny routed**. Puerto SSH **22/tcp** abierto desde Anywhere (IPv4 e IPv6).
+- El puerto 22 está abierto globalmente; limitarlo a la IP de gestión estable en IONOS y/o UFW cuando sea viable. No abrir 18731, 18732 ni 5432.
+- **No está confirmado** que se hayan deshabilitado las contraseñas o el acceso root por SSH; verificar antes de afirmar endurecimiento final.
+
+## Deploy Key de GitHub, solo lectura (pendiente de ejecución)
+
+Objetivo: permitir al VPS clonar **solo** el repositorio privado
+`appvencira/vencira_app` y la rama `chore/bootstrap-vencira`, sin capacidad de push.
+
+Ejecutar desde sesión SSH del VPS como `vencira`:
+
+```bash
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+ssh-keygen -t ed25519 -a 100 \
+  -f ~/.ssh/id_ed25519_vencira_github \
+  -C "vencira-ionos-deploy"
+chmod 600 ~/.ssh/id_ed25519_vencira_github
+cat ~/.ssh/id_ed25519_vencira_github.pub
+```
+
+Si ya existiera el archivo, **no sobrescribirlo**. Considerar passphrase y agente SSH si las descargas son interactivas, u otra estrategia segura para despliegues automatizados. **Nunca compartir ni subir la clave privada**.
+
+Registrar exclusivamente la clave pública en
+https://github.com/appvencira/vencira_app/settings/keys
+
+- Settings → Deploy keys → Add deploy key.
+- Título `VENCIRA - IONOS VPS - Read Only`.
+- Pegar clave pública de `.pub`.
+- **No activar Allow write access**.
+
+En el VPS, crear/editar `~/.ssh/config` y agregar:
+```sshconfig
+Host github-vencira
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519_vencira_github
+  IdentitiesOnly yes
+```
+
+```bash
+chmod 600 ~/.ssh/config
+ssh -T github-vencira
+git ls-remote --heads git@github-vencira:appvencira/vencira_app.git chore/bootstrap-vencira
+```
+
+La primera conexión a GitHub debe validar la huella de host oficial
+Ed25519 `SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU`
+en https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints.
+El aviso de GitHub de que no ofrece shell y el código de retorno 1 tras
+`ssh -T` son normales si la autenticación ha tenido éxito.
+
+**No proceder aún a clonar/arrancar la preview** hasta que `git ls-remote` confirme el acceso. Tras ello, seguir el procedimiento de `docs/SERVER_PREVIEW.md`,
+adaptado a `git@github-vencira` y a permisos de Docker, puesto que el usuario
+`vencira` no forma parte del grupo `docker`. No dar permisos de root
+indiscriminadamente ni utilizar datos reales.
+
