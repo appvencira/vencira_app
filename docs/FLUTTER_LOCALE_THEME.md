@@ -89,3 +89,18 @@ Criterios de aceptación:
 - Primer run: [Flutter ES-CA validation #1](https://github.com/appvencira/vencira_app/actions/runs/39687941162). **La ejecución inicial fue iniciada, pero su resultado aún no estaba disponible al documentar esta revisión.**
 - La prueba de validación de estructura de catálogos terminó correctamente en el primer run; no confundir este paso con aprobar toda la compilación.
 - La revisión estática detectó 58 claves traducibles por idioma, sin nombres de claves divergentes ni referencias faltantes en dashboard y editor.
+
+## Validación ejecutada — 22/10/2026
+
+**GitHub Actions [Flutter ES-CA validation #3](https://github.com/appvencira/vencira_app/actions/runs/39688278246)** sobre commit `da3afd6788ad1ccfa2ef61d587f393c21d54772e`.
+
+- Catálogos ARB ES/CA: **superado**.
+- Instalación Flutter y dependencias: **superada**.
+- `flutter gen-l10n`: **superado**.
+- `flutter analyze`: **superado**.
+- `flutter test`: **superado**.
+- `flutter build web --release --pwa-strategy=none`: **superado**.
+
+La primera ejecución falló por una prueba de brillo que cambiaba el valor simulado pero no disparaba la notificación a widgets. Corregida en commit `da3afd6` usando `tester.binding.handlePlatformBrightnessChanged()`; las pruebas se han repetido con éxito.
+
+**Alcance:** CI acredita compilación, tests y análisis del cliente, no revisión visual real en navegador, autenticación móvil ni preparación para producción. Mantener PR #4 como borrador hasta inspección visual y aceptación de integración.
