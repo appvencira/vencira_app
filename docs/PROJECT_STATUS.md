@@ -1,4 +1,6 @@
-# Estado del proyecto VENCIRA — 20/10/2026
+# Estado del proyecto VENCIRA — actualizado 21/10/2026
+
+**Último hito:** VPS de desarrollo IONOS creado en España con Ubuntu 24.04, 4 vCore, 8 GB y 240 GB NVMe, IP 93.93.112.172. **Pendiente conexión SSH y despliegue en ese VPS; la preview local de Ubuntu sí funciona** según confirmó el usuario. Ver `docs/VPS_IONOS.md`. La indicación anterior de no contratar VPS ha quedado superada por este hito.
 
 Bootstrap de código y primeras integraciones, todavía en **PR borrador**, sin despliegue ni datos reales.
 
