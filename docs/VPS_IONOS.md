@@ -1,6 +1,6 @@
 # VENCIRA · VPS de desarrollo en IONOS
 
-Estado: **Docker operativo y UFW activo (diagnóstico aportado por el usuario). Pendientes clave Deploy Key SSH GitHub, clonación, despliegue de preview y revisión final SSH/HTTPS**.
+Estado: **Docker y UFW operativos, GitHub confirma autenticación SSH en el VPS; pendiente distinguir clave de cuenta frente a Deploy Key, comprobar acceso al repositorio privado, clonar y desplegar**.
 Fuente de inventario: información del panel IONOS proporcionada por el titular (21/10/2026).
 Este documento describe el objetivo y los pasos previstos, no certifica su ejecución remota.
 
@@ -250,3 +250,16 @@ adaptado a `git@github-vencira` y a permisos de Docker, puesto que el usuario
 `vencira` no forma parte del grupo `docker`. No dar permisos de root
 indiscriminadamente ni utilizar datos reales.
 
+
+## GitHub SSH: autenticación confirmada, alcance de clave por verificar (21/10/2026)
+
+El VPS responde al comando de autenticación SSH con `Hi appvencira! You've successfully authenticated, but GitHub does not provide shell access.` No es un fallo: GitHub no proporciona shell. **Sin embargo**, un saludo del tipo `Hi appvencira!` corresponde habitualmente a una clave asociada a **cuenta de usuario**, mientras que para la Deploy Key del repositorio se espera `Hi appvencira/vencira_app!`. Referencia: https://docs.github.com/en/authentication/troubleshooting-ssh/error-key-already-in-use
+
+No afirmar aún que hay permisos mínimos ni acceso al repositorio. Próximas verificaciones desde el VPS:
+
+```bash
+ssh -T -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519_vencira_github git@github.com
+git ls-remote --heads git@github-vencira:appvencira/vencira_app.git chore/bootstrap-vencira
+```
+
+Si la clave está asociada a una cuenta de GitHub, preferir Deploy Key **read-only**; revisar dónde se registró la pública y corregir la asociación, sin divulgar la privada. No clonar ni desplegar todavía hasta verificar `git ls-remote`.
