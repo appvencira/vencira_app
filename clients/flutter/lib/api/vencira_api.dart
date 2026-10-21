@@ -7,7 +7,8 @@ import 'package:http/http.dart' as http;
 abstract class VenciraApi {
   Future<List<VenciraWorkspace>> fetchWorkspaces();
 
-  Future<VenciraRenewalPage> fetchRenewals(String workspaceId, {int page = 1});
+  Future<VenciraRenewalPage> fetchRenewals(
+    String workspaceId, {int page = 1, String search = '', String status = ''});
 
   Future<VenciraRenewal> createRenewal(String workspaceId, VenciraRenewalInput input);
 
@@ -177,17 +178,31 @@ class HttpVenciraApi implements VenciraApi {
   Future<VenciraRenewalPage> fetchRenewals(
     String workspaceId, {
     int page = 1,
+    String search = '',
+    String status = '',
   }) async {
     // UUID estrictos; no admitimos paths arbitrarios ni traversal.
     final uuid = RegExp(
       r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
       r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
     );
-    if (!uuid.hasMatch(workspaceId) || page < 1) {
+    final cleanedSearch = search.trim();
+    if (!uuid.hasMatch(workspaceId) ||
+        page < 1 ||
+        cleanedSearch.length > 80 ||
+        (status.isNotEmpty && !const ['pending', 'contacted', 'closed'].contains(status))) {
       throw const VenciraApiException();
     }
     try {
-      final path = '/api/v1/workspaces/$workspaceId/renewals/?page=$page';
+      final params = <String, String>{
+        'page': '$page',
+        if (cleanedSearch.isNotEmpty) 'q': cleanedSearch,
+        if (status.isNotEmpty) 'status': status,
+      };
+      final path = Uri(
+        path: '/api/v1/workspaces/$workspaceId/renewals/',
+        queryParameters: params,
+      ).toString();
       final payload = await _fetch(path) as Map<String, dynamic>;
       return VenciraRenewalPage.fromJson(payload);
     } on VenciraUnauthorized {

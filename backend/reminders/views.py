@@ -41,9 +41,21 @@ def workspaces(request):
 def renewals(request, workspace_id):
     membership = _membership(request, workspace_id)
     if request.method == "GET":
-        scoped = Renewal.objects.filter(
-            workspace_id=membership.workspace_id
-        ).order_by("expires_on", "id")
+        # Los filtros se aplican DENTRO del workspace autorizado, antes de paginar.
+        search = request.query_params.get("q", "").strip()
+        status_filter = request.query_params.get("status", "").strip()
+        if len(search) > 80:
+            return Response({"q": "La búsqueda no puede superar 80 caracteres."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if status_filter and status_filter not in Renewal.Status.values:
+            return Response({"status": "Estado de vencimiento no válido."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        scoped = Renewal.objects.filter(workspace_id=membership.workspace_id)
+        if search:
+            scoped = scoped.filter(customer_reference__icontains=search)
+        if status_filter:
+            scoped = scoped.filter(status=status_filter)
+        scoped = scoped.order_by("expires_on", "id")
         paginator = RenewalPagination()
         page = paginator.paginate_queryset(scoped, request)
         return paginator.get_paginated_response(RenewalSerializer(page, many=True).data)

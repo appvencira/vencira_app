@@ -43,3 +43,14 @@ No hay DELETE ni API de administración de usuarios, membresías o espacios de t
 **Limitaciones conocidas:** hay auditoría transaccional de cambios vía API, pero no es inmutable ni cubre modificaciones fuera de la API. Faltan políticas de borrado/retención, limitación integral de peticiones, MFA, gestión avanzada de sesiones y controles granulares de permisos. No cargar datos personales ni habilitar el tráfico público.
 
 La interfaz Flutter Web implementa la creación, actualización y cierre de sesión. No expone un endpoint de borrado. La API de negocio continúa restringida a usuarios con membresía.
+
+## Búsqueda y filtros de la lista
+
+`GET /api/v1/workspaces/{uuid}/renewals/?page=1&q=DEMO&status=pending`
+
+- `q`: coincidencia parcial sin distinguir mayúsculas en la referencia, máximo 80 caracteres (se eliminan espacios al inicio y final).
+- `status`: opcional, uno de `pending`, `contacted` o `closed`.
+- Si `q` está vacío o `status` no se indica, no se aplica dicho filtro; filtros inválidos responden 400.
+- La comprobación de membresía y el aislamiento por workspace se realizan **antes** de aplicar filtros y paginación.
+- La paginación refleja el número de resultados filtrados, no los de otras organizaciones.
+- En Flutter Web, el usuario puede buscar y filtrar por estado; cambiar de organización limpia ambos filtros. Al crear un registro también se limpian para que no quede oculto.

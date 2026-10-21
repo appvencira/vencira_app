@@ -32,3 +32,11 @@ Documentación: `docs/API_MVP.md`, `docs/WEB_LOCAL.md` y `clients/flutter/README
 - Guía y scripts en `docs/SERVER_PREVIEW.md`, `scripts/preview-up.sh`, `scripts/preview-seed.sh` y `scripts/preview-down.sh`.
 - CI integra construcción del Docker de preview y smoke de login, alta, edición y logout sobre los servicios reales. Ver último workflow de la PR antes de utilizar.
 - **No desplegado en el servidor del usuario** por falta de acceso SSH desde las herramientas disponibles. No se ha contratado VPS ni cambiado DNS.
+
+## Primera prueba real en Ubuntu — 21/10/2026 (información del usuario)
+
+- El usuario confirma clonado y arranque de la preview en su servidor Ubuntu, último commit y acceso desde navegador. No existe acceso SSH remoto desde el conector de GitHub, por tanto no se atribuyen verificaciones de navegador no ejecutadas.
+- Se diagnosticó un error CSRF de login con `Origin: null` y se corrigió la política `Referrer-Policy` de Nginx para permitir formularios HTML del mismo origen sin desactivar CSRF. GitHub Actions #49 validó los servicios y la cabecera.
+- **Próxima aceptación manual:** confirmar login, visualizar seis registros sintéticos, crear, editar, filtrar, cerrar sesión.
+- Se incorpora API y UI de búsqueda por referencia y filtro por estado, con aislamiento multi-organización y pruebas. Los filtros no modifican datos ni notifican.
+- La PR de trabajo sigue en borrador, sin fusionar con `main` ni despliegue público. Los datos de prueba no deben contener clientes reales.

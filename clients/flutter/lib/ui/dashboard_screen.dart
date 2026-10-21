@@ -16,6 +16,9 @@ class VenciraDashboardScreen extends StatefulWidget {
 
 class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
   late final VenciraApi _api;
+  final TextEditingController _searchController = TextEditingController();
+  String _appliedSearch = '';
+  String _statusFilter = '';
   List<VenciraWorkspace> _workspaces = [];
   VenciraWorkspace? _selected;
   VenciraRenewalPage? _renewals;
@@ -37,6 +40,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
   @override
   void dispose() {
     _sequence++;
+    _searchController.dispose();
     if (_api is HttpVenciraApi && widget.api == null) {
       _api.close();
     }
@@ -86,6 +90,9 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       _selected = workspace;
       _renewals = null;
       _page = 1;
+      _searchController.clear();
+      _appliedSearch = '';
+      _statusFilter = '';
     });
     await _loadRenewals(1);
   }
@@ -103,7 +110,8 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     });
 
     try {
-      final result = await _api.fetchRenewals(selected.id, page: page);
+      final result = await _api.fetchRenewals(
+        selected.id, page: page, search: _appliedSearch, status: _statusFilter);
       if (!mounted || sequence != _sequence) return;
       setState(() {
         _renewals = result;
@@ -125,6 +133,30 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     }
   }
 
+  void _applySearch() {
+    if (_loadingRenewals || _saving) return;
+    final value = _searchController.text.trim();
+    if (value.length > 80) return;
+    setState(() => _appliedSearch = value);
+    _loadRenewals(1);
+  }
+
+  void _changeStatus(String? value) {
+    if (value == null || _loadingRenewals || _saving) return;
+    setState(() => _statusFilter = value);
+    _loadRenewals(1);
+  }
+
+  void _clearFilters() {
+    if (_loadingRenewals || _saving) return;
+    setState(() {
+      _searchController.clear();
+      _appliedSearch = '';
+      _statusFilter = '';
+    });
+    _loadRenewals(1);
+  }
+
   Future<void> _editRenewal([VenciraRenewal? current]) async {
     final selected = _selected;
     if (selected == null || _saving || _loadingRenewals) return;
@@ -141,6 +173,14 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         await _api.updateRenewal(selected.id, current.id, input);
       }
       if (!mounted || _selected?.id != selected.id) return;
+      if (current == null) {
+        // Tras una creación quitar filtros para que el nuevo registro no quede oculto.
+        setState(() {
+          _searchController.clear();
+          _appliedSearch = '';
+          _statusFilter = '';
+        });
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vencimiento guardado correctamente.')),
       );
@@ -332,6 +372,57 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         ),
       ),
       const SizedBox(height: 18),
+      Wrap(
+        spacing: 12,
+        runSpacing: 10,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          SizedBox(
+            width: 295,
+            child: TextField(
+              controller: _searchController,
+              maxLength: 80,
+              enabled: !_loadingRenewals && !_saving,
+              onSubmitted: (_) => _applySearch(),
+              decoration: const InputDecoration(
+                labelText: 'Buscar referencia',
+                hintText: 'Ej. DEMO-HOGAR',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+                counterText: '',
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 195,
+            child: DropdownButtonFormField<String>(
+              key: ValueKey('status:${_selected?.id}:$_statusFilter'),
+              initialValue: _statusFilter,
+              decoration: const InputDecoration(
+                labelText: 'Estado',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: '', child: Text('Todos')),
+                DropdownMenuItem(value: 'pending', child: Text('Pendiente')),
+                DropdownMenuItem(value: 'contacted', child: Text('Contactado')),
+                DropdownMenuItem(value: 'closed', child: Text('Cerrado')),
+              ],
+              onChanged: _loadingRenewals || _saving ? null : _changeStatus,
+            ),
+          ),
+          FilledButton.tonalIcon(
+            onPressed: _loadingRenewals || _saving ? null : _applySearch,
+            icon: const Icon(Icons.search),
+            label: const Text('Buscar'),
+          ),
+          TextButton(
+            onPressed: _loadingRenewals || _saving ? null : _clearFilters,
+            child: const Text('Limpiar filtros'),
+          ),
+        ],
+      ),
+      const SizedBox(height: 18),
       if (!_loadingRenewals && _renewals != null) ...[
         Text(
           'Vencimientos: $_totalLabel',
@@ -342,7 +433,9 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
           const Card(
             child: Padding(
               padding: EdgeInsets.all(24),
-              child: Text('Aún no hay vencimientos en esta página.'),
+              child: Text(_appliedSearch.isNotEmpty || _statusFilter.isNotEmpty
+                  ? 'No hay vencimientos que coincidan con los filtros.'
+                  : 'Aún no hay vencimientos en esta página.'),
             ),
           )
         else

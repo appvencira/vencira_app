@@ -157,4 +157,38 @@ void main() {
     final api = HttpVenciraApi(client: client, baseUri: Uri.parse('http://localhost:18731/'));
     await expectLater(api.fetchWorkspaces(), throwsA(isA<VenciraApiException>()));
   });
+  test('codifica búsqueda y estado como parámetros seguros', () async {
+    final client = MockClient((request) async {
+      expect(request.url.path, '/api/v1/workspaces/$workspaceId/renewals/');
+      expect(request.url.queryParameters['page'], '1');
+      expect(request.url.queryParameters['q'], 'CASA Nº 1');
+      expect(request.url.queryParameters['status'], 'contacted');
+      return http.Response('{"count":0,"next":null,"results":[]}', 200);
+    });
+    final api = HttpVenciraApi(
+      client: client, baseUri: Uri.parse('http://localhost:18731/'));
+    final result = await api.fetchRenewals(
+      workspaceId, search: ' CASA Nº 1 ', status: 'contacted');
+    expect(result.total, 0);
+  });
+
+  test('rechaza filtros no válidos antes de consultar', () async {
+    var calls = 0;
+    final client = MockClient((request) async {
+      calls++;
+      return http.Response('{}', 200);
+    });
+    final api = HttpVenciraApi(
+      client: client, baseUri: Uri.parse('http://localhost:18731/'));
+    await expectLater(
+      api.fetchRenewals(workspaceId, status: 'otro'),
+      throwsA(isA<VenciraApiException>()),
+    );
+    await expectLater(
+      api.fetchRenewals(workspaceId, search: 'A' * 81),
+      throwsA(isA<VenciraApiException>()),
+    );
+    expect(calls, 0);
+  });
+
 }

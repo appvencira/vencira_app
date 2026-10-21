@@ -9,6 +9,8 @@ class FakeVenciraApi implements VenciraApi {
   final List<VenciraWorkspace> workspaces;
   final Map<String, VenciraRenewalPage> pages;
   final bool auth;
+  String lastSearch = '';
+  String lastStatus = '';
 
   @override
   Future<List<VenciraWorkspace>> fetchWorkspaces() async {
@@ -17,7 +19,10 @@ class FakeVenciraApi implements VenciraApi {
   }
 
   @override
-  Future<VenciraRenewalPage> fetchRenewals(String workspaceId, {int page = 1}) async {
+  Future<VenciraRenewalPage> fetchRenewals(
+      String workspaceId, {int page = 1, String search = '', String status = ''}) async {
+    lastSearch = search;
+    lastStatus = status;
     return pages[workspaceId]!;
   }
 
@@ -47,6 +52,29 @@ void main() {
     name: 'Correduría de prueba B',
     role: 'member',
   );
+
+  testWidgets('envía filtros al backend y puede limpiarlos', (tester) async {
+    final api = FakeVenciraApi(
+      workspaces: [workspaceA],
+      pages: {workspaceA.id: const VenciraRenewalPage(
+          total: 0, items: [], hasNext: false)},
+    );
+    await tester.pumpWidget(VenciraApp(api: api));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'CASA DEMO');
+    await tester.tap(find.text('Buscar'));
+    await tester.pumpAndSettle();
+    expect(api.lastSearch, 'CASA DEMO');
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Contactado').last);
+    await tester.pumpAndSettle();
+    expect(api.lastStatus, 'contacted');
+    await tester.tap(find.text('Limpiar filtros'));
+    await tester.pumpAndSettle();
+    expect(api.lastSearch, '');
+    expect(api.lastStatus, '');
+  });
 
   testWidgets('permite abrir y cancelar el editor sin modificar datos', (tester) async {
     await tester.pumpWidget(VenciraApp(

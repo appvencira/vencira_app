@@ -234,3 +234,39 @@ class ScopedRenewalApiTests(APITestCase):
         self.assertIn("Origin checking failed", message)
         self.assertNotIn("valor-solo-test", message)
         self.assertNotIn(client.cookies[settings.CSRF_COOKIE_NAME].value, message)
+
+    def test_list_filters_by_reference_and_status_inside_workspace(self):
+        self.client.force_authenticate(user=self.owner_a)
+        Renewal.objects.create(
+            workspace=self.workspace_a, customer_reference="DEMO-CASA-001",
+            expires_on=date(2027, 6, 1), status=Renewal.Status.CONTACTED,
+        )
+        Renewal.objects.create(
+            workspace=self.workspace_a, customer_reference="DEMO-CASA-002",
+            expires_on=date(2027, 8, 1), status=Renewal.Status.PENDING,
+        )
+        Renewal.objects.create(
+            workspace=self.workspace_b, customer_reference="DEMO-CASA-SECRETA",
+            expires_on=date(2027, 7, 1), status=Renewal.Status.CONTACTED,
+        )
+        url = self.list_url(self.workspace_a)
+        response = self.client.get(url, {"q": " casa ", "status": "contacted"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["customer_reference"], "DEMO-CASA-001")
+        pending = self.client.get(url, {"status": "pending"})
+        self.assertEqual(pending.status_code, 200)
+        self.assertEqual(pending.data["count"], 2)
+        matching = self.client.get(url, {"q": "deMo-caSa", "page_size": 1})
+        self.assertEqual(matching.data["count"], 2)
+        self.assertEqual(len(matching.data["results"]), 1)
+        self.assertIsNotNone(matching.data["next"])
+        empty = self.client.get(url, {"q": "SECRETA"})
+        self.assertEqual(empty.data["count"], 0)
+
+    def test_list_filters_reject_invalid_values(self):
+        self.client.force_authenticate(user=self.owner_a)
+        url = self.list_url(self.workspace_a)
+        self.assertEqual(self.client.get(url, {"status": "admin"}).status_code, 400)
+        self.assertEqual(self.client.get(url, {"q": "A" * 81}).status_code, 400)
+        self.assertEqual(self.client.get(url, {"q": "   "}).data["count"], 1)
