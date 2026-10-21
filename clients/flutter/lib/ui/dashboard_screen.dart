@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/link.dart';
 
 import '../api/vencira_api.dart';
+import '../l10n/app_localizations.dart';
+import '../main.dart';
 import 'renewal_editor.dart';
 
 class VenciraDashboardScreen extends StatefulWidget {
@@ -232,6 +234,64 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       appBar: AppBar(
         title: const Text('VENCIRA'),
         actions: [
+          PopupMenuButton<String>(
+            tooltip: AppLocalizations.of(context)!.settings,
+            icon: const Icon(Icons.tune),
+            onSelected: (value) {
+              final preferences = VenciraPreferences.of(context);
+              switch (value) {
+                case 'es':
+                case 'ca':
+                  preferences.setLocale(Locale(value));
+                case 'system':
+                  preferences.setThemeMode(ThemeMode.system);
+                case 'light':
+                  preferences.setThemeMode(ThemeMode.light);
+                case 'dark':
+                  preferences.setThemeMode(ThemeMode.dark);
+              }
+            },
+            itemBuilder: (context) {
+              final l10n = AppLocalizations.of(context)!;
+              final settings = VenciraPreferences.of(context);
+              return [
+                PopupMenuItem<String>(
+                  enabled: false,
+                  child: Text(l10n.language),
+                ),
+                CheckedPopupMenuItem<String>(
+                  value: 'es',
+                  checked: settings.locale.languageCode == 'es',
+                  child: Text(l10n.spanish),
+                ),
+                CheckedPopupMenuItem<String>(
+                  value: 'ca',
+                  checked: settings.locale.languageCode == 'ca',
+                  child: Text(l10n.catalan),
+                ),
+                const PopupMenuDivider(),
+                PopupMenuItem<String>(
+                  enabled: false,
+                  child: Text(l10n.appearance),
+                ),
+                CheckedPopupMenuItem<String>(
+                  value: 'system',
+                  checked: settings.themeMode == ThemeMode.system,
+                  child: Text(l10n.system),
+                ),
+                CheckedPopupMenuItem<String>(
+                  value: 'light',
+                  checked: settings.themeMode == ThemeMode.light,
+                  child: Text(l10n.light),
+                ),
+                CheckedPopupMenuItem<String>(
+                  value: 'dark',
+                  checked: settings.themeMode == ThemeMode.dark,
+                  child: Text(l10n.dark),
+                ),
+              ];
+            },
+          ),
           if (_selected != null)
             TextButton.icon(
               onPressed: _saving ? null : _logout,
