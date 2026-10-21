@@ -13,5 +13,9 @@
   "cancel": "Cancelar",
   "renewals": "Vencimientos",
   "refresh": "Actualizar",
-  "logout": "Salir"
+  "logout": "Salir",
+  "headline": "Anticipa cada vencimiento",
+  "tagline": "Anticipamos vencimientos. Creamos oportunidades.",
+  "loginRequired": "Necesitas iniciar sesión para acceder a VENCIRA.",
+  "emptyPage": "Aún no hay vencimientos en esta página."
 }
