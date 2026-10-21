@@ -13,5 +13,9 @@
   "cancel": "Cancel·lar",
   "renewals": "Venciments",
   "refresh": "Actualitzar",
-  "logout": "Sortir"
+  "logout": "Sortir",
+  "headline": "Anticipa cada venciment",
+  "tagline": "Anticipem venciments. Creem oportunitats.",
+  "loginRequired": "Cal iniciar sessió per accedir a VENCIRA.",
+  "emptyPage": "Encara no hi ha venciments en aquesta pàgina."
 }
