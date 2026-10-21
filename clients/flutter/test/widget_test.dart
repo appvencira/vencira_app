@@ -112,6 +112,47 @@ void main() {
     expect(saved.getString('vencira.ui.theme.v1'), 'dark');
   });
 
+  testWidgets('restaura idioma y apariencia guardados al arrancar', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'vencira.ui.locale.v1': 'ca',
+      'vencira.ui.theme.v1': 'dark',
+    });
+    final api = FakeVenciraApi(
+      workspaces: [workspaceA],
+      pages: {
+        workspaceA.id: const VenciraRenewalPage(
+          total: 0, items: [], hasNext: false,
+        ),
+      },
+    );
+    await tester.pumpWidget(VenciraApp(api: api));
+    await tester.pumpAndSettle();
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.locale?.languageCode, 'ca');
+    expect(app.themeMode, ThemeMode.dark);
+    expect(find.text('Anticipa cada venciment'), findsOneWidget);
+  });
+
+  testWidgets('valores guardados desconocidos usan opciones seguras', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'vencira.ui.locale.v1': 'zz',
+      'vencira.ui.theme.v1': 'not-a-theme',
+    });
+    final api = FakeVenciraApi(
+      workspaces: [workspaceA],
+      pages: {
+        workspaceA.id: const VenciraRenewalPage(
+          total: 0, items: [], hasNext: false,
+        ),
+      },
+    );
+    await tester.pumpWidget(VenciraApp(api: api));
+    await tester.pumpAndSettle();
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.locale?.languageCode, 'es');
+    expect(app.themeMode, ThemeMode.system);
+  });
+
   testWidgets('envía filtros al backend y puede limpiarlos', (tester) async {
     final api = FakeVenciraApi(
       workspaces: [workspaceA],
