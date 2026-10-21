@@ -94,3 +94,7 @@ Para volver a un commit anterior de la **rama de pruebas**: conservar el hash bu
 ## Para pasar de preview a producción
 
 Por separado: VPS/entorno propio si procede, TLS, protección de acceso, MFA, gestión real de usuarios, supresión/retención RGPD, motor de entregas, copias externas y recuperación probada. No reutilizar credenciales, claves ni base de datos de esta preview.
+
+## Cookies compartidas con otros servicios localhost
+
+La preview usa cookies exclusivas `vencira_sessionid` y `vencira_csrftoken`: los navegadores aíslan las cookies por host, **no por puerto**, y otras apps Django en `127.0.0.1` pueden utilizar `sessionid`/`csrftoken`. No desactivar CSRF ni configurar cookies como `Secure` en HTTP local. Si un navegador conserva cookies previas, abrir una pestaña privada y volver a iniciar sesión. La sustitución de los nombres de cookies invalida la sesión anterior de VENCIRA, pero **no** las sesiones de otras aplicaciones.

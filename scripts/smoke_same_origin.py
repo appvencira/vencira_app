@@ -60,7 +60,7 @@ if bool(username) != bool(password):
     raise SystemExit("Especifica ambas credenciales E2E o ninguna")
 
 if username:
-    csrf = next((cookie.value for cookie in jar if cookie.name == "csrftoken"), None)
+    csrf = next((cookie.value for cookie in jar if cookie.name == "vencira_csrftoken"), None)
     assert csrf, "No se recibió cookie CSRF"
     payload = urllib.parse.urlencode({
         "username": username,
@@ -72,7 +72,7 @@ if username:
                                headers={"Content-Type": "application/x-www-form-urlencoded"})
     assert status == 200 and "flutter_bootstrap.js" in after_login, "Inicio de sesión fallido"
     # Django rota el secreto CSRF al iniciar sesión; usar el valor nuevo.
-    csrf = next((cookie.value for cookie in jar if cookie.name == "csrftoken"), None)
+    csrf = next((cookie.value for cookie in jar if cookie.name == "vencira_csrftoken"), None)
     assert csrf, "Falta cookie CSRF después del inicio de sesión"
     status, workspaces_raw = read(client, "/api/v1/workspaces/")
     assert status == 200, "No se obtuvo la lista privada de organizaciones"

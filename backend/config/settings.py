@@ -79,6 +79,10 @@ USE_I18N = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+# Nombres exclusivos: otras apps Django del mismo 127.0.0.1 pueden usar
+# cookies "csrftoken" y "sessionid"; las cookies no se aíslan por puerto.
+SESSION_COOKIE_NAME = "vencira_sessionid"
+CSRF_COOKIE_NAME = "vencira_csrftoken"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"

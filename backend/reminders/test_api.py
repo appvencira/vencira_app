@@ -1,6 +1,7 @@
 """Pruebas de autorización, aislamiento, validación y CSRF."""
 from datetime import date
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import Client
 from django.urls import reverse
@@ -147,7 +148,7 @@ class ScopedRenewalApiTests(APITestCase):
         self.assertEqual(denied.status_code, 403)
         page = client.get(reverse("login"))
         self.assertEqual(page.status_code, 200)
-        csrf = client.cookies["csrftoken"].value
+        csrf = client.cookies[settings.CSRF_COOKIE_NAME].value
         allowed = client.post(url, {
             "customer_reference": "CSRF", "expires_on": "2027-01-01"
         }, format="json", HTTP_X_CSRFTOKEN=csrf)
@@ -181,11 +182,31 @@ class ScopedRenewalApiTests(APITestCase):
         )
         self.assertEqual(denied.status_code, 403)
 
+    def test_vencira_cookies_do_not_collide_with_other_local_django_apps(self):
+        self.assertEqual(settings.SESSION_COOKIE_NAME, "vencira_sessionid")
+        self.assertEqual(settings.CSRF_COOKIE_NAME, "vencira_csrftoken")
+        client = Client(enforce_csrf_checks=True)
+        # Otra aplicación Django en el mismo host usa sus cookies genéricas.
+        client.cookies["csrftoken"] = "simulated-other-app-token"
+        client.cookies["sessionid"] = "simulated-other-app-session"
+        page = client.get(reverse("login"))
+        self.assertEqual(page.status_code, 200)
+        self.assertIn(settings.CSRF_COOKIE_NAME, client.cookies)
+        token = client.cookies[settings.CSRF_COOKIE_NAME].value
+        result = client.post(reverse("login"), {
+            "username": "propietario_a",
+            "password": "LocalOnlyPasswordA!2026",
+            "csrfmiddlewaretoken": token,
+        })
+        self.assertEqual(result.status_code, 302)
+        self.assertIn(settings.SESSION_COOKIE_NAME, client.cookies)
+        self.assertEqual(client.get(reverse("api-me")).status_code, 200)
+
     def test_login_and_logout_browser_flow(self):
         client = Client(enforce_csrf_checks=True)
         page = client.get(reverse("login"))
         self.assertEqual(page.status_code, 200)
-        csrf = client.cookies["csrftoken"].value
+        csrf = client.cookies[settings.CSRF_COOKIE_NAME].value
         logged = client.post(reverse("login"), {
             "username": "propietario_a", "password": "LocalOnlyPasswordA!2026",
             "csrfmiddlewaretoken": csrf,
@@ -193,6 +214,6 @@ class ScopedRenewalApiTests(APITestCase):
         self.assertEqual(logged.status_code, 302)
         self.assertEqual(client.get(reverse("api-me")).status_code, 200)
         self.assertEqual(client.get(reverse("logout")).status_code, 405)
-        out = client.post(reverse("logout"), HTTP_X_CSRFTOKEN=client.cookies["csrftoken"].value)
+        out = client.post(reverse("logout"), HTTP_X_CSRFTOKEN=client.cookies[settings.CSRF_COOKIE_NAME].value)
         self.assertEqual(out.status_code, 302)
         self.assertIn(client.get(reverse("api-me")).status_code, (401, 403))
