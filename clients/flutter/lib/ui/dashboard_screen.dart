@@ -355,7 +355,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                     ..._workspaceContent(colors),
                   const SizedBox(height: 20),
                   Text(
-                    'Versión de desarrollo. No introducir información real de clientes.',
+                    _t.developmentWarning,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -386,9 +386,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                 ),
               )
             else
-              const Text(
-                'El acceso desde aplicaciones móviles está pendiente de implementación.',
-              ),
+              Text(_t.mobilePending),
           ],
         ),
       ),
@@ -488,7 +486,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       const SizedBox(height: 18),
       if (!_loadingRenewals && _renewals != null) ...[
         Text(
-          'Vencimientos: $_totalLabel',
+          '${_t.renewals}: $_totalLabel',
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 10),
@@ -497,7 +495,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Text(_appliedSearch.isNotEmpty || _statusFilter.isNotEmpty
-                  ? 'No hay vencimientos que coincidan con los filtros.'
+                  ? _t.noFilterMatches
                   : AppLocalizations.of(context)!.emptyPage),
             ),
           )
