@@ -34,7 +34,17 @@ En Android/iOS/desktop hace falta un mecanismo de autenticación nativo revisado
 - Autenticación web endurecida, limitación de intentos, MFA.
 - Proxy local de integración para comprobar cookies de sesión y CSRF.
 - Mejorar permisos comerciales granulares, validación de negocio, accesibilidad y flujos de edición.
-- Accesibilidad, internacionalización ES/EN, filtros y métricas fiables de negocio.
+- Accesibilidad, internacionalización ES/CA (castellano y catalán), filtros y métricas fiables de negocio.
 - Configuración host para las plataformas y builds firmadas, sin publicar todavía.
 
 La primera demo instalable en servidor está documentada en [SERVER_PREVIEW.md](../../docs/SERVER_PREVIEW.md). No requiere Flutter SDK en el host si se construye mediante Docker.
+
+## Identidad visual y apariencia
+
+- El cliente arranca con `ThemeMode.system`, y `VenciraTheme` define de manera centralizada los temas Material 3 claro y oscuro.
+- Todas las pantallas nuevas deben usar `Theme.of(context).colorScheme` en lugar de colores fijos.
+- **Pendiente:** selector visible Sistema/Claro/Oscuro, persistencia por usuario y sincronización de preferencias entre dispositivos.
+- Iconos de Flaticon: pendientes de seleccionar y licenciar; mantener un registro de atribución y no reutilizar recursos no autorizados. No se han añadido activos externos al repositorio.
+- **Pendiente:** internacionalización real de widgets, mensajes y fechas con catálogos ES/CA. No confundir documentación o preparación con soporte multilingüe ya implementado.
+
+Ver las incidencias #2 (idiomas) y #3 (identidad visual y temas).
