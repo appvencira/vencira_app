@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vencira/api/vencira_api.dart';
 import 'package:vencira/main.dart';
 
@@ -75,6 +76,35 @@ void main() {
     await tester.pump();
     expect(Theme.of(tester.element(find.text('VENCIRA'))).brightness,
         Brightness.light);
+  });
+
+  testWidgets('selector cambia idioma y tema sin recargar datos', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final api = FakeVenciraApi(
+      workspaces: [workspaceA],
+      pages: {
+        workspaceA.id: const VenciraRenewalPage(
+          total: 0, items: [], hasNext: false,
+        ),
+      },
+    );
+    await tester.pumpWidget(VenciraApp(api: api));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Preferencias'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Català').last);
+    await tester.pumpAndSettle();
+    final appInCatalan = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(appInCatalan.locale?.languageCode, 'ca');
+    await tester.tap(find.byTooltip('Preferències'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Fosc').last);
+    await tester.pumpAndSettle();
+    final appInDark = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(appInDark.themeMode, ThemeMode.dark);
+    final saved = await SharedPreferences.getInstance();
+    expect(saved.getString('vencira.ui.locale.v1'), 'ca');
+    expect(saved.getString('vencira.ui.theme.v1'), 'dark');
   });
 
   testWidgets('envía filtros al backend y puede limpiarlos', (tester) async {
