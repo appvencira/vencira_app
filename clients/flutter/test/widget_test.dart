@@ -53,6 +53,30 @@ void main() {
     role: 'member',
   );
 
+  testWidgets('respeta el tema claro y oscuro del sistema', (tester) async {
+    final api = FakeVenciraApi(
+      workspaces: [workspaceA],
+      pages: {
+        workspaceA.id: const VenciraRenewalPage(
+          total: 0, items: [], hasNext: false,
+        ),
+      },
+    );
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+    await tester.pumpWidget(VenciraApp(api: api));
+    await tester.pumpAndSettle();
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.themeMode, ThemeMode.system);
+    expect(app.darkTheme, isNotNull);
+    expect(Theme.of(tester.element(find.text('VENCIRA'))).brightness,
+        Brightness.dark);
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+    await tester.pump();
+    expect(Theme.of(tester.element(find.text('VENCIRA'))).brightness,
+        Brightness.light);
+  });
+
   testWidgets('envía filtros al backend y puede limpiarlos', (tester) async {
     final api = FakeVenciraApi(
       workspaces: [workspaceA],
