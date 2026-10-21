@@ -1,0 +1,17 @@
+{
+  "@@locale": "es",
+  "appTitle": "VENCIRA",
+  "language": "Idioma",
+  "appearance": "Apariencia",
+  "system": "Sistema",
+  "light": "Claro",
+  "dark": "Oscuro",
+  "spanish": "Español",
+  "catalan": "Català",
+  "settings": "Preferencias",
+  "save": "Guardar",
+  "cancel": "Cancelar",
+  "renewals": "Vencimientos",
+  "refresh": "Actualizar",
+  "logout": "Salir"
+}
