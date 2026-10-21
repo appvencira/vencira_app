@@ -217,3 +217,20 @@ class ScopedRenewalApiTests(APITestCase):
         out = client.post(reverse("logout"), HTTP_X_CSRFTOKEN=client.cookies[settings.CSRF_COOKIE_NAME].value)
         self.assertEqual(out.status_code, 302)
         self.assertIn(client.get(reverse("api-me")).status_code, (401, 403))
+
+    def test_rechazo_csrf_emite_motivo_para_diagnostico_sin_debug(self):
+        # Solo el motivo del rechazo. Nunca registrar cookies ni POST.
+        client = Client(enforce_csrf_checks=True)
+        response = client.get(reverse("login"))
+        self.assertEqual(response.status_code, 200)
+        with self.assertLogs("django.security.csrf", level="WARNING") as entries:
+            denied = client.post(
+                reverse("login"),
+                {"username": "ficticio", "password": "valor-solo-test"},
+                HTTP_ORIGIN="http://ejemplo-no-autorizado.invalid",
+            )
+        self.assertEqual(denied.status_code, 403)
+        message = " ".join(entries.output)
+        self.assertIn("Origin checking failed", message)
+        self.assertNotIn("valor-solo-test", message)
+        self.assertNotIn(client.cookies[settings.CSRF_COOKIE_NAME].value, message)

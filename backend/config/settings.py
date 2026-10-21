@@ -103,3 +103,28 @@ REST_FRAMEWORK = {
 
 LOGIN_REDIRECT_URL = "/api/v1/me/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
+
+# Solo el motivo de rechazo CSRF, no cookies, contraseñas ni cuerpos POST.
+# Se mantiene DEBUG=False. Django emite este aviso en django.security.csrf
+# al fallar la validación de origen, referer, cookie o token.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "csrf_reason": {"format": "VENCIRA_CSRF %(levelname)s %(message)s"},
+    },
+    "handlers": {
+        "csrf_console": {
+            "class": "logging.StreamHandler",
+            "level": "WARNING",
+            "formatter": "csrf_reason",
+        },
+    },
+    "loggers": {
+        "django.security.csrf": {
+            "handlers": ["csrf_console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+}

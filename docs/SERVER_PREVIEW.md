@@ -98,3 +98,24 @@ Por separado: VPS/entorno propio si procede, TLS, protección de acceso, MFA, ge
 ## Cookies compartidas con otros servicios localhost
 
 La preview usa cookies exclusivas `vencira_sessionid` y `vencira_csrftoken`: los navegadores aíslan las cookies por host, **no por puerto**, y otras apps Django en `127.0.0.1` pueden utilizar `sessionid`/`csrftoken`. No desactivar CSRF ni configurar cookies como `Secure` en HTTP local. Si un navegador conserva cookies previas, abrir una pestaña privada y volver a iniciar sesión. La sustitución de los nombres de cookies invalida la sesión anterior de VENCIRA, pero **no** las sesiones de otras aplicaciones.
+
+## Diagnóstico de error CSRF 403 en el navegador
+
+La validación automatizada no reproduce necesariamente una extensión del navegador,
+un bloqueo local de cookies o una diferencia entre Host/Origin/Referer.
+
+Sin habilitar `DEBUG=True`, VENCIRA registra en stderr un aviso con prefijo
+`VENCIRA_CSRF` y el **motivo del rechazo** (no incluye token, cookie ni contraseña).
+Tras actualizar la rama y reiniciar la preview:
+
+```bash
+cd ~/vencira-preview
+docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml logs --since 5m api 2>&1 | grep VENCIRA_CSRF | tail -n 12
+```
+
+Reproducir una vez en el navegador, consultar el motivo y **no ampliar
+`CSRF_TRUSTED_ORIGINS` ni deshabilitar CSRF a ciegas**. Comprobar en la pestaña
+Network del navegador únicamente los nombres de cookies presentes y el valor
+de Origin/Referer (sin publicar las cookies ni sus tokens). Si el fallo es
+`CSRF cookie not set`, revisar que no se bloquee `vencira_csrftoken`; si es
+`Origin checking failed`, revisar el host utilizado y el proxy.
