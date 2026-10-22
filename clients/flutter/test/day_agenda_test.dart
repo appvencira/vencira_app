@@ -117,6 +117,24 @@ class DemoAgendaApi implements VenciraApi {
   ) async => throw UnimplementedError();
 
   @override
+  Future<VenciraRenewal> fetchRenewalDetail(
+      String workspaceId, String renewalId) async =>
+      VenciraRenewal(
+        id: renewalId, reference: 'AVISO-FICTICIO-DE-PRUEBA',
+        expiresOn: DateTime(2027, 5, 1), status: 'pending');
+
+  @override
+  Future<VenciraHistoryPage> fetchRenewalHistory(
+      String workspaceId, String renewalId, {int page = 1}) async =>
+      VenciraHistoryPage(total: 1, hasNext: false,
+        events: [
+          VenciraHistoryEvent(action: 'created',
+            timestamp: DateTime.utc(2027, 3, 1, 10),
+            actor: 'usuario-demo', fields: const ['expires_on'],
+            metadata: const {}),
+        ]);
+
+  @override
   Future<void> logout() async {}
 }
 
