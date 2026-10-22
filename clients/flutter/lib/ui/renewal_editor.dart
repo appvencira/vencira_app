@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
@@ -38,9 +39,10 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
 
   String _displayDate(DateTime? day) {
     if (day == null) return _t.notDefined;
-    final d = day.day.toString().padLeft(2, '0');
-    final m = day.month.toString().padLeft(2, '0');
-    return '$d/$m/${day.year}';
+    return DateFormat(
+      'dd/MM/yyyy',
+      Localizations.localeOf(context).languageCode,
+    ).format(day);
   }
 
   Future<void> _chooseDate({required bool notice}) async {
