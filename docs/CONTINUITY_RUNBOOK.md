@@ -19,6 +19,13 @@ Fecha de revisión: 2026-10-22. Fuente de verdad: repositorio privado `appvencir
 
 **Estado vigente 2026-10-22:** `vencira_localcheck` desplegado, migraciones `0010`–`0012` aplicadas, API/DB/Web saludables, rutas locales/proxy HTTP 200, pruebas específicas PostgreSQL resultado 0, y Android HTTPS `dev.vencira.es` aceptado por usuario. Una mejora de espaciado Flutter está **implementada en GitHub** (commit `dd9ba521714df2d58acec9a9fcfcd236766d12f4`) **pero no probada ni desplegada** al cierre de esta revisión. Próximo paso: validación agrupada + despliegue seguro de esa corrección.
 
+## Incidencia real de git status — Flutter genera archivos locales
+
+- Usuario confirmó `RAMA_LOCAL=integration/local-e2e-prep` y `ESTADO_GIT=CAMBIOS_LOCALES` debido exclusivamente a cuatro archivos **untracked**: `clients/flutter/lib/l10n/app_localizations.dart`, `app_localizations_ca.dart`, `app_localizations_es.dart` y `clients/flutter/pubspec.lock`. `RESULTADO_GLOBAL=3`, `FASE_FALLIDA=GIT_WORKTREE`; no se ejecutaron pruebas ni despliegue.
+- Se revisaron `clients/flutter/pubspec.yaml` (`flutter: generate: true`), `clients/flutter/l10n.yaml` (ARBs como fuente) y `.gitignore`. Los tres `app_localizations*.dart` se generan con Flutter; agregados a `.gitignore` en commit `a209f51c`.
+- El lock `pubspec.lock` es generado localmente y todavía no está versionado: por ahora permitido **solo de forma explícita** por script, no ignorado globalmente; documentar posterior decisión sobre fijar dependencias para release. Cambio de preflight en `scripts/validate_ui_v2.sh` commit `c0bdca16`: bloquea cambios de archivos versionados, staged y cualquier otro archivo nuevo, pero acepta únicamente el lock local y las traducciones generadas ya ignoradas. **Nunca hacer `git clean` ni `git reset --hard` sobre el servidor para superar un preflight.**
+- Nueva ejecución pendiente: sincronizar código y ejecutar script consolidado; si Flutter analyze/test/build falla, arreglar fuentes en GitHub; solo desplegar Web después de todos los tests. Mantener consola SSH abierta.
+
 ## Incidencia de preflight UI V2 — pendiente de diagnóstico
 
 - Usuario ejecutó `scripts/validate_ui_v2.sh` después de sincronizar el repositorio. Salida: `=== REPOSITORIO Y PRECONDICIONES ===`, `RESULTADO_GLOBAL=1`, `FASE_FALLIDA=inicio`, `EJECUCION_COMPLETADA=0`. **No comenzó Flutter ni despliegue.** Se desconoce aún cuál condición inicial falló.
