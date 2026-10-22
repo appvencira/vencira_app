@@ -68,6 +68,12 @@ VENCIRA es agenda multiplataforma (Flutter + Django/PostgreSQL) de pólizas exte
 - `nginx -t` y `manage.py check` superados en el bloque completo que el usuario ejecutó; `migrate --plan` se invocó, pero la salida textual no se adjuntó.
 - Confirmación final pendiente: salud Web estable, HTTP /api/health /api/ready a través del proxy, autenticación/E2E con datos sintéticos, Android. No activar datos reales.
 
+## Verificación posterior al despliegue — completada
+
+Confirmado por salida del servidor: `vencira_localcheck-web_preview-1` **healthy**; API `/api/health/` y `/api/ready/` en `127.0.0.1:28731` devuelven 200. Proxy web `127.0.0.1:28732` devuelve HTTP 200 para `/`, `/api/health/`, `/api/ready/` y `/accounts/login/`. `python manage.py migrate --plan`: **No planned migration operations**. Resultado `COMPROBACION_FINALIZADA=1`, `CONSOLA_ABIERTA`.
+
+**Queda pendiente** prueba funcional autenticada de identidad, notas, sugerencias y permisos con datos sintéticos; esta verificación HTTP por sí sola no valida funcionalidad de negocio. No introducir datos personales reales.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
