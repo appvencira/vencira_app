@@ -10,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .audit import make_audit_event
+from .filtering import filtered_renewals
 from .models import ReminderCandidate, Renewal, RenewalAuditEvent, WorkspaceMember
 from .pagination import RenewalPagination
 from .serializers import MembershipSerializer, RenewalSerializer
@@ -92,7 +93,9 @@ def agenda_day(request, workspace_id):
     # Exists evita duplicados y mantiene paginación por anotación.
     has_reminder_today = due_candidates.filter(renewal_id=OuterRef("pk"))
     scoped = (
-        _visible_renewals(membership)
+        filtered_renewals(
+            request.query_params, _visible_renewals(membership)
+        )
         .exclude(status=Renewal.Status.CLOSED)
         .annotate(agenda_has_reminder=Exists(has_reminder_today))
         .filter(Q(expires_on=day) | Q(notice_deadline_on=day) | Q(agenda_has_reminder=True))
@@ -148,7 +151,9 @@ def renewals(request, workspace_id):
         if status_filter and status_filter not in Renewal.Status.values:
             return Response({"status": "Estado de vencimiento no válido."},
                             status=status.HTTP_400_BAD_REQUEST)
-        scoped = _visible_renewals(membership)
+        scoped = filtered_renewals(
+            request.query_params, _visible_renewals(membership)
+        )
         if search:
             scoped = scoped.filter(customer_reference__icontains=search)
         if status_filter:
