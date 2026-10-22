@@ -19,6 +19,20 @@ Fecha de revisión: 2026-10-22. Fuente de verdad: repositorio privado `appvencir
 
 **Estado vigente 2026-10-22:** `vencira_localcheck` desplegado, migraciones `0010`–`0012` aplicadas, API/DB/Web saludables, rutas locales/proxy HTTP 200, pruebas específicas PostgreSQL resultado 0, y Android HTTPS `dev.vencira.es` aceptado por usuario. Una mejora de espaciado Flutter está **implementada en GitHub** (commit `dd9ba521714df2d58acec9a9fcfcd236766d12f4`) **pero no probada ni desplegada** al cierre de esta revisión. Próximo paso: validación agrupada + despliegue seguro de esa corrección.
 
+## Línea de diseño empresarial — prioridad de producto
+
+**Objetivo:** VENCIRA debe sentirse como un software de empresa elegante, claro, moderno, intuitivo y confiable, no un prototipo. Funcionalidad y experiencia visual tienen igual importancia en los criterios de aceptación.
+
+- **Jerarquía:** acción primaria inequívoca, acciones secundarias discretas, títulos y secciones comprensibles; no competir visualmente con demasiados botones.
+- **Consistencia:** tokens globales para color, tipografía, radios, bordes, estados, superficies, densidad, espacios y controles; temas claro y oscuro contrastados. Evitar colores fijos dispersos.
+- **Móvil primero:** controles táctiles de al menos 48 px, formularios legibles, teclado apropiado, navegación comprensible, scroll correcto y modales que no corten acciones ni solapen etiquetas, ayudas o contadores.
+- **Formularios profesionales:** grupos semánticos, ayudas junto a sus controles sin superposición, validación específica, estados de carga/guardado, botones visibles y ancho adecuado para tablet/escritorio.
+- **Accesibilidad y confianza:** contraste, escalado de texto, feedback de éxito/error, foco visible, estados vacíos y de carga claros; datos ficticios durante desarrollo.
+- **Validación por fase:** Flutter analyze/test/build y, cuando hay cambio de layout, inspección visual real Android y escritorio antes de considerar diseño aprobado.
+- **Evolución:** conservar funcionalidad, identidad de marca VENCIRA y textos locales; evitar rediseños masivos sin cobertura. Documentar cambios, pruebas, screenshots y pendientes.
+- **Estado diseño en GitHub, no desplegado:** commit `dd9ba521` corregía espaciado/ayuda de referencia; commit `f43766d9` introduce tokens empresariales compartidos en tema (diálogos, botones, campos). Ambos **pendientes de validación y despliegue**.
+- **Próximos pases:** simplificar dashboard y filtros en móvil, jerarquía de CTA, agrupación de campos del editor, tratamiento del modal largo, revisar estados vacíos y oscuro/claro.
+
 ## Objetivo y normas permanentes
 
 VENCIRA es agenda multiplataforma (Flutter + Django/PostgreSQL) de pólizas externas individuales, **no CRM**. Seguir el whitepaper original, especialmente §6: Clientes/Candidatos, identificación, modalidad/aseguradora personalizadas, fechas, estado, responsable, notas y adjuntos seguros. Los datos de anotaciones distintas **no están vinculados**: las sugerencias copian por decisión explícita sin sincronizar registros.
