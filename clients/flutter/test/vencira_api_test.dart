@@ -348,6 +348,82 @@ void main() {
         throwsA(isA<VenciraApiException>()));
   });
 
+  test('catálogo propio del mismo origen y mutaciones CSRF', () async {
+    var writes = 0;
+    final client = MockClient((request) async {
+      expect(request.url.origin, 'http://localhost:18731');
+      if (request.url.path == '/api/v1/csrf/') {
+        return http.Response('{"csrfToken":"abcdefghijklmnopqrstuvwxyz123456"}', 200);
+      }
+      expect(request.url.path.startsWith(
+        '/api/v1/workspaces/$workspaceId/modalities/'), isTrue);
+      if (request.method == 'GET') {
+        return http.Response(
+          '[{"code":"hogar","label":"Vivienda","active":true,"builtin":true},'
+          '{"code":"custom-abc","label":"Mascotas","active":false,"builtin":false}]', 200);
+      }
+      writes++;
+      expect(request.headers.entries.any((header) =>
+          header.key.toLowerCase() == 'x-csrftoken' &&
+          header.value == 'abcdefghijklmnopqrstuvwxyz123456'), isTrue);
+      if (request.method == 'DELETE') return http.Response('', 204);
+      if (request.method == 'POST') {
+        expect(request.body, contains('"label":"Mascotas"'));
+        return http.Response(
+          '{"code":"custom-abc","label":"Mascotas","active":true,"builtin":false}', 201);
+      }
+      expect(request.method, 'PATCH');
+      return http.Response(
+        '{"code":"hogar","label":"Vivienda","active":true,"builtin":true}', 200);
+    });
+    final api = HttpVenciraApi(
+      client: client, baseUri: Uri.parse('http://localhost:18731/'));
+    final opts = await api.fetchModalities(workspaceId);
+    expect(opts.first.label, 'Vivienda');
+    expect(opts.last.active, false);
+    final add = await api.addModality(workspaceId, 'Mascotas');
+    expect(add.code, 'custom-abc');
+    expect((await api.editModality(workspaceId, 'hogar', 'Vivienda')).label,
+        'Vivienda');
+    await api.removeModality(workspaceId, 'hogar');
+    expect(writes, 3);
+  });
+
+  test('filtros pasan juntos al servidor y rechazan valores maliciosos',
+      () async {
+    var calls = 0;
+    final client = MockClient((request) async {
+      calls++;
+      expect(request.url.queryParameters['entry'], 'prospects');
+      expect(request.url.queryParameters['modality'], 'hogar');
+      if (request.url.path.endsWith('/agenda/month/')) {
+        return http.Response('{"month":"2027-03","days":[]}', 200);
+      }
+      if (request.url.path.endsWith('/agenda/')) {
+        return http.Response(
+            '{"day":"2027-03-31","count":0,"next":null,"results":[]}', 200);
+      }
+      return http.Response('{"count":0,"next":null,"results":[]}', 200);
+    });
+    final api = HttpVenciraApi(
+      client: client, baseUri: Uri.parse('http://localhost:18731/'));
+    await api.fetchFilteredRenewals(workspaceId,
+      entry:'prospects', modality:'hogar');
+    await api.fetchFilteredAgendaDay(workspaceId, DateTime(2027,3,31),
+      entry:'prospects', modality:'hogar');
+    await api.fetchFilteredAgendaMonth(workspaceId, DateTime(2027,3,1),
+      entry:'prospects', modality:'hogar');
+    expect(calls, 3);
+    await expectLater(
+      api.fetchFilteredRenewals(workspaceId, entry:'invalid'),
+      throwsA(isA<VenciraApiException>()));
+    await expectLater(
+      api.fetchFilteredAgendaDay(workspaceId, DateTime(2027,3,31),
+        modality:'../x'),
+      throwsA(isA<VenciraApiException>()));
+    expect(calls, 3);
+  });
+
   test('agenda rechaza parámetros manipulados antes de consultar', () async {
     var calls = 0;
     final client = MockClient((_) async {
