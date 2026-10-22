@@ -50,6 +50,14 @@ VENCIRA es agenda multiplataforma (Flutter + Django/PostgreSQL) de pólizas exte
 - Corrección integrada en `integration/local-e2e-prep`: commit `9205ed03269b5bce5f3edef704e9b229fecf1a52`, `COPY --chown=vencira:vencira . /app`.
 - Próximo paso: sincronizar ese commit, reconstruir solo la imagen, comprobar lectura de código en un contenedor efímero y volver a ejecutar `showmigrations` y `migrate --plan` sin aplicar.
 
+## Hito confirmado por usuario: migraciones de localcheck
+
+- La imagen API reconstruida leyó correctamente `/app/reminders/models.py` (`LECTURA_MODELS_OK=True`).
+- Plan confirmado: `0010_workspace_insurer` (catálogo + relación), `0011_renewal_policy_identity` (cinco campos), `0012_renewal_notes` (notas), sin borrados previstos.
+- El usuario ejecutó bloque con validación SHA-256 del backup, identidad del proyecto Docker, `migrate --noinput`, `showmigrations` y `migrate --plan`; informó `MIGRACIONES_VERIFICADAS=1` y `CONSOLA_ABIERTA`.
+- **API y Flutter Web del stack persistente aún no se han recreado.** Siguiente paso: reconstruir/actualizar `api` y `web_preview` solo con `-p vencira_localcheck`; comprobar salud, migraciones y rutas. Mantener el backup `pre0010-0012_uti0uvWX.dump` intacto.
+- No se han activado adjuntos ni habilitado uso con datos personales reales.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
