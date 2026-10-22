@@ -52,3 +52,11 @@ No fusionar ni desplegar hasta CI verde y revisión de semántica de las asignac
 - [GitHub Actions run #2](https://github.com/appvencira/vencira_app/actions/runs/39717402091): **success**. `python manage.py check`, `makemigrations --check --dry-run`, suite Django completa en SQLite y PostgreSQL 17 superadas.
 - Pruebas de seguridad incluidas: miembros de un mismo workspace no pueden abrir/modificar anotaciones ajenas; miembros no pueden designar otros responsables; propietarios solo asignan dentro del equipo; los registros históricos permanecen ocultos para miembros hasta que el propietario los asigne.
 - **Todavía es PR borrador**: pendiente decisión de negocio sobre bajas/reasignaciones y revisión de flujo UI; no desplegar ni introducir datos reales.
+
+## Extensión de contrato: miembros y baja inmediata (22/10/2026)
+
+Se incorpora `GET /api/workspaces/{workspace_id}/members/` para el selector de responsables **exclusivamente del propietario**. Devuelve solo `id`, `name` (nombre de usuario) y `role` de miembros de ese workspace; el usuario miembro recibe 403, un propietario ajeno recibe 404, un anónimo 401/403. No contiene email ni credenciales. La interfaz podrá pedir esta lista únicamente cuando el rol es `owner`.
+
+**Baja del equipo:** la eliminación de una fila `WorkspaceMember` revoca de inmediato cualquier acceso del usuario a ese workspace, también si la anotación conserva su `assigned_to`. El propietario sigue viendo esas filas y puede reasignarlas a otro miembro válido. Se ha añadido una prueba de revocación inmediata y reasignación. Esto NO constituye todavía un endpoint de bajas ni una política definitiva de gestión de usuarios; deberán definirse el procedimiento administrativo y la operativa de reasignación.
+
+El acceso se valida en el backend: ocultar el selector en Flutter no sería una medida de seguridad suficiente.
