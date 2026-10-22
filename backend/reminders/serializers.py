@@ -27,7 +27,7 @@ class RenewalSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Renewal
-        fields = ("id", "customer_reference", "full_name", "nickname", "phone", "email", "policy_number", "entry", "modality", "insurer",
+        fields = ("id", "customer_reference", "full_name", "nickname", "phone", "email", "policy_number", "notes", "entry", "modality", "insurer",
                   "expires_on", "notice_deadline_on", "status",
                   "assigned_to", "created_at", "updated_at")
         read_only_fields = ("id", "created_at", "updated_at")
