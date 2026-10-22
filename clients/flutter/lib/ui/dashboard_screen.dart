@@ -602,6 +602,13 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (item.entry != null)
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.circle, size: 10, color: item.entry == 'clients'
+                    ? colors.primary : colors.tertiary),
+                const SizedBox(width: 6),
+                Text(item.entry == 'clients' ? _t.entryClients : _t.entryProspects),
+              ]),
             Text('${_t.expiresOn} $expiration'),
             if (notice != null) Text('${_t.noticeLabel}: $notice'),
             const SizedBox(height: 6),
