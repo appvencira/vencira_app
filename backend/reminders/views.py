@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .audit import make_audit_event
-from .models import ReminderCandidate, Renewal, WorkspaceMember
+from .models import ReminderCandidate, Renewal, RenewalAuditEvent, WorkspaceMember
 from .pagination import RenewalPagination
 from .serializers import MembershipSerializer, RenewalSerializer
 
@@ -210,3 +210,35 @@ def renewal_detail(request, workspace_id, renewal_id):
             serializer.save()
             make_audit_event(renewal=renewal, actor=request.user, before=before)
     return Response(serializer.data)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def renewal_history(request, workspace_id, renewal_id):
+    """Solo lectura; se autoriza la anotación ANTES de revelar su historial.
+
+    Este registro documenta altas/cambios existentes. No inventa eventos de
+    avisos entregados, cierres definitivos o gestiones no implementadas.
+    """
+    membership = _membership(request, workspace_id)
+    renewal = get_object_or_404(
+        _visible_renewals(membership), pk=renewal_id,
+    )
+    events = RenewalAuditEvent.objects.filter(
+        workspace_id=membership.workspace_id,
+        renewal=renewal,
+    ).select_related("actor").order_by("-created_at", "-id")
+    paginator = RenewalPagination()
+    page = paginator.paginate_queryset(events, request)
+    results = [{
+        "id": str(event.pk),
+        "action": event.action,
+        "timestamp": event.created_at.isoformat(),
+        "actor": event.actor.get_username() if event.actor_id else None,
+        "changed_fields": event.changed_fields,
+        # Son diferencias técnicas sin referencias/nombres de clientes.
+        "metadata": event.metadata,
+    } for event in page]
+    response = paginator.get_paginated_response(results)
+    response["Cache-Control"] = "no-store"
+    return response
