@@ -6,6 +6,7 @@ import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
 import 'month_agenda_screen.dart';
 import 'renewal_detail_screen.dart';
+import 'modality_labels.dart';
 
 /// Primera vista de la agenda tipo papel. Sólo presenta eventos previstos.
 /// «Recuérdamelo», cierres y notificaciones entregadas aún no están modelados.
@@ -15,11 +16,15 @@ class VenciraDayAgendaScreen extends StatefulWidget {
     required this.api,
     required this.workspace,
     this.initialDay,
+    this.initialEntry = '',
+    this.initialModality = '',
   });
 
   final VenciraApi api;
   final VenciraWorkspace workspace;
   final DateTime? initialDay;
+  final String initialEntry;
+  final String initialModality;
 
   @override
   State<VenciraDayAgendaScreen> createState() => _VenciraDayAgendaScreenState();
@@ -33,6 +38,9 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
   bool _loading = false;
   bool _failed = false;
   bool _unauthorized = false;
+  late String _entryFilter;
+  late String _modalityFilter;
+  List<VenciraModalityOption> _modalities = VenciraModalityOption.defaults;
 
   // Solo contadores agregados y autorizados de la semana visible.
   DateTime? _weekMonday;
@@ -49,6 +57,9 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
   void initState() {
     super.initState();
     _selectedDay = _civilDate(widget.initialDay ?? DateTime.now());
+    _entryFilter = widget.initialEntry;
+    _modalityFilter = widget.initialModality;
+    _loadModalities();
     _loadDay(1);
     _loadWeek();
   }
@@ -58,6 +69,29 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
     _generation++;
     _weekGeneration++;
     super.dispose();
+  }
+
+  Future<void> _loadModalities() async {
+    try {
+      final options = await widget.api.fetchModalities(widget.workspace.id);
+      if (mounted) setState(() => _modalities = options);
+    } catch (_) {
+      // Los 12 códigos por defecto siguen disponibles.
+    }
+  }
+
+  void _setEntry(String? value) {
+    if (value == null || value == _entryFilter) return;
+    setState(() => _entryFilter = value);
+    _loadDay(1);
+    _loadWeek(force: true);
+  }
+
+  void _setModality(String? value) {
+    if (value == null || value == _modalityFilter) return;
+    setState(() => _modalityFilter = value);
+    _loadDay(1);
+    _loadWeek(force: true);
   }
 
   Future<void> _loadDay(int page) async {
@@ -71,8 +105,9 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
       _unauthorized = false;
     });
     try {
-      final result = await widget.api.fetchAgendaDay(
+      final result = await widget.api.fetchFilteredAgendaDay(
         widget.workspace.id, requestedDay, page: page,
+        entry: _entryFilter, modality: _modalityFilter,
       );
       if (!mounted || sequence != _generation) return;
       setState(() {
@@ -125,7 +160,10 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
       final summaries = await Future.wait([
         for (final month in monthStarts)
           if (month.year >= 2000 && month.year <= 2100)
-            widget.api.fetchAgendaMonth(widget.workspace.id, month),
+            widget.api.fetchFilteredAgendaMonth(
+              widget.workspace.id, month,
+              entry: _entryFilter, modality: _modalityFilter,
+            ),
       ]);
       if (!mounted || requestId != _weekGeneration) return;
       final allowedDays = {
@@ -188,6 +226,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
           api: widget.api,
           workspace: widget.workspace,
           initialMonth: _selectedDay,
+          entry: _entryFilter, modality: _modalityFilter,
         ),
       ),
     );
@@ -557,6 +596,36 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 12),
+                      Wrap(spacing: 8, runSpacing: 8, children: [
+                        SizedBox(width: 170, child: DropdownButtonFormField<String>(
+                          key: ValueKey('agenda-entry-' + _entryFilter),
+                          initialValue: _entryFilter, isExpanded: true,
+                          decoration: InputDecoration(labelText: _t.entryLabel,
+                            border: const OutlineInputBorder()),
+                          items: [
+                            DropdownMenuItem(value:'', child: Text(_t.all)),
+                            DropdownMenuItem(value:'clients', child: Text(_t.entryClients)),
+                            DropdownMenuItem(value:'prospects', child: Text(_t.entryProspects)),
+                          ],
+                          onChanged: _setEntry,
+                        )),
+                        SizedBox(width: 180, child: DropdownButtonFormField<String>(
+                          key: ValueKey('agenda-modality-' + _modalityFilter),
+                          initialValue: _modalityFilter, isExpanded: true,
+                          decoration: InputDecoration(labelText: _t.modalityLabel,
+                            border: const OutlineInputBorder()),
+                          items: [
+                            DropdownMenuItem(value:'', child: Text(_t.all)),
+                            for (final option in _modalities)
+                              if (option.active || option.code == _modalityFilter)
+                                DropdownMenuItem(value: option.code,
+                                  child: Text(modalityCaption(context, option),
+                                    overflow: TextOverflow.ellipsis)),
+                          ],
+                          onChanged: _setModality,
+                        )),
+                      ]),
                       const SizedBox(height: 16),
                       _weekStrip(locale, colors),
                       if (_weekError) ...[
