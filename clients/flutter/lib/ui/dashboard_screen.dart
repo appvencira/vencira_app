@@ -418,11 +418,17 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                 children: [
                   Text(
                     l10n.headline,
-                    style: Theme.of(context).textTheme.headlineMedium,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.5,
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(l10n.tagline),
-                  const SizedBox(height: 26),
+                  const SizedBox(height: 6),
+                  Text(l10n.tagline,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    )),
+                  const SizedBox(height: 22),
                   if (_saving) const LinearProgressIndicator(),
                   if (_loadingWorkspaces || _loadingRenewals)
                     const Center(
@@ -504,6 +510,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       ];
     }
     return [
+      if (_workspaces.length > 1)
       DropdownButtonFormField<VenciraWorkspace>(
         key: ValueKey(_selected?.id),
         isExpanded: true,
@@ -526,49 +533,135 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
             .toList(),
         onChanged: _loadingRenewals || _saving ? null : _selectWorkspace,
       ),
+      if (_workspaces.length == 1)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Row(children: [
+            Icon(Icons.apartment_rounded, size: 18, color: colors.primary),
+            const SizedBox(width: 9),
+            Flexible(child: Text(_selected?.name ?? '',
+              style: Theme.of(context).textTheme.titleSmall,
+              overflow: TextOverflow.ellipsis)),
+          ]),
+        ),
       const SizedBox(height: 18),
-      Wrap(
-        spacing: 12,
-        runSpacing: 8,
-        children: [
-          FilledButton.tonalIcon(
-            onPressed: _saving || _loadingRenewals || _selected == null
-                ? null
-                : () => Navigator.of(context).push(MaterialPageRoute<void>(
+      LayoutBuilder(builder: (context, constraints) {
+        final compact = constraints.maxWidth < 600;
+        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            Expanded(child: OutlinedButton.icon(
+              onPressed: _saving || _loadingRenewals || _selected == null
+                  ? null
+                  : () => Navigator.of(context).push(MaterialPageRoute<void>(
                     builder: (_) => VenciraDayAgendaScreen(
-                      api: _api,
-                      workspace: _selected!,
+                      api: _api, workspace: _selected!,
                       initialEntry: _entryFilter,
                       initialModality: _modalityFilter,
                       initialInsurer: _insurerFilter,
                     ),
                   )),
-            icon: const Icon(Icons.calendar_today_outlined),
-            label: Text(_t.agendaOpenDay),
-          ),
-          if (_selected?.role == 'owner')
-            OutlinedButton.icon(
-              key: const ValueKey('open-catalog'),
-              onPressed: _saving ? null : _openCatalog,
-              icon: const Icon(Icons.tune),
-              label: Text(_t.modalityManage),
+              icon: const Icon(Icons.calendar_month_outlined),
+              label: Text(compact ? 'Agenda' : _t.agendaOpenDay,
+                maxLines: 1, overflow: TextOverflow.ellipsis),
+            )),
+            const SizedBox(width: 10),
+            Expanded(child: FilledButton.icon(
+              onPressed: _loadingRenewals || _saving ? null : () => _editRenewal(),
+              icon: const Icon(Icons.add_rounded),
+              label: Text(compact ? _t.addRenewal.split(' ').first : _t.addRenewal,
+                maxLines: 1, overflow: TextOverflow.ellipsis),
+            )),
+          ]),
+          if (_selected?.role == 'owner') ...[
+            const SizedBox(height: 8),
+            ExpansionTile(
+              key: const ValueKey('workspace-tools'),
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: const EdgeInsets.only(bottom: 12),
+              leading: const Icon(Icons.settings_outlined),
+              title: Text('Catálogos de la organización',
+                style: Theme.of(context).textTheme.bodyMedium),
+              children: [
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  OutlinedButton.icon(
+                    key: const ValueKey('open-catalog'),
+                    onPressed: _saving ? null : _openCatalog,
+                    icon: const Icon(Icons.category_outlined),
+                    label: Text(_t.modalityManage),
+                  ),
+                  OutlinedButton.icon(
+                    key: const ValueKey('open-insurers'),
+                    onPressed: _saving ? null : _openInsurers,
+                    icon: const Icon(Icons.business_outlined),
+                    label: Text(_t.insurerManage),
+                  ),
+                ]),
+              ],
             ),
-          if (_selected?.role == 'owner')
-            OutlinedButton.icon(
-              key: const ValueKey('open-insurers'),
-              onPressed: _saving ? null : _openInsurers,
-              icon: const Icon(Icons.business_outlined),
-              label: Text(_t.insurerManage),
-            ),
-          FilledButton.icon(
-            onPressed: _loadingRenewals || _saving ? null : () => _editRenewal(),
-            icon: const Icon(Icons.add),
-            label: Text(_t.addRenewal),
-          ),
-        ],
-      ),
+          ],
+        ]);
+      }),
       const SizedBox(height: 18),
-      LayoutBuilder(
+      if (MediaQuery.sizeOf(context).width < 600)
+        ExpansionTile(
+          key: const ValueKey('dashboard-filters'),
+          tilePadding: EdgeInsets.zero,
+          leading: const Icon(Icons.tune_outlined),
+          title: Text(_t.search),
+          subtitle: Text(_t.searchReference,
+            style: Theme.of(context).textTheme.bodySmall),
+          childrenPadding: const EdgeInsets.only(bottom: 12),
+          children: [_advancedFilterPanel()],
+        )
+      else
+        _advancedFilterPanel(),
+      const SizedBox(height: 18),
+      if (!_loadingRenewals && _renewals != null) ...[
+        Text(
+          '${_t.renewals}: $_totalLabel',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        const SizedBox(height: 10),
+        if (_renewals!.items.isEmpty)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(_appliedSearch.isNotEmpty || _statusFilter.isNotEmpty ||
+                   _entryFilter.isNotEmpty || _modalityFilter.isNotEmpty ||
+                   _insurerFilter.isNotEmpty
+                  ? _t.noFilterMatches
+                  : AppLocalizations.of(context)!.emptyPage),
+            ),
+          )
+        else
+          ..._renewals!.items.map((item) => _renewalTile(item, colors)),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            OutlinedButton.icon(
+              onPressed: _page > 1 ? () => _loadRenewals(_page - 1) : null,
+              icon: const Icon(Icons.chevron_left),
+              label: Text(_t.previous),
+            ),
+            Text('${_t.page} $_page'),
+            OutlinedButton.icon(
+              onPressed: _renewals!.hasNext
+                  ? () => _loadRenewals(_page + 1)
+                  : null,
+              icon: const Icon(Icons.chevron_right),
+              label: Text(_t.next),
+            ),
+          ],
+        ),
+      ],
+    ];
+  }
+
+  Widget _advancedFilterPanel() {
+    return LayoutBuilder(
         builder: (context, constraints) {
           // No superar el espacio útil tras márgenes y padding de la pantalla.
           final searchWidth =
@@ -682,50 +775,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
             ],
           );
         },
-      ),
-      const SizedBox(height: 18),
-      if (!_loadingRenewals && _renewals != null) ...[
-        Text(
-          '${_t.renewals}: $_totalLabel',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 10),
-        if (_renewals!.items.isEmpty)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(_appliedSearch.isNotEmpty || _statusFilter.isNotEmpty ||
-                   _entryFilter.isNotEmpty || _modalityFilter.isNotEmpty ||
-                   _insurerFilter.isNotEmpty
-                  ? _t.noFilterMatches
-                  : AppLocalizations.of(context)!.emptyPage),
-            ),
-          )
-        else
-          ..._renewals!.items.map((item) => _renewalTile(item, colors)),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            OutlinedButton.icon(
-              onPressed: _page > 1 ? () => _loadRenewals(_page - 1) : null,
-              icon: const Icon(Icons.chevron_left),
-              label: Text(_t.previous),
-            ),
-            Text('${_t.page} $_page'),
-            OutlinedButton.icon(
-              onPressed: _renewals!.hasNext
-                  ? () => _loadRenewals(_page + 1)
-                  : null,
-              icon: const Icon(Icons.chevron_right),
-              label: Text(_t.next),
-            ),
-          ],
-        ),
-      ],
-    ];
+      ),;
   }
 
   String get _totalLabel => _renewals?.total.toString() ?? '0';
