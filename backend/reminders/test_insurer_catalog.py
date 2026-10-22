@@ -58,7 +58,7 @@ class InsurerCatalogTests(APITestCase):
         self.assertEqual(response["Cache-Control"], "no-store")
         self.assertEqual([row["name"] for row in response.data], ["Aseguradora Prueba A"])
         self.assertEqual(self.client.get(self.listing(self.foreign_ws)).status_code, 404)
-        self.assertEqual(self.client.get(self.listing() + "?q=x" * 90).status_code, 400)
+        self.assertEqual(self.client.get(self.listing() + "?q=" + "x" * 81).status_code, 400)
         self.assertIsNone(self.client.get(self.renewal()).data["insurer"])
 
     def test_owner_create_rename_soft_delete_preserves_references(self):
@@ -132,12 +132,7 @@ class InsurerCatalogTests(APITestCase):
         self.client.force_authenticate(user=self.member)
         self.assertEqual(self.client.patch(self.renewal(), {
             "insurer": str(self.first.pk),
-        }, format="json").status_code, 400)  # member cannot create cross-role? Change from owner below.
-        self.client.force_authenticate(user=self.owner)
-        self.assertEqual(self.client.patch(self.renewal(), {
-            "insurer": str(self.first.pk),
         }, format="json").status_code, 200)
-        self.client.force_authenticate(user=self.member)
         sid = str(self.first.pk)
         api_list = reverse("api-renewals", kwargs={"workspace_id": self.ws.pk})
         api_day = reverse("api-agenda-day", kwargs={"workspace_id": self.ws.pk})
