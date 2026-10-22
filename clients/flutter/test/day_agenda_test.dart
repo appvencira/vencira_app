@@ -268,6 +268,8 @@ void main() {
     expect(api.monthRequests.last, '2027-4');
     await tester.tap(find.byKey(const ValueKey('month-previous')));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const ValueKey('month-day-2027-03-31')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('month-day-2027-03-31')));
     await tester.pumpAndSettle();
     expect(find.text('Agenda diaria'), findsOneWidget);
