@@ -24,6 +24,25 @@ class WorkspaceMember(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(fields=["workspace", "user"], name="uniq_workspace_user")]
 
+class WorkspaceModality(models.Model):
+    """Opciones de Modalidad por cuenta, con códigos inmutables al renombrar."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    workspace = models.ForeignKey(
+        Workspace, on_delete=models.CASCADE, related_name="modality_options"
+    )
+    code = models.CharField(max_length=64)
+    label = models.CharField(max_length=80)
+    active = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["workspace", "code"], name="uniq_workspace_modality_code"
+            ),
+        ]
+        ordering = ["code"]
+
+
 class Renewal(models.Model):
     class Entry(models.TextChoices):
         CLIENTS = "clients", "Clientes"
