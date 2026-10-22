@@ -69,7 +69,7 @@ abstract final class VenciraTheme {
         titleTextStyle: TextStyle(
           color: scheme.onSurface,
           fontSize: 23,
-          fontWeight: FontWeight.w650,
+          fontWeight: FontWeight.w600,
           letterSpacing: -0.4,
         ),
       ),
