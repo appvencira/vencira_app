@@ -155,7 +155,12 @@ def renewals(request, workspace_id):
             request.query_params, _visible_renewals(membership)
         )
         if search:
-            scoped = scoped.filter(customer_reference__icontains=search)
+            scoped = scoped.filter(
+                Q(customer_reference__icontains=search)
+                | Q(full_name__icontains=search)
+                | Q(nickname__icontains=search)
+                | Q(policy_number__icontains=search)
+            )
         if status_filter:
             scoped = scoped.filter(status=status_filter)
         scoped = scoped.order_by("expires_on", "id")
@@ -197,6 +202,11 @@ def renewal_detail(request, workspace_id, renewal_id):
         # Snapshot solo en memoria para construir delta no sensible del log.
         before = Renewal(
             customer_reference=renewal.customer_reference,
+            full_name=renewal.full_name,
+            nickname=renewal.nickname,
+            phone=renewal.phone,
+            email=renewal.email,
+            policy_number=renewal.policy_number,
             entry=renewal.entry,
             modality=renewal.modality,
             insurer=renewal.insurer,

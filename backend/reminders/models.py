@@ -85,6 +85,12 @@ class Renewal(models.Model):
         blank=True,
     )
     customer_reference = models.CharField(max_length=160)
+    # Datos propios de cada póliza externa; sin entidad global de cliente.
+    full_name = models.CharField(max_length=160, blank=True, default="")
+    nickname = models.CharField(max_length=80, blank=True, default="")
+    phone = models.CharField(max_length=32, blank=True, default="")
+    email = models.EmailField(blank=True, default="")
+    policy_number = models.CharField(max_length=100, blank=True, default="")
     # Nullable para conservar anotaciones previas; Flutter exigirá Entrada
     # para nuevas anotaciones. No clasificamos automáticamente las antiguas.
     entry = models.CharField(

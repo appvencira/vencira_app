@@ -165,6 +165,11 @@ class VenciraRenewal {
     this.entry,
     this.modality = '',
     this.insurerId,
+    this.fullName = '',
+    this.nickname = '',
+    this.phone = '',
+    this.email = '',
+    this.policyNumber = '',
   });
 
   final String id;
@@ -172,6 +177,11 @@ class VenciraRenewal {
   final String? entry;
   final String modality;
   final String? insurerId;
+  final String fullName;
+  final String nickname;
+  final String phone;
+  final String email;
+  final String policyNumber;
   final DateTime expiresOn;
   final DateTime? noticeDeadlineOn;
   final String status;
@@ -188,6 +198,11 @@ class VenciraRenewal {
       entry: json['entry'] as String?,
       modality: json['modality'] as String? ?? '',
       insurerId: json['insurer'] as String?,
+      fullName: json['full_name'] as String? ?? '',
+      nickname: json['nickname'] as String? ?? '',
+      phone: json['phone'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      policyNumber: json['policy_number'] as String? ?? '',
     );
   }
 }
@@ -201,12 +216,22 @@ class VenciraRenewalInput {
     this.entry,
     this.modality = '',
     this.insurerId,
+    this.fullName = '',
+    this.nickname = '',
+    this.phone = '',
+    this.email = '',
+    this.policyNumber = '',
   });
 
   final String reference;
   final String? entry;
   final String modality;
   final String? insurerId;
+  final String fullName;
+  final String nickname;
+  final String phone;
+  final String email;
+  final String policyNumber;
   final DateTime expiresOn;
   final DateTime? noticeDeadlineOn;
   final String status;
@@ -223,6 +248,11 @@ class VenciraRenewalInput {
         if (entry != null) 'entry': entry,
         'modality': modality.trim(),
         'insurer': insurerId,
+        'full_name': fullName.trim(),
+        'nickname': nickname.trim(),
+        'phone': phone.trim(),
+        'email': email.trim(),
+        'policy_number': policyNumber.trim(),
         'expires_on': _isoDate(expiresOn),
         'notice_deadline_on':
             noticeDeadlineOn == null ? null : _isoDate(noticeDeadlineOn!),

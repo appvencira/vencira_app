@@ -230,6 +230,16 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(renewal.reference, style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 10),
+                if (renewal.fullName.isNotEmpty)
+                  _info('Nombre o razón social', renewal.fullName),
+                if (renewal.nickname.isNotEmpty)
+                  _info('Apodo', renewal.nickname),
+                if (renewal.phone.isNotEmpty)
+                  _info('Teléfono', renewal.phone),
+                if (renewal.email.isNotEmpty)
+                  _info('Correo electrónico', renewal.email),
+                if (renewal.policyNumber.isNotEmpty)
+                  _info('Número de póliza', renewal.policyNumber),
                 _info(_t.entryLabel, _entryLabel(renewal.entry)),
                 _info(_t.modalityLabel, _modalityLabel(renewal.modality)),
                 _info(_t.insurerLabel, renewal.insurerId == null
