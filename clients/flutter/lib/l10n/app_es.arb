@@ -80,5 +80,17 @@
   "agendaMonthHelp": "Selecciona un día para abrir sus anotaciones. Los avisos previstos no son notificaciones enviadas.",
   "agendaMonthEmpty": "No hay actividad registrada este mes.",
   "agendaMonthLoadError": "No se pudo cargar el calendario mensual.",
+  "detailTitle": "Ficha de anotación",
+  "detailAssignment": "Usuario asignado",
+  "detailOtherChange": "Otro cambio",
+  "detailLoadError": "No se pudo cargar esta anotación.",
+  "detailPrototypeWarning": "Versión de prueba: la ficha todavía no incluye todos los campos del whitepaper ni sus cuatro desenlaces.",
+  "detailHistoryTitle": "Historial de la anotación",
+  "detailHistoryLoad": "Consultar historial",
+  "detailHistoryError": "No se pudo cargar el historial.",
+  "detailHistoryEmpty": "No consta historial de actuaciones para esta anotación.",
+  "detailHistoryCreated": "Anotación creada",
+  "detailHistoryUpdated": "Anotación modificada",
+  "detailActorUnavailable": "Usuario no disponible",
   "agendaForecastDisclaimer": "Los avisos previstos no confirman ninguna entrega. Las fechas contractuales no son notificaciones."
 }
