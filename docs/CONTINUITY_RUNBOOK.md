@@ -27,6 +27,13 @@ VENCIRA es agenda multiplataforma (Flutter + Django/PostgreSQL) de pólizas exte
 - Las pruebas recientes usaron worktree efímero `/tmp/vencira-suggestions.RIC9UU/source`, imagen `vencira-suggestions-check:local` y Flutter mediante `ghcr.io/cirruslabs/flutter:stable`. El worktree no es despliegue.
 - No usar GitHub Actions; verificar Docker local con SQLite y, cuando proceda, PostgreSQL efímero `-p` exclusivo distinto de los nombres Compose presentes.
 
+## Última evidencia del servidor
+
+- Usuario confirmó `BACKUP_VERIFICADO=1` tras `pg_dump -Fc` y `pg_restore -l` en el contenedor validado `vencira_localcheck-db-1`.
+- Archivo: `/home/vencira/vencira-db-backups/pre0010-0012_uti0uvWX.dump`.
+- Al finalizar el respaldo indicó `DESPLIEGUE_AUN_NO_REALIZADO=1`. **No confundir respaldo con migración.**
+- La verificación de restauración integral todavía está pendiente; `pg_restore -l` verifica la lectura del índice, no la restauración completa.
+
 ## Pasos siguientes del despliegue (todavía NO realizados)
 
 1. Desde servidor, lectura única: comprobar rama, remoto, checkout limpio, `git fetch`, `git rev-parse HEAD` y `origin/integration/local-e2e-prep`; ver nombres exactos de proyectos y Compose con `docker compose ls`, `docker inspect` y `docker ps` antes de mutar.
