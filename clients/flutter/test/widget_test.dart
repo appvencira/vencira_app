@@ -273,6 +273,12 @@ void main() {
   });
 
   testWidgets('logout limpia los vencimientos de pantalla', (tester) async {
+    // Los filtros adicionales ocupan espacio; mantener la lista visible
+    // en estos tests funcionales y probar móvil en su suite específica.
+    tester.view.physicalSize = const Size(1024, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(VenciraApp(
       api: FakeVenciraApi(
         workspaces: [workspaceA],
@@ -301,6 +307,12 @@ void main() {
   });
 
   testWidgets('muestra estado vacío sin datos reales', (tester) async {
+    // Los filtros adicionales ocupan espacio; mantener la lista visible
+    // en estos tests funcionales y probar móvil en su suite específica.
+    tester.view.physicalSize = const Size(1024, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(VenciraApp(
       api: FakeVenciraApi(
         workspaces: [workspaceA],
@@ -313,6 +325,12 @@ void main() {
   });
 
   testWidgets('expone por separado vencimiento y límite de preaviso', (tester) async {
+    // Los filtros adicionales ocupan espacio; mantener la lista visible
+    // en estos tests funcionales y probar móvil en su suite específica.
+    tester.view.physicalSize = const Size(1024, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(VenciraApp(
       api: FakeVenciraApi(
         workspaces: [workspaceA],
@@ -348,6 +366,12 @@ void main() {
   });
 
   testWidgets('solo muestra vencimientos del workspace seleccionado', (tester) async {
+    // Los filtros adicionales ocupan espacio; mantener la lista visible
+    // en estos tests funcionales y probar móvil en su suite específica.
+    tester.view.physicalSize = const Size(1024, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final pages = {
       workspaceA.id: VenciraRenewalPage(
         total: 1,
