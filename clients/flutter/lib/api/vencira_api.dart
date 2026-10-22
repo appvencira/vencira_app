@@ -48,17 +48,17 @@ abstract class VenciraApi {
 
   Future<VenciraRenewalPage> fetchFilteredRenewals(
       String workspaceId, {int page = 1, String search = '',
-      String status = '', String entry = '', String modality = ''}) =>
+      String status = '', String entry = '', String modality = '', String insurer = ''}) =>
       fetchRenewals(workspaceId, page: page, search: search, status: status);
 
   Future<VenciraAgendaDayPage> fetchFilteredAgendaDay(
       String workspaceId, DateTime day,
-      {int page = 1, String entry = '', String modality = ''}) =>
+      {int page = 1, String entry = '', String modality = '', String insurer = ''}) =>
       fetchAgendaDay(workspaceId, day, page: page);
 
   Future<VenciraAgendaMonth> fetchFilteredAgendaMonth(
       String workspaceId, DateTime month,
-      {String entry = '', String modality = ''}) =>
+      {String entry = '', String modality = '', String insurer = ''}) =>
       fetchAgendaMonth(workspaceId, month);
 
   Future<List<VenciraInsurer>> fetchInsurers(String workspaceId,
@@ -667,8 +667,9 @@ class HttpVenciraApi implements VenciraApi {
   @override
   Future<VenciraRenewalPage> fetchFilteredRenewals(
       String workspaceId, {int page = 1, String search = '',
-      String status = '', String entry = '', String modality = ''}) async {
+      String status = '', String entry = '', String modality = '', String insurer = ''}) async {
     if (!_validUuid(workspaceId) || page < 1 || search.trim().length > 80 ||
+        (insurer.isNotEmpty && !_validUuid(insurer)) ||
         !_filtersValid(entry,modality) ||
         (status.isNotEmpty &&
           !const ['pending','contacted','closed'].contains(status))) {
@@ -680,6 +681,7 @@ class HttpVenciraApi implements VenciraApi {
         if(status.isNotEmpty)'status':status,
         if(entry.isNotEmpty)'entry':entry,
         if(modality.isNotEmpty)'modality':modality,
+        if(insurer.isNotEmpty)'insurer':insurer,
       });
     try {
       return VenciraRenewalPage.fromJson(
@@ -692,8 +694,10 @@ class HttpVenciraApi implements VenciraApi {
   @override
   Future<VenciraAgendaDayPage> fetchFilteredAgendaDay(
       String workspaceId, DateTime day,
-      {int page = 1, String entry = '', String modality = ''}) async {
-    if (!_validUuid(workspaceId) || page < 1 || !_filtersValid(entry,modality)) {
+      {int page = 1, String entry = '', String modality = '', String insurer = ''}) async {
+    if (!_validUuid(workspaceId) || page < 1 ||
+        (insurer.isNotEmpty && !_validUuid(insurer)) ||
+        !_filtersValid(entry,modality)) {
       throw const VenciraApiException();
     }
     final date = _civilDayIso(day);
@@ -702,6 +706,7 @@ class HttpVenciraApi implements VenciraApi {
         'day':date,'page':'$page',
         if(entry.isNotEmpty)'entry':entry,
         if(modality.isNotEmpty)'modality':modality,
+        if(insurer.isNotEmpty)'insurer':insurer,
       });
     try {
       final data = VenciraAgendaDayPage.fromJson(
@@ -716,8 +721,9 @@ class HttpVenciraApi implements VenciraApi {
   @override
   Future<VenciraAgendaMonth> fetchFilteredAgendaMonth(
       String workspaceId, DateTime month,
-      {String entry = '', String modality = ''}) async {
+      {String entry = '', String modality = '', String insurer = ''}) async {
     if (!_validUuid(workspaceId) || month.year < 2000 || month.year > 2100 ||
+        (insurer.isNotEmpty && !_validUuid(insurer)) ||
         !_filtersValid(entry,modality)) {
       throw const VenciraApiException();
     }
@@ -727,6 +733,7 @@ class HttpVenciraApi implements VenciraApi {
         'month':period,
         if(entry.isNotEmpty)'entry':entry,
         if(modality.isNotEmpty)'modality':modality,
+        if(insurer.isNotEmpty)'insurer':insurer,
       });
     try {
       final data = VenciraAgendaMonth.fromJson(
