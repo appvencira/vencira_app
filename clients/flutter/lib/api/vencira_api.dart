@@ -61,6 +61,22 @@ abstract class VenciraApi {
       {String entry = '', String modality = ''}) =>
       fetchAgendaMonth(workspaceId, month);
 
+  Future<List<VenciraInsurer>> fetchInsurers(String workspaceId,
+      {String search = ''}) async => const [];
+
+  Future<VenciraInsurer> createInsurer(String workspaceId, String name) async =>
+      throw const VenciraApiException();
+
+  Future<VenciraInsurer> renameInsurer(
+      String workspaceId, String id, String name) async =>
+      throw const VenciraApiException();
+
+  Future<VenciraInsurer> reactivateInsurer(String workspaceId, String id) async =>
+      throw const VenciraApiException();
+
+  Future<void> deactivateInsurer(String workspaceId, String id) async =>
+      throw const VenciraApiException();
+
   Future<void> logout();
 }
 
@@ -125,6 +141,20 @@ class VenciraModalityOption {
   ];
 }
 
+class VenciraInsurer {
+  const VenciraInsurer({required this.id, required this.name, required this.active});
+  final String id;
+  final String name;
+  final bool active;
+
+  factory VenciraInsurer.fromJson(Map<String, dynamic> json) =>
+      VenciraInsurer(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        active: json['active'] as bool,
+      );
+}
+
 class VenciraRenewal {
   const VenciraRenewal({
     required this.id,
@@ -134,12 +164,14 @@ class VenciraRenewal {
     required this.status,
     this.entry,
     this.modality = '',
+    this.insurerId,
   });
 
   final String id;
   final String reference;
   final String? entry;
   final String modality;
+  final String? insurerId;
   final DateTime expiresOn;
   final DateTime? noticeDeadlineOn;
   final String status;
@@ -155,6 +187,7 @@ class VenciraRenewal {
       status: json['status'] as String,
       entry: json['entry'] as String?,
       modality: json['modality'] as String? ?? '',
+      insurerId: json['insurer'] as String?,
     );
   }
 }
@@ -167,11 +200,13 @@ class VenciraRenewalInput {
     this.status = 'pending',
     this.entry,
     this.modality = '',
+    this.insurerId,
   });
 
   final String reference;
   final String? entry;
   final String modality;
+  final String? insurerId;
   final DateTime expiresOn;
   final DateTime? noticeDeadlineOn;
   final String status;
@@ -187,6 +222,7 @@ class VenciraRenewalInput {
         'customer_reference': reference.trim(),
         if (entry != null) 'entry': entry,
         'modality': modality.trim(),
+        'insurer': insurerId,
         'expires_on': _isoDate(expiresOn),
         'notice_deadline_on':
             noticeDeadlineOn == null ? null : _isoDate(noticeDeadlineOn!),
@@ -702,6 +738,83 @@ class HttpVenciraApi implements VenciraApi {
     } on VenciraUnauthorized { rethrow; } catch (_) {
       throw const VenciraApiException();
     }
+  }
+
+  @override
+  Future<List<VenciraInsurer>> fetchInsurers(
+      String workspaceId, {String search = ''}) async {
+    if (!_validUuid(workspaceId) || search.length > 80) {
+      throw const VenciraApiException();
+    }
+    final uri = Uri(
+      path: '/api/v1/workspaces/$workspaceId/insurers/',
+      queryParameters: {if (search.trim().isNotEmpty) 'q': search.trim()},
+    );
+    try {
+      final rows = await _fetch(uri.toString()) as List<dynamic>;
+      return rows.map((r) =>
+        VenciraInsurer.fromJson(r as Map<String, dynamic>)).toList();
+    } on VenciraUnauthorized { rethrow; } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  Future<http.Response> _insurerWrite(
+      String workspaceId, String method,
+      {String? insurerId, String? name, bool? active}) async {
+    if (!_validUuid(workspaceId) ||
+        (insurerId != null && !_validUuid(insurerId))) {
+      throw const VenciraApiException();
+    }
+    final csrf = await _csrf();
+    final uri = _baseUri.resolve('/api/v1/workspaces/$workspaceId/insurers/' +
+        (insurerId == null ? '' : '$insurerId/'));
+    final request = http.Request(method, uri);
+    request.headers.addAll({
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrf,
+    });
+    if (name != null) request.body = jsonEncode({'name': name});
+    if (active != null) request.body = jsonEncode({'active': active});
+    late http.Response response;
+    try {
+      response = await http.Response.fromStream(await _client.send(request));
+    } catch (_) { throw const VenciraApiException(); }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const VenciraUnauthorized();
+    }
+    final code = method == 'POST' ? 201 : method == 'DELETE' ? 204 : 200;
+    if (response.statusCode != code) throw const VenciraApiException();
+    return response;
+  }
+
+  Future<VenciraInsurer> _insurerResult(Future<http.Response> request) async {
+    final response = await request;
+    try {
+      return VenciraInsurer.fromJson(
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String,dynamic>);
+    } catch (_) { throw const VenciraApiException(); }
+  }
+
+  @override
+  Future<VenciraInsurer> createInsurer(String workspaceId, String name) =>
+      _insurerResult(_insurerWrite(workspaceId, 'POST', name: name));
+
+  @override
+  Future<VenciraInsurer> renameInsurer(
+      String workspaceId, String id, String name) =>
+      _insurerResult(_insurerWrite(workspaceId, 'PATCH',
+        insurerId: id, name: name));
+
+  @override
+  Future<VenciraInsurer> reactivateInsurer(String workspaceId, String id) =>
+      _insurerResult(_insurerWrite(workspaceId, 'PATCH',
+        insurerId: id, active: true));
+
+  @override
+  Future<void> deactivateInsurer(String workspaceId, String id) async {
+    await _insurerWrite(workspaceId, 'DELETE', insurerId: id);
   }
 
   bool _validUuid(String id) {
