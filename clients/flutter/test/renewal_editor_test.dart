@@ -52,7 +52,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text(language == 'es' ? 'Hogar' : 'Llar').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text(language == 'es' ? 'Guardar' : 'Desa'));
+      await tester.tap(find.text(language == 'es' ? 'Guardar' : 'Desar'));
       await tester.pumpAndSettle();
       expect(saved?.entry, 'prospects');
       expect(saved?.modality, 'hogar');
