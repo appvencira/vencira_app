@@ -44,6 +44,23 @@ def workspaces(request):
     return Response(MembershipSerializer(memberships, many=True).data)
 
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def workspace_members(request, workspace_id):
+    """Información mínima para asignaciones del propietario, sin datos ajenos."""
+    membership = _membership(request, workspace_id)
+    if membership.role != WorkspaceMember.Role.OWNER:
+        return Response({"detail": "No autorizado."},
+                        status=status.HTTP_403_FORBIDDEN)
+    members = WorkspaceMember.objects.filter(
+        workspace_id=membership.workspace_id
+    ).select_related("user").order_by("user__username", "user_id")
+    return Response([
+        {"id": row.user_id, "name": row.user.get_username(), "role": row.role}
+        for row in members
+    ])
+
+
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def renewals(request, workspace_id):
