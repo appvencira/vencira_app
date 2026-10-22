@@ -34,7 +34,7 @@ class FakeVenciraApi extends VenciraApi {
   @override
   Future<VenciraRenewalPage> fetchFilteredRenewals(
       String workspaceId, {int page = 1, String search = '',
-      String status = '', String entry = '', String modality = ''}) =>
+      String status = '', String entry = '', String modality = '', String insurer = ''}) =>
       fetchRenewals(workspaceId, page: page, search: search, status: status);
 
   @override
