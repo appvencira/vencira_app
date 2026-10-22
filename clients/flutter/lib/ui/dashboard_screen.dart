@@ -809,44 +809,82 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       'closed' => _t.closed,
       _ => _t.unknown,
     };
+    final hasName = item.fullName.trim().isNotEmpty;
     return Card(
-      child: ListTile(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
         onTap: () => _openDetail(item),
-        leading: Icon(Icons.event_available_outlined, color: colors.primary),
-        title: Text(
-          item.reference,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (item.entry != null)
-              Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.circle, size: 10, color: item.entry == 'clients'
-                    ? colors.primary : colors.tertiary),
-                const SizedBox(width: 6),
-                Text(item.entry == 'clients' ? _t.entryClients : _t.entryProspects),
-              ]),
-            Text('${_t.expiresOn} $expiration'),
-            if (notice != null) Text('${_t.noticeLabel}: $notice'),
-            const SizedBox(height: 6),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Chip(
-                visualDensity: VisualDensity.compact,
-                label: Text(label),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 42, height: 42,
+                decoration: BoxDecoration(
+                  color: colors.primaryContainer,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(Icons.event_note_outlined,
+                  size: 21, color: colors.onPrimaryContainer),
               ),
-            ),
-          ],
-        ),
-        trailing: IconButton(
-          tooltip: _t.editRenewal,
-          onPressed: _saving ? null : () => _editRenewal(item),
-          icon: const Icon(Icons.edit_outlined),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(hasName ? item.fullName : item.reference,
+                      maxLines: 2, overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700)),
+                    if (hasName) ...[
+                      const SizedBox(height: 3),
+                      Text(item.reference,
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant)),
+                    ],
+                    const SizedBox(height: 9),
+                    Text('${_t.expiresOn} $expiration',
+                      style: Theme.of(context).textTheme.bodyMedium),
+                    if (notice != null) ...[
+                      const SizedBox(height: 3),
+                      Text('${_t.noticeLabel}: $notice',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant)),
+                    ],
+                    const SizedBox(height: 9),
+                    Wrap(spacing: 8, runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if (item.entry != null)
+                          Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.circle, size: 8,
+                              color: item.entry == 'clients'
+                                  ? colors.primary : colors.tertiary),
+                            const SizedBox(width: 4),
+                            Text(item.entry == 'clients'
+                                ? _t.entryClients : _t.entryProspects,
+                              style: Theme.of(context).textTheme.labelSmall),
+                          ]),
+                        Chip(
+                          visualDensity: VisualDensity.compact,
+                          label: Text(label),
+                        ),
+                      ]),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: _t.editRenewal,
+                onPressed: _saving ? null : () => _editRenewal(item),
+                icon: const Icon(Icons.edit_outlined, size: 20),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+
 }
