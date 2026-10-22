@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/link.dart';
 
 import '../api/vencira_api.dart';
@@ -543,9 +544,10 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
   String get _totalLabel => _renewals?.total.toString() ?? '0';
 
   String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/'
-        '${date.month.toString().padLeft(2, '0')}/'
-        '${date.year}';
+    return DateFormat(
+      'dd/MM/yyyy',
+      Localizations.localeOf(context).languageCode,
+    ).format(date);
   }
 
   Widget _renewalTile(VenciraRenewal item, ColorScheme colors) {
