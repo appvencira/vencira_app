@@ -207,7 +207,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
       contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
       actionsPadding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
       content: SizedBox(
-        width: compact ? double.maxFinite : 480,
+        width: compact ? MediaQuery.sizeOf(context).width - 64 : 480,
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
