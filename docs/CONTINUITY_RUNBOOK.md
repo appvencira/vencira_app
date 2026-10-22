@@ -58,6 +58,16 @@ VENCIRA es agenda multiplataforma (Flutter + Django/PostgreSQL) de pólizas exte
 - **API y Flutter Web del stack persistente aún no se han recreado.** Siguiente paso: reconstruir/actualizar `api` y `web_preview` solo con `-p vencira_localcheck`; comprobar salud, migraciones y rutas. Mantener el backup `pre0010-0012_uti0uvWX.dump` intacto.
 - No se han activado adjuntos ni habilitado uso con datos personales reales.
 
+## Despliegue localcheck — evidencia de servicios
+
+- Usuario confirmó `ACTUALIZACION_SERVICIOS_COMPLETADA=1` tras `docker compose -p vencira_localcheck ... up -d --no-deps api` y `up -d --no-deps --build web_preview`.
+- API `vencira_localcheck-api-1`: `running/healthy`, ligado a `127.0.0.1:28731`.
+- PostgreSQL `vencira_localcheck-db-1`: `running/healthy`, sin puerto público.
+- Web `vencira_localcheck-web_preview-1`: `running/starting` inmediatamente tras recreación, ligado a `127.0.0.1:28732`. **Pendiente demostrar healthy y HTTP end-to-end**.
+- Stack `vencira_preview` conservado por separado en `127.0.0.1:18731/18732`.
+- `nginx -t` y `manage.py check` superados en el bloque completo que el usuario ejecutó; `migrate --plan` se invocó, pero la salida textual no se adjuntó.
+- Confirmación final pendiente: salud Web estable, HTTP /api/health /api/ready a través del proxy, autenticación/E2E con datos sintéticos, Android. No activar datos reales.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
