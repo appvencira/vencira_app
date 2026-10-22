@@ -358,6 +358,19 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (renewal.entry != null) ...[
+                    Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.circle, size: 10,
+                        color: renewal.entry == 'clients'
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.tertiary),
+                      const SizedBox(width: 6),
+                      Text(renewal.entry == 'clients'
+                          ? _t.entryClients : _t.entryProspects,
+                        style: Theme.of(context).textTheme.labelMedium),
+                    ]),
+                    const SizedBox(height: 6),
+                  ],
                   Text(renewal.reference,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
