@@ -10,6 +10,7 @@ from rest_framework.response import Response
 
 from .models import ReminderCandidate, ReminderPolicy, Renewal, WorkspaceMember
 from .views import _membership, _visible_renewals
+from .filtering import filtered_renewals
 
 
 @api_view(["GET"])
@@ -18,7 +19,8 @@ def agenda_month(request, workspace_id):
     """Una agregación por tipo de evento y estado; nunca paginar 31 agendas."""
     membership = _membership(request, workspace_id)
     raw = request.query_params.get("month", "")
-    if set(request.query_params.keys()) != {"month"} or len(request.query_params.getlist("month")) != 1:
+    if (set(request.query_params.keys()) - {"month", "entry", "modality"} or
+            len(request.query_params.getlist("month")) != 1):
         return Response({"month": "Parámetros no válidos."}, status=status.HTTP_400_BAD_REQUEST)
     if not re.fullmatch(r"(?:20\d\d|2100)-(?:0[1-9]|1[0-2])", raw):
         return Response(
@@ -43,7 +45,7 @@ def agenda_month(request, workspace_id):
         })
         record[kind][renewal_status] = total
 
-    visible = _visible_renewals(membership).exclude(status=Renewal.Status.CLOSED)
+    visible = filtered_renewals(request.query_params, _visible_renewals(membership)).exclude(status=Renewal.Status.CLOSED)
     for field, kind in (("expires_on", "expiry"), ("notice_deadline_on", "notice_deadline")):
         counts = (
             visible.filter(**{f"{field}__gte": first, f"{field}__lt": following})
@@ -58,6 +60,7 @@ def agenda_month(request, workspace_id):
     # sola vez. No se interpreta ninguno como notificación entregada.
     candidates = ReminderCandidate.objects.filter(
         renewal__workspace_id=membership.workspace_id,
+        renewal_id__in=visible.values("pk"),
         renewal__status__in=[Renewal.Status.PENDING, Renewal.Status.CONTACTED],
         state=ReminderCandidate.State.PLANNED,
         policy__enabled=True,
