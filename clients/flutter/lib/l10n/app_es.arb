@@ -65,10 +65,11 @@
   "agendaPreviousDay": "Día anterior",
   "agendaNextDay": "Día siguiente",
   "agendaDayEntries": "Anotaciones del día",
-  "agendaEmptyDay": "No hay vencimientos ni avisos previstos para este día.",
+  "agendaEmptyDay": "No hay vencimientos, preavisos ni avisos previstos para este día.",
   "agendaLoadError": "No se pudo cargar la agenda de este día.",
   "agendaExpiryEvent": "Vencimiento",
+  "agendaContractualNotice": "Límite contractual de preaviso",
   "agendaPlannedReminder": "Aviso previsto · Vencimiento",
   "agendaPlannedNotice": "Aviso previsto · Preaviso",
-  "agendaForecastDisclaimer": "Los avisos mostrados son previsiones, no confirmaciones de entrega."
+  "agendaForecastDisclaimer": "Los avisos previstos no confirman ninguna entrega. Las fechas contractuales no son notificaciones."
 }
