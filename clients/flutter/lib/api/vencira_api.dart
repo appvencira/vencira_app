@@ -16,6 +16,13 @@ abstract class VenciraApi {
 
   Future<VenciraAgendaMonth> fetchAgendaMonth(String workspaceId, DateTime month);
 
+  Future<VenciraRenewal> fetchRenewalDetail(
+      String workspaceId, String renewalId);
+
+  /// Historial técnico de creación y cambios: exclusivo UI web de escritorio.
+  Future<VenciraHistoryPage> fetchRenewalHistory(
+      String workspaceId, String renewalId, {int page = 1});
+
   Future<VenciraRenewal> createRenewal(String workspaceId, VenciraRenewalInput input);
 
   Future<VenciraRenewal> updateRenewal(
@@ -125,6 +132,52 @@ class VenciraRenewalPage {
       total: json['count'] as int,
       items: (json['results'] as List<dynamic>)
           .map((value) => VenciraRenewal.fromJson(value as Map<String, dynamic>))
+          .toList(growable: false),
+      hasNext: json['next'] != null,
+    );
+  }
+}
+
+class VenciraHistoryEvent {
+  const VenciraHistoryEvent({
+    required this.action, required this.timestamp, required this.fields,
+    this.actor, required this.metadata,
+  });
+  final String action;
+  final DateTime timestamp;
+  final String? actor;
+  final List<String> fields;
+  final Map<String, dynamic> metadata;
+
+  factory VenciraHistoryEvent.fromJson(Map<String, dynamic> json) {
+    final action = json['action'];
+    if (action != 'created' && action != 'updated') {
+      throw const FormatException('Unknown audit action');
+    }
+    final fields = (json['changed_fields'] as List<dynamic>)
+        .map((v) => v as String).toList(growable: false);
+    return VenciraHistoryEvent(
+      action: action as String,
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      actor: json['actor'] as String?,
+      fields: fields,
+      metadata: json['metadata'] as Map<String, dynamic>,
+    );
+  }
+}
+
+class VenciraHistoryPage {
+  const VenciraHistoryPage({
+    required this.total, required this.events, required this.hasNext,
+  });
+  final int total;
+  final List<VenciraHistoryEvent> events;
+  final bool hasNext;
+  factory VenciraHistoryPage.fromJson(Map<String, dynamic> json) {
+    return VenciraHistoryPage(
+      total: json['count'] as int,
+      events: (json['results'] as List<dynamic>)
+          .map((e) => VenciraHistoryEvent.fromJson(e as Map<String, dynamic>))
           .toList(growable: false),
       hasNext: json['next'] != null,
     );
@@ -474,6 +527,48 @@ class HttpVenciraApi implements VenciraApi {
       return VenciraRenewal.fromJson(
         jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>,
       );
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<VenciraRenewal> fetchRenewalDetail(
+      String workspaceId, String renewalId) async {
+    if (!_validUuid(workspaceId) || !_validUuid(renewalId)) {
+      throw const VenciraApiException();
+    }
+    try {
+      final json = await _fetch(
+        '/api/v1/workspaces/$workspaceId/renewals/$renewalId/',
+      ) as Map<String, dynamic>;
+      final renewal = VenciraRenewal.fromJson(json);
+      if (renewal.id.toLowerCase() != renewalId.toLowerCase()) {
+        throw const VenciraApiException();
+      }
+      return renewal;
+    } on VenciraUnauthorized {
+      rethrow;
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<VenciraHistoryPage> fetchRenewalHistory(
+      String workspaceId, String renewalId, {int page = 1}) async {
+    if (!_validUuid(workspaceId) || !_validUuid(renewalId) || page < 1) {
+      throw const VenciraApiException();
+    }
+    try {
+      final path = Uri(
+        path: '/api/v1/workspaces/$workspaceId/renewals/$renewalId/history/',
+        queryParameters: {'page': '$page'},
+      ).toString();
+      return VenciraHistoryPage.fromJson(
+          await _fetch(path) as Map<String, dynamic>);
+    } on VenciraUnauthorized {
+      rethrow;
     } catch (_) {
       throw const VenciraApiException();
     }
