@@ -170,6 +170,7 @@ class VenciraRenewal {
     this.phone = '',
     this.email = '',
     this.policyNumber = '',
+    this.notes = '',
   });
 
   final String id;
@@ -182,6 +183,7 @@ class VenciraRenewal {
   final String phone;
   final String email;
   final String policyNumber;
+  final String notes;
   final DateTime expiresOn;
   final DateTime? noticeDeadlineOn;
   final String status;
@@ -203,6 +205,7 @@ class VenciraRenewal {
       phone: json['phone'] as String? ?? '',
       email: json['email'] as String? ?? '',
       policyNumber: json['policy_number'] as String? ?? '',
+      notes: json['notes'] as String? ?? '',
     );
   }
 }
@@ -221,6 +224,7 @@ class VenciraRenewalInput {
     this.phone = '',
     this.email = '',
     this.policyNumber = '',
+    this.notes = '',
   });
 
   final String reference;
@@ -232,6 +236,7 @@ class VenciraRenewalInput {
   final String phone;
   final String email;
   final String policyNumber;
+  final String notes;
   final DateTime expiresOn;
   final DateTime? noticeDeadlineOn;
   final String status;
@@ -253,6 +258,7 @@ class VenciraRenewalInput {
         'phone': phone.trim(),
         'email': email.trim(),
         'policy_number': policyNumber.trim(),
+        'notes': notes.trim(),
         'expires_on': _isoDate(expiresOn),
         'notice_deadline_on':
             noticeDeadlineOn == null ? null : _isoDate(noticeDeadlineOn!),

@@ -16,6 +16,7 @@ class MembershipSerializer(serializers.ModelSerializer):
 
 
 class RenewalSerializer(serializers.ModelSerializer):
+    notes = serializers.CharField(max_length=4000, allow_blank=True, required=False)
     insurer = serializers.PrimaryKeyRelatedField(
         queryset=WorkspaceInsurer.objects.all(), allow_null=True, required=False,
     )
@@ -27,7 +28,7 @@ class RenewalSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Renewal
-        fields = ("id", "customer_reference", "full_name", "nickname", "phone", "email", "policy_number", "entry", "modality", "insurer",
+        fields = ("id", "customer_reference", "full_name", "nickname", "phone", "email", "policy_number", "notes", "entry", "modality", "insurer",
                   "expires_on", "notice_deadline_on", "status",
                   "assigned_to", "created_at", "updated_at")
         read_only_fields = ("id", "created_at", "updated_at")
@@ -35,7 +36,7 @@ class RenewalSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         # Rechazo explícito de claves no editables y campos desconocidos:
         # no aceptar silenciosamente identificadores ajenos ni intentos de mass assignment.
-        writable = {"customer_reference", "full_name", "nickname", "phone", "email", "policy_number", "entry", "modality", "expires_on",
+        writable = {"customer_reference", "full_name", "nickname", "phone", "email", "policy_number", "notes", "entry", "modality", "expires_on",
                     "notice_deadline_on", "status", "assigned_to", "insurer"}
         forbidden = set(self.initial_data) - writable
         if forbidden:

@@ -136,3 +136,42 @@ class PolicyIdentityTests(TestCase):
                               content_type="application/json").status_code,
             404,
         )
+
+    def test_notes_are_saved_and_audited_without_content(self):
+        old = Renewal.objects.create(
+            workspace=self.workspace, customer_reference="DEMO",
+            expires_on=date(2027, 5, 1),
+        )
+        before = Renewal(
+            customer_reference=old.customer_reference,
+            full_name=old.full_name, nickname=old.nickname,
+            phone=old.phone, email=old.email,
+            policy_number=old.policy_number, notes=old.notes,
+            entry=old.entry, modality=old.modality, insurer=old.insurer,
+            expires_on=old.expires_on,
+            notice_deadline_on=old.notice_deadline_on,
+            status=old.status, assigned_to_id=old.assigned_to_id,
+        )
+        serializer = RenewalSerializer(
+            old, data={"notes": "Solo notas sintéticas"},
+            partial=True, context={"membership": self.membership},
+        )
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        updated = serializer.save()
+        event = make_audit_event(renewal=updated, actor=self.user, before=before)
+        self.assertIn("notes", event.changed_fields)
+        self.assertNotIn("Solo notas sintéticas", str(event.metadata))
+        old.refresh_from_db()
+        self.assertEqual(old.notes, "Solo notas sintéticas")
+
+    def test_notes_length_is_limited(self):
+        old = Renewal.objects.create(
+            workspace=self.workspace, customer_reference="DEMO",
+            expires_on=date(2027, 5, 1),
+        )
+        serializer = RenewalSerializer(
+            old, data={"notes": "x" * 4001},
+            partial=True, context={"membership": self.membership},
+        )
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("notes", serializer.errors)
