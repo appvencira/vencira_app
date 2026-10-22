@@ -25,6 +25,10 @@ class WorkspaceMember(models.Model):
         constraints = [models.UniqueConstraint(fields=["workspace", "user"], name="uniq_workspace_user")]
 
 class Renewal(models.Model):
+    class Entry(models.TextChoices):
+        CLIENTS = "clients", "Clientes"
+        PROSPECTS = "prospects", "Candidatos"
+
     class Status(models.TextChoices):
         PENDING = "pending", "Pendiente"
         CONTACTED = "contacted", "Contactado"
@@ -41,6 +45,12 @@ class Renewal(models.Model):
         blank=True,
     )
     customer_reference = models.CharField(max_length=160)
+    # Nullable para conservar anotaciones previas; Flutter exigirá Entrada
+    # para nuevas anotaciones. No clasificamos automáticamente las antiguas.
+    entry = models.CharField(
+        max_length=16, choices=Entry.choices, null=True, blank=True,
+    )
+    modality = models.CharField(max_length=80, blank=True, default="")
     expires_on = models.DateField()
     notice_deadline_on = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
