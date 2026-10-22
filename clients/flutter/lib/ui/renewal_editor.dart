@@ -21,6 +21,11 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
   final _formKey = GlobalKey<FormState>();
   AppLocalizations get _t => AppLocalizations.of(context)!;
   late final TextEditingController _reference;
+  late final TextEditingController _fullName;
+  late final TextEditingController _nickname;
+  late final TextEditingController _phone;
+  late final TextEditingController _email;
+  late final TextEditingController _policyNumber;
   String? _entry;
   String _modality = '';
   String? _insurerId;
@@ -32,6 +37,11 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
   void initState() {
     super.initState();
     _reference = TextEditingController(text: widget.existing?.reference ?? '');
+    _fullName = TextEditingController(text: widget.existing?.fullName ?? '');
+    _nickname = TextEditingController(text: widget.existing?.nickname ?? '');
+    _phone = TextEditingController(text: widget.existing?.phone ?? '');
+    _email = TextEditingController(text: widget.existing?.email ?? '');
+    _policyNumber = TextEditingController(text: widget.existing?.policyNumber ?? '');
     _entry = widget.existing?.entry;
     _modality = widget.existing?.modality ?? '';
     _insurerId = widget.existing?.insurerId;
@@ -43,6 +53,11 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
   @override
   void dispose() {
     _reference.dispose();
+    _fullName.dispose();
+    _nickname.dispose();
+    _phone.dispose();
+    _email.dispose();
+    _policyNumber.dispose();
     super.dispose();
   }
 
@@ -99,6 +114,11 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
     }
     Navigator.of(context).pop(VenciraRenewalInput(
       reference: _reference.text.trim(),
+      fullName: _fullName.text.trim(),
+      nickname: _nickname.text.trim(),
+      phone: _phone.text.trim(),
+      email: _email.text.trim(),
+      policyNumber: _policyNumber.text.trim(),
       entry: _entry,
       modality: _modality,
       insurerId: _insurerId,
@@ -135,6 +155,41 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                   validator: (v) =>
                       v == null || v.trim().isEmpty ? _t.referenceRequired : null,
                 ),
+                TextFormField(
+                  key: const ValueKey('full-name'),
+                  controller: _fullName,
+                  maxLength: 160,
+                  decoration: const InputDecoration(labelText: 'Nombre y apellidos o razón social', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  key: const ValueKey('nickname'),
+                  controller: _nickname,
+                  maxLength: 80,
+                  decoration: const InputDecoration(labelText: 'Apodo o nick', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  key: const ValueKey('phone'),
+                  controller: _phone,
+                  maxLength: 32,
+                  decoration: const InputDecoration(labelText: 'Teléfono', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  key: const ValueKey('email'),
+                  controller: _email,
+                  maxLength: 254,
+                  decoration: const InputDecoration(labelText: 'Correo electrónico', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  key: const ValueKey('policy-number'),
+                  controller: _policyNumber,
+                  maxLength: 100,
+                  decoration: const InputDecoration(labelText: 'Número de póliza', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 10),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
                   key: const ValueKey('renewal-entry'),
