@@ -1,5 +1,7 @@
 # VENCIRA
 
+**Continuidad entre conversaciones:** antes de desarrollar o desplegar, leer [docs/CONTINUITY_RUNBOOK.md](docs/CONTINUITY_RUNBOOK.md). Incluye rama vigente, PR/migraciones, servidor objetivo, validación local sin GitHub Actions, backups, despliegue y restricciones de seguridad.
+
 **Anticipamos vencimientos. Creamos oportunidades.**
 
 Proyecto comercial de gestión de vencimientos y seguimiento de oportunidades, inicialmente para mediadores de seguros.
