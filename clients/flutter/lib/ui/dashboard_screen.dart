@@ -432,13 +432,20 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         ),
       ),
       const SizedBox(height: 18),
-      Wrap(
-        spacing: 12,
-        runSpacing: 10,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
+      LayoutBuilder(
+        builder: (context, constraints) {
+          // No superar el espacio útil tras márgenes y padding de la pantalla.
+          final searchWidth =
+              constraints.maxWidth < 295 ? constraints.maxWidth : 295.0;
+          final statusWidth =
+              constraints.maxWidth < 240 ? constraints.maxWidth : 240.0;
+          return Wrap(
+            spacing: 12,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
           SizedBox(
-            width: 295,
+            width: searchWidth,
             child: TextField(
               controller: _searchController,
               maxLength: 80,
@@ -454,7 +461,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
             ),
           ),
           SizedBox(
-            width: 240,
+            width: statusWidth,
             child: DropdownButtonFormField<String>(
               key: ValueKey('status:${_selected?.id}:$_statusFilter'),
               isExpanded: true,
@@ -481,7 +488,9 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
             onPressed: _loadingRenewals || _saving ? null : _clearFilters,
             child: Text(_t.clearFilters),
           ),
-        ],
+            ],
+          );
+        },
       ),
       const SizedBox(height: 18),
       if (!_loadingRenewals && _renewals != null) ...[
@@ -548,25 +557,31 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     return Card(
       child: ListTile(
         leading: Icon(Icons.event_available_outlined, color: colors.primary),
-        title: Text(item.reference),
+        title: Text(
+          item.reference,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
         subtitle: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('${_t.expiresOn} $expiration'),
             if (notice != null) Text('${_t.noticeLabel}: $notice'),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Chip(label: Text(label)),
-            IconButton(
-              tooltip: _t.editRenewal,
-              onPressed: _saving ? null : () => _editRenewal(item),
-              icon: const Icon(Icons.edit_outlined),
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Chip(
+                visualDensity: VisualDensity.compact,
+                label: Text(label),
+              ),
             ),
           ],
+        ),
+        trailing: IconButton(
+          tooltip: _t.editRenewal,
+          onPressed: _saving ? null : () => _editRenewal(item),
+          icon: const Icon(Icons.edit_outlined),
         ),
       ),
     );
