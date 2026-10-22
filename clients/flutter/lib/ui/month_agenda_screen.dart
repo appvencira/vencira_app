@@ -282,19 +282,7 @@ class _VenciraMonthAgendaScreenState extends State<VenciraMonthAgendaScreen> {
           ]),
           Center(child: TextButton.icon(onPressed: _goToday,
             icon: const Icon(Icons.today), label: Text(_t.agendaToday))),
-          Wrap(
-            spacing: 13, runSpacing: 8,
-            alignment: WrapAlignment.center,
-            children: [
-              _legend(_t.agendaExpiryEvent, colors.error),
-              _legend(_t.noticeLabel, colors.tertiary),
-              _legend(_t.agendaMonthReminder, colors.primary),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(_t.agendaMonthStatusLegend, textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           if (_loading)
             const Center(child: CircularProgressIndicator())
           else if (_unauthorized)
@@ -307,6 +295,28 @@ class _VenciraMonthAgendaScreenState extends State<VenciraMonthAgendaScreen> {
           else if (_summary != null) ...[
             _calendar(locale, colors),
             const SizedBox(height: 12),
+            ExpansionTile(
+              key: const ValueKey('month-legend'),
+              tilePadding: const EdgeInsets.symmetric(horizontal: 4),
+              title: Text(locale == 'ca' ? 'Llegenda de colors' : 'Leyenda de colores',
+                style: Theme.of(context).textTheme.bodyMedium),
+              children: [
+                Wrap(
+                  spacing: 13, runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    _legend(_t.agendaExpiryEvent, colors.error),
+                    _legend(_t.noticeLabel, colors.tertiary),
+                    _legend(_t.agendaMonthReminder, colors.primary),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(_t.agendaMonthStatusLegend,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall),
+                const SizedBox(height: 12),
+              ],
+            ),
             if (_summary!.days.isEmpty)
               Text(_t.agendaMonthEmpty, textAlign: TextAlign.center),
             Text(_t.agendaMonthHelp, textAlign: TextAlign.center,
