@@ -71,5 +71,14 @@
   "agendaContractualNotice": "Límite contractual de preaviso",
   "agendaPlannedReminder": "Aviso previsto · Vencimiento",
   "agendaPlannedNotice": "Aviso previsto · Preaviso",
+  "agendaMonthTitle": "Calendario mensual",
+  "agendaMonthOpen": "Ver mes",
+  "agendaPreviousMonth": "Mes anterior",
+  "agendaNextMonth": "Mes siguiente",
+  "agendaMonthReminder": "Aviso previsto",
+  "agendaMonthStatusLegend": "Punto lleno: pendiente · Círculo vacío: contactado (no cerrado)",
+  "agendaMonthHelp": "Selecciona un día para abrir sus anotaciones. Los avisos previstos no son notificaciones enviadas.",
+  "agendaMonthEmpty": "No hay actividad registrada este mes.",
+  "agendaMonthLoadError": "No se pudo cargar el calendario mensual.",
   "agendaForecastDisclaimer": "Los avisos previstos no confirman ninguna entrega. Las fechas contractuales no son notificaciones."
 }
