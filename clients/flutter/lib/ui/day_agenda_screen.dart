@@ -88,7 +88,10 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
 
   void _chooseDay(DateTime day) {
     final civil = _civilDate(day);
-    if (civil == _selectedDay) return;
+    if (civil == _selectedDay) {
+      if (_page != 1) _loadDay(1);
+      return;
+    }
     setState(() => _selectedDay = civil);
     _loadDay(1);
   }
@@ -117,7 +120,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
       _selectedDay.day - (_selectedDay.weekday - DateTime.monday),
     );
     return LayoutBuilder(builder: (context, constraints) {
-      final itemWidth = (constraints.maxWidth / 7).clamp(46.0, 88.0);
+      final itemWidth = (constraints.maxWidth / 7).clamp(46.0, 88.0).toDouble();
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
