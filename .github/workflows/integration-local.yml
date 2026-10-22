@@ -1,0 +1,142 @@
+name: VENCIRA integrated local rehearsal
+
+on:
+  pull_request:
+    branches:
+      - chore/bootstrap-vencira
+    paths:
+      - 'backend/**'
+      - 'clients/flutter/**'
+      - 'scripts/**'
+      - 'compose*.yaml'
+      - 'deploy/local-web/**'
+      - '.github/workflows/integration-local.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  django:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: vencira_ci
+          POSTGRES_USER: vencira_ci
+          POSTGRES_PASSWORD: ci-ephemeral-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vencira_ci -d vencira_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      VENCIRA_ENV: test
+      DJANGO_DEBUG: "1"
+      DJANGO_SECRET_KEY: "ci-only-local-integration-secret-2026"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      VENCIRA_DB_ENGINE: sqlite
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python manage.py check
+      - run: python manage.py makemigrations --check --dry-run
+      - name: Django unit and security tests (SQLite)
+        run: python manage.py test
+      - name: Django unit and security tests (PostgreSQL 17)
+        run: python manage.py test
+        env:
+          VENCIRA_DB_ENGINE: postgresql
+          POSTGRES_DB: vencira_ci
+          POSTGRES_USER: vencira_ci
+          POSTGRES_PASSWORD: ci-ephemeral-only
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_PORT: "5432"
+
+  flutter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: clients/flutter
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate ES/CA messages
+        working-directory: .
+        run: python3 scripts/check_flutter_l10n.py
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter gen-l10n
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build web --release --pwa-strategy=none
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vencira-integration-web
+          path: clients/flutter/build/web/
+          if-no-files-found: error
+          retention-days: 2
+
+  local_http:
+    name: Docker E2E same-origin + agenda
+    needs: [django, flutter]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: vencira-integration-web
+          path: clients/flutter/build/web/
+      - name: Generate unique ephemeral development secrets
+        run: python3 scripts/init_env.py
+      - name: Validate and start isolated Docker stack
+        run: |
+          docker compose -p vencira_e2e_ci -f compose.yaml -f compose.web.yaml config --quiet
+          docker compose -p vencira_e2e_ci -f compose.yaml -f compose.web.yaml up --build -d
+          docker compose -p vencira_e2e_ci -f compose.yaml -f compose.web.yaml exec -T web nginx -t
+      - name: Check same-origin login header
+        run: |
+          for attempt in $(seq 1 40); do
+            if curl -fsSI --max-time 3 'http://127.0.0.1:18732/accounts/login/?next=/' > /tmp/vencira-headers; then
+              break
+            fi
+            sleep 2
+          done
+          tr -d '\r' < /tmp/vencira-headers | grep -iEq '^referrer-policy: same-origin$'
+      - name: Seed only fictional workspace and credentials
+        run: |
+          echo "VENCIRA_E2E_USERNAME=vencira_e2e_ci" >> "$GITHUB_ENV"
+          DEMO_PASSWORD="$(python3 -c 'import secrets; print(secrets.token_urlsafe(30))')"
+          echo "::add-mask::$DEMO_PASSWORD"
+          echo "VENCIRA_E2E_PASSWORD=$DEMO_PASSWORD" >> "$GITHUB_ENV"
+          docker compose -p vencira_e2e_ci -f compose.yaml -f compose.web.yaml \
+            exec -T -e VENCIRA_E2E_PASSWORD="$DEMO_PASSWORD" api \
+            python manage.py shell -c "import os; from django.contrib.auth import get_user_model; from reminders.models import Workspace, WorkspaceMember, Renewal; from datetime import date; u=get_user_model().objects.create_user(username='vencira_e2e_ci', password=os.environ['VENCIRA_E2E_PASSWORD']); w=Workspace.objects.create(name='Equipo E2E'); WorkspaceMember.objects.create(user=u, workspace=w, role='owner'); Renewal.objects.create(workspace=w, assigned_to=u, customer_reference='PRUEBA-E2E-001', expires_on=date(2027,1,31))"
+      - name: Exercise authenticated proxy, CSRF, agenda and logout
+        run: python3 scripts/smoke_same_origin.py
+      - name: Report Docker logs only on failure
+        if: failure()
+        run: docker compose -p vencira_e2e_ci -f compose.yaml -f compose.web.yaml logs --tail=70
+      - name: Destroy isolated CI containers and ephemeral database
+        if: always()
+        run: docker compose -p vencira_e2e_ci -f compose.yaml -f compose.web.yaml down -v --remove-orphans
