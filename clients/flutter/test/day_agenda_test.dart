@@ -13,6 +13,7 @@ class DemoAgendaApi implements VenciraApi {
 
   final Completer<VenciraAgendaDayPage>? waitForMarch;
   final requests = <String>[];
+  final monthRequests = <String>[];
   static const workspaceId = '11111111-1111-4111-8111-111111111111';
   static const workspace = VenciraWorkspace(
     id: workspaceId, name: 'ORGANIZACIÓN FICTICIA', role: 'owner',
@@ -25,6 +26,24 @@ class DemoAgendaApi implements VenciraApi {
   Future<VenciraRenewalPage> fetchRenewals(
     String workspaceId, {int page = 1, String search = '', String status = '',
   }) async => const VenciraRenewalPage(total: 0, items: [], hasNext: false);
+
+  @override
+  Future<VenciraAgendaMonth> fetchAgendaMonth(
+      String workspaceId, DateTime month) async {
+    expect(workspaceId, DemoAgendaApi.workspaceId);
+    monthRequests.add('${month.year}-${month.month}');
+    return VenciraAgendaMonth(
+      month: DateTime(month.year, month.month, 1),
+      days: month.month == 3 ? [
+        VenciraMonthDay(
+          day: DateTime(2027, 3, 31),
+          expiry: const VenciraMonthCounts(pending: 1, contacted: 0),
+          notice: const VenciraMonthCounts(pending: 0, contacted: 0),
+          reminder: const VenciraMonthCounts(pending: 0, contacted: 1),
+        ),
+      ] : const [],
+    );
+  }
 
   @override
   Future<VenciraAgendaDayPage> fetchAgendaDay(
