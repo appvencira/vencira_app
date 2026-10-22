@@ -104,7 +104,8 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
     if (!mounted) return;
     final input = await showDialog<VenciraRenewalInput>(context: context,
       builder: (_) => VenciraRenewalEditor(
-        existing: current, modalities: options, insurers: insurers));
+        existing: current, modalities: options, insurers: insurers,
+        api: widget.api, workspaceId: widget.workspace.id));
     if (!mounted || input == null) return;
     setState(() => _saving = true);
     try {
