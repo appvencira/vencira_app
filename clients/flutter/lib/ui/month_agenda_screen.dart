@@ -8,7 +8,7 @@ import '../l10n/app_localizations.dart';
 class VenciraMonthAgendaScreen extends StatefulWidget {
   const VenciraMonthAgendaScreen({
     super.key, required this.api, required this.workspace, required this.initialMonth,
-    this.entry = '', this.modality = '',
+    this.entry = '', this.modality = '', this.insurer = '',
   });
 
   final VenciraApi api;
@@ -16,6 +16,7 @@ class VenciraMonthAgendaScreen extends StatefulWidget {
   final DateTime initialMonth;
   final String entry;
   final String modality;
+  final String insurer;
 
   @override
   State<VenciraMonthAgendaScreen> createState() => _VenciraMonthAgendaScreenState();
@@ -55,7 +56,8 @@ class _VenciraMonthAgendaScreenState extends State<VenciraMonthAgendaScreen> {
     try {
       final result = await widget.api.fetchFilteredAgendaMonth(
         widget.workspace.id, requested,
-        entry: widget.entry, modality: widget.modality);
+        entry: widget.entry, modality: widget.modality,
+        insurer: widget.insurer);
       if (!mounted || sequence != _generation) return;
       setState(() {
         _summary = result;
