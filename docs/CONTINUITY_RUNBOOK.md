@@ -74,6 +74,13 @@ Confirmado por salida del servidor: `vencira_localcheck-web_preview-1` **healthy
 
 **Queda pendiente** prueba funcional autenticada de identidad, notas, sugerencias y permisos con datos sintéticos; esta verificación HTTP por sí sola no valida funcionalidad de negocio. No introducir datos personales reales.
 
+## Pruebas PostgreSQL posteriores al despliegue
+
+- El usuario ejecutó las pruebas Django `reminders.test_policy_identity` y `reminders.test_person_suggestions` mediante contenedor efímero apuntado al servicio PostgreSQL de `vencira_localcheck`.
+- Resultado confirmado: `Destroying test database for alias 'default'...`, `RESULTADO_POSTGRESQL=0` y `CONSOLA_ABIERTA`.
+- Django utiliza una base de pruebas separada y la elimina al terminar. No constan fallos.
+- Pendiente: validación visual y funcional desde Android bajo acceso restringido, usando solo datos ficticios.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
