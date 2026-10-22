@@ -7,10 +7,11 @@ import 'modality_labels.dart';
 
 /// Editor local: devuelve una solicitud validada, sin credenciales ni red.
 class VenciraRenewalEditor extends StatefulWidget {
-  const VenciraRenewalEditor({super.key, this.existing, this.modalities});
+  const VenciraRenewalEditor({super.key, this.existing, this.modalities, this.insurers});
 
   final VenciraRenewal? existing;
   final List<VenciraModalityOption>? modalities;
+  final List<VenciraInsurer>? insurers;
 
   @override
   State<VenciraRenewalEditor> createState() => _VenciraRenewalEditorState();
@@ -22,6 +23,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
   late final TextEditingController _reference;
   String? _entry;
   String _modality = '';
+  String? _insurerId;
   DateTime? _expiration;
   DateTime? _notice;
   late String _status;
@@ -32,6 +34,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
     _reference = TextEditingController(text: widget.existing?.reference ?? '');
     _entry = widget.existing?.entry;
     _modality = widget.existing?.modality ?? '';
+    _insurerId = widget.existing?.insurerId;
     _expiration = widget.existing?.expiresOn;
     _notice = widget.existing?.noticeDeadlineOn;
     _status = widget.existing?.status ?? 'pending';
@@ -98,6 +101,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
       reference: _reference.text.trim(),
       entry: _entry,
       modality: _modality,
+      insurerId: _insurerId,
       expiresOn: _expiration!,
       noticeDeadlineOn: _notice,
       status: _status,
@@ -179,6 +183,37 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                     if (value != null) _modality = value;
                   }),
                 ),
+                const SizedBox(height: 12),
+                LayoutBuilder(builder: (context, limits) {
+                  final choices = widget.insurers ?? const <VenciraInsurer>[];
+                  final existing = choices.any((s) => s.id == _insurerId);
+                  return DropdownMenu<String>(
+                    key: const ValueKey('renewal-insurer'),
+                    width: limits.maxWidth,
+                    enableFilter: true,
+                    requestFocusOnTap: true,
+                    label: Text(_t.insurerLabel),
+                    initialSelection: _insurerId ?? '',
+                    dropdownMenuEntries: [
+                      DropdownMenuEntry(value: '', label: _t.notDefined),
+                      for (final row in choices)
+                        if (row.active || row.id == _insurerId)
+                          DropdownMenuEntry(
+                            value: row.id,
+                            label: row.name +
+                              (row.active ? '' : ' · ' + _t.modalityInactive),
+                          ),
+                      if (_insurerId != null && !existing)
+                        DropdownMenuEntry(
+                          value: _insurerId!,
+                          label: _t.insurerLegacy,
+                        ),
+                    ],
+                    onSelected: (value) => setState(
+                      () => _insurerId = value == '' ? null : value,
+                    ),
+                  );
+                }),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: () => _chooseDate(notice: false),
