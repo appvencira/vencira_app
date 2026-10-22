@@ -162,6 +162,14 @@ Confirmado por salida del servidor: `vencira_localcheck-web_preview-1` **healthy
 - Pendiente: aceptación visual desde Android con capturas (formularios, solapamientos, scroll y botones), y siguiente pase de UX en dashboard y editor. No confundir código compilado con aprobación visual.
 - Mantener procedimiento de **un script integral por fase** con todas las comprobaciones posibles, salida agrupada y protección de la sesión SSH.
 
+## UI V2 — desplegada y validada técnicamente en servidor
+
+- El usuario ejecutó la actualización a `5fcbfd82c3633a15019082b88949cc57d86c4689`, que incluye cambios de `dashboard_screen.dart`, `day_agenda_screen.dart`, `month_agenda_screen.dart`, `docs/DESIGN_SYSTEM_V2.md`, script de verificación y solución de archivos Flutter generados.
+- Reportó desde `scripts/validate_ui_v2.sh`: rama correcta, lock local admitido, fuentes versionadas limpias, Docker Compose correcto; Flutter pub get/analyze/test/build `OK`; web build/deploy `OK`; `WEB_HEALTH=healthy`; proxy HTTP 200 en `/`, `/api/health/`, `/api/ready/`, `/accounts/login/`; salud `api/db/web_preview=healthy`.
+- `DESPLIEGUE_WEB_LOCALCHECK=OK`, `SIN_MIGRACIONES_NI_CAMBIOS_API_DB=1`, `RESULTADO_GLOBAL=0`, `EJECUCION_COMPLETADA=1`, `CONSOLA_ABIERTA`. Log servidor: `/tmp/vencira-ui-v2.QGWdavHA.log`.
+- **No pedir repetir pruebas técnicas recién superadas.** La aprobación visual es distinta de la técnica: solicitar comparación y capturas Android de panel, agenda y calendario en `https://dev.vencira.es`, revisar si los filtros están colapsados y si se redujo el exceso de botones.
+- **Siguiente fase objetivo:** pulido de fichas, editor y calendario hasta experiencia corporativa cuidada; todo implementado/documentado primero en GitHub y verificado con un script consolidado por fase. No usar datos reales.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
