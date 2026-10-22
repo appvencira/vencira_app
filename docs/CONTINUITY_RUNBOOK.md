@@ -170,6 +170,23 @@ Confirmado por salida del servidor: `vencira_localcheck-web_preview-1` **healthy
 - **No pedir repetir pruebas técnicas recién superadas.** La aprobación visual es distinta de la técnica: solicitar comparación y capturas Android de panel, agenda y calendario en `https://dev.vencira.es`, revisar si los filtros están colapsados y si se redujo el exceso de botones.
 - **Siguiente fase objetivo:** pulido de fichas, editor y calendario hasta experiencia corporativa cuidada; todo implementado/documentado primero en GitHub y verificado con un script consolidado por fase. No usar datos reales.
 
+## V3 premium — código implementado, pendiente de pruebas locales
+
+**Contexto:** tras revisar capturas de Android del rediseño V2 (salud técnica correcta), el usuario pidió elevar calidad y profesionalidad: eliminar campos con borde duro, evitar rectángulos de calendario y colorear **el día entero** según los puntos de actividad. Solicita ejecución autónoma y un único script local por fase.
+
+- Fuente técnica/diseño: [`docs/DESIGN_SYSTEM_V3.md`](DESIGN_SYSTEM_V3.md) (paleta, semántica de calendario, accesibilidad, referencias Notion/Fantastical/Linear, pantallas, pruebas, commits, procedimiento).
+- Cambios ya en GitHub `integration/local-e2e-prep`, **NO probados ni desplegados en el servidor al escribir esto**:
+  - Tema V3: base petróleo, superficies quietas claro/oscuro, campos rellenos suaves sin contorno persistente, radios, botones, tarjetas y focus accesible (`vencira_theme.dart`, `224aeaf2`, `3630a7d3`).
+  - Mes: casillas 1:1, tintado íntegro prioritario vencimiento > preaviso > aviso, marcas de estados múltiples, hoy con anillo, leyenda plegada al pie (`month_agenda_screen.dart`, `3628324a`, `65d92436`).
+  - Agenda: tira semanal con fechas circulares y marcadores conservados (`day_agenda_screen.dart`, `af0ffae4`).
+  - Inicio: tarjetas de vencimiento legibles, nombre/referencia, fechas y estado (`dashboard_screen.dart`, `a20e4671`).
+  - Editor: apartados agrupados, teclado adaptado, fechas más cómodas, diálogos móviles con ancho acotado (`renewal_editor.dart`, `b1ee9bfb`, `cb31a4f7`).
+  - Ficha: contacto, póliza, fechas, notas en tarjetas distintas (`renewal_detail_screen.dart`, `5345c7ff`).
+  - Nuevo test de estilo del mes claro/oscuro y prioridad de marcas: `clients/flutter/test/design_v3_test.dart` (`cd4c0f43`, `083741c3`).
+- Script de verificación y despliegue V3 en **`scripts/validate_ui_v3.sh`**, commit `6246a4a0`. Basado en el script V2 ya comprobado, añade test específico del calendario y HTTPS externo informativo.
+- **Siguiente paso**: sincronización GitHub y ejecutar UNA vez el script completo con `bash scripts/validate_ui_v3.sh` desde `/home/vencira/vencira-localcheck`; solo si test Flutter+build superan, recrear `web_preview` del proyecto `vencira_localcheck`. Si falla, el asistente corrige GitHub y repite solo esta prueba. Sin Actions, sin tocar BD/API/otro stack.
+- **Después del resultado verde**: capturas Android V3 (mes con evento, agenda semanal, inicio, editor y ficha), comprobar 320/375px, modo claro/oscuro. No dar por satisfactoria experiencia visual solo por tests. Registrar resultado y SHA.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
