@@ -60,6 +60,27 @@ class DemoAgendaApi implements VenciraApi {
         ],
       );
     }
+    if (day.month == 4 && day.day == 20) {
+      return VenciraAgendaDayPage(
+        day: DateTime(2027, 4, 20),
+        total: 1,
+        hasNext: false,
+        entries: [
+          VenciraAgendaEntry(
+            renewal: VenciraRenewal(
+              id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+              reference: 'PREAVISO-CONTRACTUAL',
+              expiresOn: DateTime(2027, 5, 1),
+              noticeDeadlineOn: DateTime(2027, 4, 20),
+              status: 'pending',
+            ),
+            events: const [
+              VenciraAgendaEvent(kind: 'notice_deadline'),
+            ],
+          ),
+        ],
+      );
+    }
     return VenciraAgendaDayPage(
       day: DateTime(day.year, day.month, day.day),
       total: 0, entries: const [], hasNext: false,
@@ -84,6 +105,7 @@ Widget _screen(
   DemoAgendaApi api, {
   String locale = 'es',
   ThemeMode theme = ThemeMode.light,
+  DateTime? initialDay,
 }) => MaterialApp(
   locale: Locale(locale),
   theme: ThemeData(useMaterial3: true),
@@ -94,7 +116,7 @@ Widget _screen(
   home: VenciraDayAgendaScreen(
     api: api,
     workspace: DemoAgendaApi.workspace,
-    initialDay: DateTime(2027, 3, 31),
+    initialDay: initialDay ?? DateTime(2027, 3, 31),
   ),
 );
 
@@ -111,6 +133,35 @@ void main() {
     expect(find.text('Anotaciones del día: 1'), findsOneWidget);
     expect(api.requests, ['2027-3-31:1']);
   });
+
+  for (final locale in <String>['es', 'ca']) {
+    testWidgets('preaviso contractual sin avisos se ve con fecha en $locale',
+        (tester) async {
+      tester.view.physicalSize = const Size(320, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final api = DemoAgendaApi();
+      await tester.pumpWidget(_screen(
+        api, locale: locale, initialDay: DateTime(2027, 4, 20),
+      ));
+      await tester.pumpAndSettle();
+      expect(find.text('PREAVISO-CONTRACTUAL'), findsOneWidget);
+      expect(find.text(locale == 'es'
+          ? 'Límite contractual de preaviso'
+          : 'Límit contractual de preavís'), findsOneWidget);
+      expect(find.text(locale == 'es'
+          ? 'Límite de preaviso: 20/04/2027'
+          : 'Límit de preavís: 20/04/2027'), findsOneWidget);
+      expect(find.text(locale == 'es'
+          ? 'Vence el 01/05/2027'
+          : 'Venç el 01/05/2027'), findsOneWidget);
+      expect(find.text(locale == 'es'
+          ? 'Aviso previsto · Preaviso'
+          : 'Avís previst · Preavís'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('navega entre meses por flechas y tira de semana',
       (tester) async {
