@@ -41,6 +41,13 @@ class DemoAgendaApi implements VenciraApi {
           notice: const VenciraMonthCounts(pending: 0, contacted: 0),
           reminder: const VenciraMonthCounts(pending: 0, contacted: 1),
         ),
+      ] : month.month == 4 ? [
+        VenciraMonthDay(
+          day: DateTime(2027, 4, 1),
+          expiry: const VenciraMonthCounts(pending: 0, contacted: 0),
+          notice: const VenciraMonthCounts(pending: 1, contacted: 0),
+          reminder: const VenciraMonthCounts(pending: 0, contacted: 0),
+        ),
       ] : const [],
     );
   }
@@ -238,6 +245,65 @@ void main() {
     expect(find.text('Consultar historial'), findsNothing);
   });
 
+  testWidgets('la franja semanal comparte marcas con mes aunque cruce dos meses',
+      (tester) async {
+    final api = DemoAgendaApi();
+    await tester.pumpWidget(_screen(api));
+    await tester.pumpAndSettle();
+    expect(api.monthRequests, ['2027-3', '2027-4']);
+    expect(find.byKey(const ValueKey('week-mark-2027-03-31-expiry-pending')),
+        findsOneWidget);
+    expect(find.byKey(const ValueKey('week-mark-2027-03-31-reminder-contacted')),
+        findsOneWidget);
+    expect(find.byKey(const ValueKey('week-mark-2027-04-01-notice-pending')),
+        findsOneWidget);
+    expect(find.byKey(const ValueKey('week-mark-2027-04-02-expiry-pending')),
+        findsNothing);
+
+    // Cambiar de día en la misma semana no dispara otras consultas mensuales.
+    await tester.tap(find.byKey(const ValueKey('agenda-weekday-3')));
+    await tester.pumpAndSettle();
+    expect(api.requests.last, '2027-4-1:1');
+    expect(api.monthRequests, ['2027-3', '2027-4']);
+    expect(find.byKey(const ValueKey('week-mark-2027-03-31-expiry-pending')),
+        findsOneWidget);
+
+    // Al entrar en otra semana no sobreviven marcadores antiguos.
+    for (var i = 0; i < 4; i++) {
+      await tester.tap(find.byTooltip('Día siguiente'));
+      await tester.pumpAndSettle();
+    }
+    expect(api.requests.last, '2027-4-5:1');
+    expect(api.monthRequests.last, '2027-4');
+    expect(find.byKey(const ValueKey('week-mark-2027-03-31-expiry-pending')),
+        findsNothing);
+    expect(find.byKey(const ValueKey('week-mark-2027-04-01-notice-pending')),
+        findsNothing);
+
+    final before = api.monthRequests.length;
+    await tester.tap(find.byTooltip('Actualizar'));
+    await tester.pumpAndSettle();
+    expect(api.monthRequests.length, before + 1);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final width in <double>[320, 375, 768]) {
+    testWidgets('marcas semanales caben en móvil CA oscuro a ${width.toInt()} px',
+        (tester) async {
+      tester.view.physicalSize = Size(width, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(_screen(
+        DemoAgendaApi(), locale: 'ca', theme: ThemeMode.dark,
+      ));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('week-mark-2027-04-01-notice-pending')),
+          findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('navega entre meses por flechas y tira de semana',
       (tester) async {
     final api = DemoAgendaApi();
@@ -314,7 +380,8 @@ void main() {
     await tester.tap(find.text('Ver mes'));
     await tester.pumpAndSettle();
     expect(find.text('Calendario mensual'), findsOneWidget);
-    expect(api.monthRequests, ['2027-3']);
+    // La semana inicial ya consultó marzo y abril por cruzar el mes.
+    expect(api.monthRequests, ['2027-3', '2027-4', '2027-3']);
     expect(find.byKey(const ValueKey('month-mark-2027-03-31-expiry-pending')),
         findsOneWidget);
     expect(find.byKey(const ValueKey('month-mark-2027-03-31-reminder-contacted')),
