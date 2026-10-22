@@ -76,8 +76,18 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
   Future<void> _edit() async {
     final current = _renewal;
     if (current == null || _saving) return;
+    List<VenciraModalityOption> options;
+    try {
+      options = await widget.api.fetchModalities(widget.workspace.id);
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t.modalityChangeFailed)));
+      return;
+    }
+    if (!mounted) return;
     final input = await showDialog<VenciraRenewalInput>(context: context,
-      builder: (_) => VenciraRenewalEditor(existing: current));
+      builder: (_) => VenciraRenewalEditor(
+        existing: current, modalities: options));
     if (!mounted || input == null) return;
     setState(() => _saving = true);
     try {
