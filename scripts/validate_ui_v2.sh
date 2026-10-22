@@ -35,11 +35,29 @@ step() {
 }
 
 echo "=== REPOSITORIO Y PRECONDICIONES ==="
-test "$(git branch --show-current)" = "integration/local-e2e-prep"
-test -z "$(git status --porcelain)"
+PHASE="GIT_BRANCH"
+branch="$(git branch --show-current)"
+echo "RAMA_LOCAL=$branch"
+if [ "$branch" != "integration/local-e2e-prep" ]; then
+  echo "ERROR: se esperaba integration/local-e2e-prep; no se hace checkout automático"
+  exit 2
+fi
+
+PHASE="GIT_WORKTREE"
+git_status="$(git status --porcelain)"
+if [ -n "$git_status" ]; then
+  echo "ESTADO_GIT=CAMBIOS_LOCALES"
+  echo "=== CAMBIOS LOCALES (sin descartarlos) ==="
+  git status --short
+  echo "ERROR: hay cambios locales. No se limpian ni se despliegan fuentes no verificadas."
+  exit 3
+fi
+echo "ESTADO_GIT=LIMPIO"
 echo "COMMIT=$(git rev-parse HEAD)"
 
+PHASE="COMPOSE_IDENTITY"
 for service in api db web_preview; do
+  echo "COMPROBANDO_SERVICIO=$service"
   label="$(sudo docker inspect "vencira_localcheck-${service}-1" \
     --format '{{index .Config.Labels "com.docker.compose.project"}}')"
   test "$label" = "vencira_localcheck" || {
