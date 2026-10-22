@@ -44,13 +44,19 @@ void main() {
       expect(find.byKey(const ValueKey('renewal-entry')), findsOneWidget);
       expect(find.byKey(const ValueKey('renewal-modality')), findsOneWidget);
 
+      await tester.ensureVisible(find.byKey(const ValueKey('renewal-entry')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('renewal-entry')));
       await tester.pumpAndSettle();
       await tester.tap(find.text(language == 'es' ? 'Candidatos' : 'Candidats').last);
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const ValueKey('renewal-modality')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('renewal-modality')));
       await tester.pumpAndSettle();
       await tester.tap(find.text(language == 'es' ? 'Hogar' : 'Llar').last);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text(language == 'es' ? 'Guardar' : 'Desar'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(language == 'es' ? 'Guardar' : 'Desar'));
       await tester.pumpAndSettle();
