@@ -12,7 +12,7 @@ def make_audit_event(*, renewal, actor, before=None):
     """
     changed = [
         field for field in AUDITABLE_FIELDS
-        if (before is None and (field not in ("notice_deadline_on", "assigned_to_id", "entry", "modality", "insurer_id") or bool(getattr(renewal, field))))
+        if (before is None and (field not in ("notice_deadline_on", "assigned_to_id", "entry", "modality", "insurer_id", "full_name", "nickname", "phone", "email", "policy_number") or bool(getattr(renewal, field))))
         or (before is not None and getattr(before, field) != getattr(renewal, field))
     ]
     # Jamás registrar valores de identidad en metadata.
