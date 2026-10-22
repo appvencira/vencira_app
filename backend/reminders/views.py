@@ -22,8 +22,8 @@ def _membership(request, workspace_id):
 
 
 def _visible_renewals(membership):
-    """Escopo autorizado que se aplica antes de consultar, filtrar o bloquear filas."""
-    scoped = _visible_renewals(membership)
+    """Alcance autorizado antes de consultar, filtrar o bloquear filas."""
+    scoped = Renewal.objects.filter(workspace_id=membership.workspace_id)
     if membership.role != WorkspaceMember.Role.OWNER:
         return scoped.filter(assigned_to_id=membership.user_id)
     return scoped
@@ -58,7 +58,7 @@ def renewals(request, workspace_id):
         if status_filter and status_filter not in Renewal.Status.values:
             return Response({"status": "Estado de vencimiento no válido."},
                             status=status.HTTP_400_BAD_REQUEST)
-        scoped = Renewal.objects.filter(workspace_id=membership.workspace_id)
+        scoped = _visible_renewals(membership)
         if search:
             scoped = scoped.filter(customer_reference__icontains=search)
         if status_filter:
