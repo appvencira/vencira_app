@@ -205,6 +205,13 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
                     '${_t.expiresOn} ${DateFormat('dd/MM/yyyy', locale).format(renewal.expiresOn)}',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
+                  if (renewal.noticeDeadlineOn != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '${_t.noticeLabel}: ${DateFormat('dd/MM/yyyy', locale).format(renewal.noticeDeadlineOn!)}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 6,
@@ -214,6 +221,12 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
                         return Chip(
                           avatar: const Icon(Icons.event_available_outlined, size: 18),
                           label: Text(_t.agendaExpiryEvent),
+                        );
+                      }
+                      if (event.kind == 'notice_deadline') {
+                        return Chip(
+                          avatar: const Icon(Icons.event_busy_outlined, size: 18),
+                          label: Text(_t.agendaContractualNotice),
                         );
                       }
                       return Chip(
