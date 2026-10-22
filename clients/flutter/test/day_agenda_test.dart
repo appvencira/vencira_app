@@ -189,7 +189,7 @@ void main() {
     await tester.pump();
     await tester.tap(find.byTooltip('Día siguiente'));
     await tester.pumpAndSettle();
-    expect(find.text('No hay vencimientos ni avisos previstos para este día.'),
+    expect(find.text('No hay vencimientos, preavisos ni avisos previstos para este día.'),
         findsOneWidget);
     delayed.complete(VenciraAgendaDayPage(
       day: DateTime(2027, 3, 31),
