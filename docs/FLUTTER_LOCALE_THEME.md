@@ -56,7 +56,7 @@ Criterios de aceptación:
 
 - Persistencia **por dispositivo y navegador**, no por cuenta; en equipos compartidos las preferencias pueden ser comunes al perfil del navegador.
 - Formularios de acceso Django y mensajes devueltos por backend requieren catálogo propio; Flutter solo controla su interfaz.
-- Algunas fechas usan todavía formato manual `DD/MM/YYYY`. La API conserva fechas ISO; debe incorporarse `intl.DateFormat` y probar formatos en locales soportados.
+- Las fechas visibles de agenda/editor usan `intl.DateFormat('dd/MM/yyyy', locale)`; la API conserva las fechas ISO y nunca debe convertir una fecha contractual a otro día por zona horaria. Pendiente extender esta estrategia a avisos, emails y exportaciones.
 - La v1 final deberá contemplar pluralización, género, accesibilidad, notificaciones, emails, exportaciones y futuras pantallas completas.
 - Los estados de dominio y cierres deben redefinirse con arreglo al whitepaper en una migración aparte, no en esta PR.
 - Ningún dato real de clientes ni cambios de BD participan en este bloque.
@@ -112,3 +112,10 @@ La primera ejecución falló por una prueba de brillo que cambiaba el valor simu
 - Ejecución de CI posterior a estos cambios: [workflow #6](https://github.com/appvencira/vencira_app/actions/runs/39688991620). **No marcar completado hasta ver su resultado.**
 - Inspección visual real pendiente: 320/375/768/1440 px, zoom y escala de texto 200 %, ES y CA, Claro/Oscuro/Sistema, teclado, avisos y formulario de edición; verificar explícitamente que no aparecen datos de una organización distinta durante transiciones.
 - Servidor HTTPS privado y BD quedan intactos hasta cerrar PR #4 y aprobar despliegue.
+
+## Consolidación responsive y fechas — 22/10/2026
+
+- CI de la mejora móvil [run #12](https://github.com/appvencira/vencira_app/actions/runs/39716446445): los tests de anchura 320/375/768, el análisis estático y la estructura de catálogos figuran superados al actualizar esta sección; verificar el resultado global de build antes de considerar este run completo.
+- Se ha sustituido el formato manual de fechas en `dashboard_screen.dart` y `renewal_editor.dart` por `intl.DateFormat` con locale activo. El formato visible se mantiene `dd/MM/yyyy` para ES y CA, sin modificar valores del backend.
+- CI de la actualización de fechas: [run #14](https://github.com/appvencira/vencira_app/actions/runs/39716620036). No asumir éxito hasta comprobarlo.
+- Matriz de pruebas visuales y evidencia: `docs/FLUTTER_VISUAL_QA.md`.
