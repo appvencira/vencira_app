@@ -80,5 +80,17 @@
   "agendaMonthHelp": "Selecciona un dia per obrir-ne les anotacions. Els avisos previstos no són notificacions enviades.",
   "agendaMonthEmpty": "No hi ha activitat registrada aquest mes.",
   "agendaMonthLoadError": "No s'ha pogut carregar el calendari mensual.",
+  "detailTitle": "Fitxa d'anotació",
+  "detailAssignment": "Usuari assignat",
+  "detailOtherChange": "Un altre canvi",
+  "detailLoadError": "No s'ha pogut carregar aquesta anotació.",
+  "detailPrototypeWarning": "Versió de prova: la fitxa encara no inclou tots els camps del whitepaper ni els quatre desenllaços.",
+  "detailHistoryTitle": "Historial de l'anotació",
+  "detailHistoryLoad": "Consulta l'historial",
+  "detailHistoryError": "No s'ha pogut carregar l'historial.",
+  "detailHistoryEmpty": "No consta cap historial d'actuacions d'aquesta anotació.",
+  "detailHistoryCreated": "Anotació creada",
+  "detailHistoryUpdated": "Anotació modificada",
+  "detailActorUnavailable": "Usuari no disponible",
   "agendaForecastDisclaimer": "Els avisos previstos no confirmen cap lliurament. Les dates contractuals no són notificacions."
 }
