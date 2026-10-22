@@ -28,6 +28,11 @@ class FakeVenciraApi implements VenciraApi {
   }
 
   @override
+  Future<VenciraAgendaMonth> fetchAgendaMonth(
+      String workspaceId, DateTime month) async =>
+      VenciraAgendaMonth(month: DateTime(month.year, month.month, 1), days: const []);
+
+  @override
   Future<VenciraAgendaDayPage> fetchAgendaDay(
     String workspaceId, DateTime day, {int page = 1}) async {
     return VenciraAgendaDayPage(
