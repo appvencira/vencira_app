@@ -192,6 +192,8 @@ def renewal_detail(request, workspace_id, renewal_id):
         # Snapshot solo en memoria para construir delta no sensible del log.
         before = Renewal(
             customer_reference=renewal.customer_reference,
+            entry=renewal.entry,
+            modality=renewal.modality,
             expires_on=renewal.expires_on,
             notice_deadline_on=renewal.notice_deadline_on,
             status=renewal.status,
