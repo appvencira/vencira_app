@@ -19,6 +19,19 @@ Fecha de revisión: 2026-10-22. Fuente de verdad: repositorio privado `appvencir
 
 **Estado vigente 2026-10-22:** `vencira_localcheck` desplegado, migraciones `0010`–`0012` aplicadas, API/DB/Web saludables, rutas locales/proxy HTTP 200, pruebas específicas PostgreSQL resultado 0, y Android HTTPS `dev.vencira.es` aceptado por usuario. Una mejora de espaciado Flutter está **implementada en GitHub** (commit `dd9ba521714df2d58acec9a9fcfcd236766d12f4`) **pero no probada ni desplegada** al cierre de esta revisión. Próximo paso: validación agrupada + despliegue seguro de esa corrección.
 
+## Diseño V2 — rediseño estructural tras feedback de capturas
+
+- El usuario señaló explícitamente que la UI existente **NO parece limpia ni bien estructurada**: exceso de botones heterogéneos, apilados y selectores; quiere un salto visual de calidad empresarial. Solicitó buscar más webs además de Dribbble.
+- Investigación, fuentes, decisiones de UX y próximos pasos: **`docs/DESIGN_SYSTEM_V2.md`** (incluye Dribbble, Mobbin, SaaS Interface, SaaSUI, Notion Calendar, Fantastical y Linear).
+- Cambios Flutter ya escritos en `integration/local-e2e-prep`:
+  - `a067d60d` / `85507535`: inicio con jerarquía compacta, fila Agenda/Añadir, administración plegable y filtros avanzados plegados en móvil pero visibles en escritorio.
+  - `e734502b`: filtros plegables en la agenda diaria móvil, encabezado de fecha enfatizado.
+  - `20f15763`: calendario mensual con cuadrícula menos abultada y superficies sin recuadros grises redundantes.
+- **Todavía no se han probado ni desplegado estos cambios V2.** No afirmar éxito ni presentar capturas anteriores como prueba de la nueva versión.
+- Se creó **`scripts/validate_ui_v2.sh`** (commit `00747154`): script integral reejecutable, ejecutado por `bash` como proceso hijo para no cerrar SSH. Verifica checkout limpio/rama, identidad de los tres contenedores, configuración Compose, Flutter pub get/analyze/test/build, reconstruye **solo Web** tras pruebas, valida health de API/DB/Web y HTTP 200, registra log en `/tmp`, informa `RESULTADO_GLOBAL` y `CONSOLA_ABIERTA`. No aplica migraciones ni recrea API/DB.
+- **Próxima acción única del usuario** (si servidor disponible): `( cd /home/vencira/vencira-localcheck || exit 1; git fetch origin integration/local-e2e-prep && git merge --ff-only FETCH_HEAD && bash scripts/validate_ui_v2.sh ); echo CONSOLA_ABIERTA`. Comprobar salida. Si falla, asistente corrige en GitHub y solicita una única repetición.
+- Después de éxito técnico: probar en Android `https://dev.vencira.es` inicio, agenda diaria, mes y editor; recoger capturas y valorar design V2. Luego continuar diseño integral del editor/ficha con el mismo criterio.
+
 ## Línea de diseño empresarial — prioridad de producto
 
 **Objetivo:** VENCIRA debe sentirse como un software de empresa elegante, claro, moderno, intuitivo y confiable, no un prototipo. Funcionalidad y experiencia visual tienen igual importancia en los criterios de aceptación.
