@@ -26,6 +26,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
   late final TextEditingController _phone;
   late final TextEditingController _email;
   late final TextEditingController _policyNumber;
+  late final TextEditingController _notes;
   String? _entry;
   String _modality = '';
   String? _insurerId;
@@ -42,6 +43,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
     _phone = TextEditingController(text: widget.existing?.phone ?? '');
     _email = TextEditingController(text: widget.existing?.email ?? '');
     _policyNumber = TextEditingController(text: widget.existing?.policyNumber ?? '');
+    _notes = TextEditingController(text: widget.existing?.notes ?? '');
     _entry = widget.existing?.entry;
     _modality = widget.existing?.modality ?? '';
     _insurerId = widget.existing?.insurerId;
@@ -58,6 +60,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
     _phone.dispose();
     _email.dispose();
     _policyNumber.dispose();
+    _notes.dispose();
     super.dispose();
   }
 
@@ -125,6 +128,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
       phone: _phone.text.trim(),
       email: _email.text.trim(),
       policyNumber: _policyNumber.text.trim(),
+      notes: _notes.text.trim(),
       entry: _entry,
       modality: _modality,
       insurerId: _insurerId,
@@ -275,6 +279,17 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                     ),
                   );
                 }),
+                const SizedBox(height: 12),
+                TextFormField(
+                  key: const ValueKey('renewal-notes'),
+                  controller: _notes,
+                  maxLength: 4000,
+                  maxLines: 4,
+                  decoration: const InputDecoration(
+                    labelText: 'Notas',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: () => _chooseDate(notice: false),
