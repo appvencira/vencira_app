@@ -81,8 +81,10 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
       });
     } on VenciraUnauthorized {
       if (!mounted || sequence != _generation) return;
+      _weekGeneration++;
       setState(() {
         _agenda = null;
+        _weekActivity = null;
         _loading = false;
         _unauthorized = true;
       });
