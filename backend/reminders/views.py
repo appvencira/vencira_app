@@ -199,6 +199,7 @@ def renewal_detail(request, workspace_id, renewal_id):
             customer_reference=renewal.customer_reference,
             entry=renewal.entry,
             modality=renewal.modality,
+            insurer=renewal.insurer,
             expires_on=renewal.expires_on,
             notice_deadline_on=renewal.notice_deadline_on,
             status=renewal.status,
