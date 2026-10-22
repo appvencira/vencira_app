@@ -91,6 +91,7 @@ class Renewal(models.Model):
     phone = models.CharField(max_length=32, blank=True, default="")
     email = models.EmailField(blank=True, default="")
     policy_number = models.CharField(max_length=100, blank=True, default="")
+    notes = models.TextField(blank=True, default="")
     # Nullable para conservar anotaciones previas; Flutter exigirá Entrada
     # para nuevas anotaciones. No clasificamos automáticamente las antiguas.
     entry = models.CharField(
