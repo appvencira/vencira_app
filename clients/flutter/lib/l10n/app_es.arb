@@ -57,5 +57,18 @@
   "expiryLabel": "Vencimiento",
   "noticeLabel": "Límite de preaviso",
   "page": "Página",
-  "expiresOn": "Vence el"
+  "expiresOn": "Vence el",
+  "agendaTitle": "Agenda diaria",
+  "agendaOpenDay": "Abrir agenda",
+  "agendaToday": "Hoy",
+  "agendaChooseDay": "Elegir fecha",
+  "agendaPreviousDay": "Día anterior",
+  "agendaNextDay": "Día siguiente",
+  "agendaDayEntries": "Anotaciones del día",
+  "agendaEmptyDay": "No hay vencimientos ni avisos previstos para este día.",
+  "agendaLoadError": "No se pudo cargar la agenda de este día.",
+  "agendaExpiryEvent": "Vencimiento",
+  "agendaPlannedReminder": "Aviso previsto · Vencimiento",
+  "agendaPlannedNotice": "Aviso previsto · Preaviso",
+  "agendaForecastDisclaimer": "Los avisos mostrados son previsiones, no confirmaciones de entrega."
 }

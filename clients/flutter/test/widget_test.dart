@@ -28,6 +28,17 @@ class FakeVenciraApi implements VenciraApi {
   }
 
   @override
+  Future<VenciraAgendaDayPage> fetchAgendaDay(
+    String workspaceId, DateTime day, {int page = 1}) async {
+    return VenciraAgendaDayPage(
+      day: DateTime(day.year, day.month, day.day),
+      total: 0,
+      entries: const [],
+      hasNext: false,
+    );
+  }
+
+  @override
   Future<void> logout() async {}
 
   @override

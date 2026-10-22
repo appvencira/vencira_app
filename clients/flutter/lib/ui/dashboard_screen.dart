@@ -7,6 +7,7 @@ import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
 import 'vencira_preferences.dart';
 import 'renewal_editor.dart';
+import 'day_agenda_screen.dart';
 
 class VenciraDashboardScreen extends StatefulWidget {
   const VenciraDashboardScreen({super.key, this.api});
@@ -429,13 +430,28 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         onChanged: _loadingRenewals || _saving ? null : _selectWorkspace,
       ),
       const SizedBox(height: 18),
-      Align(
-        alignment: Alignment.centerLeft,
-        child: FilledButton.icon(
-          onPressed: _loadingRenewals || _saving ? null : () => _editRenewal(),
-          icon: const Icon(Icons.add),
-          label: Text(_t.addRenewal),
-        ),
+      Wrap(
+        spacing: 12,
+        runSpacing: 8,
+        children: [
+          FilledButton.tonalIcon(
+            onPressed: _saving || _loadingRenewals || _selected == null
+                ? null
+                : () => Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => VenciraDayAgendaScreen(
+                      api: _api,
+                      workspace: _selected!,
+                    ),
+                  )),
+            icon: const Icon(Icons.calendar_today_outlined),
+            label: Text(_t.agendaOpenDay),
+          ),
+          FilledButton.icon(
+            onPressed: _loadingRenewals || _saving ? null : () => _editRenewal(),
+            icon: const Icon(Icons.add),
+            label: Text(_t.addRenewal),
+          ),
+        ],
       ),
       const SizedBox(height: 18),
       LayoutBuilder(
