@@ -1,0 +1,47 @@
+# VENCIRA — CONTINUIDAD OPERATIVA (leer al comenzar un chat)
+
+Fecha de revisión: 2026-10-22. Fuente de verdad: repositorio privado `appvencira/vencira_app`, rama `integration/local-e2e-prep`. Este documento describe **estado probado en GitHub y pasos pendientes**, no garantiza el estado de un servidor.
+
+## Objetivo y normas permanentes
+
+VENCIRA es agenda multiplataforma (Flutter + Django/PostgreSQL) de pólizas externas individuales, **no CRM**. Seguir el whitepaper original, especialmente §6: Clientes/Candidatos, identificación, modalidad/aseguradora personalizadas, fechas, estado, responsable, notas y adjuntos seguros. Los datos de anotaciones distintas **no están vinculados**: las sugerencias copian por decisión explícita sin sincronizar registros.
+
+**Forma de trabajo acordada:** asistente desarrolla y actualiza GitHub; realiza cuanto pueda de forma autónoma. Pedir al usuario **solo bloques de consola para comprobaciones o despliegues que requieren su servidor**, nunca inspecciones repetidas que ya podamos efectuar desde GitHub. El usuario pega salidas; el asistente interpreta, corrige en GitHub, repite pruebas si procede. Mantener cambios documentados, comandos reproducibles y reversión. Evitar datos personales reales hasta pasar barreras de seguridad.
+
+## Repositorio, ramas y cambios validados
+
+- Integración: `integration/local-e2e-prep`; los PR de la fase están fusionados.
+- PR #11 (identidad): commit de fusión `47f30738fa8eaa27e9a5304bf8c62b1b263d1c65`. Campos `full_name`, `nickname`, `phone`, `email`, `policy_number`; migración `0011_renewal_policy_identity`; serializador, editor Flutter y búsqueda; CI #79 verde.
+- PR #12 (notas): commit `8eed7f47597f511543414b09628e578d91110658`. Migración `0012_renewal_notes`; editor y lectura, hasta 4000 caracteres desde API; CI #80 verde. Adjuntos **solo especificación**, aún desactivados: `docs/ATTACHMENTS_SECURITY_GATE.md`.
+- PR #13 (sugerencias): commit `189065aa166e9ffd948fde1e28114e6eb48bc5d5`. Sin migración. Endpoint y Flutter para copiar contacto desde anotaciones visibles. Pruebas locales: Django 105 tests OK, Flutter analyze/test/build web OK.
+- `0010_workspace_insurer` ya existe en integración; el servidor anterior estaba solamente hasta `0009_workspace_modality`.
+- **GitHub Actions tiene la cuota agotada**: no volver a activar o depender de ejecuciones CI; preferir Docker local efímero. No afirmar CI verde para commits posteriores sin evidencia.
+
+## Servidor conocido (solo descripción histórica, volver a comprobar antes de escribir)
+
+- Usuario `vencira`, Ubuntu. Checkout correcto `/home/vencira/vencira-localcheck`, con remoto SSH de solo lectura `git@github-vencira-ro:appvencira/vencira_app.git`. Antes de esta fase rama `integration/local-e2e-prep`, commit `5d48225696f2ba426ba8eb6346b9123a12d3c9ad`, limpio. El remoto puede haber avanzado: comprobar FETCH_HEAD y origin.
+- Contenedores del stack a conservar: `vencira_localcheck-api-1`, `vencira_localcheck-db-1`, `vencira_localcheck-web_preview-1`. **Existen también contenedores `vencira_preview-*` de otra instalación**. Jamás confundir stacks, volúmenes ni nombres Compose.
+- Otro checkout: `/home/vencira/vencira-preview` con código más antiguo; **no usar para este despliegue**.
+- Backups históricos: `/home/vencira/vencira-db-backups/`. Realizar nuevo `pg_dump -Fc` de la base del stack correcto, comprobar `pg_restore -l`, guardar `sha256sum` y permisos 600, antes de construir/reiniciar/aplicar migraciones.
+- Los contenedores API ejecutan `python manage.py migrate --noinput` al arrancar (ver `compose.yaml`): **un `docker compose up --build -d` puede aplicar migraciones automáticamente**. No construir ni levantar API conectada a PostgreSQL existente antes de disponer de backup probado.
+- Las pruebas recientes usaron worktree efímero `/tmp/vencira-suggestions.RIC9UU/source`, imagen `vencira-suggestions-check:local` y Flutter mediante `ghcr.io/cirruslabs/flutter:stable`. El worktree no es despliegue.
+- No usar GitHub Actions; verificar Docker local con SQLite y, cuando proceda, PostgreSQL efímero `-p` exclusivo distinto de los nombres Compose presentes.
+
+## Pasos siguientes del despliegue (todavía NO realizados)
+
+1. Desde servidor, lectura única: comprobar rama, remoto, checkout limpio, `git fetch`, `git rev-parse HEAD` y `origin/integration/local-e2e-prep`; ver nombres exactos de proyectos y Compose con `docker compose ls`, `docker inspect` y `docker ps` antes de mutar.
+2. Usar checkout/imagen **aislados** para confirmar Django check/makemigrations/test, incluyendo migraciones 0010–0012 con PostgreSQL temporal, y Flutter analyze/test/build. La prueba 105/Flutter ya se realizó sobre #13; repetir sobre SHA definitivo si cambia.
+3. Backup `pg_dump -Fc` desde **la BD localcheck**; verificar con `pg_restore -l`, checksum, propietario/permisos. Evitar comandos que cambien contenedores `vencira_preview-*`.
+4. Comprobar plan SQL con `manage.py migrate --plan` en entorno correcto; revisar cambios antes de aplicar. Actualizar únicamente stack localcheck, vigilar salud, registros y `showmigrations`.
+5. Probar APIs, catálogo, notas, identidad, sugerencias, autenticación, aislamiento y dispositivo Android con **datos ficticios**. Preparar procedimiento de restauración; no intentar revertir migraciones destructivamente.
+6. Registrar SHA desplegado, fecha, resultado de comandos, identificador no sensible de backup, estado de migraciones y estado posterior en este archivo o bitácora específica.
+
+## Límites de lanzamiento
+
+- **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
+- No habilitar upload/download de PDFs e imágenes hasta implementar controles de `docs/ATTACHMENTS_SECURITY_GATE.md`.
+- No activar recordatorios reales por el mero hecho de desplegar la nueva ficha.
+
+## En un chat nuevo
+
+Leer primero este archivo desde GitHub y consultar las últimas confirmaciones del usuario sobre resultados del servidor. **No asumir que un PR fusionado equivale a despliegue.** Mantener el esquema `GitHub → pruebas aisladas → backup → migraciones → despliegue localcheck → Android → documentación final`. Evitar requerir al usuario información o verificaciones ya conocidas.
