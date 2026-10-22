@@ -97,6 +97,29 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
     }
   }
 
+  String _entryLabel(String? value) => switch (value) {
+    'clients' => _t.entryClients,
+    'prospects' => _t.entryProspects,
+    _ => _t.entryUnknown,
+  };
+
+  String _modalityLabel(String value) => switch (value) {
+    'autos' => _t.modAutos,
+    'motos' => _t.modMotos,
+    'patinetes' => _t.modPatinetes,
+    'hogar' => _t.modHogar,
+    'comercio' => _t.modComercio,
+    'decesos' => _t.modDecesos,
+    'salud' => _t.modSalud,
+    'vida' => _t.modVida,
+    'accidentes' => _t.modAccidentes,
+    'rc' => _t.modRc,
+    'comunidades' => _t.modComunidades,
+    'otros' => _t.modOtros,
+    '' => _t.notDefined,
+    _ => value,
+  };
+
   String _status(String value) => switch (value) {
     'pending' => _t.pending,
     'contacted' => _t.contacted,
@@ -180,6 +203,8 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(renewal.reference, style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 10),
+                _info(_t.entryLabel, _entryLabel(renewal.entry)),
+                _info(_t.modalityLabel, _modalityLabel(renewal.modality)),
                 _info(_t.expiryDate, DateFormat.yMd(locale).format(renewal.expiresOn)),
                 if (renewal.noticeDeadlineOn != null)
                   _info(_t.noticeDate, DateFormat.yMd(locale).format(renewal.noticeDeadlineOn!)),
