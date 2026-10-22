@@ -318,10 +318,16 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
                                   : colors.onSurface,
                             ),
                           ),
-                          if (info != null) ...[
-                            const SizedBox(height: 5),
-                            _weekMarks(dateKey, info, colors),
-                          ],
+                          // Reservar la misma zona para TODOS los días:
+                          // los que tienen marcas no deben aumentar de alto.
+                          const SizedBox(height: 5),
+                          SizedBox(
+                            key: ValueKey('agenda-week-slot-$index'),
+                            height: 32,
+                            child: info == null
+                                ? const SizedBox.shrink()
+                                : Center(child: _weekMarks(dateKey, info, colors)),
+                          ),
                         ],
                       ),
                     ),
