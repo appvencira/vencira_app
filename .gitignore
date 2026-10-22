@@ -13,3 +13,8 @@ coverage/
 .idea/
 .vscode/
 *.log
+
+# Flutter gen-l10n: outputs regenerated from versioned ARB files.
+/clients/flutter/lib/l10n/app_localizations.dart
+/clients/flutter/lib/l10n/app_localizations_es.dart
+/clients/flutter/lib/l10n/app_localizations_ca.dart
