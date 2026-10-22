@@ -3,11 +3,13 @@
 FROM ghcr.io/cirruslabs/flutter:3.44.0 AS web_build
 
 WORKDIR /source/clients/flutter
+# Flutter requiere el catálogo base ES indicado en l10n.yaml.
 COPY clients/flutter/pubspec.yaml ./
+COPY clients/flutter/l10n.yaml ./l10n.yaml
 RUN flutter pub get
 COPY clients/flutter/lib ./lib
 COPY clients/flutter/web ./web
-RUN flutter build web --release --pwa-strategy=none
+RUN flutter gen-l10n && flutter build web --release --pwa-strategy=none
 
 FROM nginx:stable-alpine
 COPY deploy/local-web/nginx.conf /etc/nginx/conf.d/default.conf
