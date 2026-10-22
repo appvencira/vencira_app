@@ -250,6 +250,50 @@ void main() {
     });
   }
 
+  testWidgets('abre el mes, distingue estados y vuelve al día seleccionado',
+      (tester) async {
+    final api = DemoAgendaApi();
+    await tester.pumpWidget(_screen(api));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ver mes'));
+    await tester.pumpAndSettle();
+    expect(find.text('Calendario mensual'), findsOneWidget);
+    expect(api.monthRequests, ['2027-3']);
+    expect(find.byKey(const ValueKey('month-mark-2027-03-31-expiry-pending')),
+        findsOneWidget);
+    expect(find.byKey(const ValueKey('month-mark-2027-03-31-reminder-contacted')),
+        findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('month-next')));
+    await tester.pumpAndSettle();
+    expect(api.monthRequests.last, '2027-4');
+    await tester.tap(find.byKey(const ValueKey('month-previous')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('month-day-2027-03-31')));
+    await tester.pumpAndSettle();
+    expect(find.text('Agenda diaria'), findsOneWidget);
+    expect(api.requests.last, '2027-3-31:1');
+  });
+
+  for (final width in <double>[320, 375, 768]) {
+    testWidgets('calendario mensual catalán oscuro sin overflow a $width',
+        (tester) async {
+      tester.view.physicalSize = Size(width, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(_screen(DemoAgendaApi(),
+          locale: 'ca', theme: ThemeMode.dark));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Veure mes'));
+      await tester.pumpAndSettle();
+      expect(find.text('Calendari mensual'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.drag(find.byType(ListView).last, const Offset(0, -350));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('se puede abrir desde el panel principal', (tester) async {
     final api = DemoAgendaApi();
     await tester.pumpWidget(VenciraApp(api: api));
