@@ -1,7 +1,7 @@
 """Registra eventos mínimos de vencimientos. Jamás almacena referencias de clientes."""
 from .models import RenewalAuditEvent
 
-AUDITABLE_FIELDS = ("customer_reference", "entry", "modality", "expires_on", "status", "notice_deadline_on", "assigned_to_id", "insurer_id")
+AUDITABLE_FIELDS = ("customer_reference", "entry", "modality", "expires_on", "status", "notice_deadline_on", "assigned_to_id", "insurer_id", "full_name", "nickname", "phone", "email", "policy_number")
 
 
 def make_audit_event(*, renewal, actor, before=None):
@@ -15,6 +15,7 @@ def make_audit_event(*, renewal, actor, before=None):
         if (before is None and (field not in ("notice_deadline_on", "assigned_to_id", "entry", "modality", "insurer_id") or bool(getattr(renewal, field))))
         or (before is not None and getattr(before, field) != getattr(renewal, field))
     ]
+    # Jamás registrar valores de identidad en metadata.
     if not changed:
         return None
     metadata = {}
