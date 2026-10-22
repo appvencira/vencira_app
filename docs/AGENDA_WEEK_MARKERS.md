@@ -17,6 +17,12 @@
 - §11 reserva el **historial** de gestiones a la interfaz web de ordenador, no a móvil/tablet. Las capturas Android de la ficha y editor no deberían mostrar `Consultar historial`, pero sí permitir ver y editar anotaciones; la app actual cumple esa delimitación.
 - §8 distingue **límite legal calculado** de vencimiento, que no se debe representar directamente en agenda. El prototipo actual usa un campo manual `notice_deadline_on`. **No se afirmará que sea el cálculo legal definitivo**. Revisar con §8 cuando se construya la lógica de avisos legales.
 
+## Corrección de alineación de los siete días (22/10/2026)
+
+Validación visual real en Chrome Android: antes del ajuste, los días 27, 29 y 30 de octubre eran más altos porque la `Column` solo añadía la fila de indicadores cuando había actividad. Cada día reserva ahora una franja de **32 píxeles lógicos** para las marcas, esté vacía o no, bajo el nombre y número de día. Así los siete contenedores tienen la misma altura, también cuando coinciden varios tipos de evento. No se cambia la API, los colores, la semántica de los estados ni los permisos.
+
+Pruebas adicionales de widgets comprueban la altura idéntica de los siete controles y el espacio reservado en **320/375/768 píxeles**, ES/CA y temas claro/oscuro; también verifican que los puntos de varios tipos siguen visibles.
+
 ## Verificación
 
 - Pruebas widget ES/CA, dark mode y tamaños 320, 375 y 768 px.
