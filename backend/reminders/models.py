@@ -32,6 +32,14 @@ class Renewal(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="renewals")
+    # Las filas históricas sin asignar quedan visibles solo para el propietario.
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="vencira_assigned_renewals",
+        null=True,
+        blank=True,
+    )
     customer_reference = models.CharField(max_length=160)
     expires_on = models.DateField()
     notice_deadline_on = models.DateField(null=True, blank=True)
@@ -40,7 +48,13 @@ class Renewal(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        indexes = [models.Index(fields=["workspace", "expires_on"], name="renewal_ws_exp_idx")]
+        indexes = [
+            models.Index(fields=["workspace", "expires_on"], name="renewal_ws_exp_idx"),
+            models.Index(
+                fields=["workspace", "assigned_to", "expires_on"],
+                name="renewal_ws_ass_exp",
+            ),
+        ]
         constraints = [
             models.CheckConstraint(
                 condition=(
