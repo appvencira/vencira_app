@@ -202,11 +202,13 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                   decoration: InputDecoration(
                     labelText: _t.reference,
                     helperText: _t.referenceHelper,
+                    helperMaxLines: 2,
                     border: const OutlineInputBorder(),
                   ),
                   validator: (v) =>
                       v == null || v.trim().isEmpty ? _t.referenceRequired : null,
                 ),
+                const SizedBox(height: 16),
                 TextFormField(
                   key: const ValueKey('full-name'),
                   controller: _fullName,
