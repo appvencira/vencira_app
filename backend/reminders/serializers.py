@@ -16,6 +16,7 @@ class MembershipSerializer(serializers.ModelSerializer):
 
 
 class RenewalSerializer(serializers.ModelSerializer):
+    notes = serializers.CharField(max_length=4000, allow_blank=True, required=False)
     insurer = serializers.PrimaryKeyRelatedField(
         queryset=WorkspaceInsurer.objects.all(), allow_null=True, required=False,
     )
