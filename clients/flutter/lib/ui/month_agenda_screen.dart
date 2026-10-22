@@ -125,6 +125,24 @@ class _VenciraMonthAgendaScreenState extends State<VenciraMonthAgendaScreen> {
 
   String _iso(DateTime day) => DateFormat('yyyy-MM-dd').format(day);
 
+  /// Color principal del día. Vencimiento > preaviso > aviso previsto.
+  /// Cuando coinciden varios, mantenemos las marcas secundarias debajo.
+  Color? _eventColor(VenciraMonthDay? day, ColorScheme colors) {
+    if (day == null) return null;
+    if (day.expiry.total > 0) return colors.error;
+    if (day.notice.total > 0) return colors.tertiary;
+    if (day.reminder.total > 0) return colors.primary;
+    return null;
+  }
+
+  Color _dayBackground(Color? event, bool today, ColorScheme colors) {
+    if (event != null) {
+      final dark = Theme.of(context).brightness == Brightness.dark;
+      return Color.lerp(colors.surface, event, dark ? 0.36 : 0.20)!;
+    }
+    return today ? colors.primaryContainer : Colors.transparent;
+  }
+
   Widget _calendar(String locale, ColorScheme colors) {
     final first = DateTime(_month.year, _month.month, 1);
     final count = DateUtils.getDaysInMonth(_month.year, _month.month);
@@ -148,13 +166,14 @@ class _VenciraMonthAgendaScreenState extends State<VenciraMonthAgendaScreen> {
         itemCount: offset + count,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 7, crossAxisSpacing: 4, mainAxisSpacing: 4,
-          childAspectRatio: 0.98,
+          childAspectRatio: 1.0,
         ),
         itemBuilder: (context, i) {
           if (i < offset) return const SizedBox.shrink();
           final date = DateTime(_month.year, _month.month, i - offset + 1);
           final key = _iso(date);
           final info = activity[key];
+          final eventColor = _eventColor(info, colors);
           final today = now.year == date.year && now.month == date.month &&
               now.day == date.day;
           final description = StringBuffer(
@@ -177,28 +196,40 @@ class _VenciraMonthAgendaScreenState extends State<VenciraMonthAgendaScreen> {
             button: true,
             label: description.toString(),
             child: Material(
-              color: today ? colors.primaryContainer : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
+              color: _dayBackground(eventColor, today, colors),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(13),
+                side: BorderSide(
+                  color: today
+                      ? colors.primary
+                      : (eventColor == null
+                          ? Colors.transparent
+                          : Color.lerp(colors.surface, eventColor, 0.48)!),
+                  width: today ? 1.8 : 0.8,
+                ),
+              ),
               child: InkWell(
                 key: ValueKey('month-day-' + key),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(13),
                 onTap: () => Navigator.pop(context, date),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                child: Center(
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(date.day.toString(),
                         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          fontWeight: today ? FontWeight.bold : FontWeight.normal,
-                          color: today ? colors.onPrimaryContainer : colors.onSurface,
+                          fontWeight: today || eventColor != null
+                              ? FontWeight.w700 : FontWeight.w500,
+                          color: today && eventColor == null
+                              ? colors.onPrimaryContainer : colors.onSurface,
                         ),
                       ),
-                      if (info != null) ...[
-                        const SizedBox(height: 4),
+                      if (eventColor != null && info != null) ...[
+                        const SizedBox(height: 5),
                         Wrap(
                           alignment: WrapAlignment.center,
-                          spacing: 3,
-                          runSpacing: 3,
+                          spacing: 2,
+                          runSpacing: 2,
                           children: [
                             _marks(key, 'expiry', info.expiry, colors.error),
                             _marks(key, 'notice', info.notice, colors.tertiary),
