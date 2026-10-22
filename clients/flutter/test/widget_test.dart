@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vencira/api/vencira_api.dart';
 import 'package:vencira/main.dart';
 
-class FakeVenciraApi implements VenciraApi {
+class FakeVenciraApi extends VenciraApi {
   FakeVenciraApi({required this.workspaces, required this.pages, this.auth = false});
 
   final List<VenciraWorkspace> workspaces;
