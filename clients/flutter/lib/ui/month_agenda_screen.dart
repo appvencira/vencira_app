@@ -8,11 +8,14 @@ import '../l10n/app_localizations.dart';
 class VenciraMonthAgendaScreen extends StatefulWidget {
   const VenciraMonthAgendaScreen({
     super.key, required this.api, required this.workspace, required this.initialMonth,
+    this.entry = '', this.modality = '',
   });
 
   final VenciraApi api;
   final VenciraWorkspace workspace;
   final DateTime initialMonth;
+  final String entry;
+  final String modality;
 
   @override
   State<VenciraMonthAgendaScreen> createState() => _VenciraMonthAgendaScreenState();
@@ -50,7 +53,9 @@ class _VenciraMonthAgendaScreenState extends State<VenciraMonthAgendaScreen> {
       _unauthorized = false;
     });
     try {
-      final result = await widget.api.fetchAgendaMonth(widget.workspace.id, requested);
+      final result = await widget.api.fetchFilteredAgendaMonth(
+        widget.workspace.id, requested,
+        entry: widget.entry, modality: widget.modality);
       if (!mounted || sequence != _generation) return;
       setState(() {
         _summary = result;
