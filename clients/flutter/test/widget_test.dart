@@ -44,6 +44,15 @@ class FakeVenciraApi implements VenciraApi {
   }
 
   @override
+  Future<VenciraRenewal> fetchRenewalDetail(String workspaceId, String renewalId) async =>
+      pages[workspaceId]!.items.firstWhere((item) => item.id == renewalId);
+
+  @override
+  Future<VenciraHistoryPage> fetchRenewalHistory(
+      String workspaceId, String renewalId, {int page = 1}) async =>
+      const VenciraHistoryPage(total: 0, events: [], hasNext: false);
+
+  @override
   Future<void> logout() async {}
 
   @override
