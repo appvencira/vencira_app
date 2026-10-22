@@ -202,6 +202,24 @@ if username:
         method="PATCH",
     )
     assert status == 200 and json.loads(edited_raw)["status"] == "contacted"
+    # Ficha de la póliza externa y dos eventos de auditoría de alta y cambio.
+    detail_path = f"{create_path}{created['id']}/"
+    detail_status, detail_raw = read(client, detail_path)
+    assert detail_status == 200, "Ficha privada no accesible"
+    assert json.loads(detail_raw)["customer_reference"] == "PRUEBA-E2E-ESCRITURA"
+    history_path = f"{detail_path}history/"
+    history_status, history_raw = read(client, history_path)
+    assert history_status == 200, "Historial no accesible"
+    history = json.loads(history_raw)
+    assert history["count"] == 2, "Historial de alta/cambio incompleto"
+    assert {event["action"] for event in history["results"]} == {"created", "updated"}
+    assert "PRUEBA-E2E-ESCRITURA" not in history_raw, "Historial almacena referencia personal"
+    invalid_history_status, _ = read(
+        client, f"/api/v1/workspaces/{workspace_id}/renewals/"
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/history/"
+    )
+    assert invalid_history_status == 404, "Historial ajeno no se protege"
+
     status, after_create_raw = read(client, create_path)
     assert status == 200 and json.loads(after_create_raw)["count"] == expected_count + 1
     status, _ = read(
@@ -216,6 +234,8 @@ if username:
     assert status in (401, 403), "La agenda permite consultar datos tras logout"
     status, _ = read(client, month_path)
     assert status in (401, 403), "El mes revela actividad después del logout"
+    status, _ = read(client, history_path)
+    assert status in (401, 403), "El historial sigue visible después del logout"
     print("OK: origen único, login + CSRF, agenda diaria, escrituras y logout")
 else:
     print("OK: Flutter, proxy Django, login HTML y denegación anónima. Login E2E omitido.")
