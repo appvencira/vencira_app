@@ -775,7 +775,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
             ],
           );
         },
-      ),;
+      );
   }
 
   String get _totalLabel => _renewals?.total.toString() ?? '0';
