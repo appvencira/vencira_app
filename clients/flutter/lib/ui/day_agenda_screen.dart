@@ -327,80 +327,97 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
     return label.toString();
   }
 
+  /// Tira de fechas compacta: círculos, no columnas rectangulares.
+  /// Las marcas mantienen significado (tipo de evento + estado) y claves
+  /// accesibles para las pruebas actuales.
   Widget _weekStrip(String locale, ColorScheme colors) {
     final monday = _weekBeginning(_selectedDay);
     final activity = _weekMonday == monday ? _weekActivity : null;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return LayoutBuilder(builder: (context, constraints) {
       final itemWidth = (constraints.maxWidth / 7).clamp(46.0, 88.0).toDouble();
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        child: Row(
-          children: List.generate(7, (index) {
-            final day = DateTime(monday.year, monday.month, monday.day + index);
-            final selected = day == _selectedDay;
-            final dateKey = _dayKey(day);
-            final info = activity?[dateKey];
-            return SizedBox(
-              width: itemWidth,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: Semantics(
-                  button: true,
-                  selected: selected,
-                  label: _weekDayDescription(day, locale, info),
-                  child: InkWell(
-                    key: ValueKey('agenda-weekday-$index'),
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => _chooseDay(day),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? colors.primaryContainer
-                            : colors.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: selected ? colors.primary : colors.outlineVariant,
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            DateFormat.E(locale).format(day),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.labelSmall,
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            '${day.day}',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(
-                              color: selected
-                                  ? colors.onPrimaryContainer
-                                  : colors.onSurface,
+        child: Row(children: List.generate(7, (index) {
+          final day = DateTime(monday.year, monday.month, monday.day + index);
+          final selected = day == _selectedDay;
+          final dateKey = _dayKey(day);
+          final info = activity?[dateKey];
+          Color? eventColor;
+          if (info != null) {
+            if (info.expiry.total > 0) {
+              eventColor = colors.error;
+            } else if (info.notice.total > 0) {
+              eventColor = colors.tertiary;
+            } else if (info.reminder.total > 0) {
+              eventColor = colors.primary;
+            }
+          }
+          final background = selected
+              ? colors.primary
+              : eventColor == null
+                  ? Colors.transparent
+                  : Color.lerp(colors.surface, eventColor,
+                      dark ? 0.32 : 0.18)!;
+          return SizedBox(
+            width: itemWidth,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Semantics(
+                button: true,
+                selected: selected,
+                label: _weekDayDescription(day, locale, info),
+                child: InkWell(
+                  key: ValueKey('agenda-weekday-$index'),
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => _chooseDay(day),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 7),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(DateFormat.E(locale).format(day),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(color: colors.onSurfaceVariant)),
+                        const SizedBox(height: 7),
+                        Container(
+                          width: 42, height: 42,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: background,
+                            border: selected ? null : Border.all(
+                              color: eventColor == null
+                                  ? colors.outlineVariant
+                                  : Colors.transparent,
                             ),
                           ),
-                          // Reservar la misma zona para TODOS los días:
-                          // los que tienen marcas no deben aumentar de alto.
-                          const SizedBox(height: 5),
-                          SizedBox(
-                            key: ValueKey('agenda-week-slot-$index'),
-                            height: 32,
-                            child: info == null
-                                ? const SizedBox.shrink()
-                                : Center(child: _weekMarks(dateKey, info, colors)),
-                          ),
-                        ],
-                      ),
+                          child: Text('${day.day}',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: selected
+                                  ? colors.onPrimary : colors.onSurface,
+                            )),
+                        ),
+                        const SizedBox(height: 7),
+                        SizedBox(
+                          key: ValueKey('agenda-week-slot-$index'),
+                          height: 32,
+                          child: info == null
+                              ? const SizedBox.shrink()
+                              : Center(child: _weekMarks(dateKey, info, colors)),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
-            );
-          }),
-        ),
+            ),
+          );
+        })),
       );
     });
   }
