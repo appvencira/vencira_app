@@ -182,6 +182,38 @@ if username:
     status, token_body = read(client, "/api/v1/csrf/")
     assert status == 200, "No hay endpoint CSRF"
     token = json.loads(token_body)["csrfToken"]
+
+    modalities_path = f"/api/v1/workspaces/{workspace_id}/modalities/"
+    cat_status, cat_raw = read(client, modalities_path)
+    assert cat_status == 200, "Catálogo de modalidades no accesible"
+    assert any(item["code"] == "hogar" for item in json.loads(cat_raw))
+    cat_status, new_modality_raw = read(
+        client, modalities_path,
+        data=json.dumps({"label": "Prueba catálogo E2E"}).encode("utf-8"),
+        headers={"Content-Type": "application/json", "X-CSRFToken": token},
+        method="POST",
+    )
+    assert cat_status == 201, "No puede crear modalidad propia"
+    code = json.loads(new_modality_raw)["code"]
+    cat_detail = modalities_path + code + "/"
+    cat_status, _ = read(
+        client, cat_detail,
+        data=json.dumps({"label": "Prueba catálogo editado"}).encode("utf-8"),
+        headers={"Content-Type": "application/json", "X-CSRFToken": token},
+        method="PATCH",
+    )
+    assert cat_status == 200, "No puede renombrar modalidad"
+    cat_status, _ = read(
+        client, cat_detail,
+        data=b"", headers={"X-CSRFToken": token},
+        method="DELETE",
+    )
+    assert cat_status == 204, "No puede desactivar modalidad"
+    _, cat_raw = read(client, modalities_path)
+    assert any(
+        row["code"] == code and row["active"] is False
+        for row in json.loads(cat_raw)
+    ), "La desactivación eliminó la referencia histórica"
     create_path = f"/api/v1/workspaces/{workspace_id}/renewals/"
     status, created_raw = read(
         client, create_path,
@@ -198,6 +230,13 @@ if username:
     created = json.loads(created_raw)
     assert created["notice_deadline_on"] == "2027-03-31"
     assert created["entry"] == "prospects" and created["modality"] == "hogar"
+    status, filtered_raw = read(
+        client, create_path + "?entry=prospects&modality=hogar"
+    )
+    assert status == 200 and any(
+        row["id"] == created["id"]
+        for row in json.loads(filtered_raw)["results"]
+    ), "No se ve la anotación con filtros combinados"
     status, edited_raw = read(
         client, f"{create_path}{created['id']}/",
         data=json.dumps({"status": "contacted", "entry": "clients"}).encode("utf-8"),
