@@ -200,6 +200,44 @@ void main() {
     });
   }
 
+  testWidgets('al tocar anotación abre ficha, y no historial en móvil',
+      (tester) async {
+    tester.view.physicalSize = const Size(375, 850);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final api = DemoAgendaApi();
+    await tester.pumpWidget(_screen(api));
+    await tester.pumpAndSettle();
+    const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    final annotation = find.byKey(const ValueKey('agenda-annotation-' + id));
+    await tester.ensureVisible(annotation);
+    await tester.tap(annotation);
+    await tester.pumpAndSettle();
+    expect(find.text('Ficha de anotación'), findsOneWidget);
+    expect(find.text('AVISO-FICTICIO-DE-PRUEBA'), findsOneWidget);
+    expect(find.text('Consultar historial'), findsNothing);
+  });
+
+  testWidgets('historial se consulta solo en vista de escritorio web',
+      (tester) async {
+    tester.view.physicalSize = const Size(1000, 950);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(_screen(DemoAgendaApi()));
+    await tester.pumpAndSettle();
+    const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    final annotation = find.byKey(const ValueKey('agenda-annotation-' + id));
+    await tester.ensureVisible(annotation);
+    await tester.tap(annotation);
+    await tester.pumpAndSettle();
+    expect(find.text('Ficha de anotación'), findsOneWidget);
+    // En test Flutter no web, kIsWeb es false: no se publican datos de
+    // historial en aplicaciones nativas aunque tengan pantalla grande.
+    expect(find.text('Consultar historial'), findsNothing);
+  });
+
   testWidgets('navega entre meses por flechas y tira de semana',
       (tester) async {
     final api = DemoAgendaApi();
