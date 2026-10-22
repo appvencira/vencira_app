@@ -1,5 +1,8 @@
 """API v1 con aislamiento y auditoría transaccional de escrituras."""
+from datetime import date
+
 from django.db import transaction
+from django.db.models import Exists, OuterRef, Prefetch, Q, prefetch_related_objects
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -7,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .audit import make_audit_event
-from .models import Renewal, WorkspaceMember
+from .models import ReminderCandidate, Renewal, WorkspaceMember
 from .pagination import RenewalPagination
 from .serializers import MembershipSerializer, RenewalSerializer
 
@@ -59,6 +62,73 @@ def workspace_members(request, workspace_id):
         {"id": row.user_id, "name": row.user.get_username(), "role": row.role}
         for row in members
     ])
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def agenda_day(request, workspace_id):
+    """Vista de lectura: vencimientos y candidatos de aviso de un día.
+
+    No presupone entrega real ni añade eventos "recuérdamelo" aún no modelados.
+    El cliente envía el día local explícito; no usar la zona horaria del servidor.
+    """
+    membership = _membership(request, workspace_id)
+    raw_day = request.query_params.get("day", "")
+    try:
+        day = date.fromisoformat(raw_day)
+        if day.isoformat() != raw_day:
+            raise ValueError("Formato no canónico")
+    except (ValueError, TypeError):
+        return Response(
+            {"day": "Fecha obligatoria en formato ISO YYYY-MM-DD."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    due_candidates = ReminderCandidate.objects.filter(
+        scheduled_for=day,
+        state=ReminderCandidate.State.PLANNED,
+        policy__enabled=True,
+    )
+    # Exists evita duplicados y mantiene paginación por anotación.
+    has_reminder_today = due_candidates.filter(renewal_id=OuterRef("pk"))
+    scoped = (
+        _visible_renewals(membership)
+        .exclude(status=Renewal.Status.CLOSED)
+        .annotate(agenda_has_reminder=Exists(has_reminder_today))
+        .filter(Q(expires_on=day) | Q(agenda_has_reminder=True))
+        .order_by("expires_on", "id")
+    )
+    paginator = RenewalPagination()
+    page = paginator.paginate_queryset(scoped, request)
+    # Prefetch SOLO del día y de políticas activas; sin N+1.
+    prefetch_related_objects(
+        page,
+        Prefetch(
+            "reminder_candidates",
+            queryset=due_candidates.select_related("policy").order_by(
+                "scheduled_for", "id"
+            ),
+            to_attr="agenda_due_candidates",
+        ),
+    )
+    results = []
+    for renewal in page:
+        events = []
+        if renewal.expires_on == day:
+            events.append({"kind": "expiry"})
+        for candidate in renewal.agenda_due_candidates:
+            events.append({
+                "kind": "reminder",
+                "candidate_id": candidate.pk,
+                "basis": candidate.policy.basis,
+            })
+        results.append({
+            "renewal": RenewalSerializer(renewal).data,
+            "events": events,
+        })
+    response = paginator.get_paginated_response(results)
+    response.data["day"] = day.isoformat()
+    return response
 
 
 @api_view(["GET", "POST"])
