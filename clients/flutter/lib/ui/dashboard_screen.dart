@@ -78,8 +78,9 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         _loadingWorkspaces = false;
       });
       if (loaded.isNotEmpty) {
-        await _loadModalities();
-        await _loadRenewals(1);
+        // No bloquear la primera carga del listado por el catálogo.
+        _loadRenewals(1);
+        _loadModalities();
       }
     } on VenciraUnauthorized {
       if (!mounted || sequence != _sequence) return;
@@ -109,8 +110,8 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       _modalityFilter = '';
       _modalities = VenciraModalityOption.defaults;
     });
-    await _loadModalities();
-    await _loadRenewals(1);
+    _loadRenewals(1);
+    _loadModalities();
   }
 
   Future<void> _loadRenewals(int page) async {
