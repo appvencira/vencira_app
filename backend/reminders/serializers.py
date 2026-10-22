@@ -1,7 +1,7 @@
 """Superficie de datos deliberadamente reducida para evitar asignación de tenant."""
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Renewal, WorkspaceMember
+from .models import Renewal, WorkspaceMember, WorkspaceInsurer
 from .modality_catalog import modality_valid
 
 
@@ -16,6 +16,9 @@ class MembershipSerializer(serializers.ModelSerializer):
 
 
 class RenewalSerializer(serializers.ModelSerializer):
+    insurer = serializers.PrimaryKeyRelatedField(
+        queryset=WorkspaceInsurer.objects.all(), allow_null=True, required=False,
+    )
     assigned_to = serializers.PrimaryKeyRelatedField(
         queryset=get_user_model().objects.all(),
         allow_null=True,
@@ -24,7 +27,7 @@ class RenewalSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Renewal
-        fields = ("id", "customer_reference", "entry", "modality",
+        fields = ("id", "customer_reference", "entry", "modality", "insurer",
                   "expires_on", "notice_deadline_on", "status",
                   "assigned_to", "created_at", "updated_at")
         read_only_fields = ("id", "created_at", "updated_at")
@@ -33,7 +36,7 @@ class RenewalSerializer(serializers.ModelSerializer):
         # Rechazo explícito de claves no editables y campos desconocidos:
         # no aceptar silenciosamente identificadores ajenos ni intentos de mass assignment.
         writable = {"customer_reference", "entry", "modality", "expires_on",
-                    "notice_deadline_on", "status", "assigned_to"}
+                    "notice_deadline_on", "status", "assigned_to", "insurer"}
         forbidden = set(self.initial_data) - writable
         if forbidden:
             raise serializers.ValidationError({
@@ -59,6 +62,18 @@ class RenewalSerializer(serializers.ModelSerializer):
                     "modality": "Modalidad inexistente o desactivada en esta cuenta."
                 })
         membership = self.context.get("membership")
+        if "insurer" in attrs and attrs["insurer"] is not None:
+            company = attrs["insurer"]
+            # El ID es una referencia opaca: comprobar pertenencia y activación.
+            if membership is None or company.workspace_id != membership.workspace_id:
+                raise serializers.ValidationError({
+                    "insurer": "Aseguradora no disponible en esta cuenta.",
+                })
+            unchanged = self.instance is not None and self.instance.insurer_id == company.pk
+            if not company.active and not unchanged:
+                raise serializers.ValidationError({
+                    "insurer": "La aseguradora está desactivada.",
+                })
         if "assigned_to" in self.initial_data:
             # Sólo el propietario puede reasignar; comprobar que el usuario
             # sea miembro de ESTE workspace, nunca de otro tenant.
