@@ -45,3 +45,10 @@ No cambiar ni eliminar el registro histórico en una migración de estructura. A
 ## Liberación
 
 No fusionar ni desplegar hasta CI verde y revisión de semántica de las asignaciones por el propietario. Nunca usar datos personales de clientes en el preview actual. Ver issue #5: https://github.com/appvencira/vencira_app/issues/5.
+
+## Evidencia de CI — 22/10/2026
+
+- [GitHub Actions run #1](https://github.com/appvencira/vencira_app/actions/runs/39717288656): encontró 3 pruebas de preaviso que utilizaban un usuario de rol `member` para modificar una anotación histórica sin responsable; bajo los permisos nuevos el 404 era correcto. Se corrigió la **fixture**, no se relajó la autorización.
+- [GitHub Actions run #2](https://github.com/appvencira/vencira_app/actions/runs/39717402091): **success**. `python manage.py check`, `makemigrations --check --dry-run`, suite Django completa en SQLite y PostgreSQL 17 superadas.
+- Pruebas de seguridad incluidas: miembros de un mismo workspace no pueden abrir/modificar anotaciones ajenas; miembros no pueden designar otros responsables; propietarios solo asignan dentro del equipo; los registros históricos permanecen ocultos para miembros hasta que el propietario los asigne.
+- **Todavía es PR borrador**: pendiente decisión de negocio sobre bajas/reasignaciones y revisión de flujo UI; no desplegar ni introducir datos reales.
