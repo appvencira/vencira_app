@@ -23,19 +23,30 @@ class RenewalSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Renewal
-        fields = ("id", "customer_reference", "expires_on", "notice_deadline_on",
-                  "status", "assigned_to", "created_at", "updated_at")
+        fields = ("id", "customer_reference", "entry", "modality",
+                  "expires_on", "notice_deadline_on", "status",
+                  "assigned_to", "created_at", "updated_at")
         read_only_fields = ("id", "created_at", "updated_at")
 
     def validate(self, attrs):
         # Rechazo explícito de claves no editables y campos desconocidos:
         # no aceptar silenciosamente identificadores ajenos ni intentos de mass assignment.
-        writable = {"customer_reference", "expires_on", "notice_deadline_on", "status", "assigned_to"}
+        writable = {"customer_reference", "entry", "modality", "expires_on",
+                    "notice_deadline_on", "status", "assigned_to"}
         forbidden = set(self.initial_data) - writable
         if forbidden:
             raise serializers.ValidationError({
                 "fields": "No se permiten campos no editables o desconocidos."
             })
+        # Legacy: filas previas sin Entrada continúan legibles/editables.
+        # La UI de creación nueva exige elección; API conserva compatibilidad
+        # con clientes provisionales anteriores durante la migración.
+        if "entry" in self.initial_data and self.initial_data["entry"] in ("", None):
+            raise serializers.ValidationError({
+                "entry": "Selecciona Clientes o Candidatos.",
+            })
+        if "modality" in attrs:
+            attrs["modality"] = attrs["modality"].strip()
         membership = self.context.get("membership")
         if "assigned_to" in self.initial_data:
             # Sólo el propietario puede reasignar; comprobar que el usuario
