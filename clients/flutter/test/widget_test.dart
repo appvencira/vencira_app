@@ -28,6 +28,16 @@ class FakeVenciraApi extends VenciraApi {
   }
 
   @override
+  Future<List<VenciraModalityOption>> fetchModalities(String workspaceId) async =>
+      VenciraModalityOption.defaults;
+
+  @override
+  Future<VenciraRenewalPage> fetchFilteredRenewals(
+      String workspaceId, {int page = 1, String search = '',
+      String status = '', String entry = '', String modality = ''}) =>
+      fetchRenewals(workspaceId, page: page, search: search, status: status);
+
+  @override
   Future<VenciraAgendaMonth> fetchAgendaMonth(
       String workspaceId, DateTime month) async =>
       VenciraAgendaMonth(month: DateTime(month.year, month.month, 1), days: const []);
