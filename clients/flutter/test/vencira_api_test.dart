@@ -225,6 +225,19 @@ void main() {
     expect(calls, 1);
   });
 
+  test('acepta evento contractual sin candidato ni envío programado', () {
+    final event = VenciraAgendaEvent.fromJson(
+      {'kind': 'notice_deadline'},
+    );
+    expect(event.kind, 'notice_deadline');
+    expect(event.candidateId, isNull);
+    expect(event.basis, isNull);
+    expect(
+      () => VenciraAgendaEvent.fromJson({'kind': 'reminder'}),
+      throwsFormatException,
+    );
+  });
+
   test('agenda rechaza parámetros manipulados antes de consultar', () async {
     var calls = 0;
     final client = MockClient((_) async {
