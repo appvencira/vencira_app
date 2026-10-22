@@ -44,15 +44,29 @@ if [ "$branch" != "integration/local-e2e-prep" ]; then
 fi
 
 PHASE="GIT_WORKTREE"
-git_status="$(git status --porcelain)"
-if [ -n "$git_status" ]; then
-  echo "ESTADO_GIT=CAMBIOS_LOCALES"
-  echo "=== CAMBIOS LOCALES (sin descartarlos) ==="
+# Solo se permiten archivos generados conocidos. No borrar ni tocar ficheros
+# locales y nunca ignorar cambios en código versionado.
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "ESTADO_GIT=MODIFICACIONES_VERSIONADAS"
   git status --short
-  echo "ERROR: hay cambios locales. No se limpian ni se despliegan fuentes no verificadas."
+  echo "ERROR: cambios rastreados o en staging; no se despliega."
   exit 3
 fi
-echo "ESTADO_GIT=LIMPIO"
+
+# pubspec.lock todavía no está versionado en este proyecto; se genera
+# con flutter pub get. Cualquier OTRO archivo nuevo bloquea el despliegue.
+extra_untracked="$(git ls-files --others --exclude-standard \
+  | grep -vx 'clients/flutter/pubspec.lock' || true)"
+if [ -n "$extra_untracked" ]; then
+  echo "ESTADO_GIT=ARCHIVOS_NUEVOS_NO_ESPERADOS"
+  printf '%s\n' "$extra_untracked"
+  echo "ERROR: archivos locales ajenos a los artefactos permitidos."
+  exit 3
+fi
+if [ -f clients/flutter/pubspec.lock ]; then
+  echo "ARCHIVO_GENERADO_ADMITIDO=clients/flutter/pubspec.lock"
+fi
+echo "ESTADO_GIT=FUENTES_VERSIONADAS_LIMPIAS"
 echo "COMMIT=$(git rev-parse HEAD)"
 
 PHASE="COMPOSE_IDENTITY"
