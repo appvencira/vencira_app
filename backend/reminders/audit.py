@@ -12,7 +12,7 @@ def make_audit_event(*, renewal, actor, before=None):
     """
     changed = [
         field for field in AUDITABLE_FIELDS
-        if (before is None and (field not in ("notice_deadline_on", "assigned_to_id", "entry", "modality") or getattr(renewal, field) is not None))
+        if (before is None and (field not in ("notice_deadline_on", "assigned_to_id", "entry", "modality") or bool(getattr(renewal, field))))
         or (before is not None and getattr(before, field) != getattr(renewal, field))
     ]
     if not changed:
