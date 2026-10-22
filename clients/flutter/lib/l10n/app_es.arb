@@ -71,6 +71,7 @@
   "agendaContractualNotice": "Límite contractual de preaviso",
   "agendaPlannedReminder": "Aviso previsto · Vencimiento",
   "agendaPlannedNotice": "Aviso previsto · Preaviso",
+  "agendaWeekUnavailable": "No se pudieron cargar los indicadores de esta semana. Pulsa actualizar para reintentarlo.",
   "agendaMonthTitle": "Calendario mensual",
   "agendaMonthOpen": "Ver mes",
   "agendaPreviousMonth": "Mes anterior",
