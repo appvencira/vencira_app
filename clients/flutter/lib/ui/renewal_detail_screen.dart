@@ -19,6 +19,7 @@ class VenciraRenewalDetailScreen extends StatefulWidget {
 
 class _DetailState extends State<VenciraRenewalDetailScreen> {
   VenciraRenewal? _renewal;
+  List<VenciraInsurer> _insurers = [];
   VenciraHistoryPage? _history;
   int _page = 1;
   bool _loading = true;
@@ -50,6 +51,14 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       final value = await widget.api.fetchRenewalDetail(widget.workspace.id, widget.renewalId);
       if (!mounted || token != _generation) return;
       setState(() { _renewal = value; _loading = false; });
+      try {
+        final insurers = await widget.api.fetchInsurers(widget.workspace.id);
+        if (mounted && token == _generation) {
+          setState(() => _insurers = insurers);
+        }
+      } catch (_) {
+        // No inventar nombre de aseguradora si falla la consulta.
+      }
     } on VenciraUnauthorized {
       if (!mounted || token != _generation) return;
       setState(() { _loading = false; _unauthorized = true; });
@@ -84,10 +93,18 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
         SnackBar(content: Text(_t.modalityChangeFailed)));
       return;
     }
+    List<VenciraInsurer> insurers;
+    try {
+      insurers = await widget.api.fetchInsurers(widget.workspace.id);
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t.insurerLoadError)));
+      return;
+    }
     if (!mounted) return;
     final input = await showDialog<VenciraRenewalInput>(context: context,
       builder: (_) => VenciraRenewalEditor(
-        existing: current, modalities: options));
+        existing: current, modalities: options, insurers: insurers));
     if (!mounted || input == null) return;
     setState(() => _saving = true);
     try {
@@ -215,6 +232,11 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                 const SizedBox(height: 10),
                 _info(_t.entryLabel, _entryLabel(renewal.entry)),
                 _info(_t.modalityLabel, _modalityLabel(renewal.modality)),
+                _info(_t.insurerLabel, renewal.insurerId == null
+                  ? _t.notDefined : _insurers
+                      .where((item) => item.id == renewal.insurerId)
+                      .map((item) => item.name)
+                      .firstOrNull ?? _t.insurerLegacy),
                 _info(_t.expiryDate, DateFormat.yMd(locale).format(renewal.expiresOn)),
                 if (renewal.noticeDeadlineOn != null)
                   _info(_t.noticeDate, DateFormat.yMd(locale).format(renewal.noticeDeadlineOn!)),
