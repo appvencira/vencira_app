@@ -3,12 +3,14 @@ import 'package:intl/intl.dart';
 
 import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
+import 'modality_labels.dart';
 
 /// Editor local: devuelve una solicitud validada, sin credenciales ni red.
 class VenciraRenewalEditor extends StatefulWidget {
-  const VenciraRenewalEditor({super.key, this.existing});
+  const VenciraRenewalEditor({super.key, this.existing, this.modalities});
 
   final VenciraRenewal? existing;
+  final List<VenciraModalityOption>? modalities;
 
   @override
   State<VenciraRenewalEditor> createState() => _VenciraRenewalEditorState();
@@ -147,12 +149,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   key: const ValueKey('renewal-modality'),
-                  initialValue: _modality.isEmpty ||
-                      const ['autos', 'motos', 'patinetes', 'hogar',
-                        'comercio', 'decesos', 'salud', 'vida',
-                        'accidentes', 'rc', 'comunidades', 'otros']
-                            .contains(_modality)
-                    ? _modality : '_legacy',
+                  initialValue: _modality,
                   isExpanded: true,
                   decoration: InputDecoration(
                     labelText: _t.modalityLabel,
@@ -160,27 +157,26 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                   ),
                   items: [
                     DropdownMenuItem(value: '', child: Text(_t.notDefined)),
-                    DropdownMenuItem(value: 'autos', child: Text(_t.modAutos)),
-                    DropdownMenuItem(value: 'motos', child: Text(_t.modMotos)),
-                    DropdownMenuItem(value: 'patinetes', child: Text(_t.modPatinetes)),
-                    DropdownMenuItem(value: 'hogar', child: Text(_t.modHogar)),
-                    DropdownMenuItem(value: 'comercio', child: Text(_t.modComercio)),
-                    DropdownMenuItem(value: 'decesos', child: Text(_t.modDecesos)),
-                    DropdownMenuItem(value: 'salud', child: Text(_t.modSalud)),
-                    DropdownMenuItem(value: 'vida', child: Text(_t.modVida)),
-                    DropdownMenuItem(value: 'accidentes', child: Text(_t.modAccidentes)),
-                    DropdownMenuItem(value: 'rc', child: Text(_t.modRc)),
-                    DropdownMenuItem(value: 'comunidades', child: Text(_t.modComunidades)),
-                    DropdownMenuItem(value: 'otros', child: Text(_t.modOtros)),
+                    for (final option in widget.modalities ??
+                        VenciraModalityOption.defaults)
+                      if (option.active || option.code == _modality)
+                        DropdownMenuItem(
+                          value: option.code,
+                          child: Text(
+                            modalityCaption(context, option) +
+                              (option.active ? '' : ' · ' + _t.modalityInactive),
+                            maxLines: 1, overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                     if (_modality.isNotEmpty &&
-                        !const ['autos', 'motos', 'patinetes', 'hogar',
-                          'comercio', 'decesos', 'salud', 'vida',
-                          'accidentes', 'rc', 'comunidades', 'otros']
-                            .contains(_modality))
-                      DropdownMenuItem(value: '_legacy', child: Text(_modality)),
+                        !(widget.modalities ??
+                          VenciraModalityOption.defaults)
+                            .any((option) => option.code == _modality))
+                      DropdownMenuItem(value: _modality,
+                        child: Text(_modality, overflow: TextOverflow.ellipsis)),
                   ],
                   onChanged: (value) => setState(() {
-                    if (value != null && value != '_legacy') _modality = value;
+                    if (value != null) _modality = value;
                   }),
                 ),
                 const SizedBox(height: 12),
