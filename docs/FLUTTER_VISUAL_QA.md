@@ -52,3 +52,10 @@ No contiene capturas de pantalla ni equivale a una revisión manual aprobada.
 - Seguimiento idiomático: https://github.com/appvencira/vencira_app/issues/2
 - Sistema de diseño: https://github.com/appvencira/vencira_app/issues/3
 - Guía detallada: `docs/FLUTTER_LOCALE_THEME.md`
+
+## Historial de validación responsive (22/10/2026)
+
+- [Workflow #9](https://github.com/appvencira/vencira_app/actions/runs/39716146403): **fallo real detectado** en las pruebas a 320 px (RenderFlex +131 px) y 375 px (+76 px); 768 px correcto. Análisis de Dart, generación de idioma y catálogos correctos. Ese resultado **no debe declararse verde**.
+- Correcciones posteriores: campo de búsqueda y filtro dimensionados por `LayoutBuilder`; ficha con chip en el subtítulo y edición compacta; cabecera con botón de salida solo iconográfico (tooltip); selector de organización `isExpanded` con elipsis.
+- Pruebas anteriores ajustadas para identificar salida por tooltip accesible.
+- [Workflow #12](https://github.com/appvencira/vencira_app/actions/runs/39716446445): repetición automática de la suite. **Pendiente de resolución cuando se añadió este registro**. Anotar resultado final posteriormente.
