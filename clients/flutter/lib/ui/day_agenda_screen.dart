@@ -34,6 +34,12 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
   bool _failed = false;
   bool _unauthorized = false;
 
+  // Solo contadores agregados y autorizados de la semana visible.
+  DateTime? _weekMonday;
+  Map<String, VenciraMonthDay>? _weekActivity;
+  int _weekGeneration = 0;
+  bool _weekError = false;
+
   AppLocalizations get _t => AppLocalizations.of(context)!;
 
   static DateTime _civilDate(DateTime day) =>
@@ -44,11 +50,13 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
     super.initState();
     _selectedDay = _civilDate(widget.initialDay ?? DateTime.now());
     _loadDay(1);
+    _loadWeek();
   }
 
   @override
   void dispose() {
     _generation++;
+    _weekGeneration++;
     super.dispose();
   }
 
@@ -88,6 +96,61 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
     }
   }
 
+  static DateTime _weekBeginning(DateTime day) => DateTime(
+    day.year, day.month, day.day - (day.weekday - DateTime.monday),
+  );
+
+  static String _dayKey(DateTime day) => DateFormat('yyyy-MM-dd').format(day);
+
+  /// La semana puede abarcar dos meses: una o dos consultas agregadas,
+  /// nunca siete listados de pólizas ni datos ajenos a la sesión.
+  Future<void> _loadWeek({bool force = false}) async {
+    final monday = _weekBeginning(_selectedDay);
+    if (!force && _weekMonday == monday) return;
+    final requestId = ++_weekGeneration;
+    final sunday = DateTime(monday.year, monday.month, monday.day + 6);
+    setState(() {
+      _weekMonday = monday;
+      _weekActivity = null; // No mostrar marcadores obsoletos.
+      _weekError = false;
+    });
+    final monthStarts = <DateTime>[
+      DateTime(monday.year, monday.month, 1),
+      if (monday.year != sunday.year || monday.month != sunday.month)
+        DateTime(sunday.year, sunday.month, 1),
+    ];
+    try {
+      final summaries = await Future.wait([
+        for (final month in monthStarts)
+          if (month.year >= 2000 && month.year <= 2100)
+            widget.api.fetchAgendaMonth(widget.workspace.id, month),
+      ]);
+      if (!mounted || requestId != _weekGeneration) return;
+      final allowedDays = {
+        for (var i = 0; i < 7; i++)
+          _dayKey(DateTime(monday.year, monday.month, monday.day + i)),
+      };
+      setState(() {
+        _weekActivity = {
+          for (final summary in summaries)
+            for (final day in summary.days)
+              if (allowedDays.contains(_dayKey(day.day))) _dayKey(day.day): day,
+        };
+      });
+    } catch (_) {
+      if (!mounted || requestId != _weekGeneration) return;
+      setState(() {
+        _weekActivity = null;
+        _weekError = true; // No representar un error como semana vacía.
+      });
+    }
+  }
+
+  void _refreshAll() {
+    _loadDay(_page);
+    _loadWeek(force: true);
+  }
+
   void _chooseDay(DateTime day) {
     final civil = _civilDate(day);
     if (civil == _selectedDay) {
@@ -96,6 +159,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
     }
     setState(() => _selectedDay = civil);
     _loadDay(1);
+    _loadWeek();
   }
 
   void _stepDay(int offset) {
@@ -134,15 +198,72 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
         api: widget.api, workspace: widget.workspace, renewalId: renewalId,
       ),
     ));
-    if (mounted) _loadDay(1);
+    if (mounted) {
+      _loadDay(1);
+      _loadWeek(force: true);
+    }
+  }
+
+  Widget _weekDot(Color color, {required bool filled, required String markerKey}) {
+    return Container(
+      key: ValueKey(markerKey),
+      width: 7,
+      height: 7,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: filled ? color : Colors.transparent,
+        border: Border.all(color: color, width: 1.5),
+      ),
+    );
+  }
+
+  Widget _weekMarks(String dateKey, VenciraMonthDay info, ColorScheme colors) {
+    Widget pair(String kind, VenciraMonthCounts count, Color color) {
+      return Row(mainAxisSize: MainAxisSize.min, children: [
+        if (count.pending > 0)
+          _weekDot(color, filled: true,
+              markerKey: 'week-mark-' + dateKey + '-' + kind + '-pending'),
+        if (count.pending > 0 && count.contacted > 0)
+          const SizedBox(width: 2),
+        if (count.contacted > 0)
+          _weekDot(color, filled: false,
+              markerKey: 'week-mark-' + dateKey + '-' + kind + '-contacted'),
+      ]);
+    }
+
+    return Wrap(
+      spacing: 3,
+      runSpacing: 3,
+      alignment: WrapAlignment.center,
+      children: [
+        if (info.expiry.total > 0) pair('expiry', info.expiry, colors.error),
+        if (info.notice.total > 0) pair('notice', info.notice, colors.tertiary),
+        if (info.reminder.total > 0) pair('reminder', info.reminder, colors.primary),
+      ],
+    );
+  }
+
+  String _weekDayDescription(DateTime day, String locale, VenciraMonthDay? info) {
+    final label = StringBuffer(DateFormat('EEEE d MMMM yyyy', locale).format(day));
+    if (info != null) {
+      for (final group in [
+        (_t.agendaExpiryEvent, info.expiry),
+        (_t.noticeLabel, info.notice),
+        (_t.agendaMonthReminder, info.reminder),
+      ]) {
+        if (group.$2.total > 0) {
+          label.write(' · ' + group.$1 + ': ' +
+              group.$2.pending.toString() + ' ' + _t.pending +
+              ', ' + group.$2.contacted.toString() + ' ' + _t.contacted);
+        }
+      }
+    }
+    return label.toString();
   }
 
   Widget _weekStrip(String locale, ColorScheme colors) {
-    final monday = DateTime(
-      _selectedDay.year,
-      _selectedDay.month,
-      _selectedDay.day - (_selectedDay.weekday - DateTime.monday),
-    );
+    final monday = _weekBeginning(_selectedDay);
+    final activity = _weekMonday == monday ? _weekActivity : null;
     return LayoutBuilder(builder: (context, constraints) {
       final itemWidth = (constraints.maxWidth / 7).clamp(46.0, 88.0).toDouble();
       return SingleChildScrollView(
@@ -151,6 +272,8 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
           children: List.generate(7, (index) {
             final day = DateTime(monday.year, monday.month, monday.day + index);
             final selected = day == _selectedDay;
+            final dateKey = _dayKey(day);
+            final info = activity?[dateKey];
             return SizedBox(
               width: itemWidth,
               child: Padding(
@@ -158,7 +281,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
                 child: Semantics(
                   button: true,
                   selected: selected,
-                  label: DateFormat('EEEE d MMMM yyyy', locale).format(day),
+                  label: _weekDayDescription(day, locale, info),
                   child: InkWell(
                     key: ValueKey('agenda-weekday-$index'),
                     borderRadius: BorderRadius.circular(12),
@@ -193,6 +316,10 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
                                   : colors.onSurface,
                             ),
                           ),
+                          if (info != null) ...[
+                            const SizedBox(height: 5),
+                            _weekMarks(dateKey, info, colors),
+                          ],
                         ],
                       ),
                     ),
@@ -347,7 +474,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
         actions: [
           IconButton(
             tooltip: _t.refresh,
-            onPressed: _loading ? null : () => _loadDay(_page),
+            onPressed: _loading ? null : _refreshAll,
             icon: const Icon(Icons.refresh),
           ),
         ],
@@ -411,6 +538,11 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
                       ),
                       const SizedBox(height: 16),
                       _weekStrip(locale, colors),
+                      if (_weekError) ...[
+                        const SizedBox(height: 6),
+                        Text(_t.agendaWeekUnavailable,
+                            style: Theme.of(context).textTheme.bodySmall),
+                      ],
                       const SizedBox(height: 22),
                       _dayContents(locale),
                       const SizedBox(height: 12),
