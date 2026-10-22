@@ -348,6 +348,64 @@ void main() {
         throwsA(isA<VenciraApiException>()));
   });
 
+  test('aseguradoras privadas: búsqueda, operaciones CSRF y filtros por UUID',
+      () async {
+    const insurerId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    var mutationCount = 0;
+    final client = MockClient((request) async {
+      expect(request.url.origin, 'http://localhost:18731');
+      if (request.url.path == '/api/v1/csrf/') {
+        return http.Response('{"csrfToken":"abcdefghijklmnopqrstuvwxyz123456"}', 200);
+      }
+      if (request.url.path.endsWith('/renewals/')) {
+        expect(request.url.queryParameters['insurer'], insurerId);
+        return http.Response('{"count":0,"next":null,"results":[]}', 200);
+      }
+      if (request.url.path.endsWith('/agenda/month/')) {
+        expect(request.url.queryParameters['insurer'], insurerId);
+        return http.Response('{"month":"2027-03","days":[]}', 200);
+      }
+      if (request.url.path.endsWith('/agenda/')) {
+        expect(request.url.queryParameters['insurer'], insurerId);
+        return http.Response('{"day":"2027-03-31","count":0,"next":null,"results":[]}', 200);
+      }
+      expect(request.url.path.startsWith(
+          '/api/v1/workspaces/$workspaceId/insurers/'), isTrue);
+      if (request.method == 'GET') {
+        expect(request.url.queryParameters['q'], 'prueba');
+        return http.Response('[{"id":"$insurerId","name":"Prueba Seguros",'
+            '"active":true}]', 200);
+      }
+      mutationCount++;
+      expect(request.headers.entries.any((entry) =>
+        entry.key.toLowerCase() == 'x-csrftoken' &&
+        entry.value == 'abcdefghijklmnopqrstuvwxyz123456'), isTrue);
+      if (request.method == 'DELETE') return http.Response('', 204);
+      return http.Response(
+        '{"id":"$insurerId","name":"Prueba Seguros","active":true}',
+        request.method == 'POST' ? 201 : 200);
+    });
+    final api = HttpVenciraApi(
+      client: client, baseUri: Uri.parse('http://localhost:18731/'));
+    expect((await api.fetchInsurers(workspaceId, search:'prueba')).single.id,
+        insurerId);
+    expect((await api.createInsurer(workspaceId, 'Prueba Seguros')).name,
+        'Prueba Seguros');
+    await api.renameInsurer(workspaceId, insurerId, 'Prueba Seguros');
+    await api.reactivateInsurer(workspaceId, insurerId);
+    await api.deactivateInsurer(workspaceId, insurerId);
+    expect(mutationCount, 4);
+    await api.fetchFilteredRenewals(workspaceId, insurer: insurerId);
+    await api.fetchFilteredAgendaDay(workspaceId, DateTime(2027, 3, 31),
+      insurer: insurerId);
+    await api.fetchFilteredAgendaMonth(workspaceId, DateTime(2027, 3, 1),
+      insurer: insurerId);
+    await expectLater(api.fetchFilteredRenewals(workspaceId, insurer:'../'),
+      throwsA(isA<VenciraApiException>()));
+    await expectLater(api.fetchInsurers('../other'),
+      throwsA(isA<VenciraApiException>()));
+  });
+
   test('catálogo propio del mismo origen y mutaciones CSRF', () async {
     var writes = 0;
     final client = MockClient((request) async {
