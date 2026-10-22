@@ -7,9 +7,11 @@ import 'modality_labels.dart';
 
 /// Editor local: devuelve una solicitud validada, sin credenciales ni red.
 class VenciraRenewalEditor extends StatefulWidget {
-  const VenciraRenewalEditor({super.key, this.existing, this.modalities, this.insurers});
+  const VenciraRenewalEditor({super.key, this.existing, this.modalities, this.insurers, this.api, this.workspaceId});
 
   final VenciraRenewal? existing;
+  final VenciraApi? api;
+  final String? workspaceId;
   final List<VenciraModalityOption>? modalities;
   final List<VenciraInsurer>? insurers;
 
@@ -28,6 +30,9 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
   late final TextEditingController _policyNumber;
   late final TextEditingController _notes;
   String? _entry;
+  bool _suggesting = false;
+  List<VenciraPersonSuggestion> _suggestions = [];
+  int _suggestionGeneration = 0;
   String _modality = '';
   String? _insurerId;
   DateTime? _expiration;
@@ -54,6 +59,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
 
   @override
   void dispose() {
+    _suggestionGeneration++;
     _reference.dispose();
     _fullName.dispose();
     _nickname.dispose();
@@ -90,6 +96,42 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
       } else {
         _expiration = date;
       }
+    });
+  }
+
+  Future<void> _lookupPerson() async {
+    final api = widget.api;
+    final workspace = widget.workspaceId;
+    final name = _fullName.text.trim();
+    final phone = _phone.text.trim();
+    final by = name.length >= 3 ? 'name' : 'phone';
+    final query = by == 'name' ? name : phone;
+    if (api == null || workspace == null || query.length < 3) return;
+    final generation = ++_suggestionGeneration;
+    setState(() { _suggesting = true; _suggestions = []; });
+    try {
+      final results = await api.suggestPeople(
+        workspace, query, by: by, excludeId: widget.existing?.id);
+      if (!mounted || generation != _suggestionGeneration) return;
+      setState(() => _suggestions = results);
+    } catch (_) {
+      if (!mounted || generation != _suggestionGeneration) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudieron consultar las sugerencias.')));
+    } finally {
+      if (mounted && generation == _suggestionGeneration) {
+        setState(() => _suggesting = false);
+      }
+    }
+  }
+
+  void _copySuggestion(VenciraPersonSuggestion item) {
+    setState(() {
+      _fullName.text = item.fullName;
+      _nickname.text = item.nickname;
+      _phone.text = item.phone;
+      _email.text = item.email;
+      _suggestions = [];
     });
   }
 
@@ -201,6 +243,25 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                 ),
                 const SizedBox(height: 10),
                 const SizedBox(height: 10),
+                if (widget.api != null && widget.workspaceId != null) ...[
+                  OutlinedButton.icon(
+                    key: const ValueKey('lookup-person'),
+                    onPressed: _suggesting ? null : _lookupPerson,
+                    icon: const Icon(Icons.person_search),
+                    label: const Text('Buscar datos en otras anotaciones'),
+                  ),
+                  if (_suggesting) const LinearProgressIndicator(),
+                  for (final candidate in _suggestions)
+                    ListTile(
+                      title: Text(candidate.fullName),
+                      subtitle: Text(candidate.nickname.isEmpty
+                          ? 'Copiar datos de contacto'
+                          : candidate.nickname),
+                      trailing: const Icon(Icons.content_copy),
+                      onTap: () => _copySuggestion(candidate),
+                    ),
+                  const SizedBox(height: 10),
+                ],
                 DropdownButtonFormField<String>(
                   key: const ValueKey('renewal-entry'),
                   initialValue: _entry,
