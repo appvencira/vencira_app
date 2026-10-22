@@ -66,10 +66,14 @@ class VenciraRenewal {
     required this.expiresOn,
     this.noticeDeadlineOn,
     required this.status,
+    this.entry,
+    this.modality = '',
   });
 
   final String id;
   final String reference;
+  final String? entry;
+  final String modality;
   final DateTime expiresOn;
   final DateTime? noticeDeadlineOn;
   final String status;
@@ -83,6 +87,8 @@ class VenciraRenewal {
           ? null
           : DateTime.parse(json['notice_deadline_on'] as String),
       status: json['status'] as String,
+      entry: json['entry'] as String?,
+      modality: json['modality'] as String? ?? '',
     );
   }
 }
@@ -93,9 +99,13 @@ class VenciraRenewalInput {
     required this.expiresOn,
     this.noticeDeadlineOn,
     this.status = 'pending',
+    this.entry,
+    this.modality = '',
   });
 
   final String reference;
+  final String? entry;
+  final String modality;
   final DateTime expiresOn;
   final DateTime? noticeDeadlineOn;
   final String status;
@@ -109,6 +119,8 @@ class VenciraRenewalInput {
 
   Map<String, dynamic> toJson() => {
         'customer_reference': reference.trim(),
+        if (entry != null) 'entry': entry,
+        'modality': modality.trim(),
         'expires_on': _isoDate(expiresOn),
         'notice_deadline_on':
             noticeDeadlineOn == null ? null : _isoDate(noticeDeadlineOn!),
