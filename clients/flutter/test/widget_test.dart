@@ -259,7 +259,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(find.text('NO-DEBE-QUEDAR-VISIBLE'), findsOneWidget);
-    await tester.tap(find.text('Salir'));
+    await tester.tap(find.byTooltip('Salir'));
     await tester.pumpAndSettle();
     expect(find.text('NO-DEBE-QUEDAR-VISIBLE'), findsNothing);
     expect(find.textContaining('Necesitas iniciar sesión'), findsOneWidget);
