@@ -295,10 +295,10 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
             },
           ),
           if (_selected != null)
-            TextButton.icon(
+            IconButton(
+              tooltip: _t.logout,
               onPressed: _saving ? null : _logout,
               icon: const Icon(Icons.logout),
-              label: Text(_t.logout),
             ),
           IconButton(
             tooltip: _t.refresh,
@@ -407,6 +407,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     return [
       DropdownButtonFormField<VenciraWorkspace>(
         key: ValueKey(_selected?.id),
+        isExpanded: true,
         initialValue: _selected,
         decoration: InputDecoration(
           border: const OutlineInputBorder(),
@@ -416,7 +417,11 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
             .map(
               (workspace) => DropdownMenuItem(
                 value: workspace,
-                child: Text(workspace.name),
+                child: Text(
+                  workspace.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             )
             .toList(),
