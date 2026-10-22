@@ -57,5 +57,18 @@
   "expiryLabel": "Venciment",
   "noticeLabel": "Límit de preavís",
   "page": "Pàgina",
-  "expiresOn": "Venç el"
+  "expiresOn": "Venç el",
+  "agendaTitle": "Agenda diària",
+  "agendaOpenDay": "Obre l'agenda",
+  "agendaToday": "Avui",
+  "agendaChooseDay": "Tria una data",
+  "agendaPreviousDay": "Dia anterior",
+  "agendaNextDay": "Dia següent",
+  "agendaDayEntries": "Anotacions del dia",
+  "agendaEmptyDay": "No hi ha venciments ni avisos previstos per a aquest dia.",
+  "agendaLoadError": "No s'ha pogut carregar l'agenda d'aquest dia.",
+  "agendaExpiryEvent": "Venciment",
+  "agendaPlannedReminder": "Avís previst · Venciment",
+  "agendaPlannedNotice": "Avís previst · Preavís",
+  "agendaForecastDisclaimer": "Els avisos mostrats són previsions, no confirmacions de lliurament."
 }
