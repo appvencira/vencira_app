@@ -187,6 +187,8 @@ if username:
         client, create_path,
         data=json.dumps({
             "customer_reference": "PRUEBA-E2E-ESCRITURA",
+            "entry": "prospects",
+            "modality": "hogar",
             "expires_on": "2027-05-01",
             "notice_deadline_on": "2027-03-31",
         }).encode("utf-8"),
@@ -195,13 +197,16 @@ if username:
     assert status == 201, f"Alta fallida: {status}"
     created = json.loads(created_raw)
     assert created["notice_deadline_on"] == "2027-03-31"
+    assert created["entry"] == "prospects" and created["modality"] == "hogar"
     status, edited_raw = read(
         client, f"{create_path}{created['id']}/",
-        data=json.dumps({"status": "contacted"}).encode("utf-8"),
+        data=json.dumps({"status": "contacted", "entry": "clients"}).encode("utf-8"),
         headers={"Content-Type": "application/json", "X-CSRFToken": token},
         method="PATCH",
     )
     assert status == 200 and json.loads(edited_raw)["status"] == "contacted"
+    assert json.loads(edited_raw)["entry"] == "clients"
+    assert json.loads(edited_raw)["modality"] == "hogar"
     # Ficha de la póliza externa y dos eventos de auditoría de alta y cambio.
     detail_path = f"{create_path}{created['id']}/"
     detail_status, detail_raw = read(client, detail_path)
