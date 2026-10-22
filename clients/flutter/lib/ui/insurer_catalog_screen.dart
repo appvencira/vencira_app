@@ -51,32 +51,31 @@ class _InsurersState extends State<VenciraInsurerCatalogScreen> {
   }
 
   Future<String?> _nameDialog({String? oldName}) async {
-    final controller = TextEditingController(text: oldName ?? '');
-    try {
-      return await showDialog<String>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: Text(oldName == null ? _t.insurerAdd : _t.insurerRename),
-          content: TextField(
-            key: const ValueKey('insurer-name'),
-            controller: controller,
-            autofocus: true,
-            maxLength: 140,
-            decoration: InputDecoration(labelText: _t.insurerLabel),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext),
-              child: Text(_t.cancel)),
-            FilledButton(onPressed: () {
-              final value = controller.text.trim();
-              if (value.length >= 2) Navigator.pop(dialogContext, value);
-            }, child: Text(_t.save)),
-          ],
+    // El TextFormField es propietario de su controlador: no lo destruimos
+    // mientras el diálogo termina la animación de salida.
+    var edited = oldName ?? '';
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(oldName == null ? _t.insurerAdd : _t.insurerRename),
+        content: TextFormField(
+          key: const ValueKey('insurer-name'),
+          initialValue: edited,
+          onChanged: (value) => edited = value,
+          autofocus: true,
+          maxLength: 140,
+          decoration: InputDecoration(labelText: _t.insurerLabel),
         ),
-      );
-    } finally {
-      controller.dispose();
-    }
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext),
+            child: Text(_t.cancel)),
+          FilledButton(onPressed: () {
+            final value = edited.trim();
+            if (value.length >= 2) Navigator.pop(dialogContext, value);
+          }, child: Text(_t.save)),
+        ],
+      ),
+    );
   }
 
   Future<void> _mutate(Future<void> Function() run) async {
