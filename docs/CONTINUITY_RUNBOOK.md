@@ -43,6 +43,13 @@ VENCIRA es agenda multiplataforma (Flutter + Django/PostgreSQL) de pólizas exte
 5. Probar APIs, catálogo, notas, identidad, sugerencias, autenticación, aislamiento y dispositivo Android con **datos ficticios**. Preparar procedimiento de restauración; no intentar revertir migraciones destructivamente.
 6. Registrar SHA desplegado, fecha, resultado de comandos, identificador no sensible de backup, estado de migraciones y estado posterior en este archivo o bitácora específica.
 
+## Incidencia resuelta en código, pendiente de repetir prueba local
+
+- Primer intento de construir la API nueva: `PermissionError: [Errno 13] Permission denied: '/app/reminders/models.py'`, antes de `showmigrations`. Ninguna migración aplicada; no se reiniciaron contenedores.
+- Causa: Dockerfile copiaba los fuentes con el propietario del contexto y después ejecutaba como usuario `vencira` sin permiso para leer algún archivo.
+- Corrección integrada en `integration/local-e2e-prep`: commit `9205ed03269b5bce5f3edef704e9b229fecf1a52`, `COPY --chown=vencira:vencira . /app`.
+- Próximo paso: sincronizar ese commit, reconstruir solo la imagen, comprobar lectura de código en un contenedor efímero y volver a ejecutar `showmigrations` y `migrate --plan` sin aplicar.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
