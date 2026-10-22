@@ -35,7 +35,7 @@ class RenewalSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         # Rechazo explícito de claves no editables y campos desconocidos:
         # no aceptar silenciosamente identificadores ajenos ni intentos de mass assignment.
-        writable = {"customer_reference", "full_name", "nickname", "phone", "email", "policy_number", "entry", "modality", "expires_on",
+        writable = {"customer_reference", "full_name", "nickname", "phone", "email", "policy_number", "notes", "entry", "modality", "expires_on",
                     "notice_deadline_on", "status", "assigned_to", "insurer"}
         forbidden = set(self.initial_data) - writable
         if forbidden:
