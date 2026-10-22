@@ -81,6 +81,13 @@ Confirmado por salida del servidor: `vencira_localcheck-web_preview-1` **healthy
 - Django utiliza una base de pruebas separada y la elimina al terminar. No constan fallos.
 - Pendiente: validación visual y funcional desde Android bajo acceso restringido, usando solo datos ficticios.
 
+## Acceso Android confirmado por usuario
+
+- El usuario confirma que el acceso **HTTPS `https://dev.vencira.es` ya está configurado** y existe un usuario de prueba. **No volver a pedir Termius, Termux, Chrome ni crear un túnel SSH** para la verificación Android.
+- Usar esa URL para pruebas visuales y funcionales con **datos ficticios**; verificar inicio de sesión, creación/edición de anotación, identidad, modalidad, aseguradora, notas y copia manual de contactos.
+- No suponer que el host público apunta al stack `vencira_localcheck` actualizado sin evidencia de la versión servida. Antes de dar por validado el acceso externo, comprobar funcionalmente en navegador y, si procede, cotejar cabeceras/respuestas sin divulgar credenciales.
+- No introducir datos personales reales hasta cerrar barreras de seguridad.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
