@@ -207,6 +207,7 @@ def renewal_detail(request, workspace_id, renewal_id):
             phone=renewal.phone,
             email=renewal.email,
             policy_number=renewal.policy_number,
+            notes=renewal.notes,
             entry=renewal.entry,
             modality=renewal.modality,
             insurer=renewal.insurer,
