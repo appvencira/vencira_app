@@ -21,8 +21,12 @@ class RenewalAuditTests(TestCase):
         )
         cls.a = Workspace.objects.create(name="Auditoría A")
         cls.b = Workspace.objects.create(name="Auditoría B")
-        WorkspaceMember.objects.create(workspace=cls.a, user=cls.owner)
-        WorkspaceMember.objects.create(workspace=cls.b, user=cls.other)
+        WorkspaceMember.objects.create(
+            workspace=cls.a, user=cls.owner, role=WorkspaceMember.Role.OWNER
+        )
+        WorkspaceMember.objects.create(
+            workspace=cls.b, user=cls.other, role=WorkspaceMember.Role.OWNER
+        )
         cls.existing = Renewal.objects.create(
             workspace=cls.a, customer_reference="TOKEN-SECRETO-DEMO",
             expires_on=date(2027, 3, 20),
@@ -53,7 +57,7 @@ class RenewalAuditTests(TestCase):
         self.assertEqual(event.workspace, self.a)
         self.assertEqual(str(event.renewal_id), str(response.data["id"]))
         self.assertEqual(event.action, "created")
-        self.assertEqual(set(event.changed_fields), {"customer_reference", "expires_on", "status"})
+        self.assertEqual(set(event.changed_fields), {"customer_reference", "expires_on", "status", "assigned_to_id"})
         self.assertNotIn("REFERENCIA-PRIVADA-12345", str(event.metadata))
         self.assertNotIn("customer_reference", event.metadata)
         self.assertEqual(event.metadata["expires_on"]["after"], "2027-02-27")

@@ -1,4 +1,5 @@
 """Superficie de datos deliberadamente reducida para evitar asignación de tenant."""
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from .models import Renewal, WorkspaceMember
 
@@ -14,20 +15,42 @@ class MembershipSerializer(serializers.ModelSerializer):
 
 
 class RenewalSerializer(serializers.ModelSerializer):
+    assigned_to = serializers.PrimaryKeyRelatedField(
+        queryset=get_user_model().objects.all(),
+        allow_null=True,
+        required=False,
+    )
+
     class Meta:
         model = Renewal
-        fields = ("id", "customer_reference", "expires_on", "notice_deadline_on", "status", "created_at", "updated_at")
+        fields = ("id", "customer_reference", "expires_on", "notice_deadline_on",
+                  "status", "assigned_to", "created_at", "updated_at")
         read_only_fields = ("id", "created_at", "updated_at")
 
     def validate(self, attrs):
         # Rechazo explícito de claves no editables y campos desconocidos:
         # no aceptar silenciosamente identificadores ajenos ni intentos de mass assignment.
-        writable = {"customer_reference", "expires_on", "notice_deadline_on", "status"}
+        writable = {"customer_reference", "expires_on", "notice_deadline_on", "status", "assigned_to"}
         forbidden = set(self.initial_data) - writable
         if forbidden:
             raise serializers.ValidationError({
                 "fields": "No se permiten campos no editables o desconocidos."
             })
+        membership = self.context.get("membership")
+        if "assigned_to" in self.initial_data:
+            # Sólo el propietario puede reasignar; comprobar que el usuario
+            # sea miembro de ESTE workspace, nunca de otro tenant.
+            if membership is None or membership.role != WorkspaceMember.Role.OWNER:
+                raise serializers.ValidationError({
+                    "assigned_to": "Solo el propietario puede asignar vencimientos."
+                })
+            assigned = attrs.get("assigned_to")
+            if assigned is not None and not WorkspaceMember.objects.filter(
+                workspace_id=membership.workspace_id, user=assigned
+            ).exists():
+                raise serializers.ValidationError({
+                    "assigned_to": "El responsable debe pertenecer a esta organización."
+                })
         expires = attrs.get("expires_on", getattr(self.instance, "expires_on", None))
         deadline = attrs.get(
             "notice_deadline_on", getattr(self.instance, "notice_deadline_on", None)

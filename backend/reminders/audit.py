@@ -1,7 +1,7 @@
 """Registra eventos mínimos de vencimientos. Jamás almacena referencias de clientes."""
 from .models import RenewalAuditEvent
 
-AUDITABLE_FIELDS = ("customer_reference", "expires_on", "status", "notice_deadline_on")
+AUDITABLE_FIELDS = ("customer_reference", "expires_on", "status", "notice_deadline_on", "assigned_to_id")
 
 
 def make_audit_event(*, renewal, actor, before=None):
@@ -12,7 +12,7 @@ def make_audit_event(*, renewal, actor, before=None):
     """
     changed = [
         field for field in AUDITABLE_FIELDS
-        if (before is None and (field != "notice_deadline_on" or renewal.notice_deadline_on is not None))
+        if (before is None and (field not in ("notice_deadline_on", "assigned_to_id") or getattr(renewal, field) is not None))
         or (before is not None and getattr(before, field) != getattr(renewal, field))
     ]
     if not changed:

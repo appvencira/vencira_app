@@ -15,7 +15,9 @@ class NoticeDeadlineTests(TestCase):
         cls.a = Workspace.objects.create(name="A")
         cls.b = Workspace.objects.create(name="B")
         cls.user = get_user_model().objects.create_user(username="demo-preaviso", password="OnlyTests-LongPassword-2026")
-        WorkspaceMember.objects.create(workspace=cls.a, user=cls.user)
+        WorkspaceMember.objects.create(
+            workspace=cls.a, user=cls.user, role=WorkspaceMember.Role.OWNER
+        )
         cls.item = Renewal.objects.create(
             workspace=cls.a,
             customer_reference="CONTRATO-FICTICIO",
