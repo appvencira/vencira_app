@@ -87,6 +87,29 @@ if username:
     renewal = json.loads(renewal_raw)
     assert renewal["count"] == expected_count
     assert renewal["results"][0]["customer_reference"] == expected_reference
+
+    # Verificar el contrato nuevo de agenda a través del mismo proxy autenticado.
+    # Se emplea la fecha ISO del primer vencimiento, sin calcularla desde UTC.
+    expiry_day = renewal["results"][0]["expires_on"]
+    agenda_path = f"/api/v1/workspaces/{workspace_id}/agenda/?day={expiry_day}"
+    status, agenda_raw = read(client, agenda_path)
+    assert status == 200, "La agenda diaria no responde por el proxy"
+    agenda = json.loads(agenda_raw)
+    assert agenda["day"] == expiry_day, "El backend alteró el día civil"
+    assert agenda["count"] >= 1, "Falta el vencimiento en la agenda diaria"
+    matching = [
+        row for row in agenda["results"]
+        if row["renewal"]["customer_reference"] == expected_reference
+    ]
+    assert len(matching) == 1, "La agenda no contiene la anotación de prueba"
+    assert any(event["kind"] == "expiry" for event in matching[0]["events"]), (
+        "El motivo de vencimiento está ausente"
+    )
+    invalid_day_status, _ = read(
+        client, f"/api/v1/workspaces/{workspace_id}/agenda/?day=no-es-una-fecha"
+    )
+    assert invalid_day_status == 400, "Se aceptó una fecha de agenda inválida"
+
     # Prueba E2E también de escrituras autenticadas, CSRF y auditoría de API.
     status, token_body = read(client, "/api/v1/csrf/")
     assert status == 200, "No hay endpoint CSRF"
@@ -121,6 +144,8 @@ if username:
     assert status == 200, "Cierre de sesión sin respuesta"
     status, _ = read(client, "/api/v1/workspaces/")
     assert status in (401, 403), "La sesión sigue autenticada después de salir"
-    print("OK: mismo origen, login + CSRF, lectura de workspace y vencimiento, logout")
+    status, _ = read(client, agenda_path)
+    assert status in (401, 403), "La agenda permite consultar datos tras logout"
+    print("OK: origen único, login + CSRF, agenda diaria, escrituras y logout")
 else:
     print("OK: Flutter, proxy Django, login HTML y denegación anónima. Login E2E omitido.")
