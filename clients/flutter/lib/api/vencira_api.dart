@@ -139,7 +139,7 @@ class VenciraAgendaEvent {
 
   factory VenciraAgendaEvent.fromJson(Map<String, dynamic> json) {
     final kind = json['kind'];
-    if (kind != 'expiry' && kind != 'reminder') {
+    if (kind != 'expiry' && kind != 'notice_deadline' && kind != 'reminder') {
       throw const FormatException('Unsupported agenda event');
     }
     final candidateId = json['candidate_id'];
