@@ -94,6 +94,30 @@ jobs:
           if-no-files-found: error
           retention-days: 2
 
+
+  preview_docker_build:
+    name: Flutter Web inside preview Dockerfile
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Generate isolated build secrets
+        run: python3 scripts/init_env.py
+      - name: Compile Flutter in the exact Dockerfile used by local preview
+        run: |
+          docker compose -p vencira_dockerbuild_ci \\
+            -f compose.yaml -f compose.preview.yaml \\
+            config --quiet
+          docker compose -p vencira_dockerbuild_ci \\
+            -f compose.yaml -f compose.preview.yaml \\
+            build web_preview
+      - name: Remove isolated Docker build project
+        if: always()
+        run: docker compose -p vencira_dockerbuild_ci -f compose.yaml -f compose.preview.yaml down --remove-orphans
+
+
   local_http:
     name: Docker E2E same-origin + agenda
     needs: [django, flutter]
