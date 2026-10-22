@@ -116,6 +116,25 @@ if username:
     assert any(event["kind"] == "expiry" for event in matching[0]["events"]), (
         "El motivo de vencimiento está ausente"
     )
+    # Un límite contractual debe aparecer en su fecha sin ReminderCandidate.
+    notice_day = renewal["results"][0].get("notice_deadline_on")
+    if notice_day:
+        notice_status, notice_raw = read(
+            client, f"/api/v1/workspaces/{workspace_id}/agenda/?day={notice_day}"
+        )
+        assert notice_status == 200, "La agenda no sirve la fecha de preaviso"
+        notice_agenda = json.loads(notice_raw)
+        assert notice_agenda["day"] == notice_day
+        notice_matches = [
+            row for row in notice_agenda["results"]
+            if row["renewal"]["customer_reference"] == expected_reference
+        ]
+        assert len(notice_matches) == 1, "El preaviso contractual no aparece"
+        assert any(
+            event["kind"] == "notice_deadline"
+            for event in notice_matches[0]["events"]
+        ), "El evento del límite de preaviso está ausente"
+
     invalid_day_status, _ = read(
         client, f"/api/v1/workspaces/{workspace_id}/agenda/?day=no-es-una-fecha"
     )
