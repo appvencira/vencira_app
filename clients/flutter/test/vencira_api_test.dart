@@ -238,6 +238,65 @@ void main() {
     );
   });
 
+  test('ficha e historial leen por ID fijo y origen único', () async {
+    var count = 0;
+    const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    final client = MockClient((request) async {
+      expect(request.method, 'GET');
+      expect(request.url.origin, 'http://localhost:18731');
+      count++;
+      if (request.url.path.endsWith('/history/')) {
+        expect(request.url.queryParameters['page'], '2');
+        return http.Response(
+          '{"count":1,"next":null,"results":[{"id":"$id",'
+          '"action":"updated","actor":"usuario-prueba",'
+          '"timestamp":"2027-03-31T09:00:00Z",'
+          '"changed_fields":["expires_on"],'
+          '"metadata":{"expires_on":{"before":"2027-03-30","after":"2027-03-31"}}}]}', 200);
+      }
+      expect(request.url.path,
+          '/api/v1/workspaces/$workspaceId/renewals/$id/');
+      return http.Response('{"id":"$id","customer_reference":"REFERENCIA",'
+          '"expires_on":"2027-03-31","status":"pending"}', 200);
+    });
+    final api = HttpVenciraApi(client: client,
+        baseUri: Uri.parse('http://localhost:18731/'));
+    final detail = await api.fetchRenewalDetail(workspaceId, id);
+    expect(detail.reference, 'REFERENCIA');
+    final history = await api.fetchRenewalHistory(workspaceId, id, page: 2);
+    expect(history.total, 1);
+    expect(history.events.single.fields.single, 'expires_on');
+    expect(history.events.single.action, 'updated');
+    expect(count, 2);
+  });
+
+  test('ficha rechaza UUID manipulado y respuesta de otra anotación', () async {
+    var calls = 0;
+    final client = MockClient((_) async {
+      calls++;
+      return http.Response(
+        '{"id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",'
+        '"customer_reference":"REFERENCIA","expires_on":"2027-03-31",'
+        '"status":"pending"}', 200);
+    });
+    final api = HttpVenciraApi(client: client,
+        baseUri: Uri.parse('http://localhost:18731/'));
+    await expectLater(
+      api.fetchRenewalDetail(workspaceId, '../otra'),
+      throwsA(isA<VenciraApiException>()),
+    );
+    expect(calls, 0);
+    await expectLater(
+      api.fetchRenewalDetail(workspaceId, 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+      throwsA(isA<VenciraApiException>()),
+    );
+    await expectLater(
+      api.fetchRenewalHistory(workspaceId, '../otra'),
+      throwsA(isA<VenciraApiException>()),
+    );
+    expect(calls, 1);
+  });
+
   test('resumen mensual usa el mismo origen y valida las cantidades', () async {
     final client = MockClient((request) async {
       expect(request.url.path, '/api/v1/workspaces/$workspaceId/agenda/month/');
