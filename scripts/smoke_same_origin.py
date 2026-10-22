@@ -214,6 +214,26 @@ if username:
         row["code"] == code and row["active"] is False
         for row in json.loads(cat_raw)
     ), "La desactivación eliminó la referencia histórica"
+    insurers_path = f"/api/v1/workspaces/{workspace_id}/insurers/"
+    ins_status, raw_ins = read(client, insurers_path)
+    assert ins_status == 200, "No se puede consultar catálogo de aseguradoras"
+    assert isinstance(json.loads(raw_ins), list)
+    ins_status, raw_ins = read(
+        client, insurers_path,
+        data=json.dumps({"name": "Aseguradora E2E Ficticia"}).encode("utf-8"),
+        headers={"Content-Type": "application/json", "X-CSRFToken": token},
+        method="POST",
+    )
+    assert ins_status == 201, "Alta de aseguradora ficticia fallida"
+    insurer_id = json.loads(raw_ins)["id"]
+    ins_detail = insurers_path + insurer_id + "/"
+    ins_status, raw_ins = read(
+        client, ins_detail,
+        data=json.dumps({"name": "Aseguradora Ficticia Renombrada"}).encode("utf-8"),
+        headers={"Content-Type": "application/json", "X-CSRFToken": token},
+        method="PATCH",
+    )
+    assert ins_status == 200 and json.loads(raw_ins)["id"] == insurer_id
     create_path = f"/api/v1/workspaces/{workspace_id}/renewals/"
     status, created_raw = read(
         client, create_path,
@@ -221,6 +241,7 @@ if username:
             "customer_reference": "PRUEBA-E2E-ESCRITURA",
             "entry": "prospects",
             "modality": "hogar",
+            "insurer": insurer_id,
             "expires_on": "2027-05-01",
             "notice_deadline_on": "2027-03-31",
         }).encode("utf-8"),
@@ -230,6 +251,20 @@ if username:
     created = json.loads(created_raw)
     assert created["notice_deadline_on"] == "2027-03-31"
     assert created["entry"] == "prospects" and created["modality"] == "hogar"
+    assert str(created["insurer"]) == insurer_id, "No se guardó la aseguradora"
+    ins_status, filtered_ins = read(
+        client, create_path + "?entry=prospects&insurer=" + insurer_id
+    )
+    assert ins_status == 200 and any(
+        str(row["id"]) == str(created["id"])
+        for row in json.loads(filtered_ins)["results"]
+    ), "Filtro por aseguradora no devuelve póliza autorizada"
+    ins_status, _ = read(
+        client, ins_detail, data=b"",
+        headers={"X-CSRFToken": token}, method="DELETE",
+    )
+    assert ins_status == 204, "La desactivación de aseguradora falló"
+
     status, filtered_raw = read(
         client, create_path + "?entry=prospects&modality=hogar"
     )
@@ -251,6 +286,9 @@ if username:
     detail_status, detail_raw = read(client, detail_path)
     assert detail_status == 200, "Ficha privada no accesible"
     assert json.loads(detail_raw)["customer_reference"] == "PRUEBA-E2E-ESCRITURA"
+    assert str(json.loads(detail_raw)["insurer"]) == insurer_id, (
+        "Desactivar aseguradora no debe romper anotación existente"
+    )
     history_path = f"{detail_path}history/"
     history_status, history_raw = read(client, history_path)
     assert history_status == 200, "Historial no accesible"
@@ -278,6 +316,8 @@ if username:
     assert status in (401, 403), "La agenda permite consultar datos tras logout"
     status, _ = read(client, month_path)
     assert status in (401, 403), "El mes revela actividad después del logout"
+    status, _ = read(client, insurers_path)
+    assert status in (401, 403), "Catálogo aseguradoras expuesto tras logout"
     status, _ = read(client, history_path)
     assert status in (401, 403), "El historial sigue visible después del logout"
     print("OK: origen único, login + CSRF, agenda diaria, escrituras y logout")
