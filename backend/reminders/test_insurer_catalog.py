@@ -80,7 +80,7 @@ class InsurerCatalogTests(APITestCase):
         self.assertEqual(ren.data["id"], identifier)
         link = self.client.patch(self.renewal(), {"insurer": identifier}, format="json")
         self.assertEqual(link.status_code, 200, link.data)
-        self.assertEqual(link.data["insurer"], identifier)
+        self.assertEqual(str(link.data["insurer"]), identifier)
         self.assertEqual(self.client.delete(self.item(other)).status_code, 204)
         self.legacy.refresh_from_db()
         self.assertEqual(str(self.legacy.insurer_id), identifier)
