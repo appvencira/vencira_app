@@ -67,7 +67,7 @@ def workspace_members(request, workspace_id):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def agenda_day(request, workspace_id):
-    """Vista de lectura: vencimientos y candidatos de aviso de un día.
+    """Vista de lectura: vencimientos, límites contractuales y avisos previstos.
 
     No presupone entrega real ni añade eventos "recuérdamelo" aún no modelados.
     El cliente envía el día local explícito; no usar la zona horaria del servidor.
@@ -95,7 +95,7 @@ def agenda_day(request, workspace_id):
         _visible_renewals(membership)
         .exclude(status=Renewal.Status.CLOSED)
         .annotate(agenda_has_reminder=Exists(has_reminder_today))
-        .filter(Q(expires_on=day) | Q(agenda_has_reminder=True))
+        .filter(Q(expires_on=day) | Q(notice_deadline_on=day) | Q(agenda_has_reminder=True))
         .order_by("expires_on", "id")
     )
     paginator = RenewalPagination()
@@ -116,6 +116,9 @@ def agenda_day(request, workspace_id):
         events = []
         if renewal.expires_on == day:
             events.append({"kind": "expiry"})
+        if renewal.notice_deadline_on == day:
+            # Fecha contractual; no implica que se haya enviado un aviso.
+            events.append({"kind": "notice_deadline"})
         for candidate in renewal.agenda_due_candidates:
             events.append({
                 "kind": "reminder",
