@@ -2,13 +2,14 @@
 import re
 import uuid
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import WorkspaceMember, WorkspaceModality
-from .views import _membership
+
 
 # Identificadores estables. No traducir estos códigos en base de datos.
 DEFAULT_MODALITIES = (
@@ -75,6 +76,13 @@ def _duplicate_label(workspace_id, label, except_code=None):
         row["active"] and row["code"] != except_code and
         row["label"].casefold() == label.casefold()
         for row in catalog_for(workspace_id)
+    )
+
+
+def _membership(request, workspace_id):
+    return get_object_or_404(
+        WorkspaceMember.objects.select_related("workspace"),
+        workspace_id=workspace_id, user=request.user,
     )
 
 
