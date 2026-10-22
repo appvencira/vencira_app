@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - chore/bootstrap-vencira
+      - feat/flutter-preferences-i18n
     paths:
       - 'clients/flutter/**'
       - 'scripts/check_flutter_l10n.py'
