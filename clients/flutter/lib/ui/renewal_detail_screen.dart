@@ -250,6 +250,8 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                 _info(_t.expiryDate, DateFormat.yMd(locale).format(renewal.expiresOn)),
                 if (renewal.noticeDeadlineOn != null)
                   _info(_t.noticeDate, DateFormat.yMd(locale).format(renewal.noticeDeadlineOn!)),
+                if (renewal.notes.isNotEmpty)
+                  _info('Notas', renewal.notes),
                 _info(_t.status, _status(renewal.status)),
                 const SizedBox(height: 8),
                 FilledButton.icon(onPressed: _saving ? null : _edit,
