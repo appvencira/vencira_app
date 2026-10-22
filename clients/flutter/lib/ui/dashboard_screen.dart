@@ -79,7 +79,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       });
       if (loaded.isNotEmpty) {
         // No bloquear la primera carga del listado por el catálogo.
-        _loadRenewals(1);
+        await _loadRenewals(1);
         _loadModalities();
       }
     } on VenciraUnauthorized {
@@ -110,7 +110,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       _modalityFilter = '';
       _modalities = VenciraModalityOption.defaults;
     });
-    _loadRenewals(1);
+    await _loadRenewals(1);
     _loadModalities();
   }
 
