@@ -263,7 +263,8 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     final input = await showDialog<VenciraRenewalInput>(
       context: context,
       builder: (_) => VenciraRenewalEditor(
-        existing: current, modalities: _modalities, insurers: _insurers),
+        existing: current, modalities: _modalities, insurers: _insurers,
+        api: _api, workspaceId: selected.id),
     );
     if (input == null || !mounted || _selected?.id != selected.id) return;
     setState(() => _saving = true);
