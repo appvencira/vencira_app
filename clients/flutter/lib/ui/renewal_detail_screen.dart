@@ -197,11 +197,36 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
     ]);
   }
 
+  String _designLabel(String es, String ca) =>
+      Localizations.localeOf(context).languageCode == 'ca' ? ca : es;
+
+  Widget _sectionCard(IconData icon, String title, List<Widget> fields) {
+    final colors = Theme.of(context).colorScheme;
+    return Card(child: Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(icon, size: 19, color: colors.primary),
+          const SizedBox(width: 10),
+          Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700)),
+        ]),
+        const SizedBox(height: 10),
+        Divider(color: colors.outlineVariant),
+        const SizedBox(height: 6),
+        ...fields,
+      ]),
+    ));
+  }
+
   Widget _info(String title, String value) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
+    padding: const EdgeInsets.only(bottom: 15),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(title, style: Theme.of(context).textTheme.labelMedium),
-      Text(value, style: Theme.of(context).textTheme.bodyLarge),
+      Text(title, style: Theme.of(context).textTheme.labelMedium?.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant)),
+      const SizedBox(height: 3),
+      Text(value, style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+        fontWeight: FontWeight.w500)),
     ]),
   );
 
@@ -227,18 +252,42 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
               TextButton(onPressed: _refresh, child: Text(_t.retry)),
             ])
           else if (renewal != null) ...[
-            Card(child: Padding(padding: const EdgeInsets.all(16),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(renewal.reference, style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 10),
-                if (renewal.fullName.isNotEmpty)
-                  _info('Nombre o razón social', renewal.fullName),
-                if (renewal.nickname.isNotEmpty)
-                  _info('Apodo', renewal.nickname),
-                if (renewal.phone.isNotEmpty)
-                  _info('Teléfono', renewal.phone),
-                if (renewal.email.isNotEmpty)
-                  _info('Correo electrónico', renewal.email),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 6, 4, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(
+                  renewal.fullName.isNotEmpty
+                      ? renewal.fullName : renewal.reference,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700),
+                ),
+                if (renewal.fullName.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(renewal.reference, style: Theme.of(context)
+                      .textTheme.bodySmall),
+                ],
+                const SizedBox(height: 12),
+                Chip(label: Text(_status(renewal.status))),
+              ]),
+            ),
+            if (renewal.fullName.isNotEmpty ||
+                renewal.nickname.isNotEmpty ||
+                renewal.phone.isNotEmpty ||
+                renewal.email.isNotEmpty)
+              _sectionCard(Icons.person_outline_rounded,
+                _designLabel('Contacto', 'Contacte'), [
+                  if (renewal.fullName.isNotEmpty)
+                    _info('Nombre o razón social', renewal.fullName),
+                  if (renewal.nickname.isNotEmpty)
+                    _info('Apodo', renewal.nickname),
+                  if (renewal.phone.isNotEmpty)
+                    _info('Teléfono', renewal.phone),
+                  if (renewal.email.isNotEmpty)
+                    _info('Correo electrónico', renewal.email),
+              ]),
+            _sectionCard(Icons.description_outlined,
+              _designLabel('Póliza', 'Pòlissa'), [
                 if (renewal.policyNumber.isNotEmpty)
                   _info('Número de póliza', renewal.policyNumber),
                 _info(_t.entryLabel, _entryLabel(renewal.entry)),
@@ -248,17 +297,25 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                       .where((item) => item.id == renewal.insurerId)
                       .map((item) => item.name)
                       .firstOrNull ?? _t.insurerLegacy),
-                _info(_t.expiryDate, DateFormat.yMd(locale).format(renewal.expiresOn)),
+            ]),
+            _sectionCard(Icons.event_note_outlined,
+              _designLabel('Fechas', 'Dates'), [
+                _info(_t.expiryDate,
+                  DateFormat.yMd(locale).format(renewal.expiresOn)),
                 if (renewal.noticeDeadlineOn != null)
-                  _info(_t.noticeDate, DateFormat.yMd(locale).format(renewal.noticeDeadlineOn!)),
-                if (renewal.notes.isNotEmpty)
-                  _info('Notas', renewal.notes),
-                _info(_t.status, _status(renewal.status)),
-                const SizedBox(height: 8),
-                FilledButton.icon(onPressed: _saving ? null : _edit,
-                  icon: const Icon(Icons.edit_outlined), label: Text(_t.editRenewal)),
+                  _info(_t.noticeDate,
+                    DateFormat.yMd(locale).format(renewal.noticeDeadlineOn!)),
+            ]),
+            if (renewal.notes.isNotEmpty)
+              _sectionCard(Icons.notes_outlined,
+                _designLabel('Notas', 'Notes'), [
+                  _info(_designLabel('Observaciones', 'Observacions'),
+                    renewal.notes),
               ]),
-            )),
+            const SizedBox(height: 12),
+            FilledButton.icon(onPressed: _saving ? null : _edit,
+              icon: const Icon(Icons.edit_outlined),
+              label: Text(_t.editRenewal)),
             const SizedBox(height: 12),
             Text(_t.detailPrototypeWarning,
               style: Theme.of(context).textTheme.bodySmall),
