@@ -60,6 +60,27 @@ else:
 assert json.loads(health) == {"status": "ok"}, "Respuesta de salud inesperada"
 status, page = read(client, "/")
 assert status == 200 and "flutter_bootstrap.js" in page, "No se sirve Flutter web"
+assert "serviceWorker.getRegistrations()" in page, "Falta limpieza del service worker antiguo"
+assert "flutter_bootstrap.js?v=" in page, "Falta versión fresca del bootstrap"
+
+# Evitar HTML/JS obsoletos con caché persistente; no afecta a cookies de sesión.
+for asset in ("/", "/flutter_bootstrap.js?v=cache-test", "/main.dart.js"):
+    with client.open(BASE + asset, timeout=8) as response:
+        assert response.status == 200, f"Recurso ausente: {asset}"
+        assert "no-store" in response.headers.get("Cache-Control", ""), (
+            f"Cache-Control inseguro: {asset}"
+        )
+        if asset.endswith(".js") or ".js?" in asset:
+            assert "javascript" in response.headers.get("Content-Type", ""), (
+                f"El JS no tiene el tipo MIME correcto: {asset}"
+            )
+try:
+    with client.open(BASE + "/main.dart-no-existe.js", timeout=8) as response:
+        raise AssertionError(f"JS inexistente aceptado: HTTP {response.status}")
+except urllib.error.HTTPError as error:
+    # Un recurso inexistente jamás debe aparentar un JS válido.
+    assert error.code in (404, 410)
+
 status, login_page = read(client, "/accounts/login/")
 assert status == 200 and "csrfmiddlewaretoken" in login_page, "Falta el formulario de acceso"
 status, _ = read(client, "/api/v1/workspaces/")
