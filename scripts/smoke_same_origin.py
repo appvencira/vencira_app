@@ -156,6 +156,23 @@ if username:
             for event in notice_matches[0]["events"]
         ), "El evento del límite de preaviso está ausente"
 
+    # Calendario mensual: agregación privada sin referencias individuales.
+    month = expiry_day[:7]
+    month_path = f"/api/v1/workspaces/{workspace_id}/agenda/month/?month={month}"
+    month_status, month_raw = read(client, month_path)
+    assert month_status == 200, "El resumen mensual no responde"
+    month_data = json.loads(month_raw)
+    assert month_data["month"] == month
+    counts = {row["day"]: row for row in month_data["days"]}
+    assert counts[expiry_day]["expiry"]["pending"] >= 1
+    if notice_day:
+        assert counts[notice_day]["notice_deadline"]["pending"] >= 1
+    assert expected_reference not in month_raw, "El resumen filtra referencias de usuarios"
+    invalid_month, _ = read(
+        client, f"/api/v1/workspaces/{workspace_id}/agenda/month/?month=2027-13"
+    )
+    assert invalid_month == 400, "La API acepta meses imposibles"
+
     invalid_day_status, _ = read(
         client, f"/api/v1/workspaces/{workspace_id}/agenda/?day=no-es-una-fecha"
     )
@@ -197,6 +214,8 @@ if username:
     assert status in (401, 403), "La sesión sigue autenticada después de salir"
     status, _ = read(client, agenda_path)
     assert status in (401, 403), "La agenda permite consultar datos tras logout"
+    status, _ = read(client, month_path)
+    assert status in (401, 403), "El mes revela actividad después del logout"
     print("OK: origen único, login + CSRF, agenda diaria, escrituras y logout")
 else:
     print("OK: Flutter, proxy Django, login HTML y denegación anónima. Login E2E omitido.")
