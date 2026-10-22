@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
 import 'month_agenda_screen.dart';
+import 'renewal_detail_screen.dart';
 
 /// Primera vista de la agenda tipo papel. Sólo presenta eventos previstos.
 /// «Recuérdamelo», cierres y notificaciones entregadas aún no están modelados.
@@ -127,6 +128,15 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
     if (mounted && chosen != null) _chooseDay(chosen);
   }
 
+  Future<void> _openDetail(String renewalId) async {
+    await Navigator.of(context).push<void>(MaterialPageRoute(
+      builder: (_) => VenciraRenewalDetailScreen(
+        api: widget.api, workspace: widget.workspace, renewalId: renewalId,
+      ),
+    ));
+    if (mounted) _loadDay(1);
+  }
+
   Widget _weekStrip(String locale, ColorScheme colors) {
     final monday = DateTime(
       _selectedDay.year,
@@ -199,7 +209,10 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
   Widget _eventCard(VenciraAgendaEntry entry, String locale) {
     final renewal = entry.renewal;
     return Card(
-      child: Padding(
+      child: InkWell(
+        key: ValueKey('agenda-annotation-' + renewal.id),
+        onTap: () => _openDetail(renewal.id),
+        child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -255,6 +268,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );
