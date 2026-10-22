@@ -71,5 +71,14 @@
   "agendaContractualNotice": "Límit contractual de preavís",
   "agendaPlannedReminder": "Avís previst · Venciment",
   "agendaPlannedNotice": "Avís previst · Preavís",
+  "agendaMonthTitle": "Calendari mensual",
+  "agendaMonthOpen": "Veure mes",
+  "agendaPreviousMonth": "Mes anterior",
+  "agendaNextMonth": "Mes següent",
+  "agendaMonthReminder": "Avís previst",
+  "agendaMonthStatusLegend": "Punt ple: pendent · Cercle buit: contactat (no tancat)",
+  "agendaMonthHelp": "Selecciona un dia per obrir-ne les anotacions. Els avisos previstos no són notificacions enviades.",
+  "agendaMonthEmpty": "No hi ha activitat registrada aquest mes.",
+  "agendaMonthLoadError": "No s'ha pogut carregar el calendari mensual.",
   "agendaForecastDisclaimer": "Els avisos previstos no confirmen cap lliurament. Les dates contractuals no són notificacions."
 }
