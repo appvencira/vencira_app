@@ -30,6 +30,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
   String _statusFilter = '';
   String _entryFilter = '';
   String _modalityFilter = '';
+  String _insurerFilter = '';
   List<VenciraModalityOption> _modalities = VenciraModalityOption.defaults;
   List<VenciraInsurer> _insurers = [];
   List<VenciraWorkspace> _workspaces = [];
@@ -111,6 +112,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       _statusFilter = '';
       _entryFilter = '';
       _modalityFilter = '';
+      _insurerFilter = '';
       _modalities = VenciraModalityOption.defaults;
       _insurers = [];
     });
@@ -134,7 +136,8 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     try {
       final result = await _api.fetchFilteredRenewals(
         selected.id, page: page, search: _appliedSearch,
-        status: _statusFilter, entry: _entryFilter, modality: _modalityFilter);
+        status: _statusFilter, entry: _entryFilter, modality: _modalityFilter,
+        insurer: _insurerFilter);
       if (!mounted || sequence != _sequence) return;
       setState(() {
         _renewals = result;
@@ -221,6 +224,12 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     _loadRenewals(1);
   }
 
+  void _changeInsurer(String? id) {
+    if (id == null || _loadingRenewals || _saving) return;
+    setState(() => _insurerFilter = id);
+    _loadRenewals(1);
+  }
+
   void _applySearch() {
     if (_loadingRenewals || _saving) return;
     final value = _searchController.text.trim();
@@ -243,6 +252,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       _statusFilter = '';
       _entryFilter = '';
       _modalityFilter = '';
+      _insurerFilter = '';
     });
     _loadRenewals(1);
   }
@@ -529,6 +539,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                       workspace: _selected!,
                       initialEntry: _entryFilter,
                       initialModality: _modalityFilter,
+                      initialInsurer: _insurerFilter,
                     ),
                   )),
             icon: const Icon(Icons.calendar_today_outlined),
@@ -638,6 +649,26 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
               onChanged: _loadingRenewals || _saving ? null : _changeModality,
             ),
           ),
+          SizedBox(width: statusWidth,
+            child: DropdownButtonFormField<String>(
+              key: ValueKey('insurer-filter-' + _insurerFilter),
+              initialValue: _insurerFilter, isExpanded: true,
+              decoration: InputDecoration(labelText: _t.insurerLabel,
+                border: const OutlineInputBorder()),
+              items: [
+                DropdownMenuItem(value: '', child: Text(_t.all)),
+                for (final insurer in _insurers)
+                  if (insurer.active || insurer.id == _insurerFilter)
+                    DropdownMenuItem(value: insurer.id, child: Text(
+                      insurer.name, overflow: TextOverflow.ellipsis)),
+                if (_insurerFilter.isNotEmpty &&
+                  !_insurers.any((v) => v.id == _insurerFilter))
+                    DropdownMenuItem(value: _insurerFilter,
+                      child: Text(_t.insurerLegacy)),
+              ],
+              onChanged: _loadingRenewals || _saving ? null : _changeInsurer,
+            ),
+          ),
           FilledButton.tonalIcon(
             onPressed: _loadingRenewals || _saving ? null : _applySearch,
             icon: const Icon(Icons.search),
@@ -663,7 +694,8 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Text(_appliedSearch.isNotEmpty || _statusFilter.isNotEmpty ||
-                   _entryFilter.isNotEmpty || _modalityFilter.isNotEmpty
+                   _entryFilter.isNotEmpty || _modalityFilter.isNotEmpty ||
+                   _insurerFilter.isNotEmpty
                   ? _t.noFilterMatches
                   : AppLocalizations.of(context)!.emptyPage),
             ),
