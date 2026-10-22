@@ -147,8 +147,8 @@ class _VenciraMonthAgendaScreenState extends State<VenciraMonthAgendaScreen> {
         physics: const NeverScrollableScrollPhysics(),
         itemCount: offset + count,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 7, crossAxisSpacing: 3, mainAxisSpacing: 3,
-          childAspectRatio: 0.83,
+          crossAxisCount: 7, crossAxisSpacing: 4, mainAxisSpacing: 4,
+          childAspectRatio: 0.98,
         ),
         itemBuilder: (context, i) {
           if (i < offset) return const SizedBox.shrink();
@@ -177,11 +177,11 @@ class _VenciraMonthAgendaScreenState extends State<VenciraMonthAgendaScreen> {
             button: true,
             label: description.toString(),
             child: Material(
-              color: today ? colors.primaryContainer : colors.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(8),
+              color: today ? colors.primaryContainer : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
               child: InkWell(
                 key: ValueKey('month-day-' + key),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 onTap: () => Navigator.pop(context, date),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
