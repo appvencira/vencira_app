@@ -299,6 +299,8 @@ void main() {
       ),
     ));
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
     expect(find.text('NO-DEBE-QUEDAR-VISIBLE'), findsOneWidget);
     await tester.tap(find.byTooltip('Salir'));
     await tester.pumpAndSettle();
@@ -321,6 +323,8 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(find.text('VENCIRA'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
     expect(find.text('Aún no hay vencimientos en esta página.'), findsOneWidget);
   });
 
@@ -351,6 +355,8 @@ void main() {
         },
       ),
     ));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 100));
     await tester.pumpAndSettle();
     expect(find.text('Vence el 01/05/2027'), findsOneWidget);
     expect(find.text('Límite de preaviso: 31/03/2027'), findsOneWidget);
@@ -402,6 +408,8 @@ void main() {
     await tester.pumpWidget(VenciraApp(
       api: FakeVenciraApi(workspaces: [workspaceA, workspaceB], pages: pages),
     ));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 100));
     await tester.pumpAndSettle();
     expect(find.text('REFERENCIA-A'), findsOneWidget);
     expect(find.text('REFERENCIA-B'), findsNothing);
