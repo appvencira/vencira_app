@@ -18,6 +18,7 @@ class VenciraDayAgendaScreen extends StatefulWidget {
     this.initialDay,
     this.initialEntry = '',
     this.initialModality = '',
+    this.initialInsurer = '',
   });
 
   final VenciraApi api;
@@ -25,6 +26,7 @@ class VenciraDayAgendaScreen extends StatefulWidget {
   final DateTime? initialDay;
   final String initialEntry;
   final String initialModality;
+  final String initialInsurer;
 
   @override
   State<VenciraDayAgendaScreen> createState() => _VenciraDayAgendaScreenState();
@@ -40,6 +42,8 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
   bool _unauthorized = false;
   late String _entryFilter;
   late String _modalityFilter;
+  late String _insurerFilter;
+  List<VenciraInsurer> _insurers = [];
   List<VenciraModalityOption> _modalities = VenciraModalityOption.defaults;
 
   // Solo contadores agregados y autorizados de la semana visible.
@@ -59,6 +63,8 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
     _selectedDay = _civilDate(widget.initialDay ?? DateTime.now());
     _entryFilter = widget.initialEntry;
     _modalityFilter = widget.initialModality;
+    _insurerFilter = widget.initialInsurer;
+    _loadInsurers();
     _loadModalities();
     _loadDay(1);
     _loadWeek();
@@ -78,6 +84,22 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
     } catch (_) {
       // Los 12 códigos por defecto siguen disponibles.
     }
+  }
+
+  Future<void> _loadInsurers() async {
+    try {
+      final companies = await widget.api.fetchInsurers(widget.workspace.id);
+      if (mounted) setState(() => _insurers = companies);
+    } catch (_) {
+      if (mounted) setState(() => _insurers = []);
+    }
+  }
+
+  void _setInsurer(String? value) {
+    if (value == null || value == _insurerFilter) return;
+    setState(() => _insurerFilter = value);
+    _loadDay(1);
+    _loadWeek(force: true);
   }
 
   void _setEntry(String? value) {
@@ -108,6 +130,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
       final result = await widget.api.fetchFilteredAgendaDay(
         widget.workspace.id, requestedDay, page: page,
         entry: _entryFilter, modality: _modalityFilter,
+        insurer: _insurerFilter,
       );
       if (!mounted || sequence != _generation) return;
       setState(() {
@@ -163,6 +186,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
             widget.api.fetchFilteredAgendaMonth(
               widget.workspace.id, month,
               entry: _entryFilter, modality: _modalityFilter,
+              insurer: _insurerFilter,
             ),
       ]);
       if (!mounted || requestId != _weekGeneration) return;
@@ -227,6 +251,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
           workspace: widget.workspace,
           initialMonth: _selectedDay,
           entry: _entryFilter, modality: _modalityFilter,
+          insurer: _insurerFilter,
         ),
       ),
     );
@@ -625,6 +650,30 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
                           ],
                           onChanged: _setModality,
                         )),
+                        SizedBox(width: 200,
+                          child: DropdownButtonFormField<String>(
+                            key: ValueKey('agenda-insurer-' + _insurerFilter),
+                            initialValue: _insurerFilter, isExpanded: true,
+                            decoration: InputDecoration(
+                              labelText: _t.insurerLabel,
+                              border: const OutlineInputBorder(),
+                            ),
+                            items: [
+                              DropdownMenuItem(value:'', child: Text(_t.all)),
+                              for (final company in _insurers)
+                                if (company.active || company.id == _insurerFilter)
+                                  DropdownMenuItem(value:company.id,
+                                    child: Text(company.name,
+                                      overflow: TextOverflow.ellipsis)),
+                              if (_insurerFilter.isNotEmpty &&
+                                  !_insurers.any((company) =>
+                                    company.id == _insurerFilter))
+                                DropdownMenuItem(value: _insurerFilter,
+                                  child: Text(_t.insurerLegacy)),
+                            ],
+                            onChanged: _setInsurer,
+                          ),
+                        ),
                       ]),
                       const SizedBox(height: 16),
                       _weekStrip(locale, colors),
