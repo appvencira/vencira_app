@@ -96,12 +96,16 @@ void main() {
 
         Color tileColor(String day) {
           final tile = find.byKey(ValueKey('month-day-2027-03-$day'));
-          final material = find.ancestor(
-            of: tile, matching: find.byType(Material),
-          ).first;
-          final widget = tester.widget<Material>(material);
-          expect(widget.shape, isA<RoundedRectangleBorder>());
-          return widget.color!;
+          final tileMaterial = find.ancestor(
+            of: tile,
+            matching: find.byWidgetPredicate((widget) =>
+              widget is Material &&
+              widget.shape is RoundedRectangleBorder &&
+              (widget.shape! as RoundedRectangleBorder).borderRadius ==
+                  BorderRadius.circular(13)),
+          );
+          expect(tileMaterial, findsOneWidget);
+          return tester.widget<Material>(tileMaterial).color!;
         }
 
         final scheme = theme.colorScheme;
