@@ -191,4 +191,73 @@ void main() {
     expect(calls, 0);
   });
 
+  test('agenda usa día civil ISO y no sigue URLs next externas', () async {
+    var calls = 0;
+    final client = MockClient((request) async {
+      calls++;
+      expect(request.method, 'GET');
+      expect(request.url.origin, 'http://localhost:18731');
+      expect(request.url.path, '/api/v1/workspaces/$workspaceId/agenda/');
+      expect(request.url.queryParameters['day'], '2027-03-31');
+      expect(request.url.queryParameters['page'], '2');
+      return http.Response(
+        '{"day":"2027-03-31","count":12,'
+        '"next":"https://host-malicioso.invalid/robar",'
+        '"results":[{"renewal":{'
+        '"id":"b2222222-2222-4222-8222-222222222222",'
+        '"customer_reference":"DEMO-AVISO",'
+        '"expires_on":"2027-05-01","status":"pending"},'
+        '"events":[{"kind":"reminder",'
+        '"candidate_id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",'
+        '"basis":"notice_deadline"}]}]}',
+        200,
+      );
+    });
+    final api = HttpVenciraApi(
+      client: client, baseUri: Uri.parse('http://localhost:18731/'));
+    final result = await api.fetchAgendaDay(workspaceId, DateTime(2027, 3, 31),
+        page: 2);
+    expect(result.total, 12);
+    expect(result.hasNext, true);
+    expect(result.day, DateTime(2027, 3, 31));
+    expect(result.entries.single.events.single.kind, 'reminder');
+    expect(result.entries.single.events.single.basis, 'notice_deadline');
+    expect(calls, 1);
+  });
+
+  test('agenda rechaza parámetros manipulados antes de consultar', () async {
+    var calls = 0;
+    final client = MockClient((_) async {
+      calls++;
+      return http.Response('{}', 200);
+    });
+    final api = HttpVenciraApi(
+      client: client, baseUri: Uri.parse('http://localhost:18731/'));
+    await expectLater(
+      api.fetchAgendaDay('../otra', DateTime(2027, 3, 31)),
+      throwsA(isA<VenciraApiException>()),
+    );
+    await expectLater(
+      api.fetchAgendaDay(workspaceId, DateTime(2027, 3, 31), page: 0),
+      throwsA(isA<VenciraApiException>()),
+    );
+    expect(calls, 0);
+  });
+
+  test('agenda no acepta otra fecha o eventos desconocidos del servidor', () async {
+    final api = HttpVenciraApi(
+      client: MockClient((_) async => http.Response(
+        '{"day":"2027-04-01","count":0,"next":null,"results":[]}', 200)),
+      baseUri: Uri.parse('http://localhost:18731/'),
+    );
+    await expectLater(
+      api.fetchAgendaDay(workspaceId, DateTime(2027, 3, 31)),
+      throwsA(isA<VenciraApiException>()),
+    );
+    expect(
+      () => VenciraAgendaEvent.fromJson({'kind': 'delivered'}),
+      throwsFormatException,
+    );
+  });
+
 }
