@@ -19,6 +19,12 @@ Fecha de revisión: 2026-10-22. Fuente de verdad: repositorio privado `appvencir
 
 **Estado vigente 2026-10-22:** `vencira_localcheck` desplegado, migraciones `0010`–`0012` aplicadas, API/DB/Web saludables, rutas locales/proxy HTTP 200, pruebas específicas PostgreSQL resultado 0, y Android HTTPS `dev.vencira.es` aceptado por usuario. Una mejora de espaciado Flutter está **implementada en GitHub** (commit `dd9ba521714df2d58acec9a9fcfcd236766d12f4`) **pero no probada ni desplegada** al cierre de esta revisión. Próximo paso: validación agrupada + despliegue seguro de esa corrección.
 
+## Incidencia de preflight UI V2 — pendiente de diagnóstico
+
+- Usuario ejecutó `scripts/validate_ui_v2.sh` después de sincronizar el repositorio. Salida: `=== REPOSITORIO Y PRECONDICIONES ===`, `RESULTADO_GLOBAL=1`, `FASE_FALLIDA=inicio`, `EJECUCION_COMPLETADA=0`. **No comenzó Flutter ni despliegue.** Se desconoce aún cuál condición inicial falló.
+- El script original usaba `test "$(git branch --show-current)"` y `test -z "$(git status --porcelain)"` sin explicación. Corregido en commit `3ce75938` con diagnóstico explícito de rama, limpieza del checkout y servicio que se está verificando, sin tocar cambios locales ni cerrar SSH.
+- Pedir una sola ejecución para sincronizar el script nuevo y obtener el motivo concreto. No ejecutar `git reset --hard`, `git clean` ni borrar trabajos locales automáticamente. No dar por desplegada V2 hasta pruebas Flutter y salud.
+
 ## Diseño V2 — rediseño estructural tras feedback de capturas
 
 - El usuario señaló explícitamente que la UI existente **NO parece limpia ni bien estructurada**: exceso de botones heterogéneos, apilados y selectores; quiere un salto visual de calidad empresarial. Solicitó buscar más webs además de Dribbble.
