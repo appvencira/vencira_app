@@ -21,6 +21,14 @@ def _membership(request, workspace_id):
     )
 
 
+def _visible_renewals(membership):
+    """Escopo autorizado que se aplica antes de consultar, filtrar o bloquear filas."""
+    scoped = _visible_renewals(membership)
+    if membership.role != WorkspaceMember.Role.OWNER:
+        return scoped.filter(assigned_to_id=membership.user_id)
+    return scoped
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def me(request):
@@ -60,11 +68,17 @@ def renewals(request, workspace_id):
         page = paginator.paginate_queryset(scoped, request)
         return paginator.get_paginated_response(RenewalSerializer(page, many=True).data)
 
-    serializer = RenewalSerializer(data=request.data)
+    serializer = RenewalSerializer(data=request.data, context={"membership": membership})
     serializer.is_valid(raise_exception=True)
     with transaction.atomic():
-        # Nunca aceptar workspace desde JSON; siempre procede de la membresía.
-        renewal = serializer.save(workspace=membership.workspace)
+        # Nunca aceptar workspace desde JSON. Los empleados solo crean trabajo
+        # asignado a sí mismos; el propietario puede asignarlo o dejarlo suyo.
+        extra = {"workspace": membership.workspace}
+        if membership.role != WorkspaceMember.Role.OWNER:
+            extra["assigned_to"] = request.user
+        elif "assigned_to" not in serializer.validated_data:
+            extra["assigned_to"] = request.user
+        renewal = serializer.save(**extra)
         make_audit_event(renewal=renewal, actor=request.user)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -75,16 +89,15 @@ def renewal_detail(request, workspace_id, renewal_id):
     membership = _membership(request, workspace_id)
     if request.method == "GET":
         renewal = get_object_or_404(
-            Renewal, pk=renewal_id, workspace_id=membership.workspace_id
+            _visible_renewals(membership), pk=renewal_id
         )
         return Response(RenewalSerializer(renewal).data)
 
     serializer = None
     with transaction.atomic():
         renewal = get_object_or_404(
-            Renewal.objects.select_for_update(),
+            _visible_renewals(membership).select_for_update(),
             pk=renewal_id,
-            workspace_id=membership.workspace_id,
         )
         # Snapshot solo en memoria para construir delta no sensible del log.
         before = Renewal(
@@ -92,8 +105,12 @@ def renewal_detail(request, workspace_id, renewal_id):
             expires_on=renewal.expires_on,
             notice_deadline_on=renewal.notice_deadline_on,
             status=renewal.status,
+            assigned_to_id=renewal.assigned_to_id,
         )
-        serializer = RenewalSerializer(renewal, data=request.data, partial=True)
+        serializer = RenewalSerializer(
+            renewal, data=request.data, partial=True,
+            context={"membership": membership},
+        )
         serializer.is_valid(raise_exception=True)
         changes = [
             field for field, value in serializer.validated_data.items()
