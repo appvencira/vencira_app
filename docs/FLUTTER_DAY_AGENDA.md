@@ -54,3 +54,14 @@ Primera iteración: **agenda diaria de solo lectura** sobre la proyección de ev
 3. En entorno de pruebas efímero: aplicar migraciones con respaldo, test de autenticación y permisos, después compilar y servir Flutter.
 4. Smoke HTTPS, sesión, cambios de workspace/día, ES/CA, temas y responsive con datos inventados.
 5. Documentar commit, resultados y rollback; solo después actualizar `dev.vencira.es` bajo procedimiento de despliegue confirmado.
+
+## Validación ejecutada (22/10/2026)
+
+- GitHub Actions: [Flutter ES-CA validation #16](https://github.com/appvencira/vencira_app/actions/runs/39722570293), commit de código y documentación `e797a1b3`: **SUCCESS**.
+- Verificador de catálogos ES/CA: correcto.
+- `flutter gen-l10n` y dependencias: correctos.
+- `flutter analyze`: correcto.
+- `flutter test`: correcto. Incluye tests de contrato HTTP y navegación de la nueva agenda, con 320/375/768 y catalán/oscuro.
+- `flutter build web --release --pwa-strategy=none`: correcto.
+
+**No equivale a validación de integración backend+frontend**: las ramas siguen apiladas e independientes. No existe evidencia de navegación visual real en navegador ni de un despliegue del nuevo contrato en `dev.vencira.es`.
