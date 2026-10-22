@@ -8,7 +8,7 @@ import 'package:vencira/l10n/app_localizations.dart';
 import 'package:vencira/main.dart';
 import 'package:vencira/ui/day_agenda_screen.dart';
 
-class DemoAgendaApi implements VenciraApi {
+class DemoAgendaApi extends VenciraApi {
   DemoAgendaApi({this.waitForMarch});
 
   final Completer<VenciraAgendaDayPage>? waitForMarch;
