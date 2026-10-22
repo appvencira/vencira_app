@@ -129,6 +129,84 @@ class DayAgendaTests(APITestCase):
         self.assertEqual(len(response.data["results"]), 1)
         self.assertIsNotNone(response.data["next"])
 
+    def test_contractual_notice_is_visible_without_reminder_policy(self):
+        """Un límite explícito figura en su día aunque no se programe aviso."""
+        renewal = Renewal.objects.create(
+            workspace=self.workspace, assigned_to=self.alice,
+            customer_reference="PREAVISO-SIN-RECORDATORIO",
+            expires_on=date(2027, 4, 2),
+            notice_deadline_on=self.day,
+        )
+        self.client.force_authenticate(user=self.alice)
+        response = self.client.get(self.url())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 3)
+        rows = {
+            row["renewal"]["customer_reference"]: row
+            for row in response.data["results"]
+        }
+        self.assertEqual(
+            rows["PREAVISO-SIN-RECORDATORIO"]["events"],
+            [{"kind": "notice_deadline"}],
+        )
+        self.assertEqual(
+            rows["PREAVISO-SIN-RECORDATORIO"]["renewal"]["id"], str(renewal.id)
+        )
+        self.assertEqual(
+            rows["PREAVISO-SIN-RECORDATORIO"]["renewal"]["notice_deadline_on"],
+            "2027-03-31",
+        )
+        self.assertNotIn("BOB-VENCE", rows)
+
+    def test_same_day_expiry_and_notice_are_one_renewal_with_two_events(self):
+        Renewal.objects.create(
+            workspace=self.workspace, assigned_to=self.alice,
+            customer_reference="AMBAS-FECHAS-IGUALES",
+            expires_on=self.day,
+            notice_deadline_on=self.day,
+        )
+        self.client.force_authenticate(user=self.alice)
+        response = self.client.get(self.url())
+        self.assertEqual(response.data["count"], 3)
+        matching = [
+            row for row in response.data["results"]
+            if row["renewal"]["customer_reference"] == "AMBAS-FECHAS-IGUALES"
+        ]
+        self.assertEqual(len(matching), 1)
+        self.assertEqual(matching[0]["events"], [
+            {"kind": "expiry"}, {"kind": "notice_deadline"},
+        ])
+
+    def test_notice_respects_closed_status_and_workspace_assignment(self):
+        Renewal.objects.create(
+            workspace=self.workspace, assigned_to=self.bob,
+            customer_reference="PREAVISO-DE-BOB",
+            expires_on=date(2027, 4, 2), notice_deadline_on=self.day,
+        )
+        Renewal.objects.create(
+            workspace=self.foreign_workspace, assigned_to=self.foreign,
+            customer_reference="PREAVISO-AJENO",
+            expires_on=date(2027, 4, 2), notice_deadline_on=self.day,
+        )
+        Renewal.objects.create(
+            workspace=self.workspace, assigned_to=self.alice,
+            customer_reference="PREAVISO-CERRADO",
+            expires_on=date(2027, 4, 2), notice_deadline_on=self.day,
+            status=Renewal.Status.CLOSED,
+        )
+        self.client.force_authenticate(user=self.alice)
+        own = self.client.get(self.url())
+        self.assertEqual(own.data["count"], 2)
+        self.assertNotIn("PREAVISO-DE-BOB", str(own.data))
+        self.assertNotIn("PREAVISO-AJENO", str(own.data))
+        self.assertNotIn("PREAVISO-CERRADO", str(own.data))
+        self.client.force_authenticate(user=self.owner)
+        owner = self.client.get(self.url())
+        self.assertEqual(owner.data["count"], 5)
+        self.assertIn("PREAVISO-DE-BOB", str(owner.data))
+        self.assertNotIn("PREAVISO-AJENO", str(owner.data))
+        self.assertNotIn("PREAVISO-CERRADO", str(owner.data))
+
     def test_disabled_or_cancelled_candidates_not_reported(self):
         self.client.force_authenticate(user=self.alice)
         self.candidate.state = ReminderCandidate.State.CANCELLED
