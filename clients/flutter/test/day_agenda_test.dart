@@ -245,6 +245,46 @@ void main() {
     expect(find.text('Consultar historial'), findsNothing);
   });
 
+  for (final width in <double>[320, 375, 768]) {
+    for (final locale in <String>['es', 'ca']) {
+      testWidgets('siete días alineados con y sin marcas a $width px en $locale',
+          (tester) async {
+        tester.view.physicalSize = Size(width, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final api = DemoAgendaApi();
+        await tester.pumpWidget(_screen(
+          api, locale: locale,
+          theme: locale == 'ca' ? ThemeMode.dark : ThemeMode.light,
+        ));
+        await tester.pumpAndSettle();
+        final heights = <double>[];
+        for (var i = 0; i < 7; i++) {
+          final slot = find.byKey(ValueKey('agenda-week-slot-$i'));
+          final day = find.byKey(ValueKey('agenda-weekday-$i'));
+          expect(slot, findsOneWidget);
+          expect(tester.getSize(slot).height, 32);
+          heights.add(tester.getSize(day).height);
+        }
+        for (final height in heights) {
+          expect(height, closeTo(heights.first, 0.1));
+        }
+        // Dos clases de evento, y un día sin actividad: misma altura.
+        expect(find.byKey(
+          const ValueKey('week-mark-2027-03-31-expiry-pending')),
+          findsOneWidget);
+        expect(find.byKey(
+          const ValueKey('week-mark-2027-04-01-notice-pending')),
+          findsOneWidget);
+        expect(find.byKey(
+          const ValueKey('week-mark-2027-04-02-expiry-pending')),
+          findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
+
   testWidgets('la franja semanal comparte marcas con mes aunque cruce dos meses',
       (tester) async {
     final api = DemoAgendaApi();
