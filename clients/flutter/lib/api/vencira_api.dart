@@ -77,6 +77,11 @@ abstract class VenciraApi {
   Future<void> deactivateInsurer(String workspaceId, String id) async =>
       throw const VenciraApiException();
 
+  /// Sugerencias solo bajo acción del usuario; clientes simulados pueden omitirlas.
+  Future<List<VenciraPersonSuggestion>> suggestPeople(
+    String workspaceId, String query, {String by = 'name', String? excludeId}
+  ) async => const [];
+
   Future<void> logout();
 }
 
@@ -152,6 +157,27 @@ class VenciraInsurer {
         id: json['id'] as String,
         name: json['name'] as String,
         active: json['active'] as bool,
+      );
+}
+
+class VenciraPersonSuggestion {
+  const VenciraPersonSuggestion({
+    required this.sourceId, required this.fullName, required this.nickname,
+    required this.phone, required this.email,
+  });
+  final String sourceId;
+  final String fullName;
+  final String nickname;
+  final String phone;
+  final String email;
+
+  factory VenciraPersonSuggestion.fromJson(Map<String, dynamic> json) =>
+      VenciraPersonSuggestion(
+        sourceId: json['source_id'] as String,
+        fullName: json['full_name'] as String,
+        nickname: json['nickname'] as String,
+        phone: json['phone'] as String,
+        email: json['email'] as String,
       );
 }
 
@@ -484,6 +510,34 @@ String _civilDayIso(DateTime day) {
 }
 
 class HttpVenciraApi implements VenciraApi {
+  @override
+  Future<List<VenciraPersonSuggestion>> suggestPeople(
+      String workspaceId, String query, {String by = 'name', String? excludeId}) async {
+    final q = query.trim();
+    if (!_validUuid(workspaceId) || q.length < 3 || q.length > 160 ||
+        !const ['name', 'phone'].contains(by) ||
+        (excludeId != null && !_validUuid(excludeId))) {
+      throw const VenciraApiException();
+    }
+    final uri = Uri(
+      path: '/api/v1/workspaces/$workspaceId/renewals/suggestions/',
+      queryParameters: {
+        'by': by, 'q': q,
+        if (excludeId != null) 'exclude': excludeId,
+      },
+    );
+    try {
+      final raw = await _fetch(uri.toString()) as List<dynamic>;
+      return raw.map((item) => VenciraPersonSuggestion.fromJson(
+        item as Map<String, dynamic>)).toList(growable: false);
+    } on VenciraUnauthorized {
+      rethrow;
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+
   HttpVenciraApi({http.Client? client, Uri? baseUri})
       : _client = client ?? http.Client(),
         _ownsClient = client == null,
