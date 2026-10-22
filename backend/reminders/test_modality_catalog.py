@@ -55,8 +55,8 @@ class ModalityCatalogTests(APITestCase):
 
     def test_member_cannot_mutate_even_with_valid_json(self):
         self.client.force_authenticate(user=self.member)
-        self.assertEqual(self.client.post(self.list_url(), {"label": "Mascotas"}).status_code, 403)
-        self.assertEqual(self.client.patch(self.detail_url("hogar"), {"label": "Casa"}).status_code, 403)
+        self.assertEqual(self.client.post(self.list_url(), {"label": "Mascotas"}, format="json").status_code, 403)
+        self.assertEqual(self.client.patch(self.detail_url("hogar"), {"label": "Casa"}, format="json").status_code, 403)
         self.assertEqual(self.client.delete(self.detail_url("hogar")).status_code, 403)
 
     def test_add_rename_disable_reactivate_and_preserve_renewals(self):
@@ -65,7 +65,7 @@ class ModalityCatalogTests(APITestCase):
         self.assertEqual(created.status_code, 201, created.data)
         code = created.data["code"]
         self.assertTrue(code.startswith("custom-"))
-        self.assertEqual(self.client.post(self.list_url(), {"label": "mAsCoTaS"}).status_code, 409)
+        self.assertEqual(self.client.post(self.list_url(), {"label": "mAsCoTaS"}, format="json").status_code, 409)
         self.assertEqual(self.client.patch(
             self.detail_url(code), {"label": "Animales domésticos"}, format="json"
         ).status_code, 200)
@@ -81,7 +81,7 @@ class ModalityCatalogTests(APITestCase):
         self.one.refresh_from_db()
         self.assertEqual(self.one.modality, "hogar")
         # No reutilizar código borrado para crear otra modalidad.
-        self.assertEqual(self.client.post(self.list_url(), {"label": "Vivienda"}).status_code, 201)
+        self.assertEqual(self.client.post(self.list_url(), {"label": "Vivienda"}, format="json").status_code, 201)
         self.assertEqual(self.client.patch(
             self.detail_url("hogar"), {"active": True}, format="json"
         ).status_code, 409)  # choca con nombre recién creado
@@ -96,13 +96,13 @@ class ModalityCatalogTests(APITestCase):
         self.client.force_authenticate(user=self.foreign)
         options = {row["code"]: row for row in self.client.get(self.list_url(self.other)).data}
         self.assertEqual(options["autos"]["label"], "Autos")
-        self.assertEqual(self.client.patch(self.detail_url("hogar"), {"label": "Prueba"}).status_code, 404)
+        self.assertEqual(self.client.patch(self.detail_url("hogar"), {"label": "Prueba"}, format="json").status_code, 404)
 
     def test_invalid_payload_and_inactive_modality_rejected_for_new(self):
         self.client.force_authenticate(user=self.owner)
-        self.assertEqual(self.client.post(self.list_url(), {"label": "   "}).status_code, 400)
-        self.assertEqual(self.client.post(self.list_url(), {"label": "X", "workspace": str(self.other.id)}).status_code, 400)
-        self.assertEqual(self.client.patch(self.detail_url("hogar"), {"active": False}).status_code, 400)
+        self.assertEqual(self.client.post(self.list_url(), {"label": "   "}, format="json").status_code, 400)
+        self.assertEqual(self.client.post(self.list_url(), {"label": "X", "workspace": str(self.other.id)}, format="json").status_code, 400)
+        self.assertEqual(self.client.patch(self.detail_url("hogar"), {"active": False}, format="json").status_code, 400)
         self.assertEqual(self.client.delete(self.detail_url("hogar")).status_code, 204)
         base = reverse("api-renewals", kwargs={"workspace_id": self.ws.pk})
         payload = {"customer_reference": "DEMO", "expires_on": "2027-05-01",
@@ -142,4 +142,4 @@ class ModalityCatalogTests(APITestCase):
 
     def test_no_session_cannot_read_or_edit(self):
         self.assertIn(self.client.get(self.list_url()).status_code, (401, 403))
-        self.assertIn(self.client.post(self.list_url(), {"label": "Prueba"}).status_code, (401, 403))
+        self.assertIn(self.client.post(self.list_url(), {"label": "Prueba"}, format="json").status_code, (401, 403))
