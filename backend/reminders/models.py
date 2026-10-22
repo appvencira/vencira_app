@@ -43,6 +43,27 @@ class WorkspaceModality(models.Model):
         ordering = ["code"]
 
 
+class WorkspaceInsurer(models.Model):
+    """Aseguradora añadida a una cuenta; no es un registro regulatorio verificado."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    workspace = models.ForeignKey(
+        Workspace, on_delete=models.CASCADE, related_name="insurer_options",
+    )
+    name = models.CharField(max_length=140)
+    # Normalización para evitar nombres duplicados cambiando mayúsculas.
+    normalized_name = models.CharField(max_length=140)
+    active = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["workspace", "normalized_name"],
+                name="uniq_workspace_insurer_name",
+            ),
+        ]
+        ordering = ["name", "id"]
+
+
 class Renewal(models.Model):
     class Entry(models.TextChoices):
         CLIENTS = "clients", "Clientes"
@@ -70,6 +91,10 @@ class Renewal(models.Model):
         max_length=16, choices=Entry.choices, null=True, blank=True,
     )
     modality = models.CharField(max_length=80, blank=True, default="")
+    insurer = models.ForeignKey(
+        WorkspaceInsurer, on_delete=models.PROTECT,
+        related_name="renewals", null=True, blank=True,
+    )
     expires_on = models.DateField()
     notice_deadline_on = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
