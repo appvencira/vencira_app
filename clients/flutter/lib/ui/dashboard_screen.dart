@@ -9,6 +9,7 @@ import 'vencira_preferences.dart';
 import 'renewal_editor.dart';
 import 'renewal_detail_screen.dart';
 import 'modality_catalog_screen.dart';
+import 'insurer_catalog_screen.dart';
 import 'modality_labels.dart';
 import 'day_agenda_screen.dart';
 
@@ -30,6 +31,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
   String _entryFilter = '';
   String _modalityFilter = '';
   List<VenciraModalityOption> _modalities = VenciraModalityOption.defaults;
+  List<VenciraInsurer> _insurers = [];
   List<VenciraWorkspace> _workspaces = [];
   VenciraWorkspace? _selected;
   VenciraRenewalPage? _renewals;
@@ -81,6 +83,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         // No bloquear la primera carga del listado por el catálogo.
         await _loadRenewals(1);
         _loadModalities();
+        _loadInsurers();
       }
     } on VenciraUnauthorized {
       if (!mounted || sequence != _sequence) return;
@@ -109,9 +112,11 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       _entryFilter = '';
       _modalityFilter = '';
       _modalities = VenciraModalityOption.defaults;
+      _insurers = [];
     });
     await _loadRenewals(1);
     _loadModalities();
+    _loadInsurers();
   }
 
   Future<void> _loadRenewals(int page) async {
@@ -161,6 +166,34 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     } catch (_) {
       // La página de catálogo informa del fallo y permite reintentar.
     }
+  }
+
+  Future<void> _loadInsurers() async {
+    final workspace = _selected;
+    if (workspace == null) return;
+    try {
+      final results = await _api.fetchInsurers(workspace.id);
+      if (!mounted || _selected?.id != workspace.id) return;
+      setState(() => _insurers = results);
+    } catch (_) {
+      // No mostrar resultados de otra cuenta si falla una recarga.
+      if (mounted && _selected?.id == workspace.id) {
+        setState(() => _insurers = []);
+      }
+    }
+  }
+
+  Future<void> _openInsurers() async {
+    final workspace = _selected;
+    if (workspace == null) return;
+    await Navigator.of(context).push<void>(MaterialPageRoute(
+      builder: (_) => VenciraInsurerCatalogScreen(
+        api: _api, workspace: workspace,
+      ),
+    ));
+    if (!mounted || _selected?.id != workspace.id) return;
+    await _loadInsurers();
+    await _loadRenewals(1);
   }
 
   Future<void> _openCatalog() async {
@@ -220,7 +253,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     final input = await showDialog<VenciraRenewalInput>(
       context: context,
       builder: (_) => VenciraRenewalEditor(
-        existing: current, modalities: _modalities),
+        existing: current, modalities: _modalities, insurers: _insurers),
     );
     if (input == null || !mounted || _selected?.id != selected.id) return;
     setState(() => _saving = true);
@@ -507,6 +540,13 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
               onPressed: _saving ? null : _openCatalog,
               icon: const Icon(Icons.tune),
               label: Text(_t.modalityManage),
+            ),
+          if (_selected?.role == 'owner')
+            OutlinedButton.icon(
+              key: const ValueKey('open-insurers'),
+              onPressed: _saving ? null : _openInsurers,
+              icon: const Icon(Icons.business_outlined),
+              label: Text(_t.insurerManage),
             ),
           FilledButton.icon(
             onPressed: _loadingRenewals || _saving ? null : () => _editRenewal(),
