@@ -180,12 +180,34 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
     ));
   }
 
+  String _designLabel(String es, String ca) =>
+      Localizations.localeOf(context).languageCode == 'ca' ? ca : es;
+
+  Widget _formSection(IconData icon, String title) {
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 16),
+      child: Row(children: [
+        Icon(icon, size: 18, color: colors.primary),
+        const SizedBox(width: 9),
+        Expanded(child: Text(title,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700))),
+      ]),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 600;
     return AlertDialog(
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 40, vertical: compact ? 14 : 28),
       title: Text(widget.existing == null ? _t.newRenewal : _t.editRenewal),
+      contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
       content: SizedBox(
-        width: 430,
+        width: compact ? double.maxFinite : 480,
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
@@ -193,12 +215,15 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_t.demoOnly),
-                const SizedBox(height: 16),
+                Text(_t.demoOnly,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                _formSection(Icons.badge_outlined,
+                  _designLabel('Identificación', 'Identificació')),
                 TextFormField(
                   controller: _reference,
                   maxLength: 160,
-                  autofocus: true,
+                  autofocus: !compact,
                   decoration: InputDecoration(
                     labelText: _t.reference,
                     helperText: _t.referenceHelper,
@@ -212,6 +237,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                 TextFormField(
                   key: const ValueKey('full-name'),
                   controller: _fullName,
+                  textCapitalization: TextCapitalization.words,
                   maxLength: 160,
                   decoration: const InputDecoration(labelText: 'Nombre y apellidos o razón social', border: OutlineInputBorder()),
                 ),
@@ -226,6 +252,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                 TextFormField(
                   key: const ValueKey('phone'),
                   controller: _phone,
+                  keyboardType: TextInputType.phone,
                   maxLength: 32,
                   decoration: const InputDecoration(labelText: 'Teléfono', border: OutlineInputBorder()),
                 ),
@@ -233,6 +260,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                 TextFormField(
                   key: const ValueKey('email'),
                   controller: _email,
+                  keyboardType: TextInputType.emailAddress,
                   maxLength: 254,
                   decoration: const InputDecoration(labelText: 'Correo electrónico', border: OutlineInputBorder()),
                 ),
@@ -243,8 +271,9 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                   maxLength: 100,
                   decoration: const InputDecoration(labelText: 'Número de póliza', border: OutlineInputBorder()),
                 ),
-                const SizedBox(height: 10),
-                const SizedBox(height: 10),
+                _formSection(Icons.policy_outlined,
+                  _designLabel('Póliza y clasificación',
+                    'Pòlissa i classificació')),
                 if (widget.api != null && widget.workspaceId != null) ...[
                   OutlinedButton.icon(
                     key: const ValueKey('lookup-person'),
@@ -353,18 +382,20 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                     border: OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
+                _formSection(Icons.event_outlined,
+                  _designLabel('Fechas y seguimiento',
+                    'Dates i seguiment')),
+                SizedBox(width: double.infinity, child: OutlinedButton.icon(
                   onPressed: () => _chooseDate(notice: false),
                   icon: const Icon(Icons.event),
                   label: Text('${_t.expiryLabel}: ${_displayDate(_expiration)}'),
-                ),
+                )),
                 const SizedBox(height: 12),
-                OutlinedButton.icon(
+                SizedBox(width: double.infinity, child: OutlinedButton.icon(
                   onPressed: () => _chooseDate(notice: true),
                   icon: const Icon(Icons.event_note),
                   label: Text('${_t.noticeLabel}: ${_displayDate(_notice)}'),
-                ),
+                )),
                 if (_notice != null)
                   TextButton.icon(
                     onPressed: () => setState(() => _notice = null),
