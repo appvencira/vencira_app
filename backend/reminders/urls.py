@@ -3,6 +3,7 @@ from . import views
 from .modality_catalog import modalities, modality_detail
 from .insurer_catalog import insurers, insurer_detail
 from .agenda_month import agenda_month
+from .person_suggestions import person_suggestions
 
 urlpatterns = [
     path("me/", views.me, name="api-me"),
@@ -14,6 +15,7 @@ urlpatterns = [
     path("workspaces/<uuid:workspace_id>/modalities/<str:code>/", modality_detail, name="api-modality-detail"),
     path("workspaces/<uuid:workspace_id>/agenda/", views.agenda_day, name="api-agenda-day"),
     path("workspaces/<uuid:workspace_id>/agenda/month/", agenda_month, name="api-agenda-month"),
+    path("workspaces/<uuid:workspace_id>/renewals/suggestions/", person_suggestions, name="api-person-suggestions"),
     path("workspaces/<uuid:workspace_id>/renewals/", views.renewals, name="api-renewals"),
     path("workspaces/<uuid:workspace_id>/renewals/<uuid:renewal_id>/", views.renewal_detail, name="api-renewal-detail"),
     path("workspaces/<uuid:workspace_id>/renewals/<uuid:renewal_id>/history/", views.renewal_history, name="api-renewal-history"),
