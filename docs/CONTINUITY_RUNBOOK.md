@@ -88,6 +88,15 @@ Confirmado por salida del servidor: `vencira_localcheck-web_preview-1` **healthy
 - No suponer que el host público apunta al stack `vencira_localcheck` actualizado sin evidencia de la versión servida. Antes de dar por validado el acceso externo, comprobar funcionalmente en navegador y, si procede, cotejar cabeceras/respuestas sin divulgar credenciales.
 - No introducir datos personales reales hasta cerrar barreras de seguridad.
 
+## Android / HTTPS: comprobación funcional confirmada por usuario
+
+- El usuario reporta **«Todo ok»** desde Chrome Android en **https://dev.vencira.es** y aporta capturas de la página principal y del formulario **Editar vencimiento**.
+- Las capturas muestran campos de identidad, número de póliza, botón «Buscar datos en otras anotaciones», selector de entrada, modalidad, aseguradora, notas con límite 4000 y fechas de vencimiento/preaviso. Es evidencia de que el frontend desplegado incluye las características recientes.
+- El usuario confirma la prueba funcional; no hay error informado de guardado. No se han verificado mediante captura separada todos los casos de aislamiento de registros, que sí cuentan con pruebas backend.
+- **Mejora visual no bloqueante:** en una captura móvil, el mensaje de ayuda bajo «Referencia» se solapa con la etiqueta «Nombre y apellidos o razón social». Revisar espaciado vertical del formulario y disposición del modal en pantallas pequeñas.
+- No copiar a documentación valores de nombre, contacto ni número de póliza visibles en las capturas. No utilizar datos personales reales hasta aprobación de seguridad/RGPD.
+- Estado: **despliegue técnico + smoke web + pruebas Django/PostgreSQL + aceptación funcional Android confirmados**. Aún no equivale a autorización de producción.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
