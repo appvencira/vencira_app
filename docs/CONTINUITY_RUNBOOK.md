@@ -128,6 +128,14 @@ Confirmado por salida del servidor: `vencira_localcheck-web_preview-1` **healthy
 - No copiar a documentación valores de nombre, contacto ni número de póliza visibles en las capturas. No utilizar datos personales reales hasta aprobación de seguridad/RGPD.
 - Estado: **despliegue técnico + smoke web + pruebas Django/PostgreSQL + aceptación funcional Android confirmados**. Aún no equivale a autorización de producción.
 
+## Pase visual empresarial: validación y despliegue web completados
+
+- Cambios: `dd9ba521` (espaciado del editor en móvil), `f43766d9` (tokens globales de diálogos, botones y campos), `a18024ac` (normativa visual y criterios).
+- El usuario ejecutó el bloque consolidado de `git fetch/merge --ff-only`, Flutter `pub get`, `analyze`, `test` y `build web --release --pwa-strategy=none`, comprobación de identidad del proyecto Docker, build de `web_preview`, recreación exclusiva de web, espera de estado `healthy` y HTTP 200 de `/`, `/api/health/` y `/api/ready/`.
+- Resultado confirmado: `RESULTADO_GLOBAL=0`, `RESULTADO_SCRIPT=0` y `CONSOLA_ABIERTA`. **Primera fase visual desplegada en `vencira_localcheck`; no modifica API/DB ni el stack `vencira_preview`.**
+- Pendiente: aceptación visual desde Android con capturas (formularios, solapamientos, scroll y botones), y siguiente pase de UX en dashboard y editor. No confundir código compilado con aprobación visual.
+- Mantener procedimiento de **un script integral por fase** con todas las comprobaciones posibles, salida agrupada y protección de la sesión SSH.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
