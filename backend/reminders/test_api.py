@@ -70,6 +70,51 @@ class ScopedRenewalApiTests(APITestCase):
         self.assertEqual(response.data[0]["role"], "owner")
         self.assertEqual(self.client.get(reverse("api-me")).data["username"], "propietario_a")
 
+    def test_member_directory_only_accessible_by_workspace_owner(self):
+        url = reverse("api-workspace-members", kwargs={
+            "workspace_id": self.workspace_a.pk,
+        })
+        anonymous = self.client.get(url)
+        self.assertIn(anonymous.status_code, (401, 403))
+        self.client.force_authenticate(user=self.member_a)
+        self.assertEqual(self.client.get(url).status_code, 403)
+        self.client.force_authenticate(user=self.owner_b)
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            {row["id"] for row in response.data},
+            {self.owner_a.pk, self.member_a.pk, self.member_a_2.pk},
+        )
+        self.assertTrue(all(set(row) == {"id", "name", "role"} for row in response.data))
+        self.assertNotIn("propietario_b", str(response.data))
+        self.assertEqual(self.client.post(url, {}, format="json").status_code, 405)
+
+    def test_removing_membership_revokes_access_immediately(self):
+        item = Renewal.objects.create(
+            workspace=self.workspace_a, assigned_to=self.member_a,
+            customer_reference="REASIGNAR-TRAS-BAJA", expires_on=date(2027, 9, 3),
+        )
+        url = self.detail_url(self.workspace_a, item)
+        self.client.force_authenticate(user=self.member_a)
+        self.assertEqual(self.client.get(url).status_code, 200)
+        WorkspaceMember.objects.filter(
+            workspace=self.workspace_a, user=self.member_a
+        ).delete()
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.assertEqual(
+            self.client.get(self.list_url(self.workspace_a)).status_code, 404,
+        )
+        self.client.force_authenticate(user=self.owner_a)
+        self.assertEqual(self.client.get(url).status_code, 200)
+        changed = self.client.patch(url, {
+            "assigned_to": self.member_a_2.pk,
+        }, format="json")
+        self.assertEqual(changed.status_code, 200)
+        item.refresh_from_db()
+        self.assertEqual(item.assigned_to_id, self.member_a_2.pk)
+
     def test_member_can_read_and_update_own_workspace(self):
         self.client.force_authenticate(user=self.member_a)
         list_response = self.client.get(self.list_url(self.workspace_a))
