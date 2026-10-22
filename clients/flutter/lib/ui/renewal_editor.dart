@@ -92,6 +92,12 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
+    if (widget.existing == null && _fullName.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El nombre o razón social es obligatorio.')),
+      );
+      return;
+    }
     if (_expiration == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t.missingExpiry)),
