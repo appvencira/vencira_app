@@ -8,6 +8,8 @@ import '../l10n/app_localizations.dart';
 import 'vencira_preferences.dart';
 import 'renewal_editor.dart';
 import 'renewal_detail_screen.dart';
+import 'modality_catalog_screen.dart';
+import 'modality_labels.dart';
 import 'day_agenda_screen.dart';
 
 class VenciraDashboardScreen extends StatefulWidget {
@@ -25,6 +27,9 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _appliedSearch = '';
   String _statusFilter = '';
+  String _entryFilter = '';
+  String _modalityFilter = '';
+  List<VenciraModalityOption> _modalities = VenciraModalityOption.defaults;
   List<VenciraWorkspace> _workspaces = [];
   VenciraWorkspace? _selected;
   VenciraRenewalPage? _renewals;
@@ -73,6 +78,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         _loadingWorkspaces = false;
       });
       if (loaded.isNotEmpty) {
+        await _loadModalities();
         await _loadRenewals(1);
       }
     } on VenciraUnauthorized {
@@ -99,7 +105,11 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       _searchController.clear();
       _appliedSearch = '';
       _statusFilter = '';
+      _entryFilter = '';
+      _modalityFilter = '';
+      _modalities = VenciraModalityOption.defaults;
     });
+    await _loadModalities();
     await _loadRenewals(1);
   }
 
@@ -116,8 +126,9 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     });
 
     try {
-      final result = await _api.fetchRenewals(
-        selected.id, page: page, search: _appliedSearch, status: _statusFilter);
+      final result = await _api.fetchFilteredRenewals(
+        selected.id, page: page, search: _appliedSearch,
+        status: _statusFilter, entry: _entryFilter, modality: _modalityFilter);
       if (!mounted || sequence != _sequence) return;
       setState(() {
         _renewals = result;
@@ -137,6 +148,43 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         _failed = true;
       });
     }
+  }
+
+  Future<void> _loadModalities() async {
+    final selected = _selected;
+    if (selected == null) return;
+    try {
+      final result = await _api.fetchModalities(selected.id);
+      if (!mounted || _selected?.id != selected.id) return;
+      setState(() => _modalities = result);
+    } catch (_) {
+      // La página de catálogo informa del fallo y permite reintentar.
+    }
+  }
+
+  Future<void> _openCatalog() async {
+    final selected = _selected;
+    if (selected == null) return;
+    await Navigator.of(context).push<void>(MaterialPageRoute(
+      builder: (_) => VenciraModalityCatalogScreen(
+        api: _api, workspace: selected,
+      ),
+    ));
+    if (!mounted || _selected?.id != selected.id) return;
+    await _loadModalities();
+    await _loadRenewals(1);
+  }
+
+  void _changeEntry(String? value) {
+    if (value == null || _loadingRenewals || _saving) return;
+    setState(() => _entryFilter = value);
+    _loadRenewals(1);
+  }
+
+  void _changeModality(String? value) {
+    if (value == null || _loadingRenewals || _saving) return;
+    setState(() => _modalityFilter = value);
+    _loadRenewals(1);
   }
 
   void _applySearch() {
@@ -159,6 +207,8 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       _searchController.clear();
       _appliedSearch = '';
       _statusFilter = '';
+      _entryFilter = '';
+      _modalityFilter = '';
     });
     _loadRenewals(1);
   }
@@ -168,7 +218,8 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     if (selected == null || _saving || _loadingRenewals) return;
     final input = await showDialog<VenciraRenewalInput>(
       context: context,
-      builder: (_) => VenciraRenewalEditor(existing: current),
+      builder: (_) => VenciraRenewalEditor(
+        existing: current, modalities: _modalities),
     );
     if (input == null || !mounted || _selected?.id != selected.id) return;
     setState(() => _saving = true);
@@ -442,11 +493,20 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                     builder: (_) => VenciraDayAgendaScreen(
                       api: _api,
                       workspace: _selected!,
+                      initialEntry: _entryFilter,
+                      initialModality: _modalityFilter,
                     ),
                   )),
             icon: const Icon(Icons.calendar_today_outlined),
             label: Text(_t.agendaOpenDay),
           ),
+          if (_selected?.role == 'owner')
+            OutlinedButton.icon(
+              key: const ValueKey('open-catalog'),
+              onPressed: _saving ? null : _openCatalog,
+              icon: const Icon(Icons.tune),
+              label: Text(_t.modalityManage),
+            ),
           FilledButton.icon(
             onPressed: _loadingRenewals || _saving ? null : () => _editRenewal(),
             icon: const Icon(Icons.add),
@@ -502,6 +562,41 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
               onChanged: _loadingRenewals || _saving ? null : _changeStatus,
             ),
           ),
+          SizedBox(
+            width: statusWidth,
+            child: DropdownButtonFormField<String>(
+              key: ValueKey('entry-filter-${_selected?.id}-$_entryFilter'),
+              initialValue: _entryFilter, isExpanded: true,
+              decoration: InputDecoration(
+                labelText: _t.entryLabel, border: const OutlineInputBorder(),
+              ),
+              items: [
+                DropdownMenuItem(value: '', child: Text(_t.all)),
+                DropdownMenuItem(value: 'clients', child: Text(_t.entryClients)),
+                DropdownMenuItem(value: 'prospects', child: Text(_t.entryProspects)),
+              ],
+              onChanged: _loadingRenewals || _saving ? null : _changeEntry,
+            ),
+          ),
+          SizedBox(
+            width: statusWidth,
+            child: DropdownButtonFormField<String>(
+              key: ValueKey('modality-filter-${_selected?.id}-$_modalityFilter'),
+              initialValue: _modalityFilter, isExpanded: true,
+              decoration: InputDecoration(
+                labelText: _t.modalityLabel, border: const OutlineInputBorder(),
+              ),
+              items: [
+                DropdownMenuItem(value: '', child: Text(_t.all)),
+                for (final option in _modalities)
+                  if (option.active || option.code == _modalityFilter)
+                    DropdownMenuItem(value: option.code,
+                      child: Text(modalityCaption(context, option),
+                        overflow: TextOverflow.ellipsis)),
+              ],
+              onChanged: _loadingRenewals || _saving ? null : _changeModality,
+            ),
+          ),
           FilledButton.tonalIcon(
             onPressed: _loadingRenewals || _saving ? null : _applySearch,
             icon: const Icon(Icons.search),
@@ -526,7 +621,8 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
           Card(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Text(_appliedSearch.isNotEmpty || _statusFilter.isNotEmpty
+              child: Text(_appliedSearch.isNotEmpty || _statusFilter.isNotEmpty ||
+                   _entryFilter.isNotEmpty || _modalityFilter.isNotEmpty
                   ? _t.noFilterMatches
                   : AppLocalizations.of(context)!.emptyPage),
             ),
