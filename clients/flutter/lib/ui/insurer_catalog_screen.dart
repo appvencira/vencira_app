@@ -183,7 +183,7 @@ class _InsurersState extends State<VenciraInsurerCatalogScreen> {
                 _t.modalityActive : _t.modalityInactive),
               trailing: !canEdit ? null : Wrap(
                 alignment: WrapAlignment.end,
-                mainAxisSize: MainAxisSize.min, spacing: 0,
+                spacing: 0,
                 children: [
                   IconButton(tooltip: _t.insurerRename,
                     onPressed: _busy ? null : () => _rename(item),
