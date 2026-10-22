@@ -78,3 +78,10 @@ Los IDs y fechas son ficticios. El cliente no debe confiar en el número de usua
 ## Integración segura
 
 CI Django, `makemigrations --check --dry-run` y tests SQLite/PostgreSQL. No despliegue en VPS ni datos reales antes de cerrar permisos de equipo y confirmar la interfaz real.
+
+## Evidencia de validación — 22/10/2026
+
+- [GitHub Actions #8 — Django assignment isolation](https://github.com/appvencira/vencira_app/actions/runs/39721223694), sobre el commit de código `efc348e`: **success**.
+- `python manage.py check`, `makemigrations --check --dry-run`, pruebas Django completas en SQLite y PostgreSQL 17: **superadas**.
+- Incluye las pruebas de la nueva ruta de agenda, protección entre organizaciones y usuarios, contratos de vencimiento y recordatorio, fecha canónica y paginación.
+- Validación de backend no equivale a revisión de UI. Falta la vista Flutter, que se implementará con arreglo al whitepaper una vez integradas las ramas dependientes.
