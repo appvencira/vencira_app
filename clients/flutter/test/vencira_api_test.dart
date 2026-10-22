@@ -238,6 +238,57 @@ void main() {
     );
   });
 
+  test('resumen mensual usa el mismo origen y valida las cantidades', () async {
+    final client = MockClient((request) async {
+      expect(request.url.path, '/api/v1/workspaces/$workspaceId/agenda/month/');
+      expect(request.url.queryParameters, {'month': '2027-03'});
+      expect(request.url.origin, 'http://localhost:18731');
+      return http.Response(
+        '{"month":"2027-03","days":[{"day":"2027-03-31",'
+        '"expiry":{"pending":1,"contacted":1},'
+        '"notice_deadline":{"pending":0,"contacted":1},'
+        '"reminder":{"pending":2,"contacted":0}}]}', 200,
+      );
+    });
+    final api = HttpVenciraApi(
+      client: client, baseUri: Uri.parse('http://localhost:18731/'));
+    final month = await api.fetchAgendaMonth(workspaceId, DateTime(2027, 3, 31));
+    expect(month.days.single.expiry.total, 2);
+    expect(month.days.single.notice.contacted, 1);
+    expect(month.days.single.reminder.pending, 2);
+  });
+
+  test('resumen mensual rechaza meses discordantes, ajenos y cantidades negativas',
+      () async {
+    final bad = [
+      '{"month":"2027-04","days":[]}',
+      '{"month":"2027-03","days":[{"day":"2027-04-01",'
+        '"expiry":{"pending":1,"contacted":0},'
+        '"notice_deadline":{"pending":0,"contacted":0},'
+        '"reminder":{"pending":0,"contacted":0}}]}',
+      '{"month":"2027-03","days":[{"day":"2027-03-31",'
+        '"expiry":{"pending":-1,"contacted":0},'
+        '"notice_deadline":{"pending":0,"contacted":0},'
+        '"reminder":{"pending":0,"contacted":0}}]}',
+    ];
+    for (final payload in bad) {
+      final api = HttpVenciraApi(
+        client: MockClient((_) async => http.Response(payload, 200)),
+        baseUri: Uri.parse('http://localhost:18731/'),
+      );
+      await expectLater(
+        api.fetchAgendaMonth(workspaceId, DateTime(2027, 3, 1)),
+        throwsA(isA<VenciraApiException>()),
+      );
+    }
+    final api = HttpVenciraApi(
+      client: MockClient((_) async => http.Response('{}', 200)),
+      baseUri: Uri.parse('http://localhost:18731/'),
+    );
+    await expectLater(api.fetchAgendaMonth('../otro', DateTime(2027, 3, 1)),
+        throwsA(isA<VenciraApiException>()));
+  });
+
   test('agenda rechaza parámetros manipulados antes de consultar', () async {
     var calls = 0;
     final client = MockClient((_) async {
