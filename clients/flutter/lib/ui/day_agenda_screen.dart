@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
+import 'month_agenda_screen.dart';
 
 /// Primera vista de la agenda tipo papel. Sólo presenta eventos previstos.
 /// «Recuérdamelo», cierres y notificaciones entregadas aún no están modelados.
@@ -109,6 +110,19 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
       lastDate: DateTime(2100),
       initialDate: _selectedDay,
       helpText: _t.agendaChooseDay,
+    );
+    if (mounted && chosen != null) _chooseDay(chosen);
+  }
+
+  Future<void> _openMonth() async {
+    final chosen = await Navigator.of(context).push<DateTime>(
+      MaterialPageRoute(
+        builder: (_) => VenciraMonthAgendaScreen(
+          api: widget.api,
+          workspace: widget.workspace,
+          initialMonth: _selectedDay,
+        ),
+      ),
     );
     if (mounted && chosen != null) _chooseDay(chosen);
   }
@@ -372,6 +386,12 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
                             onPressed: _openDatePicker,
                             icon: const Icon(Icons.calendar_month),
                             label: Text(_t.agendaChooseDay),
+                          ),
+                          OutlinedButton.icon(
+                            key: const ValueKey('agenda-open-month'),
+                            onPressed: _openMonth,
+                            icon: const Icon(Icons.calendar_view_month),
+                            label: Text(_t.agendaMonthOpen),
                           ),
                         ],
                       ),
