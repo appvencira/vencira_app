@@ -231,7 +231,7 @@ void main() {
     await tester.tap(find.text('Buscar'));
     await tester.pumpAndSettle();
     expect(api.lastSearch, 'CASA DEMO');
-    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.tap(find.byKey(const ValueKey('status:11111111-1111-4111-8111-111111111111:')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Contactado').last);
     await tester.pumpAndSettle();
