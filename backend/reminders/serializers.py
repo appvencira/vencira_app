@@ -2,6 +2,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from .models import Renewal, WorkspaceMember
+from .modality_catalog import modality_valid
 
 
 class MembershipSerializer(serializers.ModelSerializer):
@@ -46,7 +47,17 @@ class RenewalSerializer(serializers.ModelSerializer):
                 "entry": "Selecciona Clientes o Candidatos.",
             })
         if "modality" in attrs:
-            attrs["modality"] = attrs["modality"].strip()
+            code = attrs["modality"].strip()
+            attrs["modality"] = code
+            membership = self.context.get("membership")
+            if membership is None:
+                raise serializers.ValidationError({"modality": "Sin organización autorizada."})
+            # Registro legado con opción inactiva: permitir conservarla si no se cambia.
+            unchanged = self.instance is not None and self.instance.modality == code
+            if not unchanged and not modality_valid(membership.workspace_id, code):
+                raise serializers.ValidationError({
+                    "modality": "Modalidad inexistente o desactivada en esta cuenta."
+                })
         membership = self.context.get("membership")
         if "assigned_to" in self.initial_data:
             # Sólo el propietario puede reasignar; comprobar que el usuario
