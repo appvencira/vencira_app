@@ -166,7 +166,7 @@ class _CatalogState extends State<VenciraModalityCatalogScreen> {
               subtitle: Text(option.active ?
                 _t.modalityActive : _t.modalityInactive),
               trailing: widget.workspace.role != 'owner' ? null : Wrap(
-                mainAxisSize: MainAxisSize.min,
+                alignment: WrapAlignment.end,
                 spacing: 2,
                 children: [
                   IconButton(
