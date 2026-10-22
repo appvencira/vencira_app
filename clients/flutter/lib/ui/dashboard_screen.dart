@@ -7,6 +7,7 @@ import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
 import 'vencira_preferences.dart';
 import 'renewal_editor.dart';
+import 'renewal_detail_screen.dart';
 import 'day_agenda_screen.dart';
 
 class VenciraDashboardScreen extends StatefulWidget {
@@ -566,6 +567,17 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     ).format(date);
   }
 
+  Future<void> _openDetail(VenciraRenewal item) async {
+    final selected = _selected;
+    if (selected == null || _saving) return;
+    await Navigator.of(context).push<void>(MaterialPageRoute(
+      builder: (_) => VenciraRenewalDetailScreen(
+        api: _api, workspace: selected, renewalId: item.id,
+      ),
+    ));
+    if (mounted && _selected?.id == selected.id) _loadRenewals(1);
+  }
+
   Widget _renewalTile(VenciraRenewal item, ColorScheme colors) {
     final expiration = _formatDate(item.expiresOn);
     final notice = item.noticeDeadlineOn == null
@@ -579,6 +591,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     };
     return Card(
       child: ListTile(
+        onTap: () => _openDetail(item),
         leading: Icon(Icons.event_available_outlined, color: colors.primary),
         title: Text(
           item.reference,
