@@ -65,10 +65,11 @@
   "agendaPreviousDay": "Dia anterior",
   "agendaNextDay": "Dia següent",
   "agendaDayEntries": "Anotacions del dia",
-  "agendaEmptyDay": "No hi ha venciments ni avisos previstos per a aquest dia.",
+  "agendaEmptyDay": "No hi ha venciments, preavisos ni avisos previstos per a aquest dia.",
   "agendaLoadError": "No s'ha pogut carregar l'agenda d'aquest dia.",
   "agendaExpiryEvent": "Venciment",
+  "agendaContractualNotice": "Límit contractual de preavís",
   "agendaPlannedReminder": "Avís previst · Venciment",
   "agendaPlannedNotice": "Avís previst · Preavís",
-  "agendaForecastDisclaimer": "Els avisos mostrats són previsions, no confirmacions de lliurament."
+  "agendaForecastDisclaimer": "Els avisos previstos no confirmen cap lliurament. Les dates contractuals no són notificacions."
 }
