@@ -13,9 +13,20 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-BASE = os.getenv("VENCIRA_WEB_URL", "http://127.0.0.1:18732").rstrip("/")
-if BASE not in ("http://127.0.0.1:18732", "http://localhost:18732"):
-    raise SystemExit("Este test solo admite el proxy local en el puerto 18732")
+WEB_PORT_RAW = os.getenv("VENCIRA_WEB_BIND_PORT", "18732")
+if not WEB_PORT_RAW.isascii() or not WEB_PORT_RAW.isdecimal():
+    raise SystemExit("El puerto local debe ser numérico")
+WEB_PORT = int(WEB_PORT_RAW)
+if not 1024 <= WEB_PORT <= 65535:
+    raise SystemExit("Puerto local fuera de rango")
+BASE = os.getenv(
+    "VENCIRA_WEB_URL", f"http://127.0.0.1:{WEB_PORT}"
+).rstrip("/")
+if BASE not in (
+    f"http://127.0.0.1:{WEB_PORT}",
+    f"http://localhost:{WEB_PORT}",
+):
+    raise SystemExit("Este test solo admite un proxy loopback en el puerto configurado")
 
 
 def read(opener, path, *, data=None, headers=None, method=None):
