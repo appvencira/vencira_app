@@ -18,6 +18,8 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
   final _formKey = GlobalKey<FormState>();
   AppLocalizations get _t => AppLocalizations.of(context)!;
   late final TextEditingController _reference;
+  String? _entry;
+  String _modality = '';
   DateTime? _expiration;
   DateTime? _notice;
   late String _status;
@@ -26,6 +28,8 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
   void initState() {
     super.initState();
     _reference = TextEditingController(text: widget.existing?.reference ?? '');
+    _entry = widget.existing?.entry;
+    _modality = widget.existing?.modality ?? '';
     _expiration = widget.existing?.expiresOn;
     _notice = widget.existing?.noticeDeadlineOn;
     _status = widget.existing?.status ?? 'pending';
@@ -82,8 +86,16 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
       );
       return;
     }
+    if (widget.existing == null && _entry == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t.entryRequired)),
+      );
+      return;
+    }
     Navigator.of(context).pop(VenciraRenewalInput(
       reference: _reference.text.trim(),
+      entry: _entry,
+      modality: _modality,
       expiresOn: _expiration!,
       noticeDeadlineOn: _notice,
       status: _status,
@@ -118,6 +130,60 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                       v == null || v.trim().isEmpty ? _t.referenceRequired : null,
                 ),
                 const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  key: const ValueKey('renewal-entry'),
+                  initialValue: _entry,
+                  decoration: InputDecoration(
+                    labelText: _t.entryLabel,
+                    border: const OutlineInputBorder(),
+                  ),
+                  isExpanded: true,
+                  items: [
+                    DropdownMenuItem(value: 'clients', child: Text(_t.entryClients)),
+                    DropdownMenuItem(value: 'prospects', child: Text(_t.entryProspects)),
+                  ],
+                  onChanged: (value) => setState(() => _entry = value),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  key: const ValueKey('renewal-modality'),
+                  initialValue: _modality.isEmpty ||
+                      const ['autos', 'motos', 'patinetes', 'hogar',
+                        'comercio', 'decesos', 'salud', 'vida',
+                        'accidentes', 'rc', 'comunidades', 'otros']
+                            .contains(_modality)
+                    ? _modality : '_legacy',
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    labelText: _t.modalityLabel,
+                    border: const OutlineInputBorder(),
+                  ),
+                  items: [
+                    DropdownMenuItem(value: '', child: Text(_t.notDefined)),
+                    DropdownMenuItem(value: 'autos', child: Text(_t.modAutos)),
+                    DropdownMenuItem(value: 'motos', child: Text(_t.modMotos)),
+                    DropdownMenuItem(value: 'patinetes', child: Text(_t.modPatinetes)),
+                    DropdownMenuItem(value: 'hogar', child: Text(_t.modHogar)),
+                    DropdownMenuItem(value: 'comercio', child: Text(_t.modComercio)),
+                    DropdownMenuItem(value: 'decesos', child: Text(_t.modDecesos)),
+                    DropdownMenuItem(value: 'salud', child: Text(_t.modSalud)),
+                    DropdownMenuItem(value: 'vida', child: Text(_t.modVida)),
+                    DropdownMenuItem(value: 'accidentes', child: Text(_t.modAccidentes)),
+                    DropdownMenuItem(value: 'rc', child: Text(_t.modRc)),
+                    DropdownMenuItem(value: 'comunidades', child: Text(_t.modComunidades)),
+                    DropdownMenuItem(value: 'otros', child: Text(_t.modOtros)),
+                    if (_modality.isNotEmpty &&
+                        !const ['autos', 'motos', 'patinetes', 'hogar',
+                          'comercio', 'decesos', 'salud', 'vida',
+                          'accidentes', 'rc', 'comunidades', 'otros']
+                            .contains(_modality))
+                      DropdownMenuItem(value: '_legacy', child: Text(_modality)),
+                  ],
+                  onChanged: (value) => setState(() {
+                    if (value != null && value != '_legacy') _modality = value;
+                  }),
+                ),
+                const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: () => _chooseDate(notice: false),
                   icon: const Icon(Icons.event),
