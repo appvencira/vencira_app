@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - chore/bootstrap-vencira
+      - feat/team-assignment-isolation
     paths:
       - 'backend/**'
       - '.github/workflows/backend-security.yml'
