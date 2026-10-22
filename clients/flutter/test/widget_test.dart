@@ -153,6 +153,47 @@ void main() {
     expect(app.themeMode, ThemeMode.system);
   });
 
+  for (final width in <double>[320, 375, 768]) {
+    testWidgets('agenda sin desbordamiento a ${width.toInt()} px en catalán oscuro',
+        (tester) async {
+      tester.view.physicalSize = Size(width, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({
+        'vencira.ui.locale.v1': 'ca',
+        'vencira.ui.theme.v1': 'dark',
+      });
+      await tester.pumpWidget(VenciraApp(
+        api: FakeVenciraApi(
+          workspaces: [workspaceA],
+          pages: {
+            workspaceA.id: VenciraRenewalPage(
+              total: 1,
+              hasNext: false,
+              items: [
+                VenciraRenewal(
+                  id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+                  reference: 'CAS-DE-PROVA-REFERÈNCIA-MOLT-LLARGA',
+                  expiresOn: DateTime(2027, 5, 1),
+                  noticeDeadlineOn: DateTime(2027, 3, 31),
+                  status: 'contacted',
+                ),
+              ],
+            ),
+          },
+        ),
+      ));
+      await tester.pumpAndSettle();
+      expect(find.text('Anticipa cada venciment'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      // La ficha también debe caber cuando se desplaza la lista.
+      await tester.drag(find.byType(ListView).first, const Offset(0, -480));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('envía filtros al backend y puede limpiarlos', (tester) async {
     final api = FakeVenciraApi(
       workspaces: [workspaceA],
