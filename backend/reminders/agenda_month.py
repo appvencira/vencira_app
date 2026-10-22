@@ -19,7 +19,7 @@ def agenda_month(request, workspace_id):
     """Una agregación por tipo de evento y estado; nunca paginar 31 agendas."""
     membership = _membership(request, workspace_id)
     raw = request.query_params.get("month", "")
-    if (set(request.query_params.keys()) - {"month", "entry", "modality"} or
+    if (set(request.query_params.keys()) - {"month", "entry", "modality", "insurer"} or
             len(request.query_params.getlist("month")) != 1):
         return Response({"month": "Parámetros no válidos."}, status=status.HTTP_400_BAD_REQUEST)
     if not re.fullmatch(r"(?:20\d\d|2100)-(?:0[1-9]|1[0-2])", raw):
