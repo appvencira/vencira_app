@@ -548,81 +548,8 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final locale = Localizations.localeOf(context).languageCode;
-    final colors = Theme.of(context).colorScheme;
-    final dateText = DateFormat('EEEE d MMMM yyyy', locale).format(_selectedDay);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_t.agendaTitle),
-        actions: [
-          IconButton(
-            tooltip: _t.refresh,
-            onPressed: _loading ? null : _refreshAll,
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: CallbackShortcuts(
-          bindings: {
-            const SingleActivator(LogicalKeyboardKey.arrowLeft):
-                () => _stepDay(-1),
-            const SingleActivator(LogicalKeyboardKey.arrowRight):
-                () => _stepDay(1),
-          },
-          child: Focus(
-            autofocus: true,
-            child: GestureDetector(
-              onHorizontalDragEnd: (details) {
-                final velocity = details.primaryVelocity ?? 0;
-                if (velocity > 250) _stepDay(-1);
-                if (velocity < -250) _stepDay(1);
-              },
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 920),
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      Text(dateText,
-                          style: Theme.of(context).textTheme.headlineSmall),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          IconButton.outlined(
-                            tooltip: _t.agendaPreviousDay,
-                            onPressed: () => _stepDay(-1),
-                            icon: const Icon(Icons.chevron_left),
-                          ),
-                          FilledButton.tonalIcon(
-                            onPressed: () => _chooseDay(DateTime.now()),
-                            icon: const Icon(Icons.today),
-                            label: Text(_t.agendaToday),
-                          ),
-                          IconButton.outlined(
-                            tooltip: _t.agendaNextDay,
-                            onPressed: () => _stepDay(1),
-                            icon: const Icon(Icons.chevron_right),
-                          ),
-                          OutlinedButton.icon(
-                            onPressed: _openDatePicker,
-                            icon: const Icon(Icons.calendar_month),
-                            label: Text(_t.agendaChooseDay),
-                          ),
-                          OutlinedButton.icon(
-                            key: const ValueKey('agenda-open-month'),
-                            onPressed: _openMonth,
-                            icon: const Icon(Icons.calendar_view_month),
-                            label: Text(_t.agendaMonthOpen),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(spacing: 8, runSpacing: 8, children: [
+  Widget _agendaFilters() {
+    return Wrap(spacing: 8, runSpacing: 8, children: [
                         SizedBox(width: 170, child: DropdownButtonFormField<String>(
                           key: ValueKey('agenda-entry-' + _entryFilter),
                           initialValue: _entryFilter, isExpanded: true,
@@ -674,7 +601,97 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
                             onChanged: _setInsurer,
                           ),
                         ),
-                      ]),
+                      ]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final colors = Theme.of(context).colorScheme;
+    final dateText = DateFormat('EEEE d MMMM yyyy', locale).format(_selectedDay);
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_t.agendaTitle),
+        actions: [
+          IconButton(
+            tooltip: _t.refresh,
+            onPressed: _loading ? null : _refreshAll,
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.arrowLeft):
+                () => _stepDay(-1),
+            const SingleActivator(LogicalKeyboardKey.arrowRight):
+                () => _stepDay(1),
+          },
+          child: Focus(
+            autofocus: true,
+            child: GestureDetector(
+              onHorizontalDragEnd: (details) {
+                final velocity = details.primaryVelocity ?? 0;
+                if (velocity > 250) _stepDay(-1);
+                if (velocity < -250) _stepDay(1);
+              },
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 920),
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      Text(dateText,
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.3,
+                          )),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          IconButton.outlined(
+                            tooltip: _t.agendaPreviousDay,
+                            onPressed: () => _stepDay(-1),
+                            icon: const Icon(Icons.chevron_left),
+                          ),
+                          FilledButton.tonalIcon(
+                            onPressed: () => _chooseDay(DateTime.now()),
+                            icon: const Icon(Icons.today),
+                            label: Text(_t.agendaToday),
+                          ),
+                          IconButton.outlined(
+                            tooltip: _t.agendaNextDay,
+                            onPressed: () => _stepDay(1),
+                            icon: const Icon(Icons.chevron_right),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: _openDatePicker,
+                            icon: const Icon(Icons.calendar_month),
+                            label: Text(_t.agendaChooseDay),
+                          ),
+                          OutlinedButton.icon(
+                            key: const ValueKey('agenda-open-month'),
+                            onPressed: _openMonth,
+                            icon: const Icon(Icons.calendar_view_month),
+                            label: Text(_t.agendaMonthOpen),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      if (MediaQuery.sizeOf(context).width < 600)
+                        ExpansionTile(
+                          key: const ValueKey('agenda-filters'),
+                          tilePadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.tune_outlined),
+                          title: Text(locale == 'ca' ? 'Filtres' : 'Filtros'),
+                          childrenPadding: const EdgeInsets.only(bottom: 12),
+                          children: [_agendaFilters()],
+                        )
+                      else
+                        _agendaFilters(),
                       const SizedBox(height: 16),
                       _weekStrip(locale, colors),
                       if (_weekError) ...[
