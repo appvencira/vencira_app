@@ -71,6 +71,7 @@
   "agendaContractualNotice": "Límit contractual de preavís",
   "agendaPlannedReminder": "Avís previst · Venciment",
   "agendaPlannedNotice": "Avís previst · Preavís",
+  "agendaWeekUnavailable": "No s'han pogut carregar els indicadors d'aquesta setmana. Prem actualitzar per tornar-ho a provar.",
   "agendaMonthTitle": "Calendari mensual",
   "agendaMonthOpen": "Veure mes",
   "agendaPreviousMonth": "Mes anterior",
