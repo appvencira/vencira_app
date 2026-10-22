@@ -10,6 +10,10 @@ abstract class VenciraApi {
   Future<VenciraRenewalPage> fetchRenewals(
     String workspaceId, {int page = 1, String search = '', String status = ''});
 
+  /// Agenda de eventos PREVISTOS del día. No representan avisos entregados.
+  Future<VenciraAgendaDayPage> fetchAgendaDay(
+    String workspaceId, DateTime day, {int page = 1});
+
   Future<VenciraRenewal> createRenewal(String workspaceId, VenciraRenewalInput input);
 
   Future<VenciraRenewal> updateRenewal(
@@ -125,6 +129,90 @@ class VenciraRenewalPage {
   }
 }
 
+/// Evento tipado de la proyección diaria; los valores son códigos de la API.
+class VenciraAgendaEvent {
+  const VenciraAgendaEvent({required this.kind, this.basis, this.candidateId});
+
+  final String kind;
+  final String? basis;
+  final String? candidateId;
+
+  factory VenciraAgendaEvent.fromJson(Map<String, dynamic> json) {
+    final kind = json['kind'];
+    if (kind != 'expiry' && kind != 'reminder') {
+      throw const FormatException('Unsupported agenda event');
+    }
+    final candidateId = json['candidate_id'];
+    final basis = json['basis'];
+    if (kind == 'reminder' &&
+        (candidateId is! String ||
+         (basis != 'expiry' && basis != 'notice_deadline'))) {
+      throw const FormatException('Invalid reminder event');
+    }
+    return VenciraAgendaEvent(
+      kind: kind as String,
+      candidateId: candidateId as String?,
+      basis: basis as String?,
+    );
+  }
+}
+
+class VenciraAgendaEntry {
+  const VenciraAgendaEntry({required this.renewal, required this.events});
+
+  final VenciraRenewal renewal;
+  final List<VenciraAgendaEvent> events;
+
+  factory VenciraAgendaEntry.fromJson(Map<String, dynamic> json) {
+    return VenciraAgendaEntry(
+      renewal: VenciraRenewal.fromJson(json['renewal'] as Map<String, dynamic>),
+      events: (json['events'] as List<dynamic>)
+          .map((value) => VenciraAgendaEvent.fromJson(value as Map<String, dynamic>))
+          .toList(growable: false),
+    );
+  }
+}
+
+class VenciraAgendaDayPage {
+  const VenciraAgendaDayPage({
+    required this.day,
+    required this.total,
+    required this.entries,
+    required this.hasNext,
+  });
+
+  final DateTime day;
+  /// Cuenta anotaciones, NO cantidad total de recordatorios.
+  final int total;
+  final List<VenciraAgendaEntry> entries;
+  final bool hasNext;
+
+  factory VenciraAgendaDayPage.fromJson(Map<String, dynamic> json) {
+    final dayString = json['day'] as String;
+    final date = DateTime.parse(dayString);
+    if (dayString != _civilDayIso(date)) {
+      throw const FormatException('Invalid civil day');
+    }
+    return VenciraAgendaDayPage(
+      day: date,
+      total: json['count'] as int,
+      hasNext: json['next'] != null,
+      entries: (json['results'] as List<dynamic>)
+          .map((value) => VenciraAgendaEntry.fromJson(
+              value as Map<String, dynamic>))
+          .toList(growable: false),
+    );
+  }
+}
+
+/// Fecha civil, independiente de UTC, huso del servidor o hora de verano.
+String _civilDayIso(DateTime day) {
+  final y = day.year.toString().padLeft(4, '0');
+  final m = day.month.toString().padLeft(2, '0');
+  final d = day.day.toString().padLeft(2, '0');
+  return '$y-$m-$d';
+}
+
 class HttpVenciraApi implements VenciraApi {
   HttpVenciraApi({http.Client? client, Uri? baseUri})
       : _client = client ?? http.Client(),
@@ -205,6 +293,33 @@ class HttpVenciraApi implements VenciraApi {
       ).toString();
       final payload = await _fetch(path) as Map<String, dynamic>;
       return VenciraRenewalPage.fromJson(payload);
+    } on VenciraUnauthorized {
+      rethrow;
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<VenciraAgendaDayPage> fetchAgendaDay(
+    String workspaceId, DateTime day, {int page = 1}) async {
+    if (!_validUuid(workspaceId) || page < 1 ||
+        day.year < 1 || day.year > 9999) {
+      throw const VenciraApiException();
+    }
+    final requested = _civilDayIso(day);
+    final path = Uri(
+      path: '/api/v1/workspaces/$workspaceId/agenda/',
+      queryParameters: {'day': requested, 'page': '$page'},
+    ).toString();
+    try {
+      final result = VenciraAgendaDayPage.fromJson(
+          await _fetch(path) as Map<String, dynamic>);
+      // Un servidor o proxy mal configurado no debe mezclar fechas en pantalla.
+      if (_civilDayIso(result.day) != requested) {
+        throw const VenciraApiException();
+      }
+      return result;
     } on VenciraUnauthorized {
       rethrow;
     } catch (_) {

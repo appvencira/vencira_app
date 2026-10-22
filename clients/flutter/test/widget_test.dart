@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vencira/api/vencira_api.dart';
 import 'package:vencira/main.dart';
 
@@ -27,6 +28,17 @@ class FakeVenciraApi implements VenciraApi {
   }
 
   @override
+  Future<VenciraAgendaDayPage> fetchAgendaDay(
+    String workspaceId, DateTime day, {int page = 1}) async {
+    return VenciraAgendaDayPage(
+      day: DateTime(day.year, day.month, day.day),
+      total: 0,
+      entries: const [],
+      hasNext: false,
+    );
+  }
+
+  @override
   Future<void> logout() async {}
 
   @override
@@ -42,6 +54,8 @@ class FakeVenciraApi implements VenciraApi {
 }
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
   const workspaceA = VenciraWorkspace(
     id: '11111111-1111-4111-8111-111111111111',
     name: 'Correduría de prueba A',
@@ -72,10 +86,124 @@ void main() {
     expect(Theme.of(tester.element(find.text('VENCIRA'))).brightness,
         Brightness.dark);
     tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
-    await tester.pump();
+    // Emular la notificación del sistema además del cambio de valor simulado.
+    tester.binding.handlePlatformBrightnessChanged();
+    await tester.pumpAndSettle();
     expect(Theme.of(tester.element(find.text('VENCIRA'))).brightness,
         Brightness.light);
   });
+
+  testWidgets('selector cambia idioma y tema sin recargar datos', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final api = FakeVenciraApi(
+      workspaces: [workspaceA],
+      pages: {
+        workspaceA.id: const VenciraRenewalPage(
+          total: 0, items: [], hasNext: false,
+        ),
+      },
+    );
+    await tester.pumpWidget(VenciraApp(api: api));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Preferencias'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Català').last);
+    await tester.pumpAndSettle();
+    final appInCatalan = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(appInCatalan.locale?.languageCode, 'ca');
+    expect(find.text('Anticipa cada venciment'), findsOneWidget);
+    await tester.tap(find.byTooltip('Preferències'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Fosc').last);
+    await tester.pumpAndSettle();
+    final appInDark = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(appInDark.themeMode, ThemeMode.dark);
+    final saved = await SharedPreferences.getInstance();
+    expect(saved.getString('vencira.ui.locale.v1'), 'ca');
+    expect(saved.getString('vencira.ui.theme.v1'), 'dark');
+  });
+
+  testWidgets('restaura idioma y apariencia guardados al arrancar', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'vencira.ui.locale.v1': 'ca',
+      'vencira.ui.theme.v1': 'dark',
+    });
+    final api = FakeVenciraApi(
+      workspaces: [workspaceA],
+      pages: {
+        workspaceA.id: const VenciraRenewalPage(
+          total: 0, items: [], hasNext: false,
+        ),
+      },
+    );
+    await tester.pumpWidget(VenciraApp(api: api));
+    await tester.pumpAndSettle();
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.locale?.languageCode, 'ca');
+    expect(app.themeMode, ThemeMode.dark);
+    expect(find.text('Anticipa cada venciment'), findsOneWidget);
+  });
+
+  testWidgets('valores guardados desconocidos usan opciones seguras', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'vencira.ui.locale.v1': 'zz',
+      'vencira.ui.theme.v1': 'not-a-theme',
+    });
+    final api = FakeVenciraApi(
+      workspaces: [workspaceA],
+      pages: {
+        workspaceA.id: const VenciraRenewalPage(
+          total: 0, items: [], hasNext: false,
+        ),
+      },
+    );
+    await tester.pumpWidget(VenciraApp(api: api));
+    await tester.pumpAndSettle();
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.locale?.languageCode, 'es');
+    expect(app.themeMode, ThemeMode.system);
+  });
+
+  for (final width in <double>[320, 375, 768]) {
+    testWidgets('agenda sin desbordamiento a ${width.toInt()} px en catalán oscuro',
+        (tester) async {
+      tester.view.physicalSize = Size(width, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({
+        'vencira.ui.locale.v1': 'ca',
+        'vencira.ui.theme.v1': 'dark',
+      });
+      await tester.pumpWidget(VenciraApp(
+        api: FakeVenciraApi(
+          workspaces: [workspaceA],
+          pages: {
+            workspaceA.id: VenciraRenewalPage(
+              total: 1,
+              hasNext: false,
+              items: [
+                VenciraRenewal(
+                  id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+                  reference: 'CAS-DE-PROVA-REFERÈNCIA-MOLT-LLARGA',
+                  expiresOn: DateTime(2027, 5, 1),
+                  noticeDeadlineOn: DateTime(2027, 3, 31),
+                  status: 'contacted',
+                ),
+              ],
+            ),
+          },
+        ),
+      ));
+      await tester.pumpAndSettle();
+      expect(find.text('Anticipa cada venciment'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      // La ficha también debe caber cuando se desplaza la lista.
+      await tester.drag(find.byType(ListView).first, const Offset(0, -480));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('envía filtros al backend y puede limpiarlos', (tester) async {
     final api = FakeVenciraApi(
@@ -142,7 +270,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(find.text('NO-DEBE-QUEDAR-VISIBLE'), findsOneWidget);
-    await tester.tap(find.text('Salir'));
+    await tester.tap(find.byTooltip('Salir'));
     await tester.pumpAndSettle();
     expect(find.text('NO-DEBE-QUEDAR-VISIBLE'), findsNothing);
     expect(find.textContaining('Necesitas iniciar sesión'), findsOneWidget);
