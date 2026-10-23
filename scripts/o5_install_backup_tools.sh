@@ -69,8 +69,8 @@ step APT_INSTALL_RESTIC_RCLONE sudo env DEBIAN_FRONTEND=noninteractive \
 PHASE=VERSIONES
 command -v restic >/dev/null
 command -v rclone >/dev/null
-echo "RESTIC_VERSION=$(restic version | head -n 1)"
-echo "RCLONE_VERSION=$(rclone version | head -n 1)"
+echo "RESTIC_VERSION=$(restic version | sed -n '1p')"
+echo "RCLONE_VERSION=$(rclone version | sed -n '1p')"
 if ! restic backup --help 2>>"$LOG" | grep -F -- '--stdin-from-command' >>"$LOG"; then
   echo "ERROR: Restic sin soporte para capturar salida+errores del pg_dump"
   exit 5
