@@ -39,7 +39,8 @@ class _SyntheticCalendarApi extends VenciraApi {
 
   @override
   Future<VenciraAgendaDayPage> fetchAgendaDay(
-    String workspaceId, DateTime day, {int page = 1},
+    String workspaceId, DateTime day, {
+    int page = 1,
   }) async => throw UnimplementedError();
 
   @override
@@ -49,7 +50,8 @@ class _SyntheticCalendarApi extends VenciraApi {
 
   @override
   Future<VenciraHistoryPage> fetchRenewalHistory(
-    String workspaceId, String renewalId, {int page = 1},
+    String workspaceId, String renewalId, {
+    int page = 1,
   }) async => throw UnimplementedError();
 
   @override
