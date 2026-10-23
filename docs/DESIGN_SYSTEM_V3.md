@@ -62,3 +62,14 @@ Una vez validado: recoger capturas Android de calendario, agenda, formulario, fi
 - Resumen y continuidad: `docs/CONTINUITY_RUNBOOK.md`.
 
 - Segunda ejecución (23/10/2026, commit `d52cfe3`): de nuevo `flutter analyze` detuvo el despliegue; el parche anterior no eliminaba la coma/llave extra de las declaraciones de argumentos opcionales, por lo que aparecieron 14 mensajes dependientes. Corrección completa aplicada en commit `2ec0d9fe` (dos firmas Dart reparadas). Pendiente nueva verificación local integral. Ver `CONTINUITY_RUNBOOK.md`.
+
+## Resultado del despliegue V3 — 23/10/2026
+
+**Estado actual: VALIDACIÓN TÉCNICA Y DESPLIEGUE EN `vencira_localcheck` COMPLETADOS. APROBACIÓN VISUAL EN ANDROID PENDIENTE.**
+
+- Commit de código desplegado y validado: `bf6d087a7c3422c95a1ee8b240ccf52b291f53e6`.
+- Comprobaciones: Flutter analyze, test V3 específico, test suite, build web release, Docker build/up web_only, healthy API/PostgreSQL/web, HTTP 200 en `/`, `/api/health/`, `/api/ready/`, `/accounts/login/` a través de puerto interno `28732`. `RESULTADO_GLOBAL=0`.
+- Curl anónimo a `https://dev.vencira.es/` responde `401`. No debe confundirse con error de aplicación ni cambiar la autenticación de entrada; comprobar en Android con el acceso existente.
+- El usuario debe revisar el aspecto visual del calendario mensual, semana, panel, editor y ficha. Las pruebas no garantizan el resultado estético.
+- Las menciones anteriores «NO verificados / NO desplegados» de este documento son **históricas** y corresponden al momento de implementar los cambios; esta sección es el estado vigente.
+- Documentación operativa actualizada en `docs/CONTINUITY_RUNBOOK.md`.
