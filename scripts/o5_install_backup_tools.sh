@@ -71,7 +71,7 @@ command -v restic >/dev/null
 command -v rclone >/dev/null
 echo "RESTIC_VERSION=$(restic version | head -n 1)"
 echo "RCLONE_VERSION=$(rclone version | head -n 1)"
-if ! restic backup --help 2>>"$LOG" | grep -Fq -- '--stdin-from-command'; then
+if ! restic backup --help 2>>"$LOG" | grep -F -- '--stdin-from-command' >>"$LOG"; then
   echo "ERROR: Restic sin soporte para capturar salida+errores del pg_dump"
   exit 5
 fi
