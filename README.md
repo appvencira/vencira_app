@@ -8,7 +8,7 @@ Proyecto comercial de gestión de vencimientos y seguimiento de oportunidades, i
 
 **Repositorio único y privado:** `appvencira/vencira_app`. No se copiará ni sincronizará código con ninguna otra cuenta.
 
-Estado (23/10/2026): **entorno de desarrollo DEV en `https://dev.vencira.es`**, bajo control de acceso adicional, con API Django/PostgreSQL 17 y Flutter Web. **O1, O2 y O3 validadas funcionalmente por el usuario desde Android**; migraciones hasta `0014_renewal_outcomes` aplicadas en el stack aislado `vencira_localcheck`. No utilizar datos personales reales, no considerar apto para producción ni habilitar comunicaciones hasta completar seguridad, RGPD, cifrado externo de copias y otras puertas de lanzamiento.
+Estado (23/10/2026): **entorno de desarrollo DEV en `https://dev.vencira.es`**, bajo control de acceso adicional, con API Django/PostgreSQL 17 y Flutter Web. **O1, O2 y O3 validadas funcionalmente por el usuario desde Android y O4 (protección de migraciones automáticas) desplegada y verificada**; migraciones hasta `0014_renewal_outcomes` aplicadas en el stack aislado `vencira_localcheck`. No utilizar datos personales reales, no considerar apto para producción ni habilitar comunicaciones hasta completar seguridad, RGPD, cifrado externo de copias y otras puertas de lanzamiento.
 
 ## Tecnología
 - Django 5.2 LTS, Python 3.12 y Django REST Framework.
@@ -18,7 +18,7 @@ Estado (23/10/2026): **entorno de desarrollo DEV en `https://dev.vencira.es`**, 
 
 ## Migraciones y arranque seguro (O4)
 
-El arranque de API se endurece en O4 para **comprobar migraciones pendientes sin aplicarlas automáticamente** (`manage.py migrate --check --noinput`). Las migraciones futuras se ejecutarán expresamente, con preflight, respaldo y restauración comprobada, según [el procedimiento O4](docs/OPERATION_O4_MIGRATION_GUARD.md). **O4 todavía está pendiente de ejecución y comprobación en Ubuntu**; el cambio de GitHub por sí solo no acredita la configuración del servidor.
+El arranque de API se endurece en O4 para **comprobar migraciones pendientes sin aplicarlas automáticamente** (`manage.py migrate --check --noinput`). Las migraciones futuras se ejecutarán expresamente, con preflight, respaldo y restauración comprobada, según [el procedimiento O4](docs/OPERATION_O4_MIGRATION_GUARD.md). **O4 ya está desplegada y comprobada en Ubuntu el 23/10/2026**: `API_RUNTIME_MIGRATE_POLICY=CHECK_ONLY`, respaldo del esquema O3 con restauración completa en PostgreSQL 17, 119 pruebas Django, API/DB/Web saludables y `RESULTADO_GLOBAL=0`. El arranque no aplica migraciones. Consulta [el acta O4](docs/OPERATION_O4_MIGRATION_GUARD.md).
 
 ## Primer arranque
 ```bash
