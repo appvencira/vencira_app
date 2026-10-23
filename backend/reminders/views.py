@@ -169,8 +169,15 @@ def renewals(request, workspace_id):
                 | Q(nickname__icontains=search)
                 | Q(policy_number__icontains=search)
             )
-        if status_filter:
-            scoped = scoped.filter(status=status_filter)
+        if status_filter == Renewal.Status.CLOSED:
+            # Explicit archive view via existing Closed filter; preserve legacy
+            # 'closed' rows without an O3 archive outcome for compatibility.
+            scoped = scoped.filter(status=Renewal.Status.CLOSED)
+        else:
+            # Won/discarded no longer appear in the active work queue.
+            scoped = scoped.filter(archived_at__isnull=True)
+            if status_filter:
+                scoped = scoped.filter(status=status_filter)
         scoped = scoped.order_by("expires_on", "id")
         paginator = RenewalPagination()
         page = paginator.paginate_queryset(scoped, request)
