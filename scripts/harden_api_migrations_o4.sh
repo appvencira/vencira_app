@@ -101,6 +101,18 @@ for service in api db web_preview; do
   }
 done
 echo "COMPOSE_IDENTITY=OK"
+# Script de una sola ejecución. No reciclarlo si la API ya está endurecida.
+PHASE=RUNTIME_PREVIO
+old_runtime_cmd="$(sudo docker inspect vencira_localcheck-api-1 --format '{{json .Config.Cmd}}')"
+if [[ "$old_runtime_cmd" == *'migrate --check --noinput'* ]]; then
+  echo "ERROR: el arranque API ya está protegido. No repetir O4; comprobar salud."
+  exit 4
+fi
+if [[ "$old_runtime_cmd" != *'migrate --noinput'* ]]; then
+  echo "ERROR: comando de arranque API previo distinto del previsto; detener."
+  exit 4
+fi
+echo "API_COMANDO_ANTIGUO=AUTOMIGRATE_CONFIRMADO"
 step COMPOSE_CONFIG sudo docker compose -p vencira_localcheck \
   -f compose.yaml -f compose.preview.yaml config --quiet
 
