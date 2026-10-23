@@ -51,3 +51,7 @@ No ejecutar migraciones, no reiniciar API/Postgres y no alterar el stack `vencir
 El usuario ejecutó el script `scripts/validate_operativa_o1.sh` sobre el commit `a2f109ee2d2bb33561d50561130017642ba4834e` en `vencira_localcheck`. Resultado **`RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`**, `FLUTTER_OPERATIVA_O1_Y_TESTS=OK`, `WEB_BUILD=OK`, `WEB_DEPLOY=OK`, `DESPLIEGUE_WEB_OPERATIVA_O1_LOCALCHECK=OK`. Los contenedores de API, PostgreSQL y Web reportan `healthy`; las rutas internas `/`, `/api/health/`, `/api/ready/`, `/accounts/login/` respondieron HTTP 200. `SIN_MIGRACIONES_NI_CAMBIOS_API_DB=1`. Log: `/tmp/vencira-operativa-o1.L4zH4RDp.log`. El curl anónimo a `https://dev.vencira.es` dio HTTP 401, que no demuestra avería de la aplicación protegida.
 
 **Estado vigente:** O1 validada técnicamente y **desplegada** en el stack correcto. **Pendiente aceptación funcional explícita desde Android**: probar con anotación ficticia la cancelación del diálogo, marcar contactado y volver a pendiente preservando campos. No volver a ejecutar las pruebas O1 a menos que cambie el código.
+
+## Aceptación funcional Android — 23/10/2026
+
+El usuario confirmó dos veces «Funciona correctamente» después de ejecutar las comprobaciones de O1 desde Android. **O1 cerrada tanto técnica como funcionalmente**; no es necesario repetir sus pruebas en ausencia de nuevos cambios. Versión O1 desplegada `a2f109ee`, suite y salud verdes. La siguiente fase es **O2**, documentada en `docs/OPERATION_O2_FOLLOW_UP_PLAN.md`; O2 todavía no está migrada ni desplegada.
