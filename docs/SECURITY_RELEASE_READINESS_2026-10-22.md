@@ -26,3 +26,9 @@ Fecha: 2026-10-22. Estado: **NO APTO PARA DATOS REALES / NO AUTORIZADO PARA PROD
 ## Decisión
 
 La fase de desarrollo puede probarse con **datos sintéticos exclusivamente**. No marcar VENCIRA como producto listo para información personal real hasta aportar evidencia verificable de los seis puntos. Este informe no certifica seguridad ni cumplimiento normativo.
+
+## Control operativo añadido y comprobado (23/10/2026 — O4)
+
+- **Superado en entorno de desarrollo**: la API de `vencira_localcheck` ejecuta `python manage.py migrate --check --noinput` antes de Gunicorn y **no aplica migraciones al arrancar**. `API_RUNTIME_MIGRATE_POLICY=CHECK_ONLY` comprobado sobre contenedor real. Futuras migraciones requieren backup anterior probado/restaurado, plan de migración, comando explícito, comprobación de esquema y salud.
+- El usuario confirmó el script `scripts/harden_api_migrations_o4.sh` con `RESULTADO_GLOBAL=0` y `RESULTADO_EJECUCION=0`: copia local post0014 restaurada íntegramente en PG17 temporal, SHA validada, 119 tests Django pasados, `0014_renewal_outcomes` intacta, DB no reiniciada, API/Web/DB healthy y endpoints O2/O3 protegidos con HTTP 403 anónimo.
+- **Límite importante:** la copia que demostró recuperación es **local y no cifrada**. No constituye respaldo cifrado off-site, continuidad operacional formal, protección en reposo de Postgres o soporte para datos reales. El desbloqueo de producción sigue condicionado a la totalidad de controles pendientes descritos arriba.
