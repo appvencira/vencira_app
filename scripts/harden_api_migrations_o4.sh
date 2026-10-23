@@ -284,6 +284,7 @@ test "$updated_stamp" = "$MIGRATION_STAMP" || {
 echo "CHECK_MIGRACION_SOLO_LECTURA=OK"
 
 PHASE=CONSERVAR_IMAGENES_O3
+WEB_CONTAINER_ID="$(sudo docker inspect vencira_localcheck-web_preview-1 --format '{{.Id}}')"
 OLD_API_ID="$(sudo docker inspect vencira_localcheck-api-1 --format '{{.Image}}')"
 OLD_WEB_ID="$(sudo docker inspect vencira_localcheck-web_preview-1 --format '{{.Image}}')"
 OLD_API_TAG="vencira-prev-o4-api:$RUN_ID"
@@ -343,10 +344,11 @@ assert "exec gunicorn" in text
 '
 echo "API_RUNTIME_MIGRATE_POLICY=CHECK_ONLY"
 
-# Nginx resuelve api:8000 al arrancar: refrescar sólo el proxy Web.
-PHASE=RECREAR_PROXY
-echo "=== RECREAR_WEB_PROXY_SIN_REBUILD ==="
-"${COMPOSE[@]}" up -d --no-deps --no-build --force-recreate web_preview >>"$LOG" 2>&1
+# Nginx resuelve api:8000 al arrancar. Reiniciar el MISMO
+# contenedor Web conserva el bundle O3 y NO precisa la imagen borrada.
+PHASE=REINICIAR_PROXY_EXISTENTE
+echo "=== REINICIAR_WEB_EXISTENTE_SIN_RECREAR ==="
+sudo docker restart vencira_localcheck-web_preview-1 >>"$LOG" 2>&1
 WEB_RECREATED=1
 PHASE=ESPERAR_WEB
 web_health=starting
@@ -358,6 +360,8 @@ for attempt in $(seq 1 40); do
 done
 echo "HEALTH_web_preview=$web_health"
 test "$web_health" = healthy || exit 9
+test "$WEB_CONTAINER_ID" = "$(sudo docker inspect vencira_localcheck-web_preview-1 --format '{{.Id}}')"
+echo "WEB_CONTENEDOR_ORIGINAL_CONSERVADO=1"
 
 PHASE=POSTDEPLOY_DB_INTACTA
 test "$DB_CONTAINER_ID" = "$(sudo docker inspect vencira_localcheck-db-1 --format '{{.Id}}')"
