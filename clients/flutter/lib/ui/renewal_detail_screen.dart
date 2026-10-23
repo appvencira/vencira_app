@@ -614,6 +614,16 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
     _ => _t.detailOtherChange,
   };
 
+  String _auditSubtitle(VenciraHistoryEvent event, String locale) {
+    final rawOutcome = event.metadata['outcome'];
+    final kind = rawOutcome is Map ? rawOutcome['kind'] : null;
+    return DateFormat.yMd(locale).add_Hm().format(event.timestamp.toLocal()) +
+        ' · ' + (event.actor ?? _t.detailActorUnavailable) +
+        (kind is String ? '\\n' + _outcomeLabel(kind) : '') +
+        (event.fields.isEmpty
+            ? '' : '\\n' + event.fields.map(_field).join(', '));
+  }
+
   Widget _historySection(String locale) {
     if (_historyLoading) return const Center(child: CircularProgressIndicator());
     if (_historyError) return Column(children: [
@@ -631,11 +641,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
         leading: const Icon(Icons.history),
         title: Text(event.action == 'created' ?
           _t.detailHistoryCreated : _t.detailHistoryUpdated),
-        subtitle: Text(
-          DateFormat.yMd(locale).add_Hm().format(event.timestamp.toLocal()) +
-          ' · ' + (event.actor ?? _t.detailActorUnavailable) +
-          (event.fields.isEmpty ? '' : '\n' + event.fields.map(_field).join(', ')),
-        ),
+        subtitle: Text(_auditSubtitle(event, locale)),
       )),
       Wrap(spacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
         OutlinedButton(onPressed: _page > 1 ? () => _loadHistory(_page - 1) : null,
