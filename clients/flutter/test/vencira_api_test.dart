@@ -193,6 +193,64 @@ void main() {
       throwsA(isA<VenciraApiException>()));
   });
 
+  test('O2 agenda de seguimiento manual utiliza CSRF y fecha civil', () async {
+    const itemId = 'b2222222-2222-4222-8222-222222222222';
+    var writes = 0;
+    final client = MockClient((request) async {
+      if (request.url.path == '/api/v1/csrf/') {
+        return http.Response(
+          '{"csrfToken":"abcdefghijklmnopqrstuvwxyz123456"}', 200);
+      }
+      expect(request.url.path,
+        '/api/v1/workspaces/$workspaceId/renewals/$itemId/follow-up/');
+      if (request.method == 'GET') {
+        return http.Response('{"active":null}', 200);
+      }
+      writes++;
+      expect(request.headers['X-CSRFToken'], isNotNull);
+      if (request.method == 'POST') {
+        expect(request.body, '{"scheduled_for":"2027-03-25"}');
+        return http.Response(
+          '{"active":{"id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",'
+          '"scheduled_for":"2027-03-25","state":"planned"}}', 201);
+      }
+      expect(request.method, 'PATCH');
+      expect(request.body,
+        '{"id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","action":"complete"}');
+      return http.Response('{"active":null}', 200);
+    });
+    final api = HttpVenciraApi(client: client,
+      baseUri: Uri.parse('http://localhost:18731/'));
+    expect(await api.fetchManualFollowUp(workspaceId, itemId), isNull);
+    final row = await api.scheduleManualFollowUp(
+      workspaceId, itemId, DateTime(2027, 3, 25));
+    expect(row.scheduledFor, DateTime(2027, 3, 25));
+    await api.resolveManualFollowUp(
+      workspaceId, itemId, row.id, 'complete');
+    expect(writes, 2);
+  });
+
+  test('O2 rechaza UUID ajeno y acción desconocida antes de hacer solicitudes',
+      () async {
+    var requests = 0;
+    final client = MockClient((request) async {
+      requests++;
+      return http.Response('{}', 200);
+    });
+    final api = HttpVenciraApi(client: client,
+      baseUri: Uri.parse('http://localhost:18731/'));
+    const itemId = 'b2222222-2222-4222-8222-222222222222';
+    await expectLater(api.fetchManualFollowUp(workspaceId, 'INVALID'),
+      throwsA(isA<VenciraApiException>()));
+    await expectLater(api.resolveManualFollowUp(
+      workspaceId, itemId, 'invalid', 'cancel'),
+      throwsA(isA<VenciraApiException>()));
+    await expectLater(api.resolveManualFollowUp(
+      workspaceId, itemId, 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'deliver'),
+      throwsA(isA<VenciraApiException>()));
+    expect(requests, 0);
+  });
+
   test('logout usa POST con CSRF para cerrar la sesión', () async {
     var posts = 0;
     final client = MockClient((request) async {
