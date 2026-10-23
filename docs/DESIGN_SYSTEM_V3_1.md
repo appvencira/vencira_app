@@ -28,3 +28,9 @@ Tras la validación V3 en Android, el usuario considera mucho mejor la estructur
 
 ## Flujo estable
 El asistente implementa/documenta primero vía GitHub, envía una única ejecución completa en Ubuntu `vencira` y el usuario comparte el resultado consolidado. La documentación permanente está en `docs/CONTINUITY_RUNBOOK.md`. No GitHub Actions (cuota agotada). Si falla compilación/tests, corregir en GitHub y repetir **el mismo script**, nunca ejecutar el despliegue manualmente sin superar calidad. Revisar capturas Android tras el despliegue.
+
+## Correcciones previas a la aprobación de V3.1 (23/10/2026)
+
+- Test inicial: `flutter analyze` rechazó el callback `separatorBuilder: (_, _)` por nombre duplicado; corregido en `60d92832`. 
+- Segundo intento: tests premium específicos aprobaron, pero suite global falló en dos casos de `widget_test.dart`: 320px catalán oscuro (RenderFlex overflow 5.5px) y selector multiorganización (finder antiguo). Se corrigió la clave de selector y de prueba (`529181af`, `9e3c3f1b`), se limitó ancho de texto de `VenciraStatusBadge` con `Flexible/ellipsis` (`a9dc73a8`) y se añadió una prueba de insignia larga en un ancho de 94dp (`8111abc3`). El badge es causa plausible, no probada aún; el log original no identifica qué RenderFlex concreto se desbordó.
+- El script de validación ahora informa la primera excepción (`43684b70`). **Pendiente ejecutar de nuevo y comprobar éxito; no se ha desplegado V3.1.** Resultado definitivo siempre en `docs/CONTINUITY_RUNBOOK.md`.
