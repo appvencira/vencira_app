@@ -53,3 +53,10 @@ echo CONSOLA_ABIERTA
 Script protege la shell SSH (proceso hijo), revisa cambios versionados sin borrar artefactos locales, identifica Docker Compose **`vencira_localcheck`**, `flutter pub get`, `flutter analyze`, test V3 específico, todos los tests, build web release, build/deploy exclusivo de `web_preview` si pasan, health de API/BD/web y HTTP local 200. Una comprobación HTTPS externa solo informativa. **No usar GitHub Actions (cuota agotada); no tocar PostgreSQL, migraciones ni el stack `vencira_preview`.**
 
 Una vez validado: recoger capturas Android de calendario, agenda, formulario, ficha y panel oscuro/claro y clasificar problemas. Actualizar `docs/CONTINUITY_RUNBOOK.md` con SHA, prueba, despliegue, limitaciones y siguiente fase. Producción/datos reales prohibidos hasta puerta seguridad y RGPD.
+
+## Incidencias y validación de V3 (23/10/2026)
+
+- Primera ejecución del script en Ubuntu: `flutter pub get` OK, `flutter analyze` falló con dos errores de sintaxis (`Expected to find ')'`) en `test/design_v3_test.dart:42:53` y `:52:57`. No se alcanzó la compilación web ni el despliegue.
+- Causa: faltaban llaves de cierre `}` en los parámetros opcionales de los métodos simulados `fetchAgendaDay` y `fetchRenewalHistory`.
+- Corrección `19ec2e8b` en GitHub. Próximo estado: **pendiente de repetir el script completo**; otros fallos que no llegó a detectar el analizador todavía no pueden descartarse.
+- Resumen y continuidad: `docs/CONTINUITY_RUNBOOK.md`.
