@@ -111,6 +111,14 @@ for file in "$BACKUP" "$BACKUP.sha256" "$BACKUP.verified"; do
   }
 done
 test -s "$BACKUP"
+# No aceptar una copia antigua para desplegar otro dia. Crear y ensayar
+# otra copia antes de continuar si ha transcurrido mas de 24 horas.
+backup_age=$(( $(date +%s) - $(stat -c %Y "$BACKUP") ))
+if [ "$backup_age" -lt 0 ] || [ "$backup_age" -gt 86400 ]; then
+  echo "ERROR: backup de mas de 24h o fecha inconsistente; repetir respaldo y restauracion antes de migrar"
+  exit 4
+fi
+echo "ANTIGUEDAD_BACKUP_HORAS=$(( backup_age / 3600 ))"
 step BACKUP_CHECKSUM sha256sum --status -c "$BACKUP.sha256"
 actual_sha="$(sha256sum "$BACKUP" | awk '{print $1}')"
 test "$actual_sha" = "$BACKUP_SHA256" || {
