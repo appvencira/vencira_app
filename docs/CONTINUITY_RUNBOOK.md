@@ -342,6 +342,8 @@ Suite Flutter, web build y despliegue localcheck completados sobre `ab5b12b3`: `
 - **Estado al final de este ciclo:** backup O2 verificado, imágenes todavía O1 en funcionamiento, migración `0013` NO aplicada, desplegable O2 subido a GitHub pero **NO ejecutado**. Próximo paso inequívoco: usuario corre un solo bloque `cd /home/vencira/vencira-localcheck; git fetch origin integration/local-e2e-prep; git merge --ff-only FETCH_HEAD; bash scripts/deploy_operativa_o2.sh` dentro de subshell con `RESULTADO_EJECUCION` y `CONSOLA_ABIERTA`. Registrar `RESULTADO_GLOBAL`, `MIGRACION_0013_APLICADA`, `HEALTH_*`, `COMMIT_VALIDADO` y puerto HTTP, y corregir si hay fase fallida.
 - Tras despliegue verde: usuario valida en Android (registro ficticio) fecha rápida, reprogramación, atender/cancelar, marcas violeta de agenda/mes y rastro de historial web, sin envíos reales. Solo entonces O2 funcional aprobada. Siguiente O3 = cuatro desenlaces conforme al whitepaper.
 
+- Guardia de frescura del respaldo añadida al deploy, commit `43e31191`: rechazar copia `pre0013` de más de 24 horas o fecha incongruente. El usuario ya dispone del respaldo verificado; si el tiempo expira, NO forzar, tomar y verificar una copia nueva antes de migrar.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
