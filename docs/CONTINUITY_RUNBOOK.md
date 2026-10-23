@@ -309,6 +309,13 @@ Suite Flutter, web build y despliegue localcheck completados sobre `ab5b12b3`: `
 - **Siguiente paso único en Ubuntu:** `cd /home/vencira/vencira-localcheck; git fetch origin integration/local-e2e-prep; git merge --ff-only FETCH_HEAD; bash scripts/validate_operativa_o2_preflight.sh` dentro de subshell, imprimir `RESULTADO_EJECUCION=$?` y `CONSOLA_ABIERTA`. Si falla, reparar en GitHub y repetir el mismo preflight. No dar por verde sin evidencia.
 - **Cuando y solo cuando preflight sea verde:** diseñar script separado y seguro de respaldo `pg_dump -Fc` verificado, restauración probada en Postgres temporal, `migrate --plan`, despliegue controlado de API y Web **solo localcheck** y healthchecks. `api` autoaplica migraciones al arrancar: prohibido recrearla antes del backup. Ninguna notificación real habilitada.
 
+## O2 primera ejecución de preflight — contrato mensual actualizado (23/10/2026)
+
+- Ejecución real de `scripts/validate_operativa_o2_preflight.sh`: Django SQLite ejecutó **112 pruebas, 1 fallo** en `reminders.test_agenda_month.MonthAgendaTests.test_member_bob_cannot_infer_alice_counts`. El código O2 agrega `follow_up: {pending: 0, contacted: 0}` para cada día, pero ese test hacía `assertEqual` con contrato anterior sin `follow_up`. No es fallo de migración ni se ha probado aún la fase posterior de PostgreSQL efímero / Flutter (preflight abortó antes).
+- **Parche GitHub `5ed71bb2`** (`backend/reminders/test_agenda_month.py`): actualizar igualdad exacta incluyendo `follow_up` en cero, **sin debilitar la aserción**; añadir una prueba que crea seguimientos manuales para Alice/Bob en la misma organización y comprueba que ni los días ni los contadores de un miembro aparecen a otro. Código de producción sin cambios.
+- Resultado del intento: `RESULTADO_EJECUCION=1`, `SIN_DESPLIEGUE_NI_MIGRACION_PERSISTENTE=1`, log `/tmp/vencira-operativa-o2-preflight.ZvpsrqJ1.log`. **O1 continúa funcionando**, O2 sin migración real ni despliegue.
+- Siguiente operación única: `git fetch`, `git merge --ff-only` en `/home/vencira/vencira-localcheck` y repetir exactamente `bash scripts/validate_operativa_o2_preflight.sh`, sin tocar stacks ni PostgreSQL persistente. Esperar pruebas SQLite/Postgres efímero/Flutter antes de preparar script de backup+migración, nunca despliegue directo.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
