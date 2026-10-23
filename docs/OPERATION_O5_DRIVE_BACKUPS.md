@@ -1,6 +1,6 @@
 # VENCIRA O5 — Copias cifradas PostgreSQL en Google Drive
 
-**Estado 23/10/2026:** O5 **diagnóstico inicial en Ubuntu completado**, herramientas Restic y Rclone **ausentes**, instalación controlada **preparada en GitHub pero NO ejecutada todavía**, sin conexión OAuth ni copias remotas. Cuenta de Google interna confirmada por usuario: `appvencira@gmail.com`; **no es una dirección de soporte público**. No se han recibido credenciales, ni se han instalado paquetes, ni se ha accedido a Drive. No usar información personal real.
+**Estado 23/10/2026:** O5 preflight superado. **Restic 0.16.4 y Rclone 1.60.1 ya instalados por APT**, pero `Restic 0.16.4` **NO admite `backup --stdin-from-command`**; por seguridad se detuvo el gate de compatibilidad con `RESULTADO_GLOBAL=5`, sin modificar Docker/DB ni conectar Google. Corrección **Restic oficial 0.19.1 con SHA-256 fijado** preparada en GitHub y pendiente de ejecutar en Ubuntu; no hay copias remotas ni OAuth. Cuenta de Google interna confirmada por usuario: `appvencira@gmail.com`; **no es una dirección de soporte público**. No se han recibido credenciales, ni se han instalado paquetes, ni se ha accedido a Drive. No usar información personal real.
 
 ## Objetivo y límites
 
@@ -48,6 +48,32 @@ echo "CONSOLA_ABIERTA"
 ```
 
 Solicitar salida `RESULTADO_GLOBAL=0`, `RCLONE_RESTIC_INSTALADOS_Y_PROBADOS=1`, versiones de ambos, `RESTIC_STDIN_FROM_COMMAND=OK`, `RCLONE_BACKEND_RESTIC=OK`, `CONTENEDORES_INTACTOS=1` y `HEALTH_api/db/web_preview=healthy`. Si falla, no repetir sin identificar la fase.
+
+## Incidencia de compatibilidad Restic en Ubuntu 24.04 y solución (23/10/2026)
+
+**Evidencia real del usuario:** sobre checkout `8eb4ef1336f76e069673e9bad5da071402a68e48`, script `scripts/o5_install_backup_tools.sh` con `SISTEMA=Ubuntu_24.04`, `LOCALCHECK_SERVICIOS=healthy`, `APT_UPDATE=OK`, `APT_INSTALL_RESTIC_RCLONE=OK` (paquetes disponibles, sin upgrade global), `RESTIC_VERSION=restic 0.16.4 compiled with go1.22.2 on linux/amd64`, `RCLONE_VERSION=rclone v1.60.1-DEV`. Falló en `VERSIONES` porque **falta `--stdin-from-command`**: `RESULTADO_GLOBAL=5`, `FASE_FALLIDA=VERSIONES`, `RESULTADO_EJECUCION=5`; log más reciente `/tmp/vencira-o5-tools.xXvCQM2W.log`. La primera salida también mostraba un intento 5 anterior. `GOOGLE_DRIVE_NO_CONECTADO=1`, `SIN_COPIAS_REMOTE_NI_MIGRACION=1`. **No repetir ese instalador antiguo ni cambiar O1–O4.**
+
+**Causa exacta verificada contra documentación Restic:** `--stdin-from-command` **se añadió en Restic 0.17.0 (26/07/2024)**; no está en 0.16.4 de Ubuntu 24.04. Para O5 es importante: a diferencia de `restic backup --stdin`, captura código de salida del comando `pg_dump`, impidiendo considerar válido un snapshot truncado o vacío. Ubuntu puede mantener versiones antiguas por su política LTS. Fuentes: [Restic 0.17.0](https://restic.net/blog/2024-07-26/restic-0.17.0-released/), [Restic 0.16.4 stdin](https://restic.readthedocs.io/en/v0.16.4/040_backup.html). `rclone serve restic` ya es compatible según [documentación de Rclone](https://rclone.org/commands/rclone_serve_restic/).
+
+**Corrección preparada en GitHub:** `scripts/o5_install_restic_official.sh`, versión oficial **Restic 0.19.1 para linux/amd64**, release estable fechado 05/07/2026; descarga exclusivamente desde `github.com/restic/restic/releases/download/v0.19.1/restic_0.19.1_linux_amd64.bz2`, compara antes de ejecutar con **SHA256 fijada** `f415415624dcc452f2a02b8c33641791a8c6d6d3b65bbb3543fcf9a25151585c`, comprueba `backup --stdin-from-command`, `dump` y `rclone serve restic`. Prueba funcional cifrada y de restauración usando **repo temporal local**, con clave efímera, en `/tmp` (elimina al terminar). Solo tras prueba superada instala la versión oficial en `/usr/local/bin/restic`; conserva intacto paquete Ubuntu en `/usr/bin/restic`, sin `apt remove`, `upgrade` ni `dist-upgrade`. El checksum fijado verifica **integridad contra huella previamente elegida**, no equivale a declarar una verificación GPG de firma del publicador. No ejecuta la copia real, no configura Drive ni claves persistentes, no modifica ni reinicia Docker. `restic self-update` **no está disponible** en el paquete Ubuntu 0.16.4; no basar la instalación en ese comando. Fuente [restic issue #4798](https://github.com/restic/restic/issues/4798).
+
+**Acción siguiente, única y segura (no reintentar instalador antiguo):**
+
+```bash
+(
+  cd /home/vencira/vencira-localcheck || exit 1
+  git fetch origin integration/local-e2e-prep || exit 1
+  git merge --ff-only FETCH_HEAD || exit 1
+  bash -n scripts/o5_install_restic_official.sh || exit 1
+  bash scripts/o5_install_restic_official.sh
+)
+echo "RESULTADO_EJECUCION=$?"
+echo "CONSOLA_ABIERTA"
+```
+
+Esperar `SHA256_PINNED_RELEASE=OK`, `RESTIC_STDIN_FROM_COMMAND=OK`, `RCLONE_BACKEND_RESTIC=OK`, `PRUEBA_CIFRADA_Y_RESTAURACION_LOCAL=OK`, `RESTIC_ACTUAL=restic 0.19.1...`, `HEALTH_api/db/web_preview=healthy`, `CONTENEDORES_INTACTOS=1`, `O5_HERRAMIENTAS_COMPATIBLES=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`. Si falla, revisar fase y no repetir ciegamente.
+
+**Tras esta fase**: configurar OAuth Google Drive con autorización explícita del titular y cliente propio, custodiar Restic password fuera del servidor, inicializar repo cifrado, copiar PostgreSQL real y restaurar en PG17 temporal; luego systemd/monitorización. **O5 todavía NO operativa**. Tampoco se requiere actualizar Ubuntu 24.04 a 26.04.
 
 ## Dependencia interactiva: OAuth Google, usuario Android
 
