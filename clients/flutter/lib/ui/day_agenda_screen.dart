@@ -423,6 +423,17 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
     });
   }
 
+  Widget _activityChip(String label, IconData icon, Color tint) {
+    final colors = Theme.of(context).colorScheme;
+    return Chip(
+      side: BorderSide.none,
+      backgroundColor: Color.lerp(colors.surface, tint, 0.17),
+      avatar: Icon(icon, color: tint, size: 17),
+      label: Text(label, style: Theme.of(context).textTheme.labelSmall
+          ?.copyWith(color: colors.onSurface, fontWeight: FontWeight.w600)),
+    );
+  }
+
   Widget _eventCard(VenciraAgendaEntry entry, String locale) {
     final renewal = entry.renewal;
     return Card(
@@ -485,22 +496,21 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
                     runSpacing: 4,
                     children: entry.events.map((event) {
                       if (event.kind == 'expiry') {
-                        return Chip(
-                          avatar: const Icon(Icons.event_available_outlined, size: 18),
-                          label: Text(_t.agendaExpiryEvent),
-                        );
+                        return _activityChip(_t.agendaExpiryEvent,
+                          Icons.event_available_outlined,
+                          Theme.of(context).colorScheme.error);
                       }
                       if (event.kind == 'notice_deadline') {
-                        return Chip(
-                          avatar: const Icon(Icons.event_busy_outlined, size: 18),
-                          label: Text(_t.agendaContractualNotice),
-                        );
+                        return _activityChip(_t.agendaContractualNotice,
+                          Icons.event_busy_outlined,
+                          Theme.of(context).colorScheme.tertiary);
                       }
-                      return Chip(
-                        avatar: const Icon(Icons.notifications_none, size: 18),
-                        label: Text(event.basis == 'notice_deadline'
+                      return _activityChip(
+                        event.basis == 'notice_deadline'
                             ? _t.agendaPlannedNotice
-                            : _t.agendaPlannedReminder),
+                            : _t.agendaPlannedReminder,
+                        Icons.notifications_none,
+                        Theme.of(context).colorScheme.primary,
                       );
                     }).toList(growable: false),
                   ),
