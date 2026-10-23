@@ -714,10 +714,9 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     return LayoutBuilder(
         builder: (context, constraints) {
           // No superar el espacio útil tras márgenes y padding de la pantalla.
-          final searchWidth =
-              constraints.maxWidth < 295 ? constraints.maxWidth : 295.0;
-          final statusWidth =
-              constraints.maxWidth < 240 ? constraints.maxWidth : 240.0;
+          final compact = constraints.maxWidth < 600;
+          final searchWidth = compact ? constraints.maxWidth : 295.0;
+          final statusWidth = compact ? constraints.maxWidth : 240.0;
           return Wrap(
             spacing: 12,
             runSpacing: 10,
