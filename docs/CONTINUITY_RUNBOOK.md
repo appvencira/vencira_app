@@ -210,6 +210,16 @@ Confirmado por salida del servidor: `vencira_localcheck-web_preview-1` **healthy
 - Pendiente ejecución única `scripts/validate_ui_v3.sh` tras `git fetch` + `git merge --ff-only`. Si el analizador o tests descubren otro error, no se recrea Web hasta superar todas las fases. No calificar V3 como validada/desplegada antes de salida verde.
 - Mantener el procedimiento de una ejecución por fase, logs completos y SSH abierto. No introducir datos personales reales.
 
+## V3 premium — despliegue validado en localcheck (23/10/2026)
+
+- **Usuario confirma éxito integral** de `scripts/validate_ui_v3.sh` sobre commit `bf6d087a7c3422c95a1ee8b240ccf52b291f53e6` (`integration/local-e2e-prep`): rama y archivos rastreados limpios; solo `pubspec.lock` generado; etiquetas Compose `vencira_localcheck` correctas.
+- `COMPOSE_CONFIG=OK`; `FLUTTER_PUB_GET_ANALYZE_TEST_BUILD=OK`; `FLUTTER_V3_Y_TESTS=OK` (incluye prueba `design_v3_test.dart` de colores de celda y todos los tests); `WEB_BUILD=OK`; `WEB_DEPLOY=OK`.
+- Postdespliegue `WEB_HEALTH=healthy`; proxy interno `/`, `/api/health/`, `/api/ready/`, `/accounts/login/` **HTTP 200**; `HEALTH_api=healthy`, `HEALTH_db=healthy`, `HEALTH_web_preview=healthy`.
+- `DESPLIEGUE_WEB_V3_LOCALCHECK=OK`, `SIN_MIGRACIONES_NI_CAMBIOS_API_DB=1`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`, `CONSOLA_ABIERTA`. Log local `/tmp/vencira-ui-v3.3fUh9fU0.log`.
+- **HTTPS público** `https://dev.vencira.es/`: `HTTP 401` **sin credenciales** en curl. No inferir indisponibilidad de aplicación a partir de una comprobación anónima ni retirar la protección de acceso. Verificar en Android mediante sesión existente. El 401 no demuestra por sí solo que el dominio esté enrutado al stack correcto; comprobar visualmente.
+- **Pendiente única puerta V3:** aceptación visual Android de inicio, calendario mensual con actividad coloreada, agenda diaria, editor y ficha. Valorar legibilidad de casillas cuadradas y estados múltiples en 320/375px y modos claro/oscuro. No dar por aprobada la UX solo por pruebas técnicas.
+- Referencias y detalles del diseño: `docs/DESIGN_SYSTEM_V3.md`. No repetir build ni pruebas ya superadas salvo nuevo cambio de código. Nunca usar datos reales hasta seguridad/RGPD.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
