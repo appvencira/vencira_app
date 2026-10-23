@@ -45,6 +45,12 @@ class RenewalSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 "fields": "No se permiten campos no editables o desconocidos."
             })
+        # O3: 'closed' no es un resultado comercial. Sólo el flujo de
+        # desenlaces confirmado puede archivar, cambiar Entrada o cerrar.
+        if self.initial_data.get("status") == Renewal.Status.CLOSED:
+            raise serializers.ValidationError({
+                "status": "Utiliza el desenlace Conseguido o Descartar.",
+            })
         # Legacy: filas previas sin Entrada continúan legibles/editables.
         # La UI de creación nueva exige elección; API conserva compatibilidad
         # con clientes provisionales anteriores durante la migración.
