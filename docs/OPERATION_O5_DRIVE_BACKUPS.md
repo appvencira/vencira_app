@@ -155,3 +155,31 @@ Documentación oficial:
 - **Corrección GitHub `70145c2095659df3123e801f768a0886ccf0c60b`**: el script enumera cada requisito `REQUISITO_<comando>=OK/FALTA` antes de descargar; deja de depender de la utilidad externa `bzip2` y descomprime el binario oficial con módulos estándar `python3: bz2/shutil`. Mantiene intactas las puertas: descarga del release oficial, comparación con el SHA256 inmovilizado comprobado contra el digest del release de GitHub, validación de versión y `--stdin-from-command`, ensayo real de copia cifrada/restauración en directorio temporal, instalación en `/usr/local/bin/restic` solamente si supera pruebas; paquete APT `/usr/bin/restic` intacto, Docker/DB/Google no alterados. Si algún otro requisito falta, el nuevo script informa el nombre y termina sin instalar.
 - **Siguiente paso:** sincronizar GitHub y ejecutar de nuevo **solo el script corregido** `scripts/o5_install_restic_official.sh` dentro de subshell, precededido de `bash -n`. Este reintento es seguro porque la primera ejecución terminó con `RESTIC_OFICIAL_INSTALADO=0`, sin descarga/instalación. No ejecutar otra vez el instalador APT `scripts/o5_install_backup_tools.sh`; no tocar O4, migraciones ni PostgreSQL.
 - **Criterios de éxito aún pendientes**: `DESCOMPRESION_PYTHON_BZ2=OK`, `SHA256_PINNED_RELEASE=OK`, `RESTIC_STDIN_FROM_COMMAND=OK`, `PRUEBA_CIFRADA_Y_RESTAURACION_LOCAL=OK`, `RESTIC_ACTUAL=restic 0.19.1`, `CONTENEDORES_INTACTOS=1`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`. **OAuth, subida Drive y automatización siguen NO configurados.**
+
+## Incidencia 23/10/2026 23:31 — remoto existente y diagnóstico sin sobrescritura
+
+El usuario ejecutó `scripts/o5_configure_drive_oauth.sh` desde checkout `27659dc5eec76a9652cee865385534418d60b7fd`. Se verificaron `RESTIC=0.19.1`, `RCLONE=DISPONIBLE` y `STACK_LOCALCHECK=healthy`. El script **se detuvo correctamente** en `PREPARAR_CONFIG_ROOT` porque **ya existía el remoto `vencira_google`** en el archivo Rclone privado:
+
+- `ERROR: remoto vencira_google existente. No sobrescribir.`
+- `RESULTADO_GLOBAL=3`, `FASE_FALLIDA=PREPARAR_CONFIG_ROOT`, `RESULTADO_EJECUCION=3`.
+- `COPIA_DRIVE_NO_EJECUTADA=1`, `SIN_MIGRACIONES_NI_REINICIOS=1`.
+- Este resultado **no demuestra** ni que OAuth esté completo ni que esté averiado. Puede tratarse de un remoto configurado previamente. **No borrarlo, sobrescribirlo ni repetir el configurador interactivo sin diagnosticarlo.** No se hizo upload.
+
+**Nuevo script GitHub `scripts/o5_probe_existing_drive.sh`, commit `bc8bf28bfe941c3fd5b35ef1e3da4211d565c70e`:**
+verifica rama/Git limpio, Restic 0.19.1, proyecto Docker y salud, directorio `/etc/vencira-backup` root:700 y `rclone.conf` root:600, evitando symlinks; inspecciona con Python solo nombres de claves del remoto `vencira_google`, tipo `drive`, scope exacto `drive.file`, presencia de Client ID/Secret propio y token OAuth JSON con refresh token. **No imprime sus valores ni rutas de Google Drive.** Finalmente ejecuta **solo lectura de metadatos** `rclone lsd vencira_google:`, descartando stdout/stderr para no filtrar carpetas ni secretos. Puede renovar el token OAuth localmente en `rclone.conf`, pero no crea, elimina, sincroniza ni descarga archivos en Drive. Tampoco modifica la DB ni Docker. Solo después `O5_OAUTH_CONFIGURADO=1`.
+
+**Próximo bloque de Ubuntu (único, sin copiar la sesión OAuth anterior):**
+```bash
+(
+  cd /home/vencira/vencira-localcheck || exit 1
+  git fetch origin integration/local-e2e-prep || exit 1
+  git merge --ff-only FETCH_HEAD || exit 1
+  bash -n scripts/o5_probe_existing_drive.sh || exit 1
+  bash scripts/o5_probe_existing_drive.sh
+)
+echo "RESULTADO_EJECUCION=$?"
+echo "CONSOLA_ABIERTA"
+```
+
+Se pueden compartir **solo los indicadores sin secretos que genere el nuevo script**, especialmente `CONFIG_PRIVADA_ROOT_0700_0600`, `RCLONE_TIPO_DRIVE`, `RCLONE_SCOPE_DRIVE_FILE`, `RCLONE_CLIENTE_OAUTH_PROPIO`, `RCLONE_TOKEN_OAUTH`, `RCLONE_GOOGLE_DRIVE_ACCESO`, `RESULTADO_GLOBAL`, `RESULTADO_EJECUCION`. Si falla, resolver el estado preciso sin revelar token/secret ni volver a empezar. Si resulta válido, **no volver a configurar OAuth**; continuar con clave Restic externa, repositorio cifrado, prueba de subida y restauración aislada. Rclone en sí no puede confirmar mediante esta prueba qué cuenta Google concreta se seleccionó; el usuario debe haber autorizado `appvencira@gmail.com`.
+
