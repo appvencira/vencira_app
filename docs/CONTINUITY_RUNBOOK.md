@@ -276,6 +276,10 @@ Confirmado por salida del servidor: `vencira_localcheck-web_preview-1` **healthy
 - Script **`scripts/validate_ui_v3_1.sh`** actualizado `43684b70` para imprimir primera excepción además del final del log. No se ha vuelto a ejecutar; **V3.1 no está validada ni desplegada**. V3 anterior estaba saludable.
 - **Próxima operación única**: sincronizar rama `integration/local-e2e-prep` y ejecutar el mismo script V3.1 por completo. Si aparecen más errores, analizar la primera excepción y corregir el componente real. No desplegar manualmente, ni tocar API/DB/stack antiguo.
 
+## V3.1 verificada (23/10/2026)
+
+Suite Flutter, web build y despliegue localcheck completados sobre `ab5b12b3`: `RESULTADO_GLOBAL=0`. API/DB/Web healthy y cuatro rutas HTTP 200. Sin migraciones. Pendiente inspección visual Android de selectores y etiquetas. Detalle en `docs/DESIGN_SYSTEM_V3_1.md`.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
