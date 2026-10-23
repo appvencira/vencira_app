@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
 import 'renewal_editor.dart';
+import 'vencira_select.dart';
 
 /// Una anotación es una póliza externa, no una ficha CRM (whitepaper §6).
 class VenciraRenewalDetailScreen extends StatefulWidget {
@@ -268,7 +269,8 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                       .textTheme.bodySmall),
                 ],
                 const SizedBox(height: 12),
-                Chip(label: Text(_status(renewal.status))),
+                VenciraStatusBadge(status: renewal.status,
+                  label: _status(renewal.status)),
               ]),
             ),
             if (renewal.fullName.isNotEmpty ||
