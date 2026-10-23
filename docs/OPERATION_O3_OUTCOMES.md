@@ -1,6 +1,6 @@
 # VENCIRA — Operativa O3: cuatro desenlaces de pólizas externas
 
-**Estado vigente:** O3 código y preflight aislado verde (`4d5270be`); **copia pre0014 íntegra restaurada y verificada**. La BD real ya tiene aplicada **`0014_renewal_outcomes`**, tabla/índice/dos columnas presentes, aunque el despliegue controlado abortó antes de actualizar API/Web por discrepancia con su precondición 0013. Origen exacto de aplicación 0014 y versión en ejecución de API/Web **pendientes de conciliación read-only**. No afirmar O3 instalada por solo ver la migración. No ejecutar migración otra vez ni restaurar backup. Actualizado 23/10/2026. Rama `integration/local-e2e-prep`.
+**Estado vigente (23/10/2026):** O3 **YA INSTALADA en entorno DEV `vencira_localcheck`**, API con módulos/ruta O3, Web con interfaz O3 y servicios healthy. Migración `0014_renewal_outcomes` aplicada el **23/10/2026 12:29:47 UTC automáticamente al arrancar la API**, confirmada por logs. Bundle Web O3 arrancado 12:29:57 UTC. PostgreSQL O3 con tabla, columnas e índice. Preflight Django/PG17/Flutter verde SHA `4d5270be` y respaldo pre0014 íntegro restaurado/verificado. **Aceptación funcional en Android aún pendiente**; todavía no se afirma que los cuatro resultados se hayan probado por el usuario. No reejecutar scripts de migración/despliegue, no restaurar DB, no usar datos reales ni activar notificaciones.
 
 ## Hito anterior y fuente funcional
 - O2 «Recuérdamelo» aceptada funcionalmente en Android. Confirmación expresa: reprogramar fecha, cancelar y marcar como atendido funciona. Despliegue O2 `e8d5ccf9` healthy, migración `0013` aplicada y backup pre0013 íntegramente restaurado. No volver a probar O2 salvo regresión.
@@ -68,3 +68,35 @@
 - Diagnóstico de solo lectura aportado por usuario: `ULTIMA_MIGRACION_REAL=0014_renewal_outcomes`, `TABLA_O3_PRESENTE=t`, `COLUMNAS_O3_PRESENTES=2`, `INDICE_O3_PRESENTE=t`, API/DB/Web `healthy`, `RESULTADO_DIAGNOSTICO=0`, `SIN_MIGRACION_NI_DESPLIEGUE=1`. Se conserva copia `pre0014` verificada del esquema previo. El despliegue original devolvió `FASE_FALLIDA=PREMIGRACION` **antes** de generar imágenes o actualizar servicios; se desconoce qué proceso aplicó 0014. Posibilidad no probada: la orden automática `python manage.py migrate --noinput` del servicio API en un arranque/recreación independiente.
 - Diagnóstico preparado `scripts/diagnose_operativa_o3_runtime.sh` (commit `666eab6e11464e44b3de20675b02f3df1df243b6`): inspecciona timestamps de DB y contenedores, imagen real API/Web, archivos O3 desplegados y rutas HTTP; registra logs únicamente si contienen texto de migraciones. No toca DB ni despliega.
 - **No reejecutar `deploy_operativa_o3.sh` original**, no intentar rollback ni forzar migraciones. Si API y Web aún son O2, preparar un rollout de **conciliación solo de contenedores** con esquema 0014 ya compatible, respaldo fresco de la DB actual cuando sea necesario, sin degradar O2 ni afectar `vencira_preview`. Si uno de los servicios ya ejecuta O3, adaptar el procedimiento a la realidad sin duplicar cambios. Validar en Android después.
+
+## Conciliación definitiva del runtime: O3 desplegada, falta aceptación Android (23/10/2026)
+
+Evidencia proporcionada por ejecución **solo lectura** `scripts/diagnose_operativa_o3_runtime.sh` (sin modificaciones ni reinicios):
+
+| Señal | Valor verificado |
+| --- | --- |
+| API CREATED / STARTED UTC | `2026-10-23T12:29:36Z` / `2026-10-23T12:29:46Z` |
+| Migración `0013` aplicada UTC | `2026-10-23 09:07:23` |
+| Migración `0014` aplicada UTC | **`2026-10-23 12:29:47`** |
+| Log de la API | `Applying reminders.0014_renewal_outcomes... OK` |
+| API módulos y rutas O3 | `API_CONTIENE_MODULOS_O3=1`; `API_RUTA_O3_EN_CODIGO=1` |
+| Web CREATED / STARTED UTC | `2026-10-23T12:29:57Z` / `2026-10-23T12:29:57Z` |
+| Interfaz compilada | `WEB_INCLUYE_ETIQUETA_O3=1`, `WEB_BUNDLE_EXISTE=1` |
+| HTTP local | `HTTP_outcomes=403` y `HTTP_follow-up=403` anónimos, `HTTP_WEB_LOCAL=200` |
+| Health | `api=healthy`, `db=healthy`, `web_preview=healthy` |
+| Datos O3 | `EVENTOS_O3_CONTABILIZADOS=3`, `ANOTACIONES_ARCHIVADAS_O3=0` al diagnosticar |
+| Diagnóstico | `RESULTADO_DIAGNOSTICO=0`, `RESULTADO_EJECUCION=0`, cero migración/despliegue |
+
+**Causa demostrada de aplicación `0014`:** el arranque del contenedor API a las 12:29:46 UTC ejecutó `python manage.py migrate --noinput`, que dejó la migración O3 registrada a las 12:29:47; también lo documenta su log. **No se conoce con certeza qué orden externa provocó la recreación de los contenedores a las 12:29**. La posterior ejecución de `deploy_operativa_o3.sh` encontró un esquema ya actualizado y abortó en `PREMIGRACION`; no migró ni desplegó otra vez.
+
+**Decisión operativa:** O3 YA está desplegada en DEV. No continuar con el procedimiento `deploy_operativa_o3.sh` que exigía `0013`. No duplicar migraciones, no restaurar backup `pre0014` sobre datos nuevos, no recrear servicios por este incidente. El respaldo del momento anterior a O3 permanece privado para recuperación manual excepcional. La existencia de 3 eventos demuestra actividad O3 previa, pero no sustituye la aceptación de las cuatro decisiones.
+
+**Prueba de aceptación en Android con datos completamente ficticios, sin SSH:**
+
+- **Conseguido**: en una anotación de `Candidatos`, guardar, localizarla en `Estado=Cerrado`, comprobar etiqueta `Conseguido` y `Clientes`. Pulsar `Recuperar del archivo`, confirmar retorno a Pendiente y Candidatos.
+- **No aceptó**: preparar una anotación ficticia con vencimiento `29/02/2028`, escribir una nota inocua. Resultado desplaza a `28/02/2029`, conserva nota y no cierra la anotación. Las reglas de aviso deben recrear sólo candidatos de políticas habilitadas existentes, sin notificación enviada.
+- **Aún sin decidir**: elegir `En 3 días` u otra fecha, comprobar permanencia abierta y chip violeta en agenda del día indicado; seguimiento O2 sigue modificable.
+- **Descartar**: archivar y recuperar desde `Estado=Cerrado` sin borrar notas ni historial; confirmar que deja de aparecer en agenda activa mientras esté archivada.
+- En todos los casos, verificar confirmación previa, que no salen comunicaciones, y si es posible el historial de escritorio con autor/hora. Usar exclusivamente referencias DEMO, no datos personales reales.
+
+**Pendiente:** recibir confirmación de aceptación funcional Android y registrar el resultado, corregir incidencias si aparecen. Retención automática a dos años del archivo **no está implementada**; requiere resolver política legal/auditoría antes de activar borrado.
