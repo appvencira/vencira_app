@@ -39,3 +39,19 @@ White paper original `White_paper_agenda_vencimientos.pdf`, páginas 7, 12 y 14:
 
 ## Estado
 **Solo diseño/plan y dependencias documentados. No hay migración, API, Flutter O2 ni despliegue realizados todavía.** O1 mantiene versión desplegada validada; no introducir datos reales ni activar avisos hasta completar seguridad/RGPD.
+
+## Implementación O2 en GitHub, pendiente de validación (23/10/2026)
+
+**Estado vigente de O2:** código Django + Flutter + pruebas + preflight aislado subidos a `integration/local-e2e-prep`, **sin pruebas ni migraciones ejecutadas aún en el servidor**. Las afirmaciones previas «solo diseño» son históricas. **O1 sigue desplegada y aceptada funcionalmente por el usuario en Android**, sin necesidad de repetir sus pruebas.
+
+- Django `backend/reminders/models.py`: `RenewalFollowUp` guarda día civil, estado `planned/completed/cancelled`, creador, usuario que atiende/cancela, fechas. Restricción SQL parcial impide varios seguimientos `planned` por anotación y permite histórico.
+- Nueva migración **aditiva `0013_renewal_manual_followups.py`**: crea tabla, índices y constraint; no toca valores existentes de `Renewal` ni `ReminderCandidate`. **NO APLICADA**.
+- API `backend/reminders/follow_up.py` y `backend/reminders/urls.py`: `GET/POST/PATCH .../renewals/{uuid}/follow-up/`. GET devuelve `active` o null, POST establece/reprograma por fecha ISO, PATCH completa/cancela con identificador exacto y confirmación previa en frontend. Permisos mediante `_visible_renewals`, sesiones/CSRF, escritura con `select_for_update` y bitácora `RenewalAuditEvent` sin PII. Sin correo, push, tareas ni avisos enviados.
+- Agenda diaria `backend/reminders/views.py` muestra `kind:'follow_up'` como evento previsto; mensual `backend/reminders/agenda_month.py` agrega `follow_up:{pending,contacted}` manteniendo filtros/roles y ninguna referencia personal.
+- Flutter `clients/flutter/lib/api/vencira_api.dart`: contrato y métodos HTTP seguros, parser de evento y contadores (compatible con respuestas anteriores sin nuevo campo).
+- Flutter ficha `clients/flutter/lib/ui/renewal_detail_screen.dart`: tarjeta «Recuérdamelo», botones Mañana / 3 días / 7 días / Otra fecha, reprogramar, atendido/cancelar con confirmación, fechas locales calendario (sin sumar bloques UTC), mensajes ES/CA, historial técnico accesible solo en web escritorio.
+- Flutter agenda `clients/flutter/lib/ui/day_agenda_screen.dart` y `month_agenda_screen.dart`: categoría violeta con marcas y celdas coloreadas. Vencimiento y preaviso conservan prioridad, los seguimientos no se confunden con recordatorios automáticos ni comunicaciones efectivamente entregadas.
+- Test `backend/reminders/test_manual_follow_up.py`: plan/cancelar/atender/reprogramar, historial, CSRF, aislamiento workspace/miembros, fechas, agenda diaria/mensual, bloqueo de cerradas. Test `clients/flutter/test/manual_follow_up_test.dart`: flujo ES/CA y parser. API test cubre mismas rutas, CSRF e identificadores.
+- **Preflight seguro disponible:** `scripts/validate_operativa_o2_preflight.sh`. Construye imagen API de prueba, check/makemigrations --check, Django completo SQLite, PostgreSQL 17 temporal por contenedor/red exclusivos, Django O2 sobre Postgres, Flutter analyze/test/build. No reinicia `api/db/web_preview` ni aplica migración a `vencira_localcheck`; elimina contenedor y red de pruebas. Toda salida agrupada por fase en `/tmp/vencira-operativa-o2-preflight.*.log` y `RESULTADO_GLOBAL`.
+- **Siguiente puerta:** usuario ejecuta una vez preflight tras `git fetch` y `git merge --ff-only`; si falla, corregir directamente en GitHub. Con verde, preparar **fase distinta de backup seguro + migración 0013 + web+API rollout controlado** (arranque de API migra automáticamente), con comprobaciones de restauración, rollback y salud. No hacer despliegue O2 antes de disponer de respaldo verificado.
+
