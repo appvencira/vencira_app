@@ -314,7 +314,11 @@ printf 'COMMIT=%s\nBACKUP_SHA256=%s\nSCHEMA=0014_renewal_outcomes\nPREVIOUS_API_
   "$(git rev-parse HEAD)" "$(sha256sum "$BACKUP" | awk '{print $1}')" \
   "$OLD_API_ID" "$OLD_WEB_ID" "$OLD_API_TAG" "$OLD_WEB_TAG" >"$RECEIPT"
 chmod 600 "$RECEIPT"
-echo "IMAGENES_O3_CONSERVADAS=1"
+echo "IMAGENES_O3_RECUPERACION_PREPARADA=1"
+if [ "$OLD_API_AVAILABLE" -eq 0 ]; then
+  echo "AVISO_IMAGEN_ANTIGUA_API=no_disponible_en_Docker"
+  echo "RECOVERY_API_NO_EQUIVALE_BINARIAMENTE_A_ORIGINAL=1"
+fi
 
 PHASE=RECREAR_API_CHECK_ONLY
 echo "=== RECREAR_API_SIN_MIGRAR ==="
