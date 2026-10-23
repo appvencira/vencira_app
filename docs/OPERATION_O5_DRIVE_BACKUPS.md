@@ -183,3 +183,29 @@ echo "CONSOLA_ABIERTA"
 
 Se pueden compartir **solo los indicadores sin secretos que genere el nuevo script**, especialmente `CONFIG_PRIVADA_ROOT_0700_0600`, `RCLONE_TIPO_DRIVE`, `RCLONE_SCOPE_DRIVE_FILE`, `RCLONE_CLIENTE_OAUTH_PROPIO`, `RCLONE_TOKEN_OAUTH`, `RCLONE_GOOGLE_DRIVE_ACCESO`, `RESULTADO_GLOBAL`, `RESULTADO_EJECUCION`. Si falla, resolver el estado preciso sin revelar token/secret ni volver a empezar. Si resulta válido, **no volver a configurar OAuth**; continuar con clave Restic externa, repositorio cifrado, prueba de subida y restauración aislada. Rclone en sí no puede confirmar mediante esta prueba qué cuenta Google concreta se seleccionó; el usuario debe haber autorizado `appvencira@gmail.com`.
 
+
+## Incidencia 23/10/2026 23:31 — token OAuth inválido en remoto existente
+
+**Evidencia del usuario**: el diagnóstico de solo lectura `scripts/o5_probe_existing_drive.sh` se ejecutó en GitHub checkout `6e35ffb6e20e8bb7847959ce8ee9efa836b98d33` y confirmó:
+`HEALTH_api=healthy`, `HEALTH_db=healthy`, `HEALTH_web_preview=healthy`, `CONFIG_PRIVADA_ROOT_0700_0600=OK`, `RCLONE_TIPO_DRIVE=OK`, `RCLONE_SCOPE_DRIVE_FILE=OK`, `RCLONE_CLIENTE_OAUTH_PROPIO=OK`. **Falló** `RCLONE_TOKEN_OAUTH=NO_VALIDO`: `RESULTADO_GLOBAL=5`, `FASE_FALLIDA=METADATOS`, `RCLONE_EXISTENTE_VALIDADO=0`, `RESULTADO_EJECUCION=5`. `CONFIG_NO_SOBRESCRITA=1`, `SIN_ARCHIVOS_CREADOS_EN_DRIVE=1`, `SIN_BACKUP_NI_MIGRACIONES=1`. El token no contiene JSON válido; **no se puede concluir que haya acceso a Drive**. No publicar el valor del campo ni enviar archivo de configuración al chat.
+
+**Resolución preparada en GitHub (NO ejecutada):** `scripts/o5_reauthorize_existing_drive.sh` commit `a4a33e0ad5b0f2807e6ecedcc53960bf624d90f5`. Verifica checkout limpio, Restic 0.19.1, salud e identidad de los contenedores y permisos del archivo root 0600. Comprueba que el remoto existente usa `drive`, `drive.file` y contiene OAuth Client ID/Secret. Exige terminal interactivo y **túnel SSH local navegador hacia localhost:53682**; guarda temporalmente configuración anterior con permisos root 0700/0600 y ejecuta **`rclone config reconnect vencira_google:`**, sin eliminar ni recrear el remoto ni modificar ID/Secret. Si falla, restaura la configuración privada anterior y elimina la copia temporal; si funciona, valida JSON de token en local sin mostrar su contenido y comprueba `rclone lsd` descartando salida. El listado consulta solo metadatos, no crea archivos; una autenticación correcta puede reescribir el token del archivo privado. No realiza backup, migra ni reinicia Docker.
+
+Rclone ofrece oficialmente `config reconnect` para reautenticar el remoto existente: https://rclone.org/commands/rclone_config_reconnect/ . Para servidores sin navegador recomienda el túnel SSH local `127.0.0.1:53682`: https://rclone.org/remote_setup/ . El dispositivo que abre la URL OAuth local debe ser **el mismo** que mantiene el túnel SSH. **Si no hay túnel, no ejecutar la fase interactiva**: habilitar el túnel en aplicación SSH antes (en Android requiere cliente que lo soporte; desde PC `ssh -L 127.0.0.1:53682:127.0.0.1:53682 vencira@dev.vencira.es`). No abrir puertos 53682 públicos. Si Rclone no puede reconectar con token malformado, revisar `FASE_FALLIDA` y preparar una edición del remoto conservando cliente propio, nunca publicar credenciales.
+
+**Bloque SSH siguiente — solo con túnel activo:**
+
+```bash
+(
+  cd /home/vencira/vencira-localcheck || exit 1
+  git fetch origin integration/local-e2e-prep || exit 1
+  git merge --ff-only FETCH_HEAD || exit 1
+  bash -n scripts/o5_reauthorize_existing_drive.sh || exit 1
+  bash scripts/o5_reauthorize_existing_drive.sh
+)
+echo "RESULTADO_EJECUCION=$?"
+echo "CONSOLA_ABIERTA"
+```
+
+**No copiar transcripción ni capturas de OAuth**: Rclone puede imprimir URL de autorización con `state`, token u otra información privada. Compartir únicamente estos indicadores seguros: `RCLONE_TOKEN_OAUTH_VALIDO=OK`, `RCLONE_SCOPE_DRIVE_FILE=OK`, `RCLONE_GOOGLE_DRIVE_ACCESO=OK`, `O5_GOOGLE_OAUTH_VERIFICADO=1`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`, o `FASE_FALLIDA` si aborta. Luego iniciar preparación de Restic remoto cifrado, primera copia y recuperación aislada, siempre sin datos reales/producción.
+
