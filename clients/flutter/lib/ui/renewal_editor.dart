@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
 import 'modality_labels.dart';
+import 'vencira_select.dart';
 
 /// Editor local: devuelve una solicitud validada, sin credenciales ni red.
 class VenciraRenewalEditor extends StatefulWidget {
@@ -293,84 +294,63 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                     ),
                   const SizedBox(height: 10),
                 ],
-                DropdownButtonFormField<String>(
+                VenciraSelect<String>(
                   key: const ValueKey('renewal-entry'),
-                  initialValue: _entry,
-                  decoration: InputDecoration(
-                    labelText: _t.entryLabel,
-                    border: const OutlineInputBorder(),
-                  ),
-                  isExpanded: true,
-                  items: [
-                    DropdownMenuItem(value: 'clients', child: Text(_t.entryClients)),
-                    DropdownMenuItem(value: 'prospects', child: Text(_t.entryProspects)),
+                  label: _t.entryLabel,
+                  value: _entry ?? '',
+                  prefixIcon: Icons.people_outline,
+                  options: [
+                    VenciraOption(value: '', label: _t.notDefined),
+                    VenciraOption(value: 'clients', label: _t.entryClients),
+                    VenciraOption(value: 'prospects', label: _t.entryProspects),
                   ],
-                  onChanged: (value) => setState(() => _entry = value),
+                  onChanged: (value) => setState(
+                    () => _entry = value.isEmpty ? null : value),
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
+                VenciraSelect<String>(
                   key: const ValueKey('renewal-modality'),
-                  initialValue: _modality,
-                  isExpanded: true,
-                  decoration: InputDecoration(
-                    labelText: _t.modalityLabel,
-                    border: const OutlineInputBorder(),
-                  ),
-                  items: [
-                    DropdownMenuItem(value: '', child: Text(_t.notDefined)),
+                  label: _t.modalityLabel,
+                  value: _modality,
+                  prefixIcon: Icons.category_outlined,
+                  options: [
+                    VenciraOption(value: '', label: _t.notDefined),
                     for (final option in widget.modalities ??
                         VenciraModalityOption.defaults)
                       if (option.active || option.code == _modality)
-                        DropdownMenuItem(
-                          value: option.code,
-                          child: Text(
-                            modalityCaption(context, option) +
-                              (option.active ? '' : ' · ' + _t.modalityInactive),
-                            maxLines: 1, overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
+                        VenciraOption(value: option.code,
+                          label: modalityCaption(context, option) +
+                              (option.active ? ''
+                                  : ' · ${_t.modalityInactive}')),
                     if (_modality.isNotEmpty &&
-                        !(widget.modalities ??
-                          VenciraModalityOption.defaults)
+                        !(widget.modalities ?? VenciraModalityOption.defaults)
                             .any((option) => option.code == _modality))
-                      DropdownMenuItem(value: _modality,
-                        child: Text(_modality, overflow: TextOverflow.ellipsis)),
+                      VenciraOption(value: _modality, label: _modality),
                   ],
-                  onChanged: (value) => setState(() {
-                    if (value != null) _modality = value;
-                  }),
+                  onChanged: (value) => setState(() => _modality = value),
                 ),
                 const SizedBox(height: 12),
-                LayoutBuilder(builder: (context, limits) {
-                  final choices = widget.insurers ?? const <VenciraInsurer>[];
-                  final existing = choices.any((s) => s.id == _insurerId);
-                  return DropdownMenu<String>(
-                    key: const ValueKey('renewal-insurer'),
-                    width: limits.maxWidth,
-                    enableFilter: true,
-                    requestFocusOnTap: true,
-                    label: Text(_t.insurerLabel),
-                    initialSelection: _insurerId ?? '',
-                    dropdownMenuEntries: [
-                      DropdownMenuEntry(value: '', label: _t.notDefined),
-                      for (final row in choices)
-                        if (row.active || row.id == _insurerId)
-                          DropdownMenuEntry(
-                            value: row.id,
-                            label: row.name +
-                              (row.active ? '' : ' · ' + _t.modalityInactive),
-                          ),
-                      if (_insurerId != null && !existing)
-                        DropdownMenuEntry(
-                          value: _insurerId!,
-                          label: _t.insurerLegacy,
-                        ),
-                    ],
-                    onSelected: (value) => setState(
-                      () => _insurerId = value == '' ? null : value,
-                    ),
-                  );
-                }),
+                VenciraSelect<String>(
+                  key: const ValueKey('renewal-insurer'),
+                  label: _t.insurerLabel,
+                  value: _insurerId ?? '',
+                  prefixIcon: Icons.apartment_outlined,
+                  options: [
+                    VenciraOption(value: '', label: _t.notDefined),
+                    for (final insurer in widget.insurers ?? <VenciraInsurer>[])
+                      if (insurer.active || insurer.id == _insurerId)
+                        VenciraOption(value: insurer.id,
+                          label: insurer.name +
+                            (insurer.active ? ''
+                                : ' · ${_t.modalityInactive}')),
+                    if (_insurerId != null &&
+                        !(widget.insurers ?? <VenciraInsurer>[])
+                            .any((insurer) => insurer.id == _insurerId))
+                      VenciraOption(value: _insurerId!, label: _t.insurerLegacy),
+                  ],
+                  onChanged: (value) => setState(
+                    () => _insurerId = value.isEmpty ? null : value),
+                ),
                 const SizedBox(height: 12),
                 TextFormField(
                   key: const ValueKey('renewal-notes'),
@@ -403,20 +383,19 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                     label: Text(_t.removeNotice),
                   ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: _status,
-                  decoration: InputDecoration(
-                    labelText: _t.status,
-                    border: OutlineInputBorder(),
-                  ),
-                  items: [
-                    DropdownMenuItem(value: 'pending', child: Text(_t.pending)),
-                    DropdownMenuItem(value: 'contacted', child: Text(_t.contacted)),
-                    DropdownMenuItem(value: 'closed', child: Text(_t.closed)),
+                VenciraSelect<String>(
+                  key: const ValueKey('renewal-status'),
+                  label: _t.status, value: _status,
+                  prefixIcon: Icons.flag_outlined,
+                  options: [
+                    VenciraOption(value: 'pending',
+                      label: _t.pending, icon: Icons.schedule),
+                    VenciraOption(value: 'contacted',
+                      label: _t.contacted, icon: Icons.forum_outlined),
+                    VenciraOption(value: 'closed',
+                      label: _t.closed, icon: Icons.check_circle_outline),
                   ],
-                  onChanged: (v) {
-                    if (v != null) setState(() => _status = v);
-                  },
+                  onChanged: (value) => setState(() => _status = value),
                 ),
               ],
             ),
