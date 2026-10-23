@@ -12,6 +12,7 @@ BACKUP=""
 BACKUP_OK=0
 API_RECREATED=0
 WEB_RECREATED=0
+WEB_RESTARTED=0
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)_$$"
 RECEIPT=""
 
@@ -35,6 +36,7 @@ finish() {
     echo "FASE_FALLIDA=$PHASE"
     echo "API_RECREADA=$API_RECREATED"
     echo "WEB_RECREADA=$WEB_RECREATED"
+    echo "WEB_REINICIADA=$WEB_RESTARTED"
     echo "NO_RESTAURAR_BACKUP_AUTOMATICAMENTE=1"
     echo "=== ULTIMAS 60 LINEAS DE DIAGNOSTICO ==="
     tail -n 60 "$LOG" || true
@@ -293,6 +295,7 @@ OLD_WEB_TAG="vencira-prev-o4-web:$RUN_ID"
 # retirada del image store aunque el contenedor O3 continue activo.
 # NO confundir una imagen reconstruida con la imagen binaria exacta previa.
 OLD_API_AVAILABLE=0
+RECOVERY_API_TAG=""
 if sudo docker image inspect "$OLD_API_ID" >>"$LOG" 2>&1; then
   sudo docker tag "$OLD_API_ID" "$OLD_API_TAG" >>"$LOG" 2>&1
   OLD_API_AVAILABLE=1
@@ -310,9 +313,10 @@ fi
 echo "IMAGEN_ANTERIOR_API_DISPONIBLE=$OLD_API_AVAILABLE"
 echo "IMAGEN_ANTERIOR_WEB_DISPONIBLE=$OLD_WEB_AVAILABLE"
 RECEIPT="$BACKUP_DIR/deploy_o4_$RUN_ID.receipt"
-printf 'COMMIT=%s\nBACKUP_SHA256=%s\nSCHEMA=0014_renewal_outcomes\nPREVIOUS_API_IMAGE=%s\nPREVIOUS_WEB_IMAGE=%s\nPREVIOUS_API_TAG=%s\nPREVIOUS_WEB_TAG=%s\n' \
+printf 'COMMIT=%s\nBACKUP_SHA256=%s\nSCHEMA=0014_renewal_outcomes\nPREVIOUS_API_IMAGE=%s\nPREVIOUS_WEB_IMAGE=%s\nOLD_API_IMAGE_AVAILABLE=%s\nOLD_WEB_IMAGE_AVAILABLE=%s\nOLD_API_TAG_IF_PRESENT=%s\nOLD_WEB_TAG_IF_PRESENT=%s\nRECOVERY_REBUILT_TAG=%s\n' \
   "$(git rev-parse HEAD)" "$(sha256sum "$BACKUP" | awk '{print $1}')" \
-  "$OLD_API_ID" "$OLD_WEB_ID" "$OLD_API_TAG" "$OLD_WEB_TAG" >"$RECEIPT"
+  "$OLD_API_ID" "$OLD_WEB_ID" "$OLD_API_AVAILABLE" "$OLD_WEB_AVAILABLE" \
+  "$OLD_API_TAG" "$OLD_WEB_TAG" "$RECOVERY_API_TAG" >"$RECEIPT"
 chmod 600 "$RECEIPT"
 echo "IMAGENES_O3_RECUPERACION_PREPARADA=1"
 if [ "$OLD_API_AVAILABLE" -eq 0 ]; then
@@ -322,7 +326,7 @@ fi
 
 PHASE=RECREAR_API_CHECK_ONLY
 echo "=== RECREAR_API_SIN_MIGRAR ==="
-"${COMPOSE[@]}" up -d --no-deps --force-recreate api >>"$LOG" 2>&1
+"${COMPOSE[@]}" up -d --no-deps --no-build --force-recreate api >>"$LOG" 2>&1
 API_RECREATED=1
 PHASE=ESPERAR_API
 api_health=starting
@@ -353,7 +357,7 @@ echo "API_RUNTIME_MIGRATE_POLICY=CHECK_ONLY"
 PHASE=REINICIAR_PROXY_EXISTENTE
 echo "=== REINICIAR_WEB_EXISTENTE_SIN_RECREAR ==="
 sudo docker restart vencira_localcheck-web_preview-1 >>"$LOG" 2>&1
-WEB_RECREATED=1
+WEB_RESTARTED=1
 PHASE=ESPERAR_WEB
 web_health=starting
 for attempt in $(seq 1 40); do
