@@ -20,6 +20,9 @@ class VenciraRenewalDetailScreen extends StatefulWidget {
 
 class _DetailState extends State<VenciraRenewalDetailScreen> {
   VenciraRenewal? _renewal;
+  VenciraFollowUp? _manualFollowUp;
+  bool _followUpLoading = false;
+  bool _followUpError = false;
   List<VenciraInsurer> _insurers = [];
   VenciraHistoryPage? _history;
   int _page = 1;
@@ -52,6 +55,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       final value = await widget.api.fetchRenewalDetail(widget.workspace.id, widget.renewalId);
       if (!mounted || token != _generation) return;
       setState(() { _renewal = value; _loading = false; });
+      await _loadManualFollowUp(token);
       try {
         final insurers = await widget.api.fetchInsurers(widget.workspace.id);
         if (mounted && token == _generation) {
@@ -67,6 +71,199 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       if (!mounted || token != _generation) return;
       setState(() { _loading = false; _error = true; });
     }
+  }
+
+  String _o2(String es, String ca) =>
+      Localizations.localeOf(context).languageCode == 'ca' ? ca : es;
+
+  Future<void> _loadManualFollowUp(int token) async {
+    if (!mounted) return;
+    setState(() { _followUpLoading = true; _followUpError = false;
+                  _manualFollowUp = null; });
+    try {
+      final value = await widget.api.fetchManualFollowUp(
+        widget.workspace.id, widget.renewalId);
+      if (!mounted || token != _generation) return;
+      setState(() { _manualFollowUp = value; _followUpLoading = false; });
+    } on VenciraUnauthorized {
+      if (!mounted || token != _generation) return;
+      setState(() { _unauthorized = true; _followUpLoading = false; });
+    } catch (_) {
+      if (!mounted || token != _generation) return;
+      setState(() { _followUpError = true; _followUpLoading = false; });
+    }
+  }
+
+  Future<void> _chooseManualDate() async {
+    if (_saving) return;
+    final offset = await showModalBottomSheet<int>(
+      context: context, showDragHandle: true, useSafeArea: true,
+      builder: (sheet) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(title: Text(_o2('¿Cuándo quieres recordarlo?',
+              'Quan ho vols recordar?')),
+            subtitle: Text(_o2(
+              'Se mostrará en la agenda, sin enviar notificaciones.',
+              'Apareixerà a l’agenda, sense enviar notificacions.'))),
+          ListTile(leading: const Icon(Icons.wb_twilight_outlined),
+            title: Text(_o2('Mañana', 'Demà')),
+            onTap: () => Navigator.of(sheet).pop(1)),
+          ListTile(leading: const Icon(Icons.event_outlined),
+            title: Text(_o2('En 3 días', 'D’aquí a 3 dies')),
+            onTap: () => Navigator.of(sheet).pop(3)),
+          ListTile(leading: const Icon(Icons.calendar_month_outlined),
+            title: Text(_o2('En 7 días', 'D’aquí a 7 dies')),
+            onTap: () => Navigator.of(sheet).pop(7)),
+          ListTile(leading: const Icon(Icons.date_range_outlined),
+            title: Text(_o2('Elegir otra fecha', 'Triar una altra data')),
+            onTap: () => Navigator.of(sheet).pop(0)),
+          const SizedBox(height: 10),
+        ]),
+      ),
+    );
+    if (!mounted || offset == null) return;
+    final now = DateTime.now();
+    DateTime day;
+    if (offset == 0) {
+      final picked = await showDatePicker(
+        context: context,
+        firstDate: DateTime(2000), lastDate: DateTime(2100, 12, 31),
+        initialDate: _manualFollowUp?.scheduledFor ??
+            DateTime(now.year, now.month, now.day + 1),
+      );
+      if (!mounted || picked == null) return;
+      day = DateTime(picked.year, picked.month, picked.day);
+    } else {
+      // Constructor civil: sumar días del calendario, no bloques de 24h (DST).
+      day = DateTime(now.year, now.month, now.day + offset);
+    }
+    await _saveManualDate(day);
+  }
+
+  Future<void> _saveManualDate(DateTime day) async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      final result = await widget.api.scheduleManualFollowUp(
+          widget.workspace.id, widget.renewalId, day);
+      if (!mounted) return;
+      setState(() { _manualFollowUp = result; _followUpError = false; });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+        _o2('Seguimiento programado en agenda',
+            'Seguiment programat a l’agenda'))));
+      if (_history != null) await _loadHistory(1);
+    } on VenciraUnauthorized {
+      if (mounted) setState(() => _unauthorized = true);
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t.saveError)));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _resolveManual(String action) async {
+    final row = _manualFollowUp;
+    if (row == null || _saving) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        title: Text(action == 'complete'
+            ? _o2('Marcar seguimiento atendido', 'Marcar seguiment atès')
+            : _o2('Cancelar seguimiento', 'Cancel·lar seguiment')),
+        content: Text(_o2(
+          'Se guardará la acción en el historial. No se enviará ningún aviso.',
+          'Es guardarà l’acció a l’historial. No s’enviarà cap avís.')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialog, false),
+            child: Text(_t.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(dialog, true),
+            child: Text(_o2('Confirmar', 'Confirmar'))),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+    setState(() => _saving = true);
+    try {
+      await widget.api.resolveManualFollowUp(
+        widget.workspace.id, widget.renewalId, row.id, action);
+      if (!mounted) return;
+      setState(() => _manualFollowUp = null);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+        action == 'complete'
+          ? _o2('Seguimiento atendido', 'Seguiment atès')
+          : _o2('Seguimiento cancelado', 'Seguiment cancel·lat'))));
+      if (_history != null) await _loadHistory(1);
+    } on VenciraUnauthorized {
+      if (mounted) setState(() => _unauthorized = true);
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t.saveError)));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Widget _manualFollowUpCard(String locale) {
+    final colors = Theme.of(context).colorScheme;
+    return Card(child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          Icon(Icons.bookmark_added_outlined,
+            color: const Color(0xFF956DC0), size: 21),
+          const SizedBox(width: 10),
+          Expanded(child: Text(_o2('Recuérdamelo', 'Recorda-m’ho'),
+            style: Theme.of(context).textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700))),
+        ]),
+        const SizedBox(height: 8),
+        if (_followUpLoading)
+          const LinearProgressIndicator()
+        else if (_followUpError)
+          OutlinedButton(onPressed: () => _loadManualFollowUp(_generation),
+            child: Text(_t.retry))
+        else ...[
+          Text(_manualFollowUp == null
+            ? _o2('Sin seguimiento manual programado.',
+                'Sense seguiment manual programat.')
+            : _o2('Próximo seguimiento: ', 'Pròxim seguiment: ') +
+              DateFormat.yMd(locale).format(_manualFollowUp!.scheduledFor),
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(color: colors.onSurfaceVariant)),
+          const SizedBox(height: 12),
+          FilledButton.tonalIcon(
+            key: const ValueKey('schedule-follow-up'),
+            onPressed: _saving ? null : _chooseManualDate,
+            icon: const Icon(Icons.event_available_outlined),
+            label: Text(_manualFollowUp == null
+              ? _o2('Elegir fecha', 'Triar data')
+              : _o2('Reprogramar', 'Reprogramar')),
+          ),
+          if (_manualFollowUp != null) ...[
+            const SizedBox(height: 8),
+            Wrap(spacing: 8, runSpacing: 6, children: [
+              OutlinedButton.icon(
+                key: const ValueKey('complete-follow-up'),
+                onPressed: _saving ? null : () => _resolveManual('complete'),
+                icon: const Icon(Icons.check_rounded),
+                label: Text(_o2('Atendido', 'Atès')),
+              ),
+              TextButton.icon(
+                key: const ValueKey('cancel-follow-up'),
+                onPressed: _saving ? null : () => _resolveManual('cancel'),
+                icon: const Icon(Icons.close_rounded),
+                label: Text(_t.cancel),
+              ),
+            ]),
+          ],
+          const SizedBox(height: 5),
+          Text(_o2('Fecha visible en la agenda; no es una notificación enviada.',
+              'Data visible a l’agenda; no és una notificació enviada.'),
+            style: Theme.of(context).textTheme.bodySmall),
+        ],
+      ]),
+    ));
   }
 
   Future<void> _loadHistory(int page) async {
@@ -226,6 +423,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
     'notice_deadline_on' => _t.noticeDate,
     'status' => _t.status,
     'assigned_to_id' => _t.detailAssignment,
+    'manual_follow_up' => _o2('Seguimiento manual', 'Seguiment manual'),
     _ => _t.detailOtherChange,
   };
 
@@ -428,6 +626,10 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                   ),
                 ),
               ),
+            ],
+            if (renewal.status != 'closed') ...[
+              const SizedBox(height: 12),
+              _manualFollowUpCard(locale),
             ],
             const SizedBox(height: 12),
             FilledButton.icon(onPressed: _saving ? null : _edit,
