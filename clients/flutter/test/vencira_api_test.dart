@@ -127,6 +127,72 @@ void main() {
     expect(updated.status, 'closed');
   });
 
+  test('seguimiento rápido usa PATCH solo de estado con CSRF', () async {
+    var writes = 0;
+    const renewalId = 'b2222222-2222-4222-8222-222222222222';
+    final client = MockClient((request) async {
+      if (request.url.path == '/api/v1/csrf/') {
+        return http.Response(
+          '{"csrfToken":"abcdefghijklmnopqrstuvwxyz123456"}', 200);
+      }
+      writes++;
+      expect(request.method, 'PATCH');
+      expect(request.url.path,
+        '/api/v1/workspaces/$workspaceId/renewals/$renewalId/');
+      expect(request.headers.entries.any((header) =>
+        header.key.toLowerCase() == 'x-csrftoken' &&
+        header.value == 'abcdefghijklmnopqrstuvwxyz123456'), isTrue);
+      expect(request.body, '{"status":"contacted"}');
+      expect(request.body, isNot(contains('notes')));
+      expect(request.body, isNot(contains('expires_on')));
+      return http.Response('{"id":"$renewalId",'
+        '"customer_reference":"DEMO","expires_on":"2027-05-01",'
+        '"notice_deadline_on":null,"status":"contacted"}', 200);
+    });
+    final api = HttpVenciraApi(client: client,
+      baseUri: Uri.parse('http://localhost:18731/'));
+    final renewal = await api.changeRenewalStatus(
+      workspaceId, renewalId, 'contacted');
+    expect(renewal.status, 'contacted');
+    expect(writes, 1);
+  });
+
+  test('seguimiento rápido rechaza estados cerrados e IDs ajenos', () async {
+    var requests = 0;
+    final client = MockClient((request) async {
+      requests++;
+      return http.Response('{}', 200);
+    });
+    final api = HttpVenciraApi(client: client,
+      baseUri: Uri.parse('http://localhost:18731/'));
+    const renewalId = 'b2222222-2222-4222-8222-222222222222';
+    await expectLater(
+      api.changeRenewalStatus(workspaceId, renewalId, 'closed'),
+      throwsA(isA<VenciraApiException>()));
+    await expectLater(
+      api.changeRenewalStatus(workspaceId, '../secret', 'contacted'),
+      throwsA(isA<VenciraApiException>()));
+    expect(requests, 0);
+  });
+
+  test('seguimiento rápido rechaza respuesta de otra anotación', () async {
+    const renewalId = 'b2222222-2222-4222-8222-222222222222';
+    final client = MockClient((request) async {
+      if (request.url.path == '/api/v1/csrf/') {
+        return http.Response(
+          '{"csrfToken":"abcdefghijklmnopqrstuvwxyz123456"}', 200);
+      }
+      return http.Response('{"id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",'
+        '"customer_reference":"OTRA","expires_on":"2027-05-01",'
+        '"status":"contacted"}', 200);
+    });
+    final api = HttpVenciraApi(client: client,
+      baseUri: Uri.parse('http://localhost:18731/'));
+    await expectLater(
+      api.changeRenewalStatus(workspaceId, renewalId, 'contacted'),
+      throwsA(isA<VenciraApiException>()));
+  });
+
   test('logout usa POST con CSRF para cerrar la sesión', () async {
     var posts = 0;
     final client = MockClient((request) async {
