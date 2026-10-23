@@ -220,6 +220,36 @@ Confirmado por salida del servidor: `vencira_localcheck-web_preview-1` **healthy
 - **Pendiente única puerta V3:** aceptación visual Android de inicio, calendario mensual con actividad coloreada, agenda diaria, editor y ficha. Valorar legibilidad de casillas cuadradas y estados múltiples en 320/375px y modos claro/oscuro. No dar por aprobada la UX solo por pruebas técnicas.
 - Referencias y detalles del diseño: `docs/DESIGN_SYSTEM_V3.md`. No repetir build ni pruebas ya superadas salvo nuevo cambio de código. Nunca usar datos reales hasta seguridad/RGPD.
 
+## V3.1 premium — menús propios y estados cromáticos (pendiente de validar y desplegar)
+
+**Motivación capturas Android:** usuario valida V3 como mejora sustancial pero ve pobres los selectores desplegables de filtros/ajustes; solicita acabado premium y un poco más de color para estado Pendiente, Contactado y Cerrado. Debe conservar elegancia y limpieza visual.
+
+- **Diseño/criterios/tests:** `docs/DESIGN_SYSTEM_V3_1.md`. Incorpora `VenciraSelect<T>` con bottom sheet accesible, desplazable, color de seleccionado y opciones anchas; `VenciraStatusBadge` con estados ámbar/petróleo/verde y variantes oscuro/claro.
+- **Cambios código en GitHub `integration/local-e2e-prep`:**
+  - `2ae0fa56`: `clients/flutter/lib/ui/vencira_select.dart`, nuevo componente de opción y badge semántico, sin dependencias adicionales.
+  - `b4743d49`, `2620b0c1`, `b94f0ea3`: filtros de panel, badges, ajuste de ancho móvil y selector multi-organización.
+  - `40449b46`, `fea6288e`: agenda con selectores a todo el ancho, estado de los registros y tinte de tipos de evento.
+  - `10cb4ce9`: editor con selectores Entrada, Modalidad, Aseguradora y Estado sin perder valores históricos.
+  - `7247da58`: ficha de anotación, estado semántico.
+  - `f66c686f`: ajustes Idioma/Apariencia rediseñados de menú Material desplegable a hoja organizada con marcas de selección.
+  - `8e1a9868`: `premium_components_test.dart`, casos 320/375 y claro/oscuro + distinción cromática.
+  - `3e28d10c`: actualización prueba cambio de organización `widget_test.dart` para componente propio.
+  - `515e367f`: script consolidado seguro `scripts/validate_ui_v3_1.sh`. `d70658c8`: documentación V3.1.
+- **Estado:** los cambios V3.1 están preparados en GitHub, **no hay todavía salida de Flutter analyze/test/build ni despliegue validado**. No prometer éxito ni que el navegador ya refleja los cambios.
+- **Próxima acción única en Ubuntu** (sin cerrar consola):
+  ```bash
+  (
+    cd /home/vencira/vencira-localcheck || exit 1
+    git fetch origin integration/local-e2e-prep || exit 1
+    git merge --ff-only FETCH_HEAD || exit 1
+    bash scripts/validate_ui_v3_1.sh
+  )
+  echo "RESULTADO_EJECUCION=$?"
+  echo "CONSOLA_ABIERTA"
+  ```
+- El script debe parar antes de cambiar Web si falla Git/Compose/Flutter. No alterar API, PostgreSQL ni `vencira_preview`. Si falla, corregir directamente en GitHub, documentar causa y repetir una sola ejecución. Tras éxito, capturas Android de los filtros desplegados (Estado/Entrada/Aseguradora), ajustes y badges en panel/ficha en claro/oscuro.
+- Datos de clientes reales prohibidos antes de seguridad/RGPD. No usar GitHub Actions por cuota consumida.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
