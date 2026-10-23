@@ -561,28 +561,18 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     }
     return [
       if (_workspaces.length > 1)
-      DropdownButtonFormField<VenciraWorkspace>(
-        key: ValueKey(_selected?.id),
-        isExpanded: true,
-        initialValue: _selected,
-        decoration: InputDecoration(
-          border: const OutlineInputBorder(),
-          labelText: _t.workspace,
+        VenciraSelect<VenciraWorkspace>(
+          key: ValueKey(_selected?.id),
+          label: _t.workspace,
+          value: _selected,
+          prefixIcon: Icons.apartment_rounded,
+          options: [
+            for (final workspace in _workspaces)
+              VenciraOption(value: workspace, label: workspace.name),
+          ],
+          onChanged: _loadingRenewals || _saving
+              ? null : _selectWorkspace,
         ),
-        items: _workspaces
-            .map(
-              (workspace) => DropdownMenuItem(
-                value: workspace,
-                child: Text(
-                  workspace.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            )
-            .toList(),
-        onChanged: _loadingRenewals || _saving ? null : _selectWorkspace,
-      ),
       if (_workspaces.length == 1)
         Padding(
           padding: const EdgeInsets.only(bottom: 4),
