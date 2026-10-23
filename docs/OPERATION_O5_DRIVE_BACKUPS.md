@@ -209,3 +209,31 @@ echo "CONSOLA_ABIERTA"
 
 **No copiar transcripción ni capturas de OAuth**: Rclone puede imprimir URL de autorización con `state`, token u otra información privada. Compartir únicamente estos indicadores seguros: `RCLONE_TOKEN_OAUTH_VALIDO=OK`, `RCLONE_SCOPE_DRIVE_FILE=OK`, `RCLONE_GOOGLE_DRIVE_ACCESO=OK`, `O5_GOOGLE_OAUTH_VERIFICADO=1`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`, o `FASE_FALLIDA` si aborta. Luego iniciar preparación de Restic remoto cifrado, primera copia y recuperación aislada, siempre sin datos reales/producción.
 
+
+## Incidencia 23/10/2026 — puerto local de autorización 53682 ocupado
+
+**Evidencia de Ubuntu aportada por usuario**, con el último intento de `scripts/o5_reauthorize_existing_drive.sh`:
+- Inició `rclone config reconnect vencira_google:` y respondió `y` a `Use auto config?`.
+- Rclone informó `listen tcp 127.0.0.1:53682: bind: address already in use`, por lo que **no pudo iniciar el servidor OAuth local**. No afirma problema en Google, Client ID o Drive.
+- `COPIA_CONFIG_PRIVADA_TEMPORAL=OK` y `CONFIG_ORIGINAL_RESTAURADA=1`, luego `RESULTADO_GLOBAL=1`, `FASE_FALLIDA=RCLONE_RECONNECT`, `O5_GOOGLE_OAUTH_VERIFICADO=0`, `SIN_ARCHIVOS_CREADOS_EN_DRIVE=1`, `SIN_COPIAS_NI_MIGRACIONES=1`, `RESULTADO_EJECUCION=1`. **La recuperación previa del archivo OAuth fue exitosa, y Drive aún no está autorizado/validado**.
+- Causa de colisión **por identificar**, no asumir proceso culpable. Posibles procesos OAuth de Rclone anteriores o un túnel SSH mal orientado/arrancado en el propio Ubuntu. En configuración oficial el **túnel `ssh -L` se crea en el dispositivo con navegador**, no desde el servidor remoto, para reenviar su `localhost:53682` hacia `127.0.0.1:53682` de Ubuntu. Ni `sshd` ni otro servicio deben terminarse sin comprobar el dueño del puerto.
+
+**Nuevo script de diagnóstico de SOLO LECTURA** `scripts/o5_diagnose_oauth_port.sh` (commit `718c12fca1b93de070fdeb188e3f0435555f84e9`): valida Git/identidad/health de `vencira_localcheck`, hace prueba de `bind` a `127.0.0.1:53682` sin escuchar, y, si ocupado, usa `ss -H -lntp` para mostrar únicamente nombre de proceso, PID, UID e interfaz. **No lee parámetros de procesos, token ni credenciales; no mata procesos; no modifica Google/DB; no elimina sockets ni reinicia contenedores**.
+
+Bloque único siguiente en Ubuntu:
+
+```bash
+(
+  cd /home/vencira/vencira-localcheck || exit 1
+  git fetch origin integration/local-e2e-prep || exit 1
+  git merge --ff-only FETCH_HEAD || exit 1
+  bash -n scripts/o5_diagnose_oauth_port.sh || exit 1
+  bash scripts/o5_diagnose_oauth_port.sh
+)
+echo "RESULTADO_EJECUCION=$?"
+echo "CONSOLA_ABIERTA"
+```
+
+**Interpretación posterior:** si `PUERTO_53682=OCUPADO`, examinar `PUERTO_PROCESO` y `PUERTO_PID` antes de decidir liberar servicio/sesión, **nunca `kill -9` genérico, reinicios ni desactivar seguridad**. Si `PUERTO_53682=LIBRE`, verificar antes la orientación del túnel del lado navegador y solo entonces volver a `scripts/o5_reauthorize_existing_drive.sh`; si falla de nuevo con el mismo error, comprobar qué proceso aparece **durante** el intento. El script confirma únicamente el estado en el instante de la prueba. No usar `rclone authorize` en el mismo servidor si el puerto sigue ocupado. Fuente: https://rclone.org/remote_setup/#configuring-using-ssh-tunnel .
+
+**Pendiente:** OAuth válido, primera copia PG17 cifrada a Drive, ensayo de restauración y calendarización. O5 no completada; no introducir datos personales reales.
