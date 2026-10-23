@@ -328,6 +328,108 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     }
   }
 
+  /// Ajustes agrupados y táctiles, sin menú emergente Material de pantalla
+  /// completa. Accesibles también en escritorio y con textos localizados.
+  Future<void> _openSettingsSheet() async {
+    final t = AppLocalizations.of(context)!;
+    final preferences = VenciraPreferences.of(context);
+    final colors = Theme.of(context).colorScheme;
+
+    Widget option(String title, IconData icon, bool selected,
+        VoidCallback onTap) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Material(
+          color: selected ? colors.primaryContainer : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+              child: Row(children: [
+                Icon(icon, size: 20, color: selected
+                    ? colors.onPrimaryContainer : colors.onSurfaceVariant),
+                const SizedBox(width: 13),
+                Expanded(child: Text(title,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                    color: selected ? colors.onPrimaryContainer
+                        : colors.onSurface))),
+                if (selected) Icon(Icons.check_circle_rounded,
+                  color: colors.primary, size: 21),
+              ]),
+            ),
+          ),
+        ),
+      );
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      isScrollControlled: true,
+      backgroundColor: colors.surfaceContainerLow,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (sheetContext) => Center(
+        heightFactor: 1,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 520,
+            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.78,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 22),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(t.settings,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700)),
+                const SizedBox(height: 18),
+                Text(t.language, style: Theme.of(context).textTheme.labelLarge
+                    ?.copyWith(color: colors.primary)),
+                const SizedBox(height: 6),
+                option(t.spanish, Icons.translate_rounded,
+                  preferences.locale.languageCode == 'es', () {
+                  Navigator.of(sheetContext).pop();
+                  preferences.setLocale(const Locale('es'));
+                }),
+                option(t.catalan, Icons.translate_rounded,
+                  preferences.locale.languageCode == 'ca', () {
+                  Navigator.of(sheetContext).pop();
+                  preferences.setLocale(const Locale('ca'));
+                }),
+                const SizedBox(height: 17),
+                Text(t.appearance, style: Theme.of(context).textTheme.labelLarge
+                    ?.copyWith(color: colors.primary)),
+                const SizedBox(height: 6),
+                option(t.system, Icons.brightness_auto_outlined,
+                  preferences.themeMode == ThemeMode.system, () {
+                  Navigator.of(sheetContext).pop();
+                  preferences.setThemeMode(ThemeMode.system);
+                }),
+                option(t.light, Icons.light_mode_outlined,
+                  preferences.themeMode == ThemeMode.light, () {
+                  Navigator.of(sheetContext).pop();
+                  preferences.setThemeMode(ThemeMode.light);
+                }),
+                option(t.dark, Icons.dark_mode_outlined,
+                  preferences.themeMode == ThemeMode.dark, () {
+                  Navigator.of(sheetContext).pop();
+                  preferences.setThemeMode(ThemeMode.dark);
+                }),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -336,63 +438,10 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       appBar: AppBar(
         title: const Text('VENCIRA'),
         actions: [
-          PopupMenuButton<String>(
-            tooltip: AppLocalizations.of(context)!.settings,
-            icon: const Icon(Icons.tune),
-            onSelected: (value) {
-              final preferences = VenciraPreferences.of(context);
-              switch (value) {
-                case 'es':
-                case 'ca':
-                  preferences.setLocale(Locale(value));
-                case 'system':
-                  preferences.setThemeMode(ThemeMode.system);
-                case 'light':
-                  preferences.setThemeMode(ThemeMode.light);
-                case 'dark':
-                  preferences.setThemeMode(ThemeMode.dark);
-              }
-            },
-            itemBuilder: (context) {
-              final l10n = AppLocalizations.of(context)!;
-              final settings = VenciraPreferences.of(context);
-              return [
-                PopupMenuItem<String>(
-                  enabled: false,
-                  child: Text(l10n.language),
-                ),
-                CheckedPopupMenuItem<String>(
-                  value: 'es',
-                  checked: settings.locale.languageCode == 'es',
-                  child: Text(l10n.spanish),
-                ),
-                CheckedPopupMenuItem<String>(
-                  value: 'ca',
-                  checked: settings.locale.languageCode == 'ca',
-                  child: Text(l10n.catalan),
-                ),
-                const PopupMenuDivider(),
-                PopupMenuItem<String>(
-                  enabled: false,
-                  child: Text(l10n.appearance),
-                ),
-                CheckedPopupMenuItem<String>(
-                  value: 'system',
-                  checked: settings.themeMode == ThemeMode.system,
-                  child: Text(l10n.system),
-                ),
-                CheckedPopupMenuItem<String>(
-                  value: 'light',
-                  checked: settings.themeMode == ThemeMode.light,
-                  child: Text(l10n.light),
-                ),
-                CheckedPopupMenuItem<String>(
-                  value: 'dark',
-                  checked: settings.themeMode == ThemeMode.dark,
-                  child: Text(l10n.dark),
-                ),
-              ];
-            },
+          IconButton(
+            tooltip: l10n.settings,
+            icon: const Icon(Icons.tune_rounded),
+            onPressed: _openSettingsSheet,
           ),
           if (_selected != null)
             IconButton(
