@@ -44,8 +44,9 @@ done
 echo "IDENTIDAD_LOCALCHECK=OK"
 
 PHASE=DB
+sql="SELECT name FROM django_migrations WHERE app='reminders' ORDER BY name DESC LIMIT 1;"
 schema="$(sudo docker exec vencira_localcheck-db-1 sh -c \
-  'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atq -c "SELECT name FROM django_migrations WHERE app=\047reminders\047 ORDER BY name DESC LIMIT 1;"')"
+  'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atq -c "$1"' sh "$sql")"
 echo "ULTIMA_MIGRACION=$schema"
 test "$schema" = 0014_renewal_outcomes || {
   echo "ERROR: esquema inesperado, O5 no continúa"
