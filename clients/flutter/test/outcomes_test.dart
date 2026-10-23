@@ -128,6 +128,10 @@ void main() {
       expect(api.item.entry, 'clients');
 
       final restore = find.byKey(const ValueKey('restore-outcome'));
+      // The archived card is rebuilt after the POST and may be lazy.
+      await tester.scrollUntilVisible(
+        restore, 180, scrollable: find.byType(Scrollable).first,
+      );
       await tester.ensureVisible(restore);
       await tester.pumpAndSettle();
       await tester.tap(restore);
