@@ -10,7 +10,7 @@ import 'modality_labels.dart';
 import 'vencira_select.dart';
 
 /// Primera vista de la agenda tipo papel. Sólo presenta eventos previstos.
-/// «Recuérdamelo», cierres y notificaciones entregadas aún no están modelados.
+/// Seguimientos manuales y eventos previstos: no son notificaciones entregadas.
 class VenciraDayAgendaScreen extends StatefulWidget {
   const VenciraDayAgendaScreen({
     super.key,
@@ -306,6 +306,8 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
         if (info.expiry.total > 0) pair('expiry', info.expiry, colors.error),
         if (info.notice.total > 0) pair('notice', info.notice, colors.tertiary),
         if (info.reminder.total > 0) pair('reminder', info.reminder, colors.primary),
+        if (info.followUp.total > 0)
+          pair('follow_up', info.followUp, const Color(0xFF956DC0)),
       ],
     );
   }
@@ -317,6 +319,8 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
         (_t.agendaExpiryEvent, info.expiry),
         (_t.noticeLabel, info.notice),
         (_t.agendaMonthReminder, info.reminder),
+        (Localizations.localeOf(context).languageCode == 'ca'
+            ? 'Seguiment manual' : 'Seguimiento manual', info.followUp),
       ]) {
         if (group.$2.total > 0) {
           label.write(' · ' + group.$1 + ': ' +
@@ -504,6 +508,14 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
                         return _activityChip(_t.agendaContractualNotice,
                           Icons.event_busy_outlined,
                           Theme.of(context).colorScheme.tertiary);
+                      }
+                      if (event.kind == 'follow_up') {
+                        return _activityChip(
+                          Localizations.localeOf(context).languageCode == 'ca'
+                              ? 'Seguiment manual' : 'Seguimiento manual',
+                          Icons.bookmark_added_outlined,
+                          const Color(0xFF956DC0),
+                        );
                       }
                       return _activityChip(
                         event.basis == 'notice_deadline'
