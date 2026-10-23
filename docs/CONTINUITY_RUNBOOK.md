@@ -202,6 +202,14 @@ Confirmado por salida del servidor: `vencira_localcheck-web_preview-1` **healthy
 - Paso siguiente: **un solo comando de diagnóstico no mutante** para mostrar `git status --short --branch`, SHA local, último log UI V3 (últimas 120 líneas; sin secretos) y marca de hora, conservando `CONSOLA_ABIERTA`. Corregir en GitHub según error real, sin volver a ejecutar despliegue a ciegas.
 - V3 sigue pendiente de confirmación de tests y despliegue; no confundir con V2 que sí fue validada.
 
+## V3 segunda validación: fallo real en API ficticia de prueba (23/10/2026)
+
+- Usuario confirmó ejecución sobre commit `d52cfe3902fab62eca6bc6b0ccf22ff8f3078021`, proyecto Docker correcto y limpio salvo `pubspec.lock`. `COMPOSE_CONFIG=OK`. `FLUTTER_PUB_GET_ANALYZE_TEST_BUILD` falló durante **flutter analyze**, antes de build o despliegue; `RESULTADO_GLOBAL=1`, log `/tmp/vencira-ui-v3.pUDcXijt.log`.
+- Salida: 14 diagnósticos en `test/design_v3_test.dart`; raíz única de sintaxis en líneas 42 y 52: `String ... {int page = 1},` antes de `})`, es decir, llave del argumento nombrado mal cerrada y una coma extra. El parche anterior `19ec2e8b` había añadido una llave al cierre pero **no corregía la llave/coma dentro de la línea de argumentos**. Los errores de métodos abstractos/annotaciones se derivan de ese fallo.
+- **Corrección completa en GitHub:** `2ec0d9fef72ecf4b78c4cc4783d00fcf26e771fb` reorganiza las dos declaraciones como `String workspaceId, DateTime day, {\n int page = 1,\n })` y lo propio para historial. No cambiar API de negocio ni PostgreSQL.
+- Pendiente ejecución única `scripts/validate_ui_v3.sh` tras `git fetch` + `git merge --ff-only`. Si el analizador o tests descubren otro error, no se recrea Web hasta superar todas las fases. No calificar V3 como validada/desplegada antes de salida verde.
+- Mantener el procedimiento de una ejecución por fase, logs completos y SSH abierto. No introducir datos personales reales.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
