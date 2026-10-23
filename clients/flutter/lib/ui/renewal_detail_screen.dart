@@ -387,6 +387,190 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
     }
   }
 
+  String _outcomeLabel(String kind) => switch (kind) {
+    'won' => _o2('Conseguido', 'Aconseguit'),
+    'declined' => _o2('No aceptó · el año que viene',
+                      'No va acceptar · l’any que ve'),
+    'undecided' => _o2('Aún sin decidir · recuérdamelo',
+                       'Encara sense decidir · recorda-m’ho'),
+    'discarded' => _o2('Descartar', 'Descartar'),
+    'restored' => _o2('Recuperar del archivo', 'Recuperar de l’arxiu'),
+    _ => kind,
+  };
+
+  Future<DateTime?> _outcomeFollowDate() async {
+    final offset = await showModalBottomSheet<int>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (sheet) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(title: Text(_o2(
+            '¿Cuándo recordarlo?', 'Quan recordar-ho?'))),
+          ListTile(title: Text(_o2('Mañana', 'Demà')),
+            leading: const Icon(Icons.wb_twilight_outlined),
+            onTap: () => Navigator.of(sheet).pop(1)),
+          ListTile(title: Text(_o2('En 3 días', 'D’aquí a 3 dies')),
+            leading: const Icon(Icons.event_outlined),
+            onTap: () => Navigator.of(sheet).pop(3)),
+          ListTile(title: Text(_o2('En 7 días', 'D’aquí a 7 dies')),
+            leading: const Icon(Icons.calendar_month_outlined),
+            onTap: () => Navigator.of(sheet).pop(7)),
+          ListTile(title: Text(_o2('Otra fecha', 'Una altra data')),
+            leading: const Icon(Icons.date_range_outlined),
+            onTap: () => Navigator.of(sheet).pop(0)),
+        ]),
+      ),
+    );
+    if (!mounted || offset == null) return null;
+    final now = DateTime.now();
+    if (offset != 0) {
+      return DateTime(now.year, now.month, now.day + offset);
+    }
+    final initial = DateTime(now.year, now.month, now.day + 1);
+    return showDatePicker(
+      context: context, firstDate: DateTime(2000),
+      lastDate: DateTime(2100, 12, 31), initialDate: initial,
+    );
+  }
+
+  Future<void> _chooseOutcome({bool restoring = false}) async {
+    final renewal = _renewal;
+    if (_saving || renewal == null) return;
+    String? kind;
+    if (restoring) {
+      kind = 'restored';
+    } else {
+      kind = await showModalBottomSheet<String>(
+        context: context, useSafeArea: true, showDragHandle: true,
+        builder: (sheet) => SafeArea(child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(title: Text(_o2(
+              'Resultado de la gestión', 'Resultat de la gestió')),
+              subtitle: Text(_o2(
+                'Selecciona un desenlace de esta póliza externa.',
+                'Selecciona un desenllaç d’aquesta pòlissa externa.'))),
+            for (final choice in const [
+              ('won', Icons.verified_outlined),
+              ('declined', Icons.event_repeat_outlined),
+              ('undecided', Icons.schedule_outlined),
+              ('discarded', Icons.inventory_2_outlined),
+            ])
+              ListTile(
+                key: ValueKey('outcome-' + choice.$1),
+                title: Text(_outcomeLabel(choice.$1)),
+                leading: Icon(choice.$2),
+                onTap: () => Navigator.of(sheet).pop(choice.$1),
+              ),
+          ],
+        )),
+      );
+    }
+    if (!mounted || kind == null) return;
+    DateTime? day;
+    if (kind == 'undecided') {
+      day = await _outcomeFollowDate();
+      if (!mounted || day == null) return;
+    }
+    final selected = kind;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        title: Text(_outcomeLabel(selected)),
+        content: Text(switch (selected) {
+          'won' => _o2(
+            'Se archivará como conseguida. No se gestionará como una póliza propia en VENCIRA.',
+            'S’arxivarà com a aconseguida. No es gestionarà com una pòlissa pròpia a VENCIRA.'),
+          'declined' => _o2(
+            'El vencimiento pasará al año siguiente. Se conservarán las notas y se recalcularán los avisos previstos activos.',
+            'El venciment passarà a l’any següent. Es conservaran les notes i es recalcularan els avisos previstos actius.'),
+          'undecided' => _o2(
+            'La anotación continuará abierta con seguimiento en la fecha elegida. No se enviará ninguna notificación.',
+            'L’anotació continuarà oberta amb seguiment a la data triada. No s’enviarà cap notificació.'),
+          'discarded' => _o2(
+            'La anotación saldrá de la agenda y se archivará. Podrás recuperarla.',
+            'L’anotació sortirà de l’agenda i s’arxivarà. La podràs recuperar.'),
+          _ => _o2(
+            'Se recuperará del archivo y volverá a pendiente.',
+            'Es recuperarà de l’arxiu i tornarà a pendent.'),
+        }),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialog).pop(false),
+            child: Text(_t.cancel)),
+          FilledButton(
+            onPressed: () => Navigator.of(dialog).pop(true),
+            child: Text(_o2('Confirmar', 'Confirmar'))),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+    setState(() => _saving = true);
+    try {
+      await widget.api.applyOutcome(
+        widget.workspace.id, renewal.id, selected,
+        scheduledFor: day,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_o2(
+          'Resultado registrado en el historial',
+          'Resultat registrat a l’historial'))));
+      await _refresh();
+      if (mounted && _history != null) await _loadHistory(1);
+    } on VenciraUnauthorized {
+      if (mounted) setState(() {
+        _renewal = null;
+        _unauthorized = true;
+      });
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t.saveError)));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Widget _outcomeCard(VenciraRenewal renewal) {
+    final archived = renewal.archiveOutcome.isNotEmpty;
+    return Card(child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(_o2('Desenlace', 'Desenllaç'),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          if (archived) ...[
+            Text(_o2('Archivado: ', 'Arxivat: ') +
+                _outcomeLabel(renewal.archiveOutcome)),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              key: const ValueKey('restore-outcome'),
+              onPressed: _saving ? null : () => _chooseOutcome(restoring: true),
+              icon: const Icon(Icons.unarchive_outlined),
+              label: Text(_outcomeLabel('restored')),
+            ),
+          ] else ...[
+            Text(_o2(
+              'Registra el resultado de una gestión. No se envían comunicaciones.',
+              'Registra el resultat d’una gestió. No s’envien comunicacions.'),
+              style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              key: const ValueKey('choose-outcome'),
+              onPressed: _saving ? null : _chooseOutcome,
+              icon: const Icon(Icons.fact_check_outlined),
+              label: Text(_o2('Elegir desenlace', 'Triar desenllaç')),
+            ),
+          ],
+        ],
+      ),
+    ));
+  }
+
   String _entryLabel(String? value) => switch (value) {
     'clients' => _t.entryClients,
     'prospects' => _t.entryProspects,
@@ -424,6 +608,9 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
     'status' => _t.status,
     'assigned_to_id' => _t.detailAssignment,
     'manual_follow_up' => _o2('Seguimiento manual', 'Seguiment manual'),
+    'outcome' => _o2('Desenlace', 'Desenllaç'),
+    'archived_at' => _o2('Archivado', 'Arxivat'),
+    'archive_outcome' => _o2('Resultado de archivo', 'Resultat d’arxiu'),
     _ => _t.detailOtherChange,
   };
 
@@ -631,10 +818,17 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
               const SizedBox(height: 12),
               _manualFollowUpCard(locale),
             ],
+            if (renewal.status != 'closed' ||
+                renewal.archiveOutcome.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _outcomeCard(renewal),
+            ],
+            if (renewal.archiveOutcome.isEmpty) ...[
             const SizedBox(height: 12),
             FilledButton.icon(onPressed: _saving ? null : _edit,
               icon: const Icon(Icons.edit_outlined),
               label: Text(_t.editRenewal)),
+            ],
             const SizedBox(height: 12),
             Text(_t.detailPrototypeWarning,
               style: Theme.of(context).textTheme.bodySmall),
