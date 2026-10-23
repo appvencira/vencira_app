@@ -30,8 +30,10 @@ class RenewalSerializer(serializers.ModelSerializer):
         model = Renewal
         fields = ("id", "customer_reference", "full_name", "nickname", "phone", "email", "policy_number", "notes", "entry", "modality", "insurer",
                   "expires_on", "notice_deadline_on", "status",
+                  "archived_at", "archive_outcome",
                   "assigned_to", "created_at", "updated_at")
-        read_only_fields = ("id", "created_at", "updated_at")
+        read_only_fields = ("id", "created_at", "updated_at",
+                            "archived_at", "archive_outcome")
 
     def validate(self, attrs):
         # Rechazo explícito de claves no editables y campos desconocidos:
