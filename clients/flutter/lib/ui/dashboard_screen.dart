@@ -548,6 +548,20 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     );
   }
 
+  void _openAgenda() {
+    final workspace = _selected;
+    if (workspace == null) return;
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => VenciraDayAgendaScreen(
+        api: _api,
+        workspace: workspace,
+        initialEntry: _entryFilter,
+        initialModality: _modalityFilter,
+        initialInsurer: _insurerFilter,
+      ),
+    ));
+  }
+
   List<Widget> _workspaceContent(ColorScheme colors) {
     if (_workspaces.isEmpty) {
       return [
@@ -589,28 +603,36 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         final compact = constraints.maxWidth < 600;
         return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Row(children: [
-            Expanded(child: OutlinedButton.icon(
-              onPressed: _saving || _loadingRenewals || _selected == null
-                  ? null
-                  : () => Navigator.of(context).push(MaterialPageRoute<void>(
-                    builder: (_) => VenciraDayAgendaScreen(
-                      api: _api, workspace: _selected!,
-                      initialEntry: _entryFilter,
-                      initialModality: _modalityFilter,
-                      initialInsurer: _insurerFilter,
-                    ),
-                  )),
-              icon: const Icon(Icons.calendar_month_outlined),
-              label: Text(compact ? 'Agenda' : _t.agendaOpenDay,
-                maxLines: 1, overflow: TextOverflow.ellipsis),
-            )),
+            Expanded(child: constraints.maxWidth < 340
+              ? OutlinedButton(
+                  onPressed: _saving || _loadingRenewals || _selected == null
+                      ? null : _openAgenda,
+                  child: const Text('Agenda', maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                )
+              : OutlinedButton.icon(
+                  onPressed: _saving || _loadingRenewals || _selected == null
+                      ? null : _openAgenda,
+                  icon: const Icon(Icons.calendar_month_outlined),
+                  label: Text(compact ? 'Agenda' : _t.agendaOpenDay,
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                )),
             const SizedBox(width: 10),
-            Expanded(child: FilledButton.icon(
-              onPressed: _loadingRenewals || _saving ? null : () => _editRenewal(),
-              icon: const Icon(Icons.add_rounded),
-              label: Text(compact ? _t.addRenewal.split(' ').first : _t.addRenewal,
-                maxLines: 1, overflow: TextOverflow.ellipsis),
-            )),
+            Expanded(child: constraints.maxWidth < 340
+              ? FilledButton(
+                  onPressed: _loadingRenewals || _saving
+                      ? null : () => _editRenewal(),
+                  child: Text(_t.addRenewal.split(' ').first,
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                )
+              : FilledButton.icon(
+                  onPressed: _loadingRenewals || _saving
+                      ? null : () => _editRenewal(),
+                  icon: const Icon(Icons.add_rounded),
+                  label: Text(compact
+                      ? _t.addRenewal.split(' ').first : _t.addRenewal,
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                )),
           ]),
           if (_selected?.role == 'owner') ...[
             const SizedBox(height: 8),
