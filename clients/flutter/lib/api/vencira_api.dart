@@ -264,7 +264,7 @@ class VenciraFollowUp {
     final id = json['id'], day = json['scheduled_for'];
     if (id is! String ||
         !RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
-                r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}').hasMatch(id) ||
+                r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$').hasMatch(id) ||
         day is! String || day.length != 10) {
       throw const FormatException('Invalid manual follow-up');
     }
