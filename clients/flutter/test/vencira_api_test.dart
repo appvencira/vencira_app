@@ -253,6 +253,54 @@ void main() {
     expect(requests, 0);
   });
 
+  test('O3 resuelve ganado con CSRF y un JSON mínimo', () async {
+    const id = 'b2222222-2222-4222-8222-222222222222';
+    var writes = 0;
+    final client = MockClient((request) async {
+      if (request.url.path == '/api/v1/csrf/') {
+        return http.Response(
+          '{"csrfToken":"abcdefghijklmnopqrstuvwxyz123456"}', 200);
+      }
+      writes++;
+      expect(request.method, 'POST');
+      expect(request.url.path,
+        '/api/v1/workspaces/$workspaceId/renewals/$id/outcomes/');
+      expect(request.headers.entries.any((e) =>
+        e.key.toLowerCase() == 'x-csrftoken'), isTrue);
+      expect(request.body, '{"kind":"won"}');
+      return http.Response(
+        '{"event":{"id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",'
+        '"kind":"won","timestamp":"2026-10-23T10:00:00Z"}}', 201);
+    });
+    final api = HttpVenciraApi(
+      client: client, baseUri: Uri.parse('http://localhost:18731/'));
+    await api.applyOutcome(workspaceId, id, 'won');
+    expect(writes, 1);
+  });
+
+  test('O3 rechaza operaciones no válidas antes de solicitar CSRF',
+      () async {
+    var requests = 0;
+    final client = MockClient((_) async {
+      requests++;
+      return http.Response('{}', 200);
+    });
+    final api = HttpVenciraApi(
+      client: client, baseUri: Uri.parse('http://localhost:18731/'));
+    const id = 'b2222222-2222-4222-8222-222222222222';
+    await expectLater(api.applyOutcome(workspaceId, id, 'unknown'),
+      throwsA(isA<VenciraApiException>()));
+    await expectLater(api.applyOutcome(workspaceId, id, 'undecided'),
+      throwsA(isA<VenciraApiException>()));
+    await expectLater(api.applyOutcome(
+      workspaceId, id, 'won', scheduledFor: DateTime(2027, 5, 1)),
+      throwsA(isA<VenciraApiException>()));
+    await expectLater(api.applyOutcome(
+      workspaceId, '../bad', 'discarded'),
+      throwsA(isA<VenciraApiException>()));
+    expect(requests, 0);
+  });
+
   test('logout usa POST con CSRF para cerrar la sesión', () async {
     var posts = 0;
     final client = MockClient((request) async {
