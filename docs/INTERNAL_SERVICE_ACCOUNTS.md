@@ -7,8 +7,8 @@ Fecha de incorporación: 23/10/2026. Documento **interno** del repositorio priva
 | Campo | Valor / decisión |
 | --- | --- |
 | Propósito | Cuenta Google exclusiva para la administración técnica y los servicios de VENCIRA |
-| Dirección facilitada por el titular | `appvencira@gmail.col` |
-| **Estado de verificación** | **PENDIENTE**: se escribió `.col`, posible errata de `.com`; **no asumir ni corregir silenciosamente**, confirmar dirección real antes de configurar OAuth, servicios o alertas |
+| Dirección facilitada por el titular (corrección más reciente) | `appvencira@gmail.cm` |
+| **Estado de verificación** | **PENDIENTE**: tras rectificar `.col`, el usuario escribió `.cm`. Gmail utiliza habitualmente el dominio `gmail.com`; **no sustituir `.cm` por `.com` sin confirmación explícita** ni usar aún la dirección para OAuth, terceros o alertas |
 | Carácter | Uso **interno y administrativo**; no presentar como email público ni atención al cliente |
 | Usos autorizables | Google Drive para copias externas **cifradas previamente**; alta/gestión y recuperación de accesos en servicios de terceros; credenciales administrativas de integraciones necesarias para la aplicación |
 | Usos no asumidos | No es por defecto remitente de recordatorios comerciales, email transaccional, soporte público ni buzón de recepción de datos personales de clientes |
@@ -31,6 +31,6 @@ Fecha de incorporación: 23/10/2026. Documento **interno** del repositorio priva
 
 ### Acción pendiente inequívoca
 
-**Confirmar si la cuenta correcta es `appvencira@gmail.com`** (en lugar de la dirección literalmente facilitada `appvencira@gmail.col`). Hasta entonces, conservar la grafía original como dato aportado, pero **NO** usarla para iniciar sesión, configurar OAuth, recibir alertas o registrar terceros.
+**Confirmar si el correo correcto es `appvencira@gmail.com` o si realmente termina en `.cm`.** La última corrección del usuario fue literalmente `appvencira@gmail.cm`, precedida de `appvencira@gmail.col`. Registrar la última como dirección proporcionada, no como identidad Google validada; **NO** usarla para OAuth, alta de servicios de terceros, restauración de acceso ni avisos hasta que el titular confirme la grafía exacta.
 
 Una vez confirmada, reemplazar este campo y anotar su estado validado. Próxima fase O5: diseñar y probar desde `vencira_localcheck` respaldo cifrado y restauración externa, sin alterar O1–O4 ni permitir datos reales.
