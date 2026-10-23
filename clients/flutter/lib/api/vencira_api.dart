@@ -38,9 +38,9 @@ abstract class VenciraApi {
   /// Seguimiento manual: fecha civil, no equivale a aviso entregado.
   /// Resuelve una anotación según whitepaper; nunca envía comunicaciones.
   Future<void> applyOutcome(
-    String workspaceId, String renewalId, String kind,
-    {DateTime? scheduledFor},
-  ) async => throw const VenciraApiException();
+    String workspaceId, String renewalId, String kind, {
+    DateTime? scheduledFor,
+  }) async => throw const VenciraApiException();
 
   Future<VenciraFollowUp?> fetchManualFollowUp(
       String workspaceId, String renewalId) async => null;
@@ -1128,9 +1128,9 @@ class HttpVenciraApi implements VenciraApi {
 
   @override
   Future<void> applyOutcome(
-    String workspaceId, String renewalId, String kind,
-    {DateTime? scheduledFor},
-  ) async {
+    String workspaceId, String renewalId, String kind, {
+    DateTime? scheduledFor,
+  }) async {
     if (!_validUuid(workspaceId) || !_validUuid(renewalId) ||
         !const ['won', 'declined', 'undecided', 'discarded', 'restored']
             .contains(kind) ||
