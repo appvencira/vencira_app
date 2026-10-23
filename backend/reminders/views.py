@@ -11,7 +11,7 @@ from rest_framework.response import Response
 
 from .audit import make_audit_event
 from .filtering import filtered_renewals
-from .models import ReminderCandidate, Renewal, RenewalAuditEvent, WorkspaceMember
+from .models import ReminderCandidate, Renewal, RenewalAuditEvent, RenewalFollowUp, WorkspaceMember
 from .pagination import RenewalPagination
 from .serializers import MembershipSerializer, RenewalSerializer
 
@@ -70,7 +70,7 @@ def workspace_members(request, workspace_id):
 def agenda_day(request, workspace_id):
     """Vista de lectura: vencimientos, límites contractuales y avisos previstos.
 
-    No presupone entrega real ni añade eventos "recuérdamelo" aún no modelados.
+    No presupone entrega real: los seguimientos manuales son eventos previstos.
     El cliente envía el día local explícito; no usar la zona horaria del servidor.
     """
     membership = _membership(request, workspace_id)
@@ -92,13 +92,19 @@ def agenda_day(request, workspace_id):
     )
     # Exists evita duplicados y mantiene paginación por anotación.
     has_reminder_today = due_candidates.filter(renewal_id=OuterRef("pk"))
+    has_manual_today = RenewalFollowUp.objects.filter(
+        renewal_id=OuterRef("pk"), scheduled_for=day,
+        state=RenewalFollowUp.State.PLANNED,
+    )
     scoped = (
         filtered_renewals(
             request.query_params, _visible_renewals(membership)
         )
         .exclude(status=Renewal.Status.CLOSED)
-        .annotate(agenda_has_reminder=Exists(has_reminder_today))
-        .filter(Q(expires_on=day) | Q(notice_deadline_on=day) | Q(agenda_has_reminder=True))
+        .annotate(agenda_has_reminder=Exists(has_reminder_today),
+                  agenda_has_manual=Exists(has_manual_today))
+        .filter(Q(expires_on=day) | Q(notice_deadline_on=day) |
+                Q(agenda_has_reminder=True) | Q(agenda_has_manual=True))
         .order_by("expires_on", "id")
     )
     paginator = RenewalPagination()
@@ -128,6 +134,8 @@ def agenda_day(request, workspace_id):
                 "candidate_id": candidate.pk,
                 "basis": candidate.policy.basis,
             })
+        if renewal.agenda_has_manual:
+            events.append({"kind": "follow_up"})
         results.append({
             "renewal": RenewalSerializer(renewal).data,
             "events": events,
