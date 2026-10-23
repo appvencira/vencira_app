@@ -125,12 +125,17 @@ class _VenciraMonthAgendaScreenState extends State<VenciraMonthAgendaScreen> {
 
   String _iso(DateTime day) => DateFormat('yyyy-MM-dd').format(day);
 
+  Color get _followColor => const Color(0xFF956DC0);
+  String get _followTitle => Localizations.localeOf(context).languageCode == 'ca'
+      ? 'Seguiment manual' : 'Seguimiento manual';
+
   /// Color principal del día. Vencimiento > preaviso > aviso previsto.
   /// Cuando coinciden varios, mantenemos las marcas secundarias debajo.
   Color? _eventColor(VenciraMonthDay? day, ColorScheme colors) {
     if (day == null) return null;
     if (day.expiry.total > 0) return colors.error;
     if (day.notice.total > 0) return colors.tertiary;
+    if (day.followUp.total > 0) return _followColor;
     if (day.reminder.total > 0) return colors.primary;
     return null;
   }
@@ -184,6 +189,7 @@ class _VenciraMonthAgendaScreenState extends State<VenciraMonthAgendaScreen> {
               (_t.agendaExpiryEvent, info.expiry),
               (_t.noticeLabel, info.notice),
               (_t.agendaMonthReminder, info.reminder),
+              (_followTitle, info.followUp),
             ]) {
               if (group.$2.total > 0) {
                 description.write(' · ' + group.$1 + ': ' +
@@ -234,6 +240,7 @@ class _VenciraMonthAgendaScreenState extends State<VenciraMonthAgendaScreen> {
                             _marks(key, 'expiry', info.expiry, colors.error),
                             _marks(key, 'notice', info.notice, colors.tertiary),
                             _marks(key, 'reminder', info.reminder, colors.primary),
+                            _marks(key, 'follow_up', info.followUp, _followColor),
                           ],
                         ),
                       ],
@@ -308,6 +315,7 @@ class _VenciraMonthAgendaScreenState extends State<VenciraMonthAgendaScreen> {
                     _legend(_t.agendaExpiryEvent, colors.error),
                     _legend(_t.noticeLabel, colors.tertiary),
                     _legend(_t.agendaMonthReminder, colors.primary),
+                    _legend(_followTitle, _followColor),
                   ],
                 ),
                 const SizedBox(height: 8),
