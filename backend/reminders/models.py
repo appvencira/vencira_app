@@ -130,6 +130,47 @@ class Renewal(models.Model):
     def __str__(self):
         return f"{self.customer_reference} — {self.expires_on}"
 
+class RenewalFollowUp(models.Model):
+    """Seguimiento manual civil por anotación; nunca es notificación enviada."""
+
+    class State(models.TextChoices):
+        PLANNED = "planned", "Previsto"
+        COMPLETED = "completed", "Atendido"
+        CANCELLED = "cancelled", "Cancelado"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    renewal = models.ForeignKey(
+        Renewal, on_delete=models.CASCADE, related_name="manual_follow_ups",
+    )
+    scheduled_for = models.DateField()
+    state = models.CharField(
+        max_length=16, choices=State.choices, default=State.PLANNED,
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL,
+        related_name="vencira_manual_followups_created",
+    )
+    closed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="vencira_manual_followups_closed",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["renewal"], condition=models.Q(state="planned"),
+                name="uniq_planned_followup",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["scheduled_for", "state"],
+                name="manual_follow_due_idx"),
+        ]
+
+
 class LoginAttemptBucket(models.Model):
     """Contador compartido entre workers; clave HMAC, sin almacenar nombre."""
     key = models.CharField(max_length=64, primary_key=True)
