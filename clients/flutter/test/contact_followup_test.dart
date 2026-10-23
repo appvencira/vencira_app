@@ -88,7 +88,8 @@ void main() {
       ));
       await tester.pumpAndSettle();
       final action = find.byKey(const ValueKey('mark-contacted'));
-      await tester.ensureVisible(action);
+      await tester.scrollUntilVisible(action, 220);
+      await tester.pumpAndSettle();
       await tester.tap(action);
       await tester.pumpAndSettle();
       expect(api.writes, 0);
@@ -107,6 +108,9 @@ void main() {
       expect(api.writes, 1);
       expect(api.renewal.status, 'contacted');
       expect(api.renewal.notes, 'Anotación sintética previa');
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('restore-pending')), 180);
+      await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('restore-pending')), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
