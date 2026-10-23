@@ -187,6 +187,14 @@ Confirmado por salida del servidor: `vencira_localcheck-web_preview-1` **healthy
 - **Siguiente paso**: sincronización GitHub y ejecutar UNA vez el script completo con `bash scripts/validate_ui_v3.sh` desde `/home/vencira/vencira-localcheck`; solo si test Flutter+build superan, recrear `web_preview` del proyecto `vencira_localcheck`. Si falla, el asistente corrige GitHub y repite solo esta prueba. Sin Actions, sin tocar BD/API/otro stack.
 - **Después del resultado verde**: capturas Android V3 (mes con evento, agenda semanal, inicio, editor y ficha), comprobar 320/375px, modo claro/oscuro. No dar por satisfactoria experiencia visual solo por tests. Registrar resultado y SHA.
 
+## Diagnóstico confirmado y corregido — Flutter V3 (23/10/2026)
+
+- El usuario compartió el archivo `/tmp/vencira-ui-v3.uf8GYuLt.log` de la primera ejecución. Checkout: `integration/local-e2e-prep`, SHA previo `e4c6852`, solamente `clients/flutter/pubspec.lock` sin seguimiento (permitido).
+- `flutter pub get` terminó bien. `flutter analyze` detectó exactamente dos errores `Expected to find ')'` en `test/design_v3_test.dart` (líneas 42:53 y 52:57). Causa real: **faltaba `}` de cierre en los argumentos opcionales con nombre** de `fetchAgendaDay` y `fetchRenewalHistory` de la API ficticia usada por el nuevo widget test, no un fallo del servidor.
+- **Corregido en GitHub:** `19ec2e8b` (`clients/flutter/test/design_v3_test.dart`, añade `}) async` en ambos métodos). Sin nuevas migraciones y sin cambios API/DB.
+- Próximo paso: sincronizar `integration/local-e2e-prep` y volver a correr **una sola vez** `bash scripts/validate_ui_v3.sh`. El script detiene el rollout antes de tocar Web si alguna prueba falla; puede aparecer otro fallo de prueba/código aún no observado, que se corregirá en GitHub según su log. Conservar la consola SSH.
+- V3 **NO está validado ni desplegado todavía** a partir del log recibido. No afirmar que un build o despliegue se ejecutó.
+
 ## Última ejecución UI V3: error todavía sin detalle
 
 - El usuario informó solo `CONSOLA_ABIERTA`, `EJECUCION_COMPLETADA=0`, `CONSOLA_ABIERTA` tras ejecutar el bloque V3. **No se conoce todavía si falló `git fetch/merge`, una precondición, Flutter, Docker build o rollout**; no afirmar que no hubo despliegue ni que hubo un fallo de compilación.
