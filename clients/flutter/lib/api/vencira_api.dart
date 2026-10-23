@@ -28,6 +28,13 @@ abstract class VenciraApi {
   Future<VenciraRenewal> updateRenewal(
       String workspaceId, String renewalId, VenciraRenewalInput input);
 
+  /// Acción rápida de seguimiento: PATCH mínimo de status, sin sobrescribir
+  /// campos editados por otra sesión. No realiza contacto ni envía mensajes.
+  /// La implementación predeterminada permite dobles de prueba existentes.
+  Future<VenciraRenewal> changeRenewalStatus(
+      String workspaceId, String renewalId, String status) async =>
+      throw const VenciraApiException();
+
   /// Métodos nuevos con valores por defecto para clientes de pruebas antiguos.
   Future<List<VenciraModalityOption>> fetchModalities(String workspaceId) async =>
       VenciraModalityOption.defaults;
@@ -1024,6 +1031,51 @@ class HttpVenciraApi implements VenciraApi {
   Future<VenciraRenewal> updateRenewal(
           String workspaceId, String renewalId, VenciraRenewalInput input) =>
       _write(workspaceId, input, renewalId: renewalId);
+
+  @override
+  Future<VenciraRenewal> changeRenewalStatus(
+      String workspaceId, String renewalId, String status) async {
+    if (!_validUuid(workspaceId) || !_validUuid(renewalId) ||
+        !const ['pending', 'contacted'].contains(status)) {
+      throw const VenciraApiException();
+    }
+
+    final csrfToken = await _csrf();
+    late http.Response response;
+    try {
+      response = await _client.patch(
+        _baseUri.resolve(
+          '/api/v1/workspaces/$workspaceId/renewals/$renewalId/',
+        ),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+        },
+        body: jsonEncode({'status': status}),
+      );
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const VenciraUnauthorized();
+    }
+    if (response.statusCode != 200) {
+      throw const VenciraApiException();
+    }
+    try {
+      final updated = VenciraRenewal.fromJson(
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>,
+      );
+      if (updated.id.toLowerCase() != renewalId.toLowerCase() ||
+          updated.status != status) {
+        throw const VenciraApiException();
+      }
+      return updated;
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
 
   @override
   Future<void> logout() async {
