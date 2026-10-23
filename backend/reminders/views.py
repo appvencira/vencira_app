@@ -214,6 +214,13 @@ def renewal_detail(request, workspace_id, renewal_id):
             _visible_renewals(membership).select_for_update(),
             pk=renewal_id,
         )
+        # Los resultados O3 archivados solo se recuperan mediante el endpoint
+        # confirmado y auditado; prohibido editar directamente estos registros.
+        if renewal.archived_at is not None:
+            return Response(
+                {"detail": "Recupera primero la anotación del archivo."},
+                status=status.HTTP_409_CONFLICT,
+            )
         # Snapshot solo en memoria para construir delta no sensible del log.
         before = Renewal(
             customer_reference=renewal.customer_reference,
