@@ -250,6 +250,14 @@ Confirmado por salida del servidor: `vencira_localcheck-web_preview-1` **healthy
 - El script debe parar antes de cambiar Web si falla Git/Compose/Flutter. No alterar API, PostgreSQL ni `vencira_preview`. Si falla, corregir directamente en GitHub, documentar causa y repetir una sola ejecución. Tras éxito, capturas Android de los filtros desplegados (Estado/Entrada/Aseguradora), ajustes y badges en panel/ficha en claro/oscuro.
 - Datos de clientes reales prohibidos antes de seguridad/RGPD. No usar GitHub Actions por cuota consumida.
 
+## V3.1 — Primera ejecución, analizador detenido y corrección (23/10/2026)
+
+- El usuario ejecutó `scripts/validate_ui_v3_1.sh`; salió `RESULTADO_GLOBAL=1` y `FASE_FALLIDA=FLUTTER_PUB_GET_ANALYZE_TEST_BUILD`. Flutter pub get tuvo éxito, pero **flutter analyze** detectó `duplicate_definition` en `lib/ui/vencira_select.dart:70:39`: `separatorBuilder: (_, _) => ...`. En esta versión Dart dos parámetros de un mismo callback no pueden llamarse ambos `_`.
+- **Parche GitHub `60d92832aa4fa11222f19a125d24d9c71daf178b`**: `separatorBuilder: (context, index) => const SizedBox(height: 5)`. No toca contratos, autenticación, modelos, BD ni API.
+- El script no llegó al build/rollout: la V3.1 **NO se ha desplegado** por esta ejecución. La V3 anterior sigue siendo la última confirmada en `vencira_localcheck`.
+- Próximo paso: sincronizar rama `integration/local-e2e-prep` y repetir el **mismo script integral V3.1** una sola vez. Si fallan nuevas pruebas, corregir en GitHub según el log. Conservar siempre shell SSH; prohibido borrar archivos locales para pasar preflight.
+- Ver `docs/DESIGN_SYSTEM_V3_1.md` para criterio visual de selectores y badges.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
