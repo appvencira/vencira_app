@@ -187,6 +187,13 @@ Confirmado por salida del servidor: `vencira_localcheck-web_preview-1` **healthy
 - **Siguiente paso**: sincronización GitHub y ejecutar UNA vez el script completo con `bash scripts/validate_ui_v3.sh` desde `/home/vencira/vencira-localcheck`; solo si test Flutter+build superan, recrear `web_preview` del proyecto `vencira_localcheck`. Si falla, el asistente corrige GitHub y repite solo esta prueba. Sin Actions, sin tocar BD/API/otro stack.
 - **Después del resultado verde**: capturas Android V3 (mes con evento, agenda semanal, inicio, editor y ficha), comprobar 320/375px, modo claro/oscuro. No dar por satisfactoria experiencia visual solo por tests. Registrar resultado y SHA.
 
+## Última ejecución UI V3: error todavía sin detalle
+
+- El usuario informó solo `CONSOLA_ABIERTA`, `EJECUCION_COMPLETADA=0`, `CONSOLA_ABIERTA` tras ejecutar el bloque V3. **No se conoce todavía si falló `git fetch/merge`, una precondición, Flutter, Docker build o rollout**; no afirmar que no hubo despliegue ni que hubo un fallo de compilación.
+- Script `scripts/validate_ui_v3.sh` guarda la salida de pruebas/build en `/tmp/vencira-ui-v3.XXXXXXXX.log` e imprime `RESULTADO_GLOBAL`, `FASE_FALLIDA` en stdout. El usuario solo envió el final, insuficiente para diagnóstico.
+- Paso siguiente: **un solo comando de diagnóstico no mutante** para mostrar `git status --short --branch`, SHA local, último log UI V3 (últimas 120 líneas; sin secretos) y marca de hora, conservando `CONSOLA_ABIERTA`. Corregir en GitHub según error real, sin volver a ejecutar despliegue a ciegas.
+- V3 sigue pendiente de confirmación de tests y despliegue; no confundir con V2 que sí fue validada.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
