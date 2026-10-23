@@ -40,7 +40,7 @@ echo "STACK_LOCALCHECK=healthy"
 PHASE=PREPARAR_CONFIG_ROOT
 ROOT=/etc/vencira-backup
 CONF="$ROOT/rclone.conf"
-test ! -L "$ROOT" && test ! -L "$CONF"
+sudo test ! -L "$ROOT" && sudo test ! -L "$CONF"
 if [ -e "$ROOT" ]; then
   test -d "$ROOT" && test "$(sudo stat -c %u:%a "$ROOT")" = 0:700 || {
     echo "ERROR: directorio de secretos existente sin permisos root:700"
