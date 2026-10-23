@@ -1,6 +1,6 @@
 # VENCIRA O5 — Copias cifradas PostgreSQL en Google Drive
 
-**Estado 23/10/2026:** O5 **DISEÑADA Y SCRIPTS VERSIONADOS, SIN CONEXIÓN NI COPIAS REMOTAS TODAVÍA**. Cuenta de Google interna confirmada por usuario: `appvencira@gmail.com`; **no es una dirección de soporte público**. No se han recibido credenciales, ni se han instalado paquetes, ni se ha accedido a Drive. No usar información personal real.
+**Estado 23/10/2026:** O5 **diagnóstico inicial en Ubuntu completado**, herramientas Restic y Rclone **ausentes**, instalación controlada **preparada en GitHub pero NO ejecutada todavía**, sin conexión OAuth ni copias remotas. Cuenta de Google interna confirmada por usuario: `appvencira@gmail.com`; **no es una dirección de soporte público**. No se han recibido credenciales, ni se han instalado paquetes, ni se ha accedido a Drive. No usar información personal real.
 
 ## Objetivo y límites
 
@@ -25,6 +25,30 @@ Esta es una **segunda ubicación**, no un backup a prueba de borrado/ransomware:
 2. `scripts/o5_backup_to_drive.sh`: script para ejecución controlada como root **después** de conexión de Drive, inicialización de repositorio Restic cifrado y protección de secretos. Usa `restic backup --stdin-from-command -- docker exec ... pg_dump -Fc`, de modo que falla si falla `pg_dump`; no escribe un dump descifrado en almacenamiento del host. Bloqueo de concurrencia; verifica proyecto Docker `vencira_localcheck`, health DB y presencia de repositorio; ejecuta `restic check` tras copia. **No habilitado ni programado**.
 3. `scripts/o5_restore_drill.sh`: verificación posterior a la primera subida; obtiene y descifra el último snapshot solo por tubería y restaura en un contenedor efímero `postgres:17-alpine --network none`, sin volumen persistente; verifica migración 0014 y BD original sin tocar. **No habilitado**.
 
+## Diagnóstico real del servidor y fase de instalación (23/10/2026)
+
+El usuario ejecutó `scripts/o5_preflight_drive.sh` sobre `integration/local-e2e-prep`, commit `fc42825547b1d6ed1b64aa8f1622eb25ca07851e`, sin cambios de Git. Resultado: `HEALTH_api=healthy`, `HEALTH_db=healthy`, `HEALTH_web_preview=healthy`, `IDENTIDAD_LOCALCHECK=OK`, última migración `0014_renewal_outcomes`; disco raíz `/dev/vda1` 232 GB de capacidad, **211 GB libres** (10 % usado). `rclone` y `restic` **NO instalados**, `openssl`, `curl`, `python3`, `flock` presentes; ficheros root de configuración y clave **no creados**. `RESULTADO_GLOBAL=0`, `SIN_INSTALACION_NI_ACCESO_GOOGLE=1`, `SIN_COPIAS_REMOTAS_NI_CAMBIOS_DB=1`.
+
+**Script de la etapa siguiente:** `scripts/o5_install_backup_tools.sh`, commit de corrección `e8618a99224f8a163992dbcf3ade2cbbe6b6f2ca`, exclusivamente para **Ubuntu 24.04**. Verifica rama, checkout limpio, identidad y salud de `vencira_localcheck`. Ejecuta únicamente `apt-get update` e `apt-get install -y --no-install-recommends restic rclone` de repositorios **Ubuntu firmados** (sin `upgrade`, `dist-upgrade`, instalador `curl|bash`, Docker up/restart ni migraciones). Comprueba versiones, soporte `--stdin-from-command` de Restic y backend `rclone serve restic`, identidad/health e IDs intactos de API/DB/Web.
+
+El repositorio Ubuntu 24.04 incluye Restic 0.16.4 y Rclone 1.60.1 (pueden existir actualizaciones de seguridad con sufijo de paquete diferente); se verificará la versión **real** tras instalar. Restic admite `--stdin-from-command`, que detecta el código de salida de `pg_dump` y evita snapshot de salida incompleta. Rclone usa credenciales OAuth **propias** de Google Drive porque su client ID compartido se retira en 2026.
+
+**No se ha ejecutado aún esta instalación.** No crear `/etc/vencira-backup`, no solicitar contraseña/token, no iniciar OAuth, no subir nada a Drive en esta fase. Ejecutar una sola vez desde el usuario `vencira`:
+
+```bash
+(
+  cd /home/vencira/vencira-localcheck || exit 1
+  git fetch origin integration/local-e2e-prep || exit 1
+  git merge --ff-only FETCH_HEAD || exit 1
+  bash -n scripts/o5_install_backup_tools.sh || exit 1
+  bash scripts/o5_install_backup_tools.sh
+)
+echo "RESULTADO_EJECUCION=$?"
+echo "CONSOLA_ABIERTA"
+```
+
+Solicitar salida `RESULTADO_GLOBAL=0`, `RCLONE_RESTIC_INSTALADOS_Y_PROBADOS=1`, versiones de ambos, `RESTIC_STDIN_FROM_COMMAND=OK`, `RCLONE_BACKEND_RESTIC=OK`, `CONTENEDORES_INTACTOS=1` y `HEALTH_api/db/web_preview=healthy`. Si falla, no repetir sin identificar la fase.
+
 ## Dependencia interactiva: OAuth Google, usuario Android
 
 Para permitir las copias habrá que crear, desde `appvencira@gmail.com`, un proyecto Google Cloud para la integración de respaldo, activar **Google Drive API**, configurar la pantalla de consentimiento para uso personal, crear credenciales **OAuth tipo Desktop** y aprobar el acceso desde navegador; rclone recomienda crear cliente propio porque su identificador compartido se retira en 2026. No se deben enviar al chat las credenciales ni códigos OAuth.
@@ -39,7 +63,7 @@ Documentación oficial:
 
 ## Orden de ejecución previsto y estado
 
-1. **Ahora**: ejecutar el diagnóstico de solo lectura. Si faltan herramientas, resolver instalación con paquetes verificados, sin actualizar el sistema operativo ni reiniciar servicios.
+1. **Diagnóstico de solo lectura SUPERADO**: herramientas `rclone` y `restic` ausentes, stack healthy, 211 GB disponibles. **Siguiente:** instalación APT controlada de ambas y comprobación de capacidades con `scripts/o5_install_backup_tools.sh`, pendiente de ejecución en Ubuntu. Sin actualizar la versión del sistema operativo ni reiniciar servicios.
 2. Configurar Google Cloud OAuth con autorización específica del titular (no introducir secreto en chat); crear remote Rclone dedicado bajo la identidad de respaldo.
 3. Generar y proteger clave Restic, **guardar recuperación fuera del servidor**, crear repositorio remoto con `restic init`; comprobar que no hay dumps en claro y el Drive corresponde a la cuenta adecuada.
 4. Ejecutar una copia manual encriptada y `scripts/o5_restore_drill.sh`; comparar esquema/recuento e integridad sin alterar base viva; verificar que el último snapshot efectivamente corresponde al equipo. Si hay errores, **no habilitar automatización**.
