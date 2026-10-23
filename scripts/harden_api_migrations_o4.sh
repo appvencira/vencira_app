@@ -12,7 +12,7 @@ BACKUP=""
 BACKUP_OK=0
 API_RECREATED=0
 WEB_RECREATED=0
-RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)_$"
+RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)_$$"
 RECEIPT=""
 
 finish() {
@@ -38,7 +38,7 @@ finish() {
     echo "NO_RESTAURAR_BACKUP_AUTOMATICAMENTE=1"
     echo "=== ULTIMAS 60 LINEAS DE DIAGNOSTICO ==="
     tail -n 60 "$LOG" || true
-    echo "BACKUP_VERIFICADO=0"
+    echo "BACKUP_VERIFICADO=$BACKUP_OK"
   fi
   echo "MIGRACIONES_APLICADAS_POR_O4=0"
   echo "POSTGRES_SIN_REINICIAR=1"
