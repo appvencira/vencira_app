@@ -1,6 +1,6 @@
 # VENCIRA — CONTINUIDAD OPERATIVA (leer al comenzar un chat)
 
-Fecha de revisión: 2026-10-22. Fuente de verdad: repositorio privado `appvencira/vencira_app`, rama `integration/local-e2e-prep`. Este documento describe **estado probado en GitHub y pasos pendientes**, no garantiza el estado de un servidor.
+Fecha de revisión: 2026-10-23. Fuente de verdad: repositorio privado `appvencira/vencira_app`, rama `integration/local-e2e-prep`. Este documento describe **estado probado en GitHub y pasos pendientes**, no garantiza el estado de un servidor.
 
 ## CONTRATO DE TRABAJO PERMANENTE — obligatorio en todos los chats
 
@@ -279,6 +279,17 @@ Confirmado por salida del servidor: `vencira_localcheck-web_preview-1` **healthy
 ## V3.1 verificada (23/10/2026)
 
 Suite Flutter, web build y despliegue localcheck completados sobre `ab5b12b3`: `RESULTADO_GLOBAL=0`. API/DB/Web healthy y cuatro rutas HTTP 200. Sin migraciones. Pendiente inspección visual Android de selectores y etiquetas. Detalle en `docs/DESIGN_SYSTEM_V3_1.md`.
+
+## Hito UX aceptado y fase operativa O1 desarrollada (23/10/2026)
+
+- El usuario **aprueba el diseño V3.1** de VENCIRA: menús `VenciraSelect` con hoja de opciones, iconos, acentos, selección y Preferencias; capturas reales Android del 23/10/2026 de filtros y ajustes. No volver a rediseñar sin necesidad funcional.
+- V3.1 verificada y desplegada previamente: `ab5b12b3e5b0420e13444a84dcb046abf1910a1b`, `RESULTADO_GLOBAL=0`, API/DB/Web saludables. **Aprobación visual explícita del usuario** este turno.
+- Usuario pide avanzar con la **operativa según whitepaper**, no CRM. Se implementa **O1: registro rápido y confirmado de contacto externo** desde ficha, entre pendiente/contactado; PATCH mínimo solo `status`, token CSRF y UUID, sin modificar notas/fechas. No envía mensajes ni notificaciones, no cierra anotación. Backend audit/permissions ya existentes, sin migraciones.
+- Nuevo documento autoritativo `docs/OPERATION_O1_MANUAL_CONTACT.md`: cambios y tests, delimitaciones, plan O2 «Recuérdamelo» persistente sin envío y O3 cuatro desenlaces `Conseguido/No aceptó/Aún sin decidir/Descartar`; no equiparar estado `closed` actual a un desenlace.
+- Archivos de O1: `clients/flutter/lib/api/vencira_api.dart`, `clients/flutter/lib/ui/renewal_detail_screen.dart`, `clients/flutter/test/vencira_api_test.dart`, `clients/flutter/test/contact_followup_test.dart`. Script `scripts/validate_operativa_o1.sh`.
+- **Estado O1:** cambios y documentación listos en GitHub; **todavía NO hay pruebas de servidor ni despliegue O1 confirmados.** No presentar esta fase como desplegada. API/BD/stack antiguo quedan intactos.
+- Próxima acción única: sincronizar `integration/local-e2e-prep` y `bash scripts/validate_operativa_o1.sh` en `/home/vencira/vencira-localcheck`. Recopilar `RESULTADO_GLOBAL`; si falla Flutter analizar primera excepción y corregir en GitHub. Una vez verde, Android con datos ficticios: cancelar confirmación, marcar contacto, devolver pendiente y comprobar que la ficha mantiene datos y notas.
+- Después O1 visual/funcional, O2 deberá tener nueva migración con backup `pg_dump -Fc` verificado antes de recrear API, además de Django tests y aislamiento de usuarios; no migrar sin gates.
 
 ## Límites de lanzamiento
 
