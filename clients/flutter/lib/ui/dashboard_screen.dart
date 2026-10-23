@@ -12,6 +12,7 @@ import 'modality_catalog_screen.dart';
 import 'insurer_catalog_screen.dart';
 import 'modality_labels.dart';
 import 'day_agenda_screen.dart';
+import 'vencira_select.dart';
 
 class VenciraDashboardScreen extends StatefulWidget {
   const VenciraDashboardScreen({super.key, this.api});
@@ -689,80 +690,61 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
               ),
             ),
           ),
-          SizedBox(
-            width: statusWidth,
-            child: DropdownButtonFormField<String>(
-              key: ValueKey('status:${_selected?.id}:$_statusFilter'),
-              isExpanded: true,
-              initialValue: _statusFilter,
-              decoration: InputDecoration(
-                labelText: _t.status,
-                border: const OutlineInputBorder(),
-              ),
-              items: [
-                DropdownMenuItem(value: '', child: Text(_t.all)),
-                DropdownMenuItem(value: 'pending', child: Text(_t.pending)),
-                DropdownMenuItem(value: 'contacted', child: Text(_t.contacted)),
-                DropdownMenuItem(value: 'closed', child: Text(_t.closed)),
-              ],
-              onChanged: _loadingRenewals || _saving ? null : _changeStatus,
-            ),
-          ),
-          SizedBox(
-            width: statusWidth,
-            child: DropdownButtonFormField<String>(
-              key: ValueKey('entry-filter-${_selected?.id}-$_entryFilter'),
-              initialValue: _entryFilter, isExpanded: true,
-              decoration: InputDecoration(
-                labelText: _t.entryLabel, border: const OutlineInputBorder(),
-              ),
-              items: [
-                DropdownMenuItem(value: '', child: Text(_t.all)),
-                DropdownMenuItem(value: 'clients', child: Text(_t.entryClients)),
-                DropdownMenuItem(value: 'prospects', child: Text(_t.entryProspects)),
-              ],
-              onChanged: _loadingRenewals || _saving ? null : _changeEntry,
-            ),
-          ),
-          SizedBox(
-            width: statusWidth,
-            child: DropdownButtonFormField<String>(
-              key: ValueKey('modality-filter-${_selected?.id}-$_modalityFilter'),
-              initialValue: _modalityFilter, isExpanded: true,
-              decoration: InputDecoration(
-                labelText: _t.modalityLabel, border: const OutlineInputBorder(),
-              ),
-              items: [
-                DropdownMenuItem(value: '', child: Text(_t.all)),
-                for (final option in _modalities)
-                  if (option.active || option.code == _modalityFilter)
-                    DropdownMenuItem(value: option.code,
-                      child: Text(modalityCaption(context, option),
-                        overflow: TextOverflow.ellipsis)),
-              ],
-              onChanged: _loadingRenewals || _saving ? null : _changeModality,
-            ),
-          ),
-          SizedBox(width: statusWidth,
-            child: DropdownButtonFormField<String>(
-              key: ValueKey('insurer-filter-' + _insurerFilter),
-              initialValue: _insurerFilter, isExpanded: true,
-              decoration: InputDecoration(labelText: _t.insurerLabel,
-                border: const OutlineInputBorder()),
-              items: [
-                DropdownMenuItem(value: '', child: Text(_t.all)),
-                for (final insurer in _insurers)
-                  if (insurer.active || insurer.id == _insurerFilter)
-                    DropdownMenuItem(value: insurer.id, child: Text(
-                      insurer.name, overflow: TextOverflow.ellipsis)),
-                if (_insurerFilter.isNotEmpty &&
+          SizedBox(width: statusWidth, child: VenciraSelect<String>(
+            key: ValueKey('status:${_selected?.id}:$_statusFilter'),
+            label: _t.status, value: _statusFilter,
+            prefixIcon: Icons.flag_outlined,
+            options: [
+              VenciraOption(value: '', label: _t.all),
+              VenciraOption(value: 'pending', label: _t.pending,
+                icon: Icons.schedule_rounded),
+              VenciraOption(value: 'contacted', label: _t.contacted,
+                icon: Icons.forum_outlined),
+              VenciraOption(value: 'closed', label: _t.closed,
+                icon: Icons.check_circle_outline_rounded),
+            ],
+            onChanged: _loadingRenewals || _saving ? null : _changeStatus,
+          )),
+          SizedBox(width: statusWidth, child: VenciraSelect<String>(
+            key: ValueKey('entry-filter-${_selected?.id}-$_entryFilter'),
+            label: _t.entryLabel, value: _entryFilter,
+            prefixIcon: Icons.people_outline_rounded,
+            options: [
+              VenciraOption(value: '', label: _t.all),
+              VenciraOption(value: 'clients', label: _t.entryClients),
+              VenciraOption(value: 'prospects', label: _t.entryProspects),
+            ],
+            onChanged: _loadingRenewals || _saving ? null : _changeEntry,
+          )),
+          SizedBox(width: statusWidth, child: VenciraSelect<String>(
+            key: ValueKey('modality-filter-${_selected?.id}-$_modalityFilter'),
+            label: _t.modalityLabel, value: _modalityFilter,
+            prefixIcon: Icons.category_outlined,
+            options: [
+              VenciraOption(value: '', label: _t.all),
+              for (final option in _modalities)
+                if (option.active || option.code == _modalityFilter)
+                  VenciraOption(value: option.code,
+                    label: modalityCaption(context, option)),
+            ],
+            onChanged: _loadingRenewals || _saving ? null : _changeModality,
+          )),
+          SizedBox(width: statusWidth, child: VenciraSelect<String>(
+            key: ValueKey('insurer-filter-$_insurerFilter'),
+            label: _t.insurerLabel, value: _insurerFilter,
+            prefixIcon: Icons.apartment_outlined,
+            options: [
+              VenciraOption(value: '', label: _t.all),
+              for (final insurer in _insurers)
+                if (insurer.active || insurer.id == _insurerFilter)
+                  VenciraOption(value: insurer.id, label: insurer.name),
+              if (_insurerFilter.isNotEmpty &&
                   !_insurers.any((v) => v.id == _insurerFilter))
-                    DropdownMenuItem(value: _insurerFilter,
-                      child: Text(_t.insurerLegacy)),
-              ],
-              onChanged: _loadingRenewals || _saving ? null : _changeInsurer,
-            ),
-          ),
+                VenciraOption(value: _insurerFilter,
+                  label: _t.insurerLegacy),
+            ],
+            onChanged: _loadingRenewals || _saving ? null : _changeInsurer,
+          )),
           FilledButton.tonalIcon(
             onPressed: _loadingRenewals || _saving ? null : _applySearch,
             icon: const Icon(Icons.search),
@@ -867,9 +849,9 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                                 ? _t.entryClients : _t.entryProspects,
                               style: Theme.of(context).textTheme.labelSmall),
                           ]),
-                        Chip(
-                          visualDensity: VisualDensity.compact,
-                          label: Text(label),
+                        VenciraStatusBadge(
+                          status: item.status,
+                          label: label,
                         ),
                       ]),
                   ],
