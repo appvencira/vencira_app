@@ -403,6 +403,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       context: context,
       showDragHandle: true,
       useSafeArea: true,
+      isScrollControlled: true,
       builder: (sheet) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           ListTile(title: Text(_o2(
@@ -443,6 +444,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
     } else {
       kind = await showModalBottomSheet<String>(
         context: context, useSafeArea: true, showDragHandle: true,
+        isScrollControlled: true,
         builder: (sheet) => SafeArea(child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
