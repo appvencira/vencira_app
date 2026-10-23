@@ -1,6 +1,6 @@
 # VENCIRA O4 — Arranque de API sin migraciones automáticas
 
-Estado 23/10/2026: **PRIMERA EJECUCIÓN O4 PARCIALMENTE SUPERADA, CONTINUACIÓN CORREGIDA EN GITHUB Y PENDIENTE DE REEJECUCIÓN EN UBUNTU**. La API real sigue con arranque anterior automático, pues el intento se detuvo **antes** de recrear API/Web. PostgreSQL y migración `0014` intactos. Entorno exclusivo: `vencira_localcheck`. O1–O3 ya aceptadas funcionalmente por el usuario. **No modificar `vencira_preview`.**
+Estado 23/10/2026: **O4 DESPLEGADA Y VERIFICADA EN UBUNTU (DEV)**, conforme a salida real del usuario: `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`, `API_RUNTIME_MIGRATE_POLICY=CHECK_ONLY`, `POSTGRES_Y_MIGRACION_0014_INALTERADOS=1`; API, DB y Web saludables. PostgreSQL siguió en `0014`. Hubo un primer intento abortado de forma segura antes de actualizar servicios; el segundo lo completó. Entorno exclusivo: `vencira_localcheck`. O1–O3 ya aceptadas funcionalmente por el usuario. **No modificar `vencira_preview`.**
 
 ## Problema resuelto por diseño
 
@@ -38,9 +38,9 @@ Cuando Django incluya `0015` o superior, **no** lanzarla al arrancar contenedore
 
 **O2/O3 despliegues antiguos son históricos**, especialmente `scripts/deploy_operativa_o3.sh`: no utilizarlos para desplegar próximas migraciones. Mantener el entorno de desarrollo solo con datos ficticios. MFA, copias externas cifradas, RGPD, retención legal, seguridad de adjuntos y envío real de notificaciones siguen pendientes de cierre.
 
-## Resultado pendiente
+## Resultado verificado en Ubuntu (23/10/2026)
 
-No declarar O4 desplegada ni verificada hasta recibir la salida de `scripts/harden_api_migrations_o4.sh`, incluyendo `BACKUP_RESTAURACION_VERIFICADOS=1`, `REGRESION_API_O3=OK`, `API_RUNTIME_MIGRATE_POLICY=CHECK_ONLY`, `POSTGRES_Y_MIGRACION_0014_INALTERADOS=1`, `HEALTH_api/db/web_preview=healthy`, `RESULTADO_GLOBAL=0` y `RESULTADO_EJECUCION=0`.
+**O4 COMPLETADA EN DEV** sobre checkout `81fe687353329fcc8242b07df988b977613513ea`: `BACKUP_RESTAURACION_VERIFICADOS=1`, `REGRESION_API_O3=OK`, `API_RUNTIME_MIGRATE_POLICY=CHECK_ONLY`, `POSTGRES_Y_MIGRACION_0014_INALTERADOS=1`, `HEALTH_api/db/web_preview=healthy`, `RESULTADO_GLOBAL=0` y `RESULTADO_EJECUCION=0`. No se ejecutaron migraciones ni se reinició PostgreSQL. Ver acta final al pie. No volver a ejecutar el script O4.
 
 ## Incidencia del 23/10/2026, recuperación segura y nueva ejecución pendiente
 
@@ -55,3 +55,15 @@ No declarar O4 desplegada ni verificada hasta recibir la salida de `scripts/hard
 
 - Commit `310b2311f81858a8ae44b7775fb0bc35c6d944ca`: el recibo distingue expresamente imágenes originales **disponibles** de la imagen de API **reconstruida** (no idéntica binariamente); distingue Web **reiniciada** de Web recreada; fuerza `docker compose up --no-build` de API tras `BUILD_API_COMPOSE=OK` para no producir otra imagen durante el cambio de contenedor.
 - Repetir el script integral **solo porque la primera ejecución confirmó `API_RECREADA=0`, `WEB_RECREADA=0`**, con comprobación obligatoria del comando anterior `AUTOMIGRATE` antes de mutar nada. Revalidará copia actual, restauración, tests y esquema, preservando los datos posteriores a `0014`.
+
+## Acta final — segunda ejecución O4 confirmada (23/10/2026)
+
+- **Código desplegado / checkout**: `81fe687353329fcc8242b07df988b977613513ea`, rama `integration/local-e2e-prep`. Baseline Python/Flutter O3 sigue en `4d5270be3ebb7ab32d4bab103208ed34002f0082`, sin cambios funcionales. Script `scripts/harden_api_migrations_o4.sh` ejecutado con `bash -n` previo: sintaxis correcta.
+- **Gates**: `COMPOSE_IDENTITY=OK`, `HEALTH_PREVIO_API_DB_WEB=healthy`, `API_COMANDO_ANTIGUO=AUTOMIGRATE_CONFIRMADO`, `COMPOSE_GUARD_CHECK_ONLY=OK`, `COMPOSE_MIGRATE_POLICY=CHECK_ONLY`, `ULTIMA_MIGRACION=0014_renewal_outcomes`, `ESQUEMA_O3_ACTUAL=OK`.
+- **Respaldo nuevo con datos O3 actuales**: `PG_DUMP=OK`, `PG_RESTORE_INDEX=OK`, `SHA256=OK`, `RESTAURACION_INTEGRAL=OK`, `CONTENIDO_RESTAURADO=VERIFICADO`, `RESTAURACION_POSTGRES_TEMPORAL=VERIFICADA`. Ruta privada **`/home/vencira/vencira-db-backups/post0014_o4_20261023T135927Z_04qhuB8S.dump`**, huella `34da8dc2a3b16e5a728c13a5eec639b89bf4a71ecb969110bd4718a4c4778fdc`. El dump es **local no cifrado**, no compartir ni subir a GitHub; sigue pendiente una política de backups externos cifrados.
+- **Pruebas**: `SINTAXIS_SCRIPT=OK`, `BUILD_API_AISLADA=OK`, `DJANGO_CHECK_Y_MIGRACIONES_EN_SECO=OK`, `REGRESION_DJANGO_SQLITE=OK` (suite completa de 119 casos en la primera ejecución; la segunda también OK), `BUILD_API_COMPOSE=OK`, `MIGRATE_CHECK_READ_ONLY=OK`, `CHECK_MIGRACION_SOLO_LECTURA=OK`.
+- **Imagen O3 antigua**: `IMAGEN_ANTERIOR_API_DISPONIBLE=0`, el digest original no está en el almacén Docker. Se conservó como alternativa `vencira-o4-recovery-api-rebuilt:20261023T135750Z_1275743` desde el mismo código O3 validado; **`RECOVERY_API_NO_EQUIVALE_BINARIAMENTE_A_ORIGINAL=1`** (no hay recuperación exacta bit a bit). `IMAGEN_ANTERIOR_WEB_DISPONIBLE=1`. Recibo privado: `/home/vencira/vencira-db-backups/deploy_o4_20261023T135750Z_1275743.receipt`.
+- **Actualización**: `HEALTH_api=healthy`, `API_RUNTIME_MIGRATE_POLICY=CHECK_ONLY`, `HEALTH_web_preview=healthy`, `WEB_CONTENEDOR_ORIGINAL_CONSERVADO=1`, `POSTGRES_Y_MIGRACION_0014_INALTERADOS=1`. La API ahora comprueba migraciones y se niega a arrancar si faltan, sin aplicarlas. Web fue **reiniciada en el mismo contenedor**, Flutter O3 intacto.
+- **HTTP/sesiones**: `HTTP_/=200`, `HTTP_/api/health/=200`, `HTTP_/api/ready/=200`, `HTTP_/accounts/login/=200`, `HTTP_outcomes_ANONIMO=403`, `HTTP_follow-up_ANONIMO=403`, `FLUTTER_O3_CONSERVADO=1`. `HEALTH_api/db/web_preview=healthy`.
+- **Veredicto**: `SOLO_STACK_VENCIRA_LOCALCHECK=1`, `SIN_RESTAURACION_AUTOMATICA=1`, `MIGRACIONES_APLICADAS_POR_O4=0`, `POSTGRES_SIN_REINICIAR=1`, `BACKUP_RESTAURACION_VERIFICADOS=1`, `O4_API_SIN_MIGRACION_AUTOMATICA=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`. Log `/tmp/vencira-o4-hardening.2ITaJPuI.log`. **No repetir O4 ni restaurar pre0014**.
+- **Futuro trabajo**: nuevas migraciones solo por protocolo explícito de preflight, nueva copia/ensayo de restauración, `migrate --plan`, aprobación de la migración, ejecución y comprobaciones; en paralelo quedan pendientes MFA, backups externos cifrados, cumplimiento RGPD, controles de adjuntos y notificaciones reales. `vencira_preview` no se modificó por el procedimiento de despliegue; no se realizaron escrituras en el stack vecino.
