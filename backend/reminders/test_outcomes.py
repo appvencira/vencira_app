@@ -189,8 +189,8 @@ class OutcomeTests(APITestCase):
         self.client.post(self.url(), {
             "kind": "undecided", "scheduled_for": "2027-11-15",
         }, format="json")
-        event = RenewalAuditEvent.objects.filter(
-            renewal=self.item, changed_fields__contains=["outcome"]).first()
+        event = next((row for row in RenewalAuditEvent.objects.filter(
+            renewal=self.item) if "outcome" in row.changed_fields), None)
         self.assertIsNotNone(event)
         self.assertNotIn("O3-SYNTHETIC", str(event.metadata))
         self.assertNotIn("Anotación ficticia privada", str(event.metadata))
