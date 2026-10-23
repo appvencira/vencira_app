@@ -15,6 +15,11 @@ finish() {
   else
     echo "RESULTADO_GLOBAL=$rc"
     echo "FASE_FALLIDA=$PHASE"
+    echo "=== PRIMERA EXCEPCION (diagnostico de raiz) ==="
+    if [ -s "$LOG" ]; then
+      awk '/EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK/ && !seen {seen=1; count=75}
+           count>0 {print; count--; if(count==0) exit}' "$LOG" || true
+    fi
     echo "=== ULTIMAS 100 LINEAS DE DIAGNOSTICO ==="
     tail -n 100 "$LOG" 2>/dev/null || true
   fi
