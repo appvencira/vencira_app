@@ -105,6 +105,13 @@ class Renewal(models.Model):
     expires_on = models.DateField()
     notice_deadline_on = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
+    # Resultado archivado, distinto del estado operativo legacy 'closed'.
+    archived_at = models.DateTimeField(null=True, blank=True)
+    archive_outcome = models.CharField(
+        max_length=16, choices=[("won", "Conseguido"),
+                                ("discarded", "Descartado")],
+        blank=True, default="",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -169,6 +176,39 @@ class RenewalFollowUp(models.Model):
             models.Index(fields=["scheduled_for", "state"],
                 name="manual_follow_due_idx"),
         ]
+
+
+class RenewalOutcome(models.Model):
+    """Decisión de seguimiento registrada con usuario y fecha; no es un CRM."""
+
+    class Kind(models.TextChoices):
+        WON = "won", "Conseguido"
+        DECLINED = "declined", "No aceptó"
+        UNDECIDED = "undecided", "Aún sin decidir"
+        DISCARDED = "discarded", "Descartar"
+        RESTORED = "restored", "Recuperado del archivo"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    renewal = models.ForeignKey(
+        Renewal, on_delete=models.PROTECT, related_name="resolution_events",
+    )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, related_name="vencira_outcomes",
+    )
+    kind = models.CharField(max_length=16, choices=Kind.choices)
+    previous_expiry = models.DateField(null=True, blank=True)
+    new_expiry = models.DateField(null=True, blank=True)
+    follow_up_for = models.DateField(null=True, blank=True)
+    previous_entry = models.CharField(max_length=16, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["renewal", "-created_at"],
+                         name="outcome_renewal_time_idx"),
+        ]
+        ordering = ["-created_at", "-id"]
 
 
 class LoginAttemptBucket(models.Model):
