@@ -267,6 +267,14 @@ Confirmado por salida del servidor: `vencira_localcheck-web_preview-1` **healthy
 - **Siguiente acción:** solicitar al usuario un ÚNICO bloque de lectura no mutante del log existente que extraiga el primer `EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK` y 65-80 líneas posteriores, sin reinstalar ni desplegar. Con esa evidencia corregir la UI responsable de 320 px en GitHub, documentar y luego pedir una sola ejecución integral V3.1. No confundir errores de tests con indisponibilidad pública. No cerrar SSH ni tocar PostgreSQL.
 - Mantener `docs/DESIGN_SYSTEM_V3_1.md` coherente con estado y próximos hitos; no declarar V3.1 desplegada hasta que pase todo.
 
+## V3.1 — diagnóstico Flutter 320px y correcciones preparadas (23/10/2026)
+
+- El usuario extrajo la primera excepción del log `/tmp/vencira-ui-v3-1.ytQ64C8t.log` sin ejecutar nuevamente pruebas. Caso `agenda sin desbordamiento a 320 px en catalán oscuro`: `FlutterError: A RenderFlex overflowed by 5.5 pixels on the right`, capturado por `tester.takeException()` en `test/widget_test.dart:224`. **El mensaje no identifica el widget/RenderFlex específico**; no presentar una localización como confirmada.
+- Causa plausible introducida V3.1: el estado `contacted` está en una insignia nueva con `Row(mainAxisSize:min)` y texto sin flexible dentro de la tarjeta estrecha, y el test 320px en CA utiliza registro `status:'contacted'`. Corrección preventiva/robusta GitHub **`a9dc73a8`**: el texto del `VenciraStatusBadge` pasa a `Flexible(Text(maxLines:1,overflow:ellipsis,softWrap:false))`, de modo que no puede obligar a la fila a crecer lateralmente. Test explícito `premium_components_test.dart` **`8111abc3`**: insignia de texto largo confinada a 94 dp en viewport 320; debe completar sin overflow.
+- Segundo fallo confirmado de organización en test 417 ya corregido previamente: `ValueKey('workspace-select')` estable en dashboard `529181af` y prueba actualizada `9e3c3f1b`. El test puede seguir fallando por otra causa, se comprobará al correr suite completa.
+- Script **`scripts/validate_ui_v3_1.sh`** actualizado `43684b70` para imprimir primera excepción además del final del log. No se ha vuelto a ejecutar; **V3.1 no está validada ni desplegada**. V3 anterior estaba saludable.
+- **Próxima operación única**: sincronizar rama `integration/local-e2e-prep` y ejecutar el mismo script V3.1 por completo. Si aparecen más errores, analizar la primera excepción y corregir el componente real. No desplegar manualmente, ni tocar API/DB/stack antiguo.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
