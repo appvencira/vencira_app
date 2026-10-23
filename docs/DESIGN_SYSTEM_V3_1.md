@@ -36,3 +36,7 @@ El asistente implementa/documenta primero vía GitHub, envía una única ejecuci
 - El script de validación ahora informa la primera excepción (`43684b70`). **Pendiente ejecutar de nuevo y comprobar éxito; no se ha desplegado V3.1.** Resultado definitivo siempre en `docs/CONTINUITY_RUNBOOK.md`.
 
 - Registro de falla anterior en prueba de pantalla de 320dp en catalán: Flutter reportó `RenderFlex overflowed by 5.5 pixels on the right`, sin nombrar widget afectado. Salvaguardas defensivas en `VenciraStatusBadge` (`a9dc73a8`: `Flexible/TextOverflow.ellipsis`) y botones de la cabecera de 320dp (`9df8806a`: texto compacto sin icono). Nuevo test de insignia estrecha `8111abc3`. Pendiente ejecutar suite completa para confirmar; ninguna de estas hipótesis está todavía verificada como causa exacta del desbordamiento.
+
+## V3.1 — despliegue técnico verificado (23/10/2026)
+
+El usuario confirmó ejecución exitosa sobre `ab5b12b3e5b0420e13444a84dcb046abf1910a1b` en `vencira_localcheck`: Flutter pub get, analyze, tests completos y build web correctos; contenedores API, DB y Web saludables; las rutas `/`, `/api/health/`, `/api/ready/` y `/accounts/login/` devuelven HTTP 200. `RESULTADO_GLOBAL=0`; sin migraciones ni cambios API/BD. Log `/tmp/vencira-ui-v3-1.ETHsyqOi.log`. La comprobación pública anónima devolvió HTTP 401 (acceso protegido; no implica por sí mismo error). Pendiente revisión visual Android de los nuevos menús y etiquetas. No repetir pruebas hasta cambios de código.
