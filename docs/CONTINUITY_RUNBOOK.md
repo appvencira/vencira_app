@@ -372,6 +372,14 @@ Suite Flutter, web build y despliegue localcheck completados sobre `ab5b12b3`: `
 - Salida del intento: **`RESULTADO_GLOBAL=1`**, `FASE_FALLIDA=FLUTTER_O3_SUITE_Y_BUILD`, `SIN_DESPLIEGUE_NI_MIGRACION_PERSISTENTE=1`, log `/tmp/vencira-operativa-o3-preflight.CZVgXTTW.log`, `RESULTADO_EJECUCION=1`. O2 sigue desplegada y aprobada.
 - **Próxima acción**: sincronizar `integration/local-e2e-prep` con `git fetch` y `git merge --ff-only`, ejecutar de nuevo `bash scripts/validate_operativa_o3_preflight.sh`, recoger `RESULTADO_GLOBAL`. Si aparece un nuevo fallo Flutter, analizar salida y corregir en GitHub sin desplegar. Solo después del preflight completo verde preparar respaldo **pre0014 nuevo** y ensayo de restauración antes de aplicar `0014`.
 
+## O3 — segundo preflight Django OK, fallo finder Flutter resuelto en test (23/10/2026)
+
+- El usuario ha repetido el preflight tras la corrección Dart de parámetros nombrados. **Django sigue completamente verde:** `DJANGO_SQLITE_SUITE=OK`, `DJANGO_POSTGRES_O3_TESTS=OK` (119 tests SQLite + 13 Postgres efímero en ejecución anterior). `flutter analyze` ya ha avanzado a `flutter test test/outcomes_test.dart`.
+- **Fallo identificado**: en 3 tests `O3 resultado ganado archivado y recuperable en móvil es/ca` y `O3 aún sin decidir utiliza fecha civil y O2`, `StateError: Bad state: No element` en `tester.ensureVisible(choose)`, `clients/flutter/test/outcomes_test.dart` líneas 108/160. El widget `choose-outcome` está al final del `ListView` bajo tarjetas O1/O2 y la lista puede construir perezosamente sus hijos; `ensureVisible` necesita que el elemento exista en árbol. **No se ha demostrado fallo de la app**, es un fallo de navegación del test.
+- **Corrección GitHub `639a353b25ef194f304a1ab4f3bdf2b67601e070`**: antes de `ensureVisible`, en ambos tests `scrollUntilVisible(choose, 180, scrollable: find.byType(Scrollable).first)`. Deja que el Sliver construya el botón y luego lo desplaza a la zona tocable. No hay cambios de producción en este parche.
+- **Resultado previo** `RESULTADO_GLOBAL=1`, `FASE_FALLIDA=FLUTTER_O3_SUITE_Y_BUILD`, log `/tmp/vencira-operativa-o3-preflight.MZ2BobjR.log`, `SIN_DESPLIEGUE_NI_MIGRACION_PERSISTENTE=1`, `RESULTADO_EJECUCION=1`. La versión O2 desplegada y migración `0013` siguen intactas y saludables; **O3 NO aplicada**.
+- **Próximo paso** sincronizar rama `integration/local-e2e-prep` y ejecutar el mismo `bash scripts/validate_operativa_o3_preflight.sh`. Revisar cualquier fallo Flutter posterior antes de planificar backup pre0014. No desplegar ni tocar PostgreSQL real.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
