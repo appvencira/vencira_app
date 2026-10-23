@@ -262,12 +262,12 @@ IMAGE="vencira-o4-test:$RUN_ID"
 step BUILD_API_AISLADA sudo docker build -t "$IMAGE" ./backend
 step DJANGO_CHECK_Y_MIGRACIONES_EN_SECO sudo docker run --rm \
   -e VENCIRA_ENV=test -e VENCIRA_DB_ENGINE=sqlite -e DJANGO_DEBUG=0 \
-  -e DJANGO_SECRET_KEY=o4-isolated-check-only-secret \
+  -e DJANGO_SECRET_KEY=o4-ephemeral-validation-key-never-production-2026-django \
   -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,testserver \
   "$IMAGE" sh -ec 'python manage.py check && python manage.py makemigrations --check --dry-run'
 step REGRESION_DJANGO_SQLITE sudo docker run --rm \
   -e VENCIRA_ENV=test -e VENCIRA_DB_ENGINE=sqlite -e DJANGO_DEBUG=0 \
-  -e DJANGO_SECRET_KEY=o4-isolated-check-only-secret \
+  -e DJANGO_SECRET_KEY=o4-ephemeral-validation-key-never-production-2026-django \
   -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,testserver \
   "$IMAGE" python manage.py test reminders --verbosity 1 --noinput
 echo "REGRESION_API_O3=OK"
