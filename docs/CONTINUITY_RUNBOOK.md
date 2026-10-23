@@ -258,6 +258,15 @@ Confirmado por salida del servidor: `vencira_localcheck-web_preview-1` **healthy
 - Próximo paso: sincronizar rama `integration/local-e2e-prep` y repetir el **mismo script integral V3.1** una sola vez. Si fallan nuevas pruebas, corregir en GitHub según el log. Conservar siempre shell SSH; prohibido borrar archivos locales para pasar preflight.
 - Ver `docs/DESIGN_SYSTEM_V3_1.md` para criterio visual de selectores y badges.
 
+## V3.1 — Fallo de suite completa, 2 tests (23/10/2026)
+
+- El usuario ejecutó `scripts/validate_ui_v3_1.sh`; `flutter analyze` y pruebas premium específicas progresaron; la suite completa falló en **dos** casos de `test/widget_test.dart`, `RESULTADO_GLOBAL=1`, `FASE_FALLIDA=FLUTTER_PUB_GET_ANALYZE_TEST_BUILD`, log remoto **`/tmp/vencira-ui-v3-1.ytQ64C8t.log`**. No se llegó a `WEB_BUILD` ni `WEB_DEPLOY`; V3 estable sigue activa.
+- Caso 1: `agenda sin desbordamiento a 320 px en catalán oscuro`, excepción capturada por `tester.takeException()` en línea 224. La salida aportada solo incluye **las últimas 100 líneas** del log, omitiendo el mensaje primario de la excepción. **No se conoce aún qué RenderObject/widget falló**. No introducir cambios de diseño especulativos; recuperar del log remoto la **primera** sección `EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK` sin volver a compilar.
+- Caso 2: `solo muestra vencimientos del workspace seleccionado`, línea 417: `find.byKey(ValueKey('11111111-1111-4111-8111-111111111111'))` devolvió cero. Código usaba `ValueKey(_selected?.id)`, que puede inferir `ValueKey<String?>` y no casar con `ValueKey<String>` en la prueba. **Corregido en GitHub**: selector con clave fija `ValueKey('workspace-select')` (commit `529181af`); test usa la misma clave fija (commit `9e3c3f1b`). No altera aislamiento ni cambio de organización.
+- Script `scripts/validate_ui_v3_1.sh` reforzado commit `43684b70` para imprimir **la primera excepción** y también últimas 100 líneas si falla, evitando diagnósticos incompletos en futuras fases.
+- **Siguiente acción:** solicitar al usuario un ÚNICO bloque de lectura no mutante del log existente que extraiga el primer `EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK` y 65-80 líneas posteriores, sin reinstalar ni desplegar. Con esa evidencia corregir la UI responsable de 320 px en GitHub, documentar y luego pedir una sola ejecución integral V3.1. No confundir errores de tests con indisponibilidad pública. No cerrar SSH ni tocar PostgreSQL.
+- Mantener `docs/DESIGN_SYSTEM_V3_1.md` coherente con estado y próximos hitos; no declarar V3.1 desplegada hasta que pase todo.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
