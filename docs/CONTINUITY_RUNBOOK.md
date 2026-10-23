@@ -291,6 +291,15 @@ Suite Flutter, web build y despliegue localcheck completados sobre `ab5b12b3`: `
 - Próxima acción única: sincronizar `integration/local-e2e-prep` y `bash scripts/validate_operativa_o1.sh` en `/home/vencira/vencira-localcheck`. Recopilar `RESULTADO_GLOBAL`; si falla Flutter analizar primera excepción y corregir en GitHub. Una vez verde, Android con datos ficticios: cancelar confirmación, marcar contacto, devolver pendiente y comprobar que la ficha mantiene datos y notas.
 - Después O1 visual/funcional, O2 deberá tener nueva migración con backup `pg_dump -Fc` verificado antes de recrear API, además de Django tests y aislamiento de usuarios; no migrar sin gates.
 
+## O1 — prueba integral y despliegue completados; O2 diseñada (23/10/2026)
+
+- Reporte servidor de O1: `integration/local-e2e-prep`, `ESTADO_GIT=FUENTES_VERSIONADAS_LIMPIAS`, commit `a2f109ee2d2bb33561d50561130017642ba4834e`, `COMPOSE_IDENTITY=OK`, `COMPOSE_CONFIG=OK`.
+- `FLUTTER_PUB_GET_ANALYZE_TEST_BUILD=OK`, `FLUTTER_OPERATIVA_O1_Y_TESTS=OK`, `WEB_BUILD=OK`, `WEB_DEPLOY=OK`; `WEB_HEALTH=healthy`; `HEALTH_api/db/web_preview=healthy`; respuestas HTTP 200 por el proxy interno para `/`, `/api/health/`, `/api/ready/` y `/accounts/login/`. `DESPLIEGUE_WEB_OPERATIVA_O1_LOCALCHECK=OK`, `SIN_MIGRACIONES_NI_CAMBIOS_API_DB=1`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`, `CONSOLA_ABIERTA`.
+- Log `/tmp/vencira-operativa-o1.L4zH4RDp.log`. Curl anónimo público `https://dev.vencira.es` devuelve 401 por acceso protegido (no implica por sí solo fallo).
+- **O1 técnica y despliegue APROBADOS**; pendiente aceptación funcional desde Android con una anotación completamente ficticia: cancelar el diálogo, confirmar «Contactado», verificar datos inmutados, volver a «Pendiente». No pedir repetir build/test ya superados.
+- `docs/OPERATION_O1_MANUAL_CONTACT.md` registra el cierre O1. **Nuevo** `docs/OPERATION_O2_FOLLOW_UP_PLAN.md` documenta el requisito de «Recuérdamelo» contrastado con whitepaper, arquitectura, peligros, pruebas y gate de backups/migración. **O2 aún NO implementada.**
+- Ruta posterior: tras O1 funcional, implementar O2 como fecha civil de seguimiento por anotación abierta, agenda/estado y auditoría con API limitada por membresía. Primero pruebas Django/Flutter y PostgreSQL efímero; antes de toda migración permanente backup verificado del `vencira_localcheck-db-1`, comprobación de migraciones y solo entonces despliegue autorizado. Mantener envíos reales/adjuntos desactivados.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
