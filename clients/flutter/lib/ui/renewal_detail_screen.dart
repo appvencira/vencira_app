@@ -126,6 +126,70 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
     }
   }
 
+  /// El contacto se ha realizado fuera de VENCIRA. Solo registramos
+  /// una transición auditable; jamás se envía un mensaje desde esta acción.
+  Future<void> _changeContactStatus() async {
+    final current = _renewal;
+    if (current == null || _saving ||
+        !const ['pending', 'contacted'].contains(current.status)) return;
+    final next = current.status == 'pending' ? 'contacted' : 'pending';
+    final isContact = next == 'contacted';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(isContact
+            ? _designLabel('Registrar contacto', 'Registrar contacte')
+            : _designLabel('Volver a pendiente', 'Tornar a pendent')),
+        content: Text(isContact
+            ? _designLabel(
+                'Confirma que el contacto ya se ha realizado fuera de VENCIRA. '
+                'Solo se actualizará el estado; no se enviará ningún mensaje.',
+                'Confirma que el contacte ja s’ha fet fora de VENCIRA. '
+                'Només s’actualitzarà l’estat; no s’enviarà cap missatge.')
+            : _designLabel(
+                'La anotación volverá a pendiente. No se borrarán sus notas '
+                'ni el historial de cambios.',
+                'L’anotació tornarà a pendent. No s’esborraran les notes '
+                'ni l’historial de canvis.')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(_t.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(_designLabel('Confirmar', 'Confirmar')),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+
+    setState(() => _saving = true);
+    try {
+      final updated = await widget.api.changeRenewalStatus(
+        widget.workspace.id, current.id, next,
+      );
+      if (!mounted) return;
+      setState(() => _renewal = updated);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(isContact
+            ? _designLabel('Contacto registrado', 'Contacte registrat')
+            : _designLabel('Estado pendiente restaurado',
+                'Estat pendent restaurat')),
+      ));
+      await _refresh();
+      if (mounted && _history != null) await _loadHistory(1);
+    } on VenciraUnauthorized {
+      if (mounted) setState(() { _renewal = null; _unauthorized = true; });
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t.saveError)));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   String _entryLabel(String? value) => switch (value) {
     'clients' => _t.entryClients,
     'prospects' => _t.entryProspects,
@@ -314,6 +378,57 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                   _info(_designLabel('Observaciones', 'Observacions'),
                     renewal.notes),
               ]),
+            if (renewal.status == 'pending' ||
+                renewal.status == 'contacted') ...[
+              const SizedBox(height: 14),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(children: [
+                        Icon(Icons.assignment_turned_in_outlined,
+                          size: 20, color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text(
+                          _designLabel('Seguimiento', 'Seguiment'),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        )),
+                      ]),
+                      const SizedBox(height: 8),
+                      Text(
+                        _designLabel(
+                          'Registra un contacto realizado fuera de VENCIRA. '
+                          'Esta acción no envía mensajes ni programa avisos.',
+                          'Registra un contacte fet fora de VENCIRA. '
+                          'Aquesta acció no envia missatges ni programa avisos.',
+                        ),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 12),
+                      if (renewal.status == 'pending')
+                        FilledButton.tonalIcon(
+                          key: const ValueKey('mark-contacted'),
+                          onPressed: _saving ? null : _changeContactStatus,
+                          icon: const Icon(Icons.forum_outlined),
+                          label: Text(_designLabel(
+                              'Marcar como contactado', 'Marcar com a contactat')),
+                        )
+                      else
+                        OutlinedButton.icon(
+                          key: const ValueKey('restore-pending'),
+                          onPressed: _saving ? null : _changeContactStatus,
+                          icon: const Icon(Icons.undo_rounded),
+                          label: Text(_designLabel(
+                              'Volver a pendiente', 'Tornar a pendent')),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             FilledButton.icon(onPressed: _saving ? null : _edit,
               icon: const Icon(Icons.edit_outlined),
