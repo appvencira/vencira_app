@@ -60,3 +60,5 @@ Una vez validado: recoger capturas Android de calendario, agenda, formulario, fi
 - Causa: faltaban llaves de cierre `}` en los parámetros opcionales de los métodos simulados `fetchAgendaDay` y `fetchRenewalHistory`.
 - Corrección `19ec2e8b` en GitHub. Próximo estado: **pendiente de repetir el script completo**; otros fallos que no llegó a detectar el analizador todavía no pueden descartarse.
 - Resumen y continuidad: `docs/CONTINUITY_RUNBOOK.md`.
+
+- Segunda ejecución (23/10/2026, commit `d52cfe3`): de nuevo `flutter analyze` detuvo el despliegue; el parche anterior no eliminaba la coma/llave extra de las declaraciones de argumentos opcionales, por lo que aparecieron 14 mensajes dependientes. Corrección completa aplicada en commit `2ec0d9fe` (dos firmas Dart reparadas). Pendiente nueva verificación local integral. Ver `CONTINUITY_RUNBOOK.md`.
