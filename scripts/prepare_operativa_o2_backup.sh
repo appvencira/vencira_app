@@ -36,6 +36,7 @@ finish() {
   echo "NO_SE_REINICIARON_SERVICIOS_LOCALCHECK=1"
   echo "LOG_LOCAL=$LOG"
   echo "CONSOLA_ABIERTA"
+  exit "$rc"
 }
 trap finish EXIT
 
