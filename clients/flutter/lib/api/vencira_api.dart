@@ -36,6 +36,12 @@ abstract class VenciraApi {
       throw const VenciraApiException();
 
   /// Seguimiento manual: fecha civil, no equivale a aviso entregado.
+  /// Resuelve una anotación según whitepaper; nunca envía comunicaciones.
+  Future<void> applyOutcome(
+    String workspaceId, String renewalId, String kind,
+    {DateTime? scheduledFor},
+  ) async => throw const VenciraApiException();
+
   Future<VenciraFollowUp?> fetchManualFollowUp(
       String workspaceId, String renewalId) async => null;
 
@@ -216,6 +222,7 @@ class VenciraRenewal {
     this.email = '',
     this.policyNumber = '',
     this.notes = '',
+    this.archiveOutcome = '',
   });
 
   final String id;
@@ -229,6 +236,7 @@ class VenciraRenewal {
   final String email;
   final String policyNumber;
   final String notes;
+  final String archiveOutcome;
   final DateTime expiresOn;
   final DateTime? noticeDeadlineOn;
   final String status;
@@ -251,6 +259,7 @@ class VenciraRenewal {
       email: json['email'] as String? ?? '',
       policyNumber: json['policy_number'] as String? ?? '',
       notes: json['notes'] as String? ?? '',
+      archiveOutcome: json['archive_outcome'] as String? ?? '',
     );
   }
 }
@@ -1112,6 +1121,54 @@ class HttpVenciraApi implements VenciraApi {
         throw const VenciraApiException();
       }
       return updated;
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<void> applyOutcome(
+    String workspaceId, String renewalId, String kind,
+    {DateTime? scheduledFor},
+  ) async {
+    if (!_validUuid(workspaceId) || !_validUuid(renewalId) ||
+        !const ['won', 'declined', 'undecided', 'discarded', 'restored']
+            .contains(kind) ||
+        (kind == 'undecided') != (scheduledFor != null)) {
+      throw const VenciraApiException();
+    }
+    final csrf = await _csrf();
+    final payload = <String, dynamic>{'kind': kind};
+    if (scheduledFor != null) {
+      payload['scheduled_for'] = _civilDayIso(scheduledFor);
+    }
+    final path = '/api/v1/workspaces/$workspaceId/renewals/$renewalId/outcomes/';
+    late http.Response response;
+    try {
+      response = await _client.post(_baseUri.resolve(path),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrf,
+        },
+        body: jsonEncode(payload),
+      );
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const VenciraUnauthorized();
+    }
+    if (response.statusCode != 201) {
+      throw const VenciraApiException();
+    }
+    try {
+      final object = jsonDecode(utf8.decode(response.bodyBytes))
+          as Map<String, dynamic>;
+      final event = object['event'] as Map<String, dynamic>;
+      if (event['kind'] != kind || event['id'] is! String) {
+        throw const FormatException('Unexpected resolution response');
+      }
     } catch (_) {
       throw const VenciraApiException();
     }
