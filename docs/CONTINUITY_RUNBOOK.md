@@ -459,6 +459,12 @@ Suite Flutter, web build y despliegue localcheck completados sobre `ab5b12b3`: `
 - Recibo privado `/home/vencira/vencira-db-backups/deploy_o4_20261023T135750Z_1275743.receipt`; log `/tmp/vencira-o4-hardening.2ITaJPuI.log`. Todos los datos siguen en PostgreSQL original. **O4 CERRADA; no repetir su script de un solo uso ni el despliegue O3 histórico**. No hace falta ningún otro comando SSH para el cierre. El siguiente desarrollo debe mantener esta política y, cuando haya migraciones 0015+, ejecutarlas solo con preflight+backup/restauración+plan+migrate explícito separado.
 - **Límites aún vigentes**: esto fortalece la operación de desarrollo, no habilita producción ni datos personales reales; aún faltan MFA, RGPD/LOPDGDD, backups externos cifrados, control de adjuntos, retención y envíos consentidos.
 
+## O5 — identidad Google interna para Drive y terceros (23/10/2026)
+
+- El usuario declaró disponer de **una cuenta Google exclusiva de VENCIRA**, reservada para **copias externas cifradas en Drive**, administración interna de proveedores y alta/gestión de servicios externos. **NO es un correo público de soporte ni de envíos a clientes**. No registrar secretos ni credenciales en el repositorio.
+- Dirección escrita inicialmente: `appvencira@gmail.col`. El usuario **corrigió a `appvencira@gmail.cm`** (último dato aportado). **Posible errata pendiente de confirmar**: Gmail usa normalmente `gmail.com`. No sustituir automáticamente por `appvencira@gmail.com` ni usar `.cm` para configurar OAuth/Drive, terceros o alertas hasta confirmación explícita.
+- Documentación de referencia: `docs/INTERNAL_SERVICE_ACCOUNTS.md`, commit de corrección `b435f0a33395d6eb0cb5e1b5b44a9f653b4c3946`. Esta anotación **NO** implica que Google Drive esté conectado, que existan backups remotos o que se haya configurado OAuth/rclone/restic. O5 pendiente de implementar/verificar con cifrado previo, mínimos permisos, MFA en Google y restauración ensayada. Mantener separados los buzones futuros de `vencira.es`.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
