@@ -392,8 +392,12 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                       label: _t.pending, icon: Icons.schedule),
                     VenciraOption(value: 'contacted',
                       label: _t.contacted, icon: Icons.forum_outlined),
-                    VenciraOption(value: 'closed',
-                      label: _t.closed, icon: Icons.check_circle_outline),
+                    // Sólo legados ya cerrados: nuevos cierres se realizan
+                    // mediante Desenlace, nunca cambiando el estado.
+                    if (widget.existing?.status == 'closed')
+                      VenciraOption(value: 'closed',
+                        label: _t.closed,
+                        icon: Icons.check_circle_outline),
                   ],
                   onChanged: (value) => setState(() => _status = value),
                 ),
