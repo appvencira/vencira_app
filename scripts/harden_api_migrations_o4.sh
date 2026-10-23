@@ -233,3 +233,127 @@ printf 'VALIDATED_SHA=%s\nARCHIVE_SHA256=%s\nRESTORE_TEST=OK\n' \
  > "$BACKUP.verified"
 chmod 600 "$BACKUP.verified"
 BACKUP_OK=1
+
+# Postbackup, sin cambios persistentes de esquema: probar código O3 aprobado.
+PHASE=RESTORE_LIMPIEZA
+sudo docker stop "$RESTORE_NAME" >>"$LOG" 2>&1
+RESTORE_STARTED=0
+echo "RESTAURACION_POSTGRES_TEMPORAL=VERIFICADA"
+step SINTAXIS_SCRIPT bash -n scripts/harden_api_migrations_o4.sh
+IMAGE="vencira-o4-test:$RUN_ID"
+step BUILD_API_AISLADA sudo docker build -t "$IMAGE" ./backend
+step DJANGO_CHECK_Y_MIGRACIONES_EN_SECO sudo docker run --rm \
+  -e VENCIRA_ENV=test -e VENCIRA_DB_ENGINE=sqlite -e DJANGO_DEBUG=0 \
+  -e DJANGO_SECRET_KEY=o4-isolated-check-only-secret \
+  -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,testserver \
+  "$IMAGE" sh -ec 'python manage.py check && python manage.py makemigrations --check --dry-run'
+step REGRESION_DJANGO_SQLITE sudo docker run --rm \
+  -e VENCIRA_ENV=test -e VENCIRA_DB_ENGINE=sqlite -e DJANGO_DEBUG=0 \
+  -e DJANGO_SECRET_KEY=o4-isolated-check-only-secret \
+  -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,testserver \
+  "$IMAGE" python manage.py test reminders --verbosity 1 --noinput
+echo "REGRESION_API_O3=OK"
+
+# Build nuevo, seguido de --check SOLO LECTURA sobre la base actual.
+step BUILD_API_COMPOSE "${COMPOSE[@]}" build api
+step MIGRATE_CHECK_READ_ONLY "${COMPOSE[@]}" run --rm --no-deps \
+  api python manage.py migrate --check --noinput
+updated_stamp="$(live_sql "SELECT COUNT(*)::text || ':' || COALESCE(MAX(applied)::text,'') FROM django_migrations WHERE app='reminders' AND name='0014_renewal_outcomes';")"
+test "$updated_stamp" = "$MIGRATION_STAMP" || {
+  echo "ERROR: 0014 cambiada durante verificación"
+  exit 7
+}
+echo "CHECK_MIGRACION_SOLO_LECTURA=OK"
+
+PHASE=CONSERVAR_IMAGENES_O3
+OLD_API_ID="$(sudo docker inspect vencira_localcheck-api-1 --format '{{.Image}}')"
+OLD_WEB_ID="$(sudo docker inspect vencira_localcheck-web_preview-1 --format '{{.Image}}')"
+OLD_API_TAG="vencira-prev-o4-api:$RUN_ID"
+OLD_WEB_TAG="vencira-prev-o4-web:$RUN_ID"
+sudo docker tag "$OLD_API_ID" "$OLD_API_TAG" >>"$LOG" 2>&1
+sudo docker tag "$OLD_WEB_ID" "$OLD_WEB_TAG" >>"$LOG" 2>&1
+RECEIPT="$BACKUP_DIR/deploy_o4_$RUN_ID.receipt"
+printf 'COMMIT=%s\nBACKUP_SHA256=%s\nSCHEMA=0014_renewal_outcomes\nPREVIOUS_API_IMAGE=%s\nPREVIOUS_WEB_IMAGE=%s\nPREVIOUS_API_TAG=%s\nPREVIOUS_WEB_TAG=%s\n' \
+  "$(git rev-parse HEAD)" "$(sha256sum "$BACKUP" | awk '{print $1}')" \
+  "$OLD_API_ID" "$OLD_WEB_ID" "$OLD_API_TAG" "$OLD_WEB_TAG" >"$RECEIPT"
+chmod 600 "$RECEIPT"
+echo "IMAGENES_O3_CONSERVADAS=1"
+
+PHASE=RECREAR_API_CHECK_ONLY
+echo "=== RECREAR_API_SIN_MIGRAR ==="
+"${COMPOSE[@]}" up -d --no-deps --force-recreate api >>"$LOG" 2>&1
+API_RECREATED=1
+PHASE=ESPERAR_API
+api_health=starting
+for attempt in $(seq 1 40); do
+  api_health="$(sudo docker inspect vencira_localcheck-api-1 \
+    --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}')"
+  if [ "$api_health" = healthy ] || [ "$api_health" = unhealthy ]; then break; fi
+  sleep 5
+done
+echo "HEALTH_api=$api_health"
+test "$api_health" = healthy || exit 8
+
+# Comando EFECTIVO del nuevo contenedor debe estar protegido.
+PHASE=POLITICA_REAL_API
+sudo docker inspect vencira_localcheck-api-1 --format '{{json .Config.Cmd}}' |
+  python3 -c '
+import json,sys
+cmd=json.load(sys.stdin)
+text=" ".join(cmd) if isinstance(cmd,list) else str(cmd)
+assert "migrate --check --noinput" in text
+assert "migrate --noinput" not in text
+assert "exec gunicorn" in text
+'
+echo "API_RUNTIME_MIGRATE_POLICY=CHECK_ONLY"
+
+# Nginx resuelve api:8000 al arrancar: refrescar sólo el proxy Web.
+PHASE=RECREAR_PROXY
+echo "=== RECREAR_WEB_PROXY_SIN_REBUILD ==="
+"${COMPOSE[@]}" up -d --no-deps --no-build --force-recreate web_preview >>"$LOG" 2>&1
+WEB_RECREATED=1
+PHASE=ESPERAR_WEB
+web_health=starting
+for attempt in $(seq 1 40); do
+  web_health="$(sudo docker inspect vencira_localcheck-web_preview-1 \
+    --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}')"
+  if [ "$web_health" = healthy ] || [ "$web_health" = unhealthy ]; then break; fi
+  sleep 5
+done
+echo "HEALTH_web_preview=$web_health"
+test "$web_health" = healthy || exit 9
+
+PHASE=POSTDEPLOY_DB_INTACTA
+test "$DB_CONTAINER_ID" = "$(sudo docker inspect vencira_localcheck-db-1 --format '{{.Id}}')"
+test "$MIGRATION_STAMP" = "$(live_sql "SELECT COUNT(*)::text || ':' || COALESCE(MAX(applied)::text,'') FROM django_migrations WHERE app='reminders' AND name='0014_renewal_outcomes';")"
+test "$(live_sql "SELECT name FROM django_migrations WHERE app='reminders' ORDER BY name DESC LIMIT 1;")" = 0014_renewal_outcomes
+sha256sum --status -c "$BACKUP.sha256"
+echo "POSTGRES_Y_MIGRACION_0014_INALTERADOS=1"
+
+PHASE=SALUD_HTTP
+for endpoint in / /api/health/ /api/ready/ /accounts/login/; do
+  code="$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' \
+    "http://127.0.0.1:28732$endpoint")"
+  echo "HTTP_${endpoint}=$code"
+  test "$code" = 200 || exit 10
+done
+for service in api db web_preview; do
+  health="$(sudo docker inspect "vencira_localcheck-$service-1" \
+    --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}')"
+  echo "HEALTH_$service=$health"
+  test "$health" = healthy || exit 10
+done
+for ep in outcomes follow-up; do
+  endpoint="http://127.0.0.1:28732/api/v1/workspaces/11111111-1111-4111-8111-111111111111/renewals/b2222222-2222-4222-8222-222222222222/$ep/"
+  code="$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' "$endpoint")"
+  echo "HTTP_${ep}_ANONIMO=$code"
+  { test "$code" = 401 || test "$code" = 403; } || exit 11
+done
+sudo docker exec vencira_localcheck-web_preview-1 sh -c \
+  'test -s /usr/share/nginx/html/main.dart.js && grep -Fq "Elegir desenlace" /usr/share/nginx/html/main.dart.js'
+echo "FLUTTER_O3_CONSERVADO=1"
+
+PHASE=REGISTRAR_RECIBO
+printf 'RESULTADO_GLOBAL=0\nAPI_POLICY=CHECK_ONLY\nMIGRATIONS_APPLIED_BY_O4=0\nAPI_HEALTH=healthy\nWEB_HEALTH=healthy\nDB_CONTAINER_UNCHANGED=1\n' >>"$RECEIPT"
+echo "SOLO_STACK_VENCIRA_LOCALCHECK=1"
+echo "SIN_RESTAURACION_AUTOMATICA=1"
