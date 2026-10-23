@@ -4,6 +4,7 @@ from .modality_catalog import modalities, modality_detail
 from .insurer_catalog import insurers, insurer_detail
 from .agenda_month import agenda_month
 from .person_suggestions import person_suggestions
+from .follow_up import manual_follow_up
 
 urlpatterns = [
     path("me/", views.me, name="api-me"),
@@ -19,4 +20,5 @@ urlpatterns = [
     path("workspaces/<uuid:workspace_id>/renewals/", views.renewals, name="api-renewals"),
     path("workspaces/<uuid:workspace_id>/renewals/<uuid:renewal_id>/", views.renewal_detail, name="api-renewal-detail"),
     path("workspaces/<uuid:workspace_id>/renewals/<uuid:renewal_id>/history/", views.renewal_history, name="api-renewal-history"),
+    path("workspaces/<uuid:workspace_id>/renewals/<uuid:renewal_id>/follow-up/", manual_follow_up, name="api-manual-follow-up"),
 ]
