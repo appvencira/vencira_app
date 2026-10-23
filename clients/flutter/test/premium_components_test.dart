@@ -78,4 +78,25 @@ void main() {
     expect(colors.toSet().length, 3);
     expect(tester.takeException(), isNull);
   });
+  testWidgets('V3.1 insignia larga se contrae sin overflow en una tarjeta estrecha',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(MaterialApp(
+      theme: VenciraTheme.dark(),
+      home: const Scaffold(body: Center(
+        child: SizedBox(width: 94, child: VenciraStatusBadge(
+          status: 'contacted',
+          label: 'Contactado / contactat',
+        )),
+      )),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byType(VenciraStatusBadge), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
 }
