@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APITestCase
 
-from .models import ReminderCandidate, ReminderPolicy, Renewal, Workspace, WorkspaceMember
+from .models import ReminderCandidate, ReminderPolicy, Renewal, RenewalFollowUp, Workspace, WorkspaceMember
 
 
 class MonthAgendaTests(APITestCase):
@@ -113,7 +113,38 @@ class MonthAgendaTests(APITestCase):
             "expiry": {"pending": 1, "contacted": 0},
             "notice_deadline": {"pending": 0, "contacted": 0},
             "reminder": {"pending": 0, "contacted": 0},
+            "follow_up": {"pending": 0, "contacted": 0},
         }])
+
+    def test_follow_up_counts_only_for_assigned_member(self):
+        # A manual follow-up must not expose Alice's activity to Bob within
+        # the same organization, even as aggregate day counts.
+        RenewalFollowUp.objects.create(
+            renewal=self.a, scheduled_for=date(2027, 3, 22),
+            created_by=self.alice,
+        )
+        bob_item = Renewal.objects.get(
+            workspace=self.ws, customer_reference="BOB-PENDIENTE",
+        )
+        RenewalFollowUp.objects.create(
+            renewal=bob_item, scheduled_for=date(2027, 3, 23),
+            created_by=self.bob,
+        )
+
+        self.client.force_authenticate(user=self.bob)
+        response = self.client.get(self.url())
+        self.assertEqual(response.status_code, 200)
+        bob_days = {entry["day"]: entry for entry in response.data["days"]}
+        self.assertNotIn("2027-03-22", bob_days)
+        self.assertEqual(bob_days["2027-03-23"]["follow_up"],
+                         {"pending": 1, "contacted": 0})
+
+        self.client.force_authenticate(user=self.alice)
+        response = self.client.get(self.url())
+        alice_days = {entry["day"]: entry for entry in response.data["days"]}
+        self.assertNotIn("2027-03-23", alice_days)
+        self.assertEqual(alice_days["2027-03-22"]["follow_up"],
+                         {"pending": 1, "contacted": 0})
 
     def test_anonymous_foreign_workspace_and_invalid_month_denied(self):
         self.assertIn(self.client.get(self.url()).status_code, (401, 403))
