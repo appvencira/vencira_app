@@ -288,8 +288,26 @@ OLD_API_ID="$(sudo docker inspect vencira_localcheck-api-1 --format '{{.Image}}'
 OLD_WEB_ID="$(sudo docker inspect vencira_localcheck-web_preview-1 --format '{{.Image}}')"
 OLD_API_TAG="vencira-prev-o4-api:$RUN_ID"
 OLD_WEB_TAG="vencira-prev-o4-web:$RUN_ID"
-sudo docker tag "$OLD_API_ID" "$OLD_API_TAG" >>"$LOG" 2>&1
-sudo docker tag "$OLD_WEB_ID" "$OLD_WEB_TAG" >>"$LOG" 2>&1
+# Tras docker compose build, la etiqueta anterior puede haber sido
+# retirada del image store aunque el contenedor O3 continue activo.
+# NO confundir una imagen reconstruida con la imagen binaria exacta previa.
+OLD_API_AVAILABLE=0
+if sudo docker image inspect "$OLD_API_ID" >>"$LOG" 2>&1; then
+  sudo docker tag "$OLD_API_ID" "$OLD_API_TAG" >>"$LOG" 2>&1
+  OLD_API_AVAILABLE=1
+else
+  RECOVERY_API_TAG="vencira-o4-recovery-api-rebuilt:$RUN_ID"
+  sudo docker tag vencira_localcheck-api:latest "$RECOVERY_API_TAG" >>"$LOG" 2>&1
+  echo "RECUPERACION_API=REBUILD_CODIGO_O3_VALIDADO_NO_IMAGEN_BINARIA_ORIGINAL"
+  echo "ETIQUETA_RECUPERACION_API=$RECOVERY_API_TAG"
+fi
+OLD_WEB_AVAILABLE=0
+if sudo docker image inspect "$OLD_WEB_ID" >>"$LOG" 2>&1; then
+  sudo docker tag "$OLD_WEB_ID" "$OLD_WEB_TAG" >>"$LOG" 2>&1
+  OLD_WEB_AVAILABLE=1
+fi
+echo "IMAGEN_ANTERIOR_API_DISPONIBLE=$OLD_API_AVAILABLE"
+echo "IMAGEN_ANTERIOR_WEB_DISPONIBLE=$OLD_WEB_AVAILABLE"
 RECEIPT="$BACKUP_DIR/deploy_o4_$RUN_ID.receipt"
 printf 'COMMIT=%s\nBACKUP_SHA256=%s\nSCHEMA=0014_renewal_outcomes\nPREVIOUS_API_IMAGE=%s\nPREVIOUS_WEB_IMAGE=%s\nPREVIOUS_API_TAG=%s\nPREVIOUS_WEB_TAG=%s\n' \
   "$(git rev-parse HEAD)" "$(sha256sum "$BACKUP" | awk '{print $1}')" \
