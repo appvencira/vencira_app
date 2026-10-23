@@ -562,7 +562,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     return [
       if (_workspaces.length > 1)
         VenciraSelect<VenciraWorkspace>(
-          key: ValueKey(_selected?.id),
+          key: const ValueKey('workspace-select'),
           label: _t.workspace,
           value: _selected,
           prefixIcon: Icons.apartment_rounded,
