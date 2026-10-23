@@ -8,7 +8,7 @@ Proyecto comercial de gestión de vencimientos y seguimiento de oportunidades, i
 
 **Repositorio único y privado:** `appvencira/vencira_app`. No se copiará ni sincronizará código con ninguna otra cuenta.
 
-Estado: **base técnica en desarrollo**. No introducir datos reales de clientes ni exponer servicios a Internet.
+Estado (23/10/2026): **entorno de desarrollo DEV en `https://dev.vencira.es`**, bajo control de acceso adicional, con API Django/PostgreSQL 17 y Flutter Web. **O1, O2 y O3 validadas funcionalmente por el usuario desde Android**; migraciones hasta `0014_renewal_outcomes` aplicadas en el stack aislado `vencira_localcheck`. No utilizar datos personales reales, no considerar apto para producción ni habilitar comunicaciones hasta completar seguridad, RGPD, cifrado externo de copias y otras puertas de lanzamiento.
 
 ## Tecnología
 - Django 5.2 LTS, Python 3.12 y Django REST Framework.
@@ -40,4 +40,4 @@ Se añade `compose.web.yaml` con proxy Nginx en `http://127.0.0.1:18732`. Compil
 
 ## Primera prueba en servidor aislado
 
-Para probar sin instalar Flutter en el anfitrión, existe [**docs/SERVER_PREVIEW.md**](docs/SERVER_PREVIEW.md) con `compose.preview.yaml`, build Docker multi-stage, usuario y contratos sintéticos, y acceso por túnel SSH. Los puertos locales 18731/18732 no interfieren con MASBITCOIN. **No se ha ejecutado ningún despliegue remoto ni se ha modificado `vencira.es`.**
+Para probar sin instalar Flutter en el anfitrión, existe [**docs/SERVER_PREVIEW.md**](docs/SERVER_PREVIEW.md) con `compose.preview.yaml`, build Docker multi-stage, usuario y contratos sintéticos, y acceso por túnel SSH. Los puertos locales 18731/18732 no interfieren con MASBITCOIN. **Actualización (23/10/2026):** esa descripción corresponde al primer prototipo. Ya existe un entorno de prueba remoto separado, `vencira_localcheck`, accesible mediante `dev.vencira.es`, con O1–O3 instaladas y validadas. No confundirlo con producción ni con `vencira_preview`. El estado operativo y las medidas de protección vigentes se documentan en [`docs/CONTINUITY_RUNBOOK.md`](docs/CONTINUITY_RUNBOOK.md).
