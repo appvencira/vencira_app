@@ -414,7 +414,7 @@ void main() {
     expect(find.text('REFERENCIA-A'), findsOneWidget);
     expect(find.text('REFERENCIA-B'), findsNothing);
 
-    await tester.tap(find.byKey(const ValueKey('11111111-1111-4111-8111-111111111111')));
+    await tester.tap(find.byKey(const ValueKey('workspace-select')));
     await tester.pumpAndSettle();
     await tester.tap(find.text(workspaceB.name).last);
     await tester.pumpAndSettle();
