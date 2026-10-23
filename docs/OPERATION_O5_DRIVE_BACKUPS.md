@@ -101,6 +101,30 @@ Resultados de la última ejecución real:
 
 Fuentes oficiales: [Rclone configuración Drive y cliente propio](https://rclone.org/drive/#making-your-own-client-id), [Rclone OAuth en servidor sin navegador](https://rclone.org/remote_setup/), [Google OAuth scopes Drive](https://developers.google.com/workspace/drive/api/guides/api-specific-auth), [Google OAuth ciclo de vida de refresh tokens](https://developers.google.com/identity/protocols/oauth2/#expiration).
 
+## Actualización — OAuth Desktop creado por el usuario (23/10/2026)
+
+**Nuevo dato confirmado:** el usuario informó literalmente **«OAuth creado»**. Se considera completada la **creación del cliente OAuth en Google Cloud** bajo la cuenta interna `appvencira@gmail.com`, **según declaración del titular**. Esto **NO acredita** todavía que Google Drive API esté habilitada, que el alcance realmente concedido sea `drive.file`, que Audience esté en *In production*, que haya un refresh token válido o que el servidor haya recibido permisos. **Google Drive aún NO está enlazado al servidor y no existe copia remota.** No volver a pedir al usuario que cree el cliente que ya creó.
+
+**Siguiente fase Github preparada:** script `scripts/o5_configure_drive_oauth.sh`, commit de protección de ruta `165181d46cec86a3d4a553bac04b0a6d703531f1`, destinado a Ubuntu 24.04, proyecto `vencira_localcheck`, Restic 0.19.1 y Rclone instalado. No migra, no reinicia, no crea backups. Prepara `/etc/vencira-backup` root 0700 y `rclone.conf` root 0600, **sin sobrescribir un remoto existente**. Ejecuta `rclone config` de forma **interactiva** para que el titular introduzca su *Client ID* y *Client Secret* de Google Cloud **directamente en el terminal privado** sin enviarlos a ChatGPT/GitHub. Remoto fijo `vencira_google`, tipo `drive`, único scope `drive.file`; nunca seleccionar `drive` completo. Una vez terminado, valida permisos/configuración sin imprimir secretos y prueba `rclone lsd vencira_google:` descartando por completo el listado de archivos; éxito `OAUTH_PROPIO_SCOPE_DRIVE_FILE=OK`, `RCLONE_CONF_ROOT_PERMISOS=OK`, `RCLONE_GOOGLE_DRIVE_ACCESO=OK`, `O5_OAUTH_CONFIGURADO=1`, `RESULTADO_GLOBAL=0`.
+
+**Acceso remoto desde navegador:** en el método recomendado de [Rclone Remote Setup](https://rclone.org/remote_setup/#configuring-using-ssh-tunnel), el cliente SSH conectado al servidor ofrece **reenvío de puerto local** `127.0.0.1:53682` hacia `127.0.0.1:53682` del servidor. Mantener el túnel activo; en `rclone config`, seleccionar **Y** en autorización automática, y abrir la URL `http://127.0.0.1:53682/auth?state=...` que salga en terminal en **el navegador del mismo dispositivo que mantiene el túnel**. Usar exclusivamente la cuenta Google interna. No exponer el puerto al público, usar capturas de secretos o pegar el enlace OAuth/estado/token en el chat. Para SSH desde ordenador: `ssh -L 127.0.0.1:53682:127.0.0.1:53682 vencira@<servidor>`. Para Android, habilitar equivalente en la aplicación SSH. Si ese cliente no permite túneles, **no ejecutar el flujo de navegador Y**: elegir **N** y usar `rclone authorize` desde otro dispositivo con Rclone y navegador siguiendo la documentación oficial (tampoco se transmitirá token al chat).
+
+**Aviso de privacidad de terminal:** `rclone config` puede **mostrar** el Client Secret y el token de Google en su resumen interactivo, de modo que **no copiar la transcripción de esta fase**. Solo comunicar los indicadores finales del script o el nombre de la fase fallida (sin textos intermedios confidenciales). Desactivar la grabación de terminal. No enviar Client ID, Client Secret, `rclone.conf`, URL de autorización ni códigos OAuth a ChatGPT. El secreto Restic será distinto y se generará únicamente **después** de comprobar Drive, con custodia fuera del servidor.
+
+**Procedimiento SSH de un bloque (después de establecer túnel local, o disponer de alternativa headless):**
+```bash
+(
+  cd /home/vencira/vencira-localcheck || exit 1
+  git fetch origin integration/local-e2e-prep || exit 1
+  git merge --ff-only FETCH_HEAD || exit 1
+  bash -n scripts/o5_configure_drive_oauth.sh || exit 1
+  bash scripts/o5_configure_drive_oauth.sh
+)
+echo "RESULTADO_EJECUCION=$?"
+echo "CONSOLA_ABIERTA"
+```
+**No se ha ejecutado aún.** No automatizar copias ni declarar O5 completada por la mera autenticación. Verificar política *In production* frente a caducidad de refresh token para `External/Testing` antes de habilitar cron/systemd. A continuación: repo Restic cifrado, copia PG real y recuperación aislada.
+
 ## Dependencia interactiva: OAuth Google, usuario Android
 
 Para permitir las copias habrá que crear, desde `appvencira@gmail.com`, un proyecto Google Cloud para la integración de respaldo, activar **Google Drive API**, configurar la pantalla de consentimiento para uso personal, crear credenciales **OAuth tipo Desktop** y aprobar el acceso desde navegador; rclone recomienda crear cliente propio porque su identificador compartido se retira en 2026. No se deben enviar al chat las credenciales ni códigos OAuth.
