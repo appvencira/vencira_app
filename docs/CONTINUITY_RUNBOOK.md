@@ -316,6 +316,14 @@ Suite Flutter, web build y despliegue localcheck completados sobre `ab5b12b3`: `
 - Resultado del intento: `RESULTADO_EJECUCION=1`, `SIN_DESPLIEGUE_NI_MIGRACION_PERSISTENTE=1`, log `/tmp/vencira-operativa-o2-preflight.ZvpsrqJ1.log`. **O1 continúa funcionando**, O2 sin migración real ni despliegue.
 - Siguiente operación única: `git fetch`, `git merge --ff-only` en `/home/vencira/vencira-localcheck` y repetir exactamente `bash scripts/validate_operativa_o2_preflight.sh`, sin tocar stacks ni PostgreSQL persistente. Esperar pruebas SQLite/Postgres efímero/Flutter antes de preparar script de backup+migración, nunca despliegue directo.
 
+## O2 segunda prevalidación — SQLite/Postgres OK; test Flutter móvil corregido (23/10/2026)
+
+- El usuario ha ejecutado `scripts/validate_operativa_o2_preflight.sh` sobre commit `a6614836c24445c7f0794747f7ed9dda31dc7559`. Rama `integration/local-e2e-prep`, `ESTADO_GIT=FUENTES_VERSIONADAS_LIMPIAS`, `COMPOSE_IDENTITY=OK`, `COMPOSE_CONFIG=OK`, `BUILD_API_PRUEBA_AISLADA=OK`, `DJANGO_CHECK_Y_MIGRACION_EN_SECO=OK`, **`DJANGO_SQLITE_SUITE=OK`**, `POSTGRES_EFIMERO=OK`, **`DJANGO_POSTGRES_O2_TESTS=OK`**.
+- Fase pendiente `FLUTTER_O2_SUITE_Y_BUILD`: test `clients/flutter/test/manual_follow_up_test.dart` falló en móvil a 375×900 tanto en ES como CA, al pulsar `schedule-follow-up` fuera de pantalla (Offset y ≈1017/1001 > viewport 900). A continuación no se abrió la hoja de fechas y `find.text('En 3 días')` devolvió 0. **Causa precisa: `tester.scrollUntilVisible` puede no mover un ListView cuyos hijos ya están construidos; localizar el widget no garantiza que sea visible/hit-testable.** No es error funcional demostrado del selector ni de la API.
+- **Parche GitHub `08380e0c`**: test usa `await tester.ensureVisible(schedule/complete)` y `await tester.pumpAndSettle()` antes de cada `tap`, para forzar desplazamiento real en móvil. Código de producción sin cambios en este parche. Repetir misma validación integral; pueden aparecer otros fallos de pruebas aún no alcanzadas.
+- Resultado de ejecución anterior `RESULTADO_GLOBAL=1`, `FASE_FALLIDA=FLUTTER_O2_SUITE_Y_BUILD`, `SIN_DESPLIEGUE_NI_MIGRACION_PERSISTENTE=1`. **O1 permanece desplegada y aceptada**, O2 NO aplicada ni desplegada. No llamar a migra/deploy hasta preflight completamente verde.
+- Una única ejecución posterior: `git fetch origin integration/local-e2e-prep`, `git merge --ff-only FETCH_HEAD`, `bash scripts/validate_operativa_o2_preflight.sh` en sub-shell desde `/home/vencira/vencira-localcheck`, devolver `RESULTADO_GLOBAL`, `LOG_LOCAL` y `RESULTADO_EJECUCION`.
+ 
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
