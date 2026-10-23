@@ -1,6 +1,6 @@
 # VENCIRA — Operativa O3: cuatro desenlaces de pólizas externas
 
-**Estado:** código/backend/Flutter/tests propuestos en GitHub, **sin validación aislada ni migración real ni despliegue O3**. Actualizado 23/10/2026. Rama: `integration/local-e2e-prep`.
+**Estado vigente:** O3 **validada íntegramente en aislamiento** (Django SQLite, PostgreSQL 17 temporal, Flutter analyze/test/build; `RESULTADO_GLOBAL=0`, commit `4d5270be3ebb7ab32d4bab103208ed34002f0082`). **Todavía NO existe copia pre0014 validada, ni migración real ni despliegue O3.** Actualizado 23/10/2026. Rama: `integration/local-e2e-prep`.
 
 ## Hito anterior y fuente funcional
 - O2 «Recuérdamelo» aceptada funcionalmente en Android. Confirmación expresa: reprogramar fecha, cancelar y marcar como atendido funciona. Despliegue O2 `e8d5ccf9` healthy, migración `0013` aplicada y backup pre0013 íntegramente restaurado. No volver a probar O2 salvo regresión.
@@ -42,3 +42,9 @@
 - **Nunca** aplicar `0014` antes de otra copia `pg_dump -Fc` restaurada en PostgreSQL temporal y comprobada, sobre `vencira_localcheck-db-1`. El respaldo pre0013 pertenece a la fase anterior, no sustituye un pre0014 nuevo.
 - Despliegue API+Web solo `vencira_localcheck`, plan `migrate --plan`, imágenes anteriores conservadas y health checks de DB/HTTP/ruta O3; no rollback automático de BD. Tras éxito, verificar manualmente Android con **datos ficticios** las cuatro decisiones, 29/02 y archivo/recuperación.
 - En este momento O3 **NO probada, NO desplegada y migración 0014 NO aplicada**. O2 sigue saludable y aceptada.
+
+## O3 preflight completo OK — respaldo pre0014 separado (23/10/2026)
+
+- El usuario aportó salida completa de `scripts/validate_operativa_o3_preflight.sh`: `DJANGO_CHECK_Y_MIGRACION_EN_SECO=OK`, `DJANGO_SQLITE_SUITE=OK`, `POSTGRES_EFIMERO=OK`, `DJANGO_POSTGRES_O3_TESTS=OK`, `FLUTTER_O3_SUITE_Y_BUILD=OK`, `DJANGO_SQLITE_POSTGRES_FLUTTER_O3=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`; commit `4d5270be3ebb7ab32d4bab103208ed34002f0082`, log `/tmp/vencira-operativa-o3-preflight.SANjeL4q.log`. No tocar la base persistente todavía.
+- Preparado `scripts/prepare_operativa_o3_backup.sh` (commit `21c98303876c9e00a6ff84c4d19e496da4dc78c0`). Verifica identidad de stack, código inalterado, migración existente `0013`, ausencia de tabla `RenewalOutcome`, respaldo pg_dump custom nuevo pre0014, SHA-256, restauración íntegra offline PostgreSQL 17, esquema y contadores incluyendo `RenewalFollowUp` y `ReminderCandidate`. Ficheros modo 600 bajo directorio 700; **no están cifrados**. Solo se genera `.verified` si restauración y comparación superan pruebas; el contenedor temporal se destruye y no se reinicia ningún servicio real.
+- El script de respaldo se ha subido, **aún NO ejecutado**. El siguiente hito verificable será `BACKUP_RESTAURACION_VERIFICADOS=1`, `RESULTADO_GLOBAL=0` sobre el nuevo pre0014. No reutilizar pre0013 de O2. Después, y en ejecución independiente, desplegar `0014` mediante API y Web con `migrate --plan`, validaciones de huella y salud. No restaurar automáticamente un backup antiguo si aparece un fallo después de escrituras reales.
