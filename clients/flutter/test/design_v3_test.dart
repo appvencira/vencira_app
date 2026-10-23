@@ -40,7 +40,7 @@ class _SyntheticCalendarApi extends VenciraApi {
   @override
   Future<VenciraAgendaDayPage> fetchAgendaDay(
     String workspaceId, DateTime day, {int page = 1},
-  ) async => throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<VenciraRenewal> fetchRenewalDetail(
@@ -50,7 +50,7 @@ class _SyntheticCalendarApi extends VenciraApi {
   @override
   Future<VenciraHistoryPage> fetchRenewalHistory(
     String workspaceId, String renewalId, {int page = 1},
-  ) async => throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<VenciraRenewal> createRenewal(
