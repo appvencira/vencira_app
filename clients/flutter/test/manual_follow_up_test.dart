@@ -90,7 +90,10 @@ void main() {
       ));
       await tester.pumpAndSettle();
       final schedule = find.byKey(const ValueKey('schedule-follow-up'));
-      await tester.scrollUntilVisible(schedule, 190);
+      // The ListView eagerly builds its children: scrollUntilVisible can
+      // return before scrolling because the widget already exists off-screen.
+      await tester.ensureVisible(schedule);
+      await tester.pumpAndSettle();
       await tester.tap(schedule);
       await tester.pumpAndSettle();
       await tester.tap(find.text(language == 'ca'
@@ -101,7 +104,8 @@ void main() {
       expect(tester.takeException(), isNull);
 
       final complete = find.byKey(const ValueKey('complete-follow-up'));
-      await tester.scrollUntilVisible(complete, 190);
+      await tester.ensureVisible(complete);
+      await tester.pumpAndSettle();
       await tester.tap(complete);
       await tester.pumpAndSettle();
       expect(api.resolves, 0);
