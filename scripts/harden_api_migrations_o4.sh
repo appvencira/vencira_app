@@ -99,8 +99,14 @@ for service in api db web_preview; do
     echo "ERROR: identidad Docker incorrecta para $service"
     exit 4
   }
+  previous_health="$(sudo docker inspect "vencira_localcheck-${service}-1" --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}')"
+  test "$previous_health" = healthy || {
+    echo "ERROR: servicio $service sin salud inicial (valor=$previous_health)"
+    exit 4
+  }
 done
 echo "COMPOSE_IDENTITY=OK"
+echo "HEALTH_PREVIO_API_DB_WEB=healthy"
 # Script de una sola ejecución. No reciclarlo si la API ya está endurecida.
 PHASE=RUNTIME_PREVIO
 old_runtime_cmd="$(sudo docker inspect vencira_localcheck-api-1 --format '{{json .Config.Cmd}}')"
