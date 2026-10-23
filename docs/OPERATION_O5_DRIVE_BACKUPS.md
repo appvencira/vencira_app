@@ -1,6 +1,6 @@
 # VENCIRA O5 — Copias cifradas PostgreSQL en Google Drive
 
-**Estado 23/10/2026:** O5 preflight superado. **Restic 0.16.4 y Rclone 1.60.1 ya instalados por APT**, pero `Restic 0.16.4` **NO admite `backup --stdin-from-command`**; por seguridad se detuvo el gate de compatibilidad con `RESULTADO_GLOBAL=5`, sin modificar Docker/DB ni conectar Google. Corrección **Restic oficial 0.19.1 con SHA-256 fijado** preparada en GitHub y pendiente de ejecutar en Ubuntu; no hay copias remotas ni OAuth. Cuenta de Google interna confirmada por usuario: `appvencira@gmail.com`; **no es una dirección de soporte público**. No se han recibido credenciales, ni se han instalado paquetes, ni se ha accedido a Drive. No usar información personal real.
+**Estado 23/10/2026:** O5 **herramientas verificadas en Ubuntu, OAuth y copias Drive PENDIENTES**. Restic oficial `0.19.1` instalado en `/usr/local/bin/restic` tras comprobar SHA-256 del release, soporte `--stdin-from-command` y prueba real cifrada de backup/restauración local; Rclone `1.60.1-DEV` disponible. Resultado usuario `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0` y Docker API/DB/Web healthy sin reinicios ni migraciones. **No se ha conectado Google Drive, no se ha generado una copia remota ni hay automatización**. Cuenta de Google interna confirmada por usuario: `appvencira@gmail.com`; **no es una dirección de soporte público**. No se han recibido credenciales, ni se han instalado paquetes, ni se ha accedido a Drive. No usar información personal real.
 
 ## Objetivo y límites
 
@@ -75,6 +75,32 @@ Esperar `SHA256_PINNED_RELEASE=OK`, `RESTIC_STDIN_FROM_COMMAND=OK`, `RCLONE_BACK
 
 **Tras esta fase**: configurar OAuth Google Drive con autorización explícita del titular y cliente propio, custodiar Restic password fuera del servidor, inicializar repo cifrado, copiar PostgreSQL real y restaurar en PG17 temporal; luego systemd/monitorización. **O5 todavía NO operativa**. Tampoco se requiere actualizar Ubuntu 24.04 a 26.04.
 
+
+## Hito O5 — Restic actualizado y copia cifrada local validada (23/10/2026)
+
+El usuario ejecutó `scripts/o5_install_restic_official.sh` en la rama `integration/local-e2e-prep`, checkout `5acbc27635dd9d5a2d135d08021b50f16ae613cf`. Todos los requisitos presentes (`curl`, `sha256sum`, `python3`, `openssl`, `restic`, `rclone`, `grep`, `awk`, `sed`; módulo `bz2` Python disponible). `RESTIC_ANTERIOR=restic 0.16.4`, `RCLONE_VERSION=rclone v1.60.1-DEV`.
+
+Resultados de la última ejecución real:
+- `DESCARGA=OK`, `SHA256_PINNED_RELEASE=OK`, `DESCOMPRESION_PYTHON_BZ2=OK`.
+- `RESTIC_STDIN_FROM_COMMAND=OK`, `RCLONE_BACKEND_RESTIC=OK`.
+- **`PRUEBA_CIFRADA_Y_RESTAURACION_LOCAL=OK`**: repositorio temporal Restic cifrado, prueba de lectura/restauración y check correctos; directorio temporal eliminado, no son copias de PostgreSQL ni Google.
+- **`RESTIC_ACTUAL=restic 0.19.1 compiled with go1.26.4 on linux/amd64`**; versión APT anterior conservada en `/usr/bin/restic`, sin sustituir paquetes del sistema.
+- `HEALTH_api=healthy`, `HEALTH_db=healthy`, `HEALTH_web_preview=healthy`, `CONTENEDORES_INTACTOS=1`, `O5_HERRAMIENTAS_COMPATIBLES=OK`, `RESULTADO_GLOBAL=0`, `RESTIC_OFICIAL_INSTALADO=1`, `RESTIC_PRUEBA_CIFRADA_LOCAL=1`, `RESULTADO_EJECUCION=0`.
+- `GOOGLE_DRIVE_NO_CONECTADO=1`, `SIN_MIGRACIONES_NI_REINICIOS=1`. Log local: `/tmp/vencira-o5-restic-compat.9oygg9cL.log`.
+
+**Hito de herramientas cerrado. No repetir ninguno de los instaladores O5.** Este hito NO satisface O5 completo, pues la copia cifrada fue local y sintética, no se ha autorizado Drive, probado restauración remota ni programado una copia.
+
+### Siguiente dependencia — credenciales propias de OAuth para Drive
+
+1. Entrar en [Google Cloud Console](https://console.cloud.google.com/) usando **`appvencira@gmail.com`**, crear/seleccionar proyecto separado `VENCIRA Backups` y habilitar [Google Drive API](https://console.cloud.google.com/apis/library/drive.googleapis.com). No habilitar servicios extra innecesarios.
+2. En [Google Auth Platform](https://console.cloud.google.com/auth/overview), configurar Branding: nombre `VENCIRA Internal Backups`; audiencia **External** para cuenta Gmail personal (la opción Internal suele reservarse a organizaciones Google Workspace); correo de contacto interno. En Data Access declarar **`https://www.googleapis.com/auth/drive.file`**, alcance no sensible recomendado y limitado a archivos creados/abiertos por la aplicación. 
+3. Durante el estado Testing, añadir `appvencira@gmail.com` como usuario de prueba si Google lo solicita. Importante: **los refresh tokens de apps OAuth External en Testing caducan aproximadamente a los 7 días** con scopes Drive; **antes de automatizar copias** revisar que OAuth esté en estado **In Production** y las condiciones de verificación aplicables al `drive.file` concreto. `In Production` corresponde al **estado OAuth de este cliente administrativo**, no al lanzamiento de VENCIRA como producto ni a la autorización para datos reales.
+4. En [Google Auth Platform > Clients](https://console.cloud.google.com/auth/clients) crear un cliente OAuth de tipo **Desktop app**, nombre `VENCIRA Backup Rclone`. Guardar Client ID/Client Secret en gestor de secretos personal, no pegarlos en chat ni en GitHub. **No descargar/subir archivos JSON de credenciales a repositorio**.
+5. Solo después configurar el servidor con `rclone config` bajo configuración **root 0600** y una sesión OAuth mediante el procedimiento oficial `https://rclone.org/remote_setup/`; para Android se confirmará método seguro de navegador con túnel SSH al puerto local 53682 o autorización en equipo con Rclone. No abrir ese puerto a Internet ni entregar tokens al chat. El servidor necesitará un `rclone.conf` propio, distinto del de otros proyectos.
+6. Una vez conectado, probar alcance `drive.file`, repo Restic cifrado y restablecimiento antes de automatizar; si `rclone 1.60.1` presenta incompatibilidades con APIs actuales, actualizarlo de manera aislada con comprobaciones y sin cambiar Docker.
+
+Fuentes oficiales: [Rclone configuración Drive y cliente propio](https://rclone.org/drive/#making-your-own-client-id), [Rclone OAuth en servidor sin navegador](https://rclone.org/remote_setup/), [Google OAuth scopes Drive](https://developers.google.com/workspace/drive/api/guides/api-specific-auth), [Google OAuth ciclo de vida de refresh tokens](https://developers.google.com/identity/protocols/oauth2/#expiration).
+
 ## Dependencia interactiva: OAuth Google, usuario Android
 
 Para permitir las copias habrá que crear, desde `appvencira@gmail.com`, un proyecto Google Cloud para la integración de respaldo, activar **Google Drive API**, configurar la pantalla de consentimiento para uso personal, crear credenciales **OAuth tipo Desktop** y aprobar el acceso desde navegador; rclone recomienda crear cliente propio porque su identificador compartido se retira en 2026. No se deben enviar al chat las credenciales ni códigos OAuth.
@@ -89,7 +115,7 @@ Documentación oficial:
 
 ## Orden de ejecución previsto y estado
 
-1. **Diagnóstico de solo lectura SUPERADO**: herramientas `rclone` y `restic` ausentes, stack healthy, 211 GB disponibles. **Siguiente:** instalación APT controlada de ambas y comprobación de capacidades con `scripts/o5_install_backup_tools.sh`, pendiente de ejecución en Ubuntu. Sin actualizar la versión del sistema operativo ni reiniciar servicios.
+1. **Herramientas SUPERADAS**: diagnóstico, Rclone APT `1.60.1-DEV`, Restic oficial `0.19.1`, SHA, `--stdin-from-command` y recuperación cifrada local probados. No repetir scripts de instalación. **Siguiente: cliente OAuth propio de Google Drive para la cuenta interna**, sin compartir credenciales.
 2. Configurar Google Cloud OAuth con autorización específica del titular (no introducir secreto en chat); crear remote Rclone dedicado bajo la identidad de respaldo.
 3. Generar y proteger clave Restic, **guardar recuperación fuera del servidor**, crear repositorio remoto con `restic init`; comprobar que no hay dumps en claro y el Drive corresponde a la cuenta adecuada.
 4. Ejecutar una copia manual encriptada y `scripts/o5_restore_drill.sh`; comparar esquema/recuento e integridad sin alterar base viva; verificar que el último snapshot efectivamente corresponde al equipo. Si hay errores, **no habilitar automatización**.
