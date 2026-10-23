@@ -105,6 +105,11 @@ void main() {
       await tester.pumpAndSettle();
 
       final choose = find.byKey(const ValueKey('choose-outcome'));
+      // This card is below O1/O2 content in a lazily built ListView.
+      // Build it by scrolling first, then bring it into the viewport.
+      await tester.scrollUntilVisible(
+        choose, 180, scrollable: find.byType(Scrollable).first,
+      );
       await tester.ensureVisible(choose);
       await tester.pumpAndSettle();
       await tester.tap(choose);
@@ -157,6 +162,11 @@ void main() {
     ));
     await tester.pumpAndSettle();
     final choose = find.byKey(const ValueKey('choose-outcome'));
+    // This card is below O1/O2 content in a lazily built ListView.
+    // Build it by scrolling first, then bring it into the viewport.
+    await tester.scrollUntilVisible(
+      choose, 180, scrollable: find.byType(Scrollable).first,
+    );
     await tester.ensureVisible(choose);
     await tester.pumpAndSettle();
     await tester.tap(choose);
