@@ -207,7 +207,9 @@ void main() {
         return http.Response('{"active":null}', 200);
       }
       writes++;
-      expect(request.headers['X-CSRFToken'], isNotNull);
+      expect(request.headers.entries.any((header) =>
+        header.key.toLowerCase() == 'x-csrftoken' &&
+        header.value == 'abcdefghijklmnopqrstuvwxyz123456'), isTrue);
       if (request.method == 'POST') {
         expect(request.body, '{"scheduled_for":"2027-03-25"}');
         return http.Response(
