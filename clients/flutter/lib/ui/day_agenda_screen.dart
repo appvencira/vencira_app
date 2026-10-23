@@ -7,6 +7,7 @@ import '../l10n/app_localizations.dart';
 import 'month_agenda_screen.dart';
 import 'renewal_detail_screen.dart';
 import 'modality_labels.dart';
+import 'vencira_select.dart';
 
 /// Primera vista de la agenda tipo papel. Sólo presenta eventos previstos.
 /// «Recuérdamelo», cierres y notificaciones entregadas aún no están modelados.
@@ -469,6 +470,16 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
                     ),
                   ],
                   const SizedBox(height: 8),
+                  VenciraStatusBadge(
+                    status: renewal.status,
+                    label: switch (renewal.status) {
+                      'pending' => _t.pending,
+                      'contacted' => _t.contacted,
+                      'closed' => _t.closed,
+                      _ => _t.unknown,
+                    },
+                  ),
+                  const SizedBox(height: 9),
                   Wrap(
                     spacing: 6,
                     runSpacing: 4,
@@ -566,59 +577,52 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
   }
 
   Widget _agendaFilters() {
-    return Wrap(spacing: 8, runSpacing: 8, children: [
-                        SizedBox(width: 170, child: DropdownButtonFormField<String>(
-                          key: ValueKey('agenda-entry-' + _entryFilter),
-                          initialValue: _entryFilter, isExpanded: true,
-                          decoration: InputDecoration(labelText: _t.entryLabel,
-                            border: const OutlineInputBorder()),
-                          items: [
-                            DropdownMenuItem(value:'', child: Text(_t.all)),
-                            DropdownMenuItem(value:'clients', child: Text(_t.entryClients)),
-                            DropdownMenuItem(value:'prospects', child: Text(_t.entryProspects)),
-                          ],
-                          onChanged: _setEntry,
-                        )),
-                        SizedBox(width: 180, child: DropdownButtonFormField<String>(
-                          key: ValueKey('agenda-modality-' + _modalityFilter),
-                          initialValue: _modalityFilter, isExpanded: true,
-                          decoration: InputDecoration(labelText: _t.modalityLabel,
-                            border: const OutlineInputBorder()),
-                          items: [
-                            DropdownMenuItem(value:'', child: Text(_t.all)),
-                            for (final option in _modalities)
-                              if (option.active || option.code == _modalityFilter)
-                                DropdownMenuItem(value: option.code,
-                                  child: Text(modalityCaption(context, option),
-                                    overflow: TextOverflow.ellipsis)),
-                          ],
-                          onChanged: _setModality,
-                        )),
-                        SizedBox(width: 200,
-                          child: DropdownButtonFormField<String>(
-                            key: ValueKey('agenda-insurer-' + _insurerFilter),
-                            initialValue: _insurerFilter, isExpanded: true,
-                            decoration: InputDecoration(
-                              labelText: _t.insurerLabel,
-                              border: const OutlineInputBorder(),
-                            ),
-                            items: [
-                              DropdownMenuItem(value:'', child: Text(_t.all)),
-                              for (final company in _insurers)
-                                if (company.active || company.id == _insurerFilter)
-                                  DropdownMenuItem(value:company.id,
-                                    child: Text(company.name,
-                                      overflow: TextOverflow.ellipsis)),
-                              if (_insurerFilter.isNotEmpty &&
-                                  !_insurers.any((company) =>
-                                    company.id == _insurerFilter))
-                                DropdownMenuItem(value: _insurerFilter,
-                                  child: Text(_t.insurerLegacy)),
-                            ],
-                            onChanged: _setInsurer,
-                          ),
-                        ),
-                      ]);
+    return LayoutBuilder(builder: (context, constraints) {
+      final fieldWidth = constraints.maxWidth < 620
+          ? constraints.maxWidth : 220.0;
+      return Wrap(spacing: 10, runSpacing: 10, children: [
+        SizedBox(width: fieldWidth, child: VenciraSelect<String>(
+          key: ValueKey('agenda-entry-$_entryFilter'),
+          label: _t.entryLabel, value: _entryFilter,
+          prefixIcon: Icons.people_outline,
+          options: [
+            VenciraOption(value: '', label: _t.all),
+            VenciraOption(value: 'clients', label: _t.entryClients),
+            VenciraOption(value: 'prospects', label: _t.entryProspects),
+          ],
+          onChanged: _setEntry,
+        )),
+        SizedBox(width: fieldWidth, child: VenciraSelect<String>(
+          key: ValueKey('agenda-modality-$_modalityFilter'),
+          label: _t.modalityLabel, value: _modalityFilter,
+          prefixIcon: Icons.category_outlined,
+          options: [
+            VenciraOption(value: '', label: _t.all),
+            for (final option in _modalities)
+              if (option.active || option.code == _modalityFilter)
+                VenciraOption(value: option.code,
+                  label: modalityCaption(context, option)),
+          ],
+          onChanged: _setModality,
+        )),
+        SizedBox(width: fieldWidth, child: VenciraSelect<String>(
+          key: ValueKey('agenda-insurer-$_insurerFilter'),
+          label: _t.insurerLabel, value: _insurerFilter,
+          prefixIcon: Icons.apartment_outlined,
+          options: [
+            VenciraOption(value: '', label: _t.all),
+            for (final company in _insurers)
+              if (company.active || company.id == _insurerFilter)
+                VenciraOption(value: company.id, label: company.name),
+            if (_insurerFilter.isNotEmpty &&
+                !_insurers.any((company) => company.id == _insurerFilter))
+              VenciraOption(value: _insurerFilter,
+                label: _t.insurerLegacy),
+          ],
+          onChanged: _setInsurer,
+        )),
+      ]);
+    });
   }
 
   @override
