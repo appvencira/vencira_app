@@ -365,6 +365,13 @@ Suite Flutter, web build y despliegue localcheck completados sobre `ab5b12b3`: `
 - Retención del archivo 2 años, prevista en whitepaper, **NO implementada por seguridad/RGPD**; los eventos `RenewalAuditEvent` utilizan `PROTECT` y se precisa política de conservación antes de borrado automático. Tampoco existe entidad CRM de cliente ni notificaciones salientes.
 - Próxima acción única del usuario en SSH: `cd /home/vencira/vencira-localcheck; git fetch origin integration/local-e2e-prep; git merge --ff-only FETCH_HEAD; bash scripts/validate_operativa_o3_preflight.sh` en subshell, seguido de `RESULTADO_EJECUCION` y `CONSOLA_ABIERTA`. Si falla, asistente corrige fuentes GitHub y documenta antes de otro preflight. No tocar DB/API real.
 
+## O3 — primer preflight parcial verde y error de sintaxis Flutter reparado (23/10/2026)
+
+- Usuario ejecutó `scripts/validate_operativa_o3_preflight.sh` sobre `7fd95f8527ec01c25908bc7b543f752cd3f6281e`. `COMPOSE_IDENTITY=OK`, `COMPOSE_CONFIG=OK`, `BUILD_API_PRUEBA_AISLADA=OK`, `DJANGO_CHECK_Y_MIGRACION_EN_SECO=OK`, **`DJANGO_SQLITE_SUITE=OK`** con 119 tests, **`POSTGRES_EFIMERO=OK`** y **`DJANGO_POSTGRES_O3_TESTS=OK`** con 13 tests. Django y migración `0014` consistente; sin aplicación persistente.
+- ÚNICO fallo visible: `FLUTTER_O3_SUITE_Y_BUILD`, `flutter analyze` marcó `Expected to find ')'` en `clients/flutter/lib/api/vencira_api.dart` líneas 42 y 1132. En ambos sitios el parámetro opcional nombrado terminaba en `{DateTime? scheduledFor},` antes del paréntesis final; **se corrigió en GitHub commit `d4d1c8b7d5c5409911aa3bcdfc239b5206a56bdb`**, moviendo la coma dentro de las llaves y cerrando `})`. Contrato y sobreescritura corregidos, comportamiento funcional sin cambios.
+- Salida del intento: **`RESULTADO_GLOBAL=1`**, `FASE_FALLIDA=FLUTTER_O3_SUITE_Y_BUILD`, `SIN_DESPLIEGUE_NI_MIGRACION_PERSISTENTE=1`, log `/tmp/vencira-operativa-o3-preflight.CZVgXTTW.log`, `RESULTADO_EJECUCION=1`. O2 sigue desplegada y aprobada.
+- **Próxima acción**: sincronizar `integration/local-e2e-prep` con `git fetch` y `git merge --ff-only`, ejecutar de nuevo `bash scripts/validate_operativa_o3_preflight.sh`, recoger `RESULTADO_GLOBAL`. Si aparece un nuevo fallo Flutter, analizar salida y corregir en GitHub sin desplegar. Solo después del preflight completo verde preparar respaldo **pre0014 nuevo** y ensayo de restauración antes de aplicar `0014`.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
