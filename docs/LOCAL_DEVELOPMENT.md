@@ -5,13 +5,17 @@ Requisitos: Docker, Docker Compose y Python 3.
 ```bash
 python3 scripts/init_env.py
 docker compose config --quiet
+# Sólo primera inicialización de BD nueva, explícita y controlada:
+docker compose up -d db
+docker compose run --rm api python manage.py migrate --noinput
+# La API posterior únicamente verifica migraciones al arrancar:
 docker compose up --build -d
 curl -fsS http://127.0.0.1:18731/api/health/
 curl -fsS http://127.0.0.1:18731/api/ready/
 docker compose logs --tail=50 api
 ```
 
-API ligada a localhost y base de datos sin puerto publicado. No usar contra datos reales. Para parar, `docker compose down` conserva el volumen; `docker compose down -v` lo borra.
+API ligada a localhost y base de datos sin puerto publicado. No usar contra datos reales. Desde O4, iniciar API **no aplica migraciones**: ejecuta `manage.py migrate --check --noinput` y falla si quedan pendientes. El ejemplo anterior de `migrate --noinput` es **exclusivamente para una base vacía local nueva**. En cualquier entorno con datos, usar el procedimiento con backup/restauración y migración específica controlada de [O4](OPERATION_O4_MIGRATION_GUARD.md). El proyecto de pruebas `vencira_localcheck` se opera sólo con sus scripts protegidos. Para parar, `docker compose down` conserva el volumen; `docker compose down -v` lo borra.
 
 Tests backend independientes de Docker:
 ```bash
