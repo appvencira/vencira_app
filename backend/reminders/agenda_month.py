@@ -8,7 +8,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import ReminderCandidate, ReminderPolicy, Renewal, WorkspaceMember
+from .models import ReminderCandidate, ReminderPolicy, Renewal, RenewalFollowUp, WorkspaceMember
 from .views import _membership, _visible_renewals
 from .filtering import filtered_renewals
 
@@ -42,6 +42,7 @@ def agenda_month(request, workspace_id):
             "expiry": {"pending": 0, "contacted": 0},
             "notice_deadline": {"pending": 0, "contacted": 0},
             "reminder": {"pending": 0, "contacted": 0},
+            "follow_up": {"pending": 0, "contacted": 0},
         })
         record[kind][renewal_status] = total
 
@@ -76,6 +77,21 @@ def agenda_month(request, workspace_id):
         .order_by()
     ):
         accumulate(row["scheduled_for"], "reminder", row["renewal__status"], row["total"])
+
+    # Seguimientos manuales: nunca representan avisos automáticos ni entregados.
+    # El conjunto de IDs ya está filtrado por membresía, asignación y filtros.
+    for row in (
+        RenewalFollowUp.objects.filter(
+            renewal_id__in=visible.values("pk"),
+            state=RenewalFollowUp.State.PLANNED,
+            scheduled_for__gte=first, scheduled_for__lt=following,
+        )
+        .values("scheduled_for", "renewal__status")
+        .annotate(total=Count("renewal_id", distinct=True))
+        .order_by()
+    ):
+        accumulate(row["scheduled_for"], "follow_up",
+                   row["renewal__status"], row["total"])
 
     response = Response({"month": raw, "days": [days[key] for key in sorted(days)]})
     response["Cache-Control"] = "no-store"
