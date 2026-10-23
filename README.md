@@ -16,6 +16,10 @@ Estado (23/10/2026): **entorno de desarrollo DEV en `https://dev.vencira.es`**, 
 - Flutter para web y, en fases posteriores, móvil.
 - Docker Compose local y GitHub Actions.
 
+## Migraciones y arranque seguro (O4)
+
+El arranque de API se endurece en O4 para **comprobar migraciones pendientes sin aplicarlas automáticamente** (`manage.py migrate --check --noinput`). Las migraciones futuras se ejecutarán expresamente, con preflight, respaldo y restauración comprobada, según [el procedimiento O4](docs/OPERATION_O4_MIGRATION_GUARD.md). **O4 todavía está pendiente de ejecución y comprobación en Ubuntu**; el cambio de GitHub por sí solo no acredita la configuración del servidor.
+
 ## Primer arranque
 ```bash
 python3 scripts/init_env.py
