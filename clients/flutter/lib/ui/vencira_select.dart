@@ -67,7 +67,7 @@ class VenciraSelect<T> extends StatelessWidget {
               Flexible(child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: options.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 5),
+                separatorBuilder: (context, index) => const SizedBox(height: 5),
                 itemBuilder: (rowContext, i) {
                   final option = options[i];
                   final selected = option.value == value;
