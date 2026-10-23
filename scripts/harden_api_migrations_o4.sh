@@ -104,6 +104,22 @@ echo "COMPOSE_IDENTITY=OK"
 step COMPOSE_CONFIG sudo docker compose -p vencira_localcheck \
   -f compose.yaml -f compose.preview.yaml config --quiet
 
+COMPOSE=(sudo docker compose -p vencira_localcheck \
+  -f compose.yaml -f compose.preview.yaml)
+check_policy() {
+  "${COMPOSE[@]}" config --format json | python3 -c '
+import json, sys
+cmd=json.load(sys.stdin)["services"]["api"]["command"]
+if isinstance(cmd,list): cmd=" ".join(cmd)
+assert "migrate --check --noinput" in cmd, "No fail-closed migration check"
+assert "migrate --noinput" not in cmd, "Unexpected automatic migration"
+assert "exec gunicorn" in cmd, "Gunicorn is not primary process"
+'
+}
+step COMPOSE_GUARD_CHECK_ONLY check_policy
+echo "COMPOSE_MIGRATE_POLICY=CHECK_ONLY"
+
+
 DB=vencira_localcheck-db-1
 live_sql() {
   sudo docker exec "$DB" sh -c \
