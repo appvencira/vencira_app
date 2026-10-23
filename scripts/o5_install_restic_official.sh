@@ -55,7 +55,24 @@ WEB_ID="$(sudo docker inspect vencira_localcheck-web_preview-1 --format '{{.Id}}
 echo "CONTENEDORES_PREVIOS=healthy"
 
 PHASE=PREREQUISITOS
-for tool in curl sha256sum bzip2 openssl restic rclone; do command -v "$tool" >/dev/null; done
+missing=0
+for tool in curl sha256sum python3 openssl restic rclone grep awk sed; do
+  if command -v "$tool" >/dev/null 2>&1; then
+    echo "REQUISITO_${tool}=OK"
+  else
+    echo "REQUISITO_${tool}=FALTA"
+    missing=1
+  fi
+done
+if [ "$missing" -ne 0 ]; then
+  echo "ERROR: faltan herramientas detalladas arriba; no se ha descargado ni instalado nada"
+  exit 3
+fi
+if ! python3 -c "import bz2, shutil" >/dev/null 2>&1; then
+  echo "ERROR: modulos estándar Python bz2/shutil no disponibles; no se ha instalado nada"
+  exit 3
+fi
+echo "DESCOMPRESION_PYTHON_BZ2=DISPONIBLE"
 echo "RESTIC_ANTERIOR=$(restic version)"
 echo "RCLONE_VERSION=$(rclone version | sed -n '1p')"
 
@@ -82,7 +99,16 @@ echo "$SHA256_ESPERADO  $STAGE/$ARCHIVE" | sha256sum --status -c - || {
 echo "SHA256_PINNED_RELEASE=OK"
 
 PHASE=VERIFICAR_BINARIO
-bzip2 -dc "$STAGE/$ARCHIVE" >"$STAGE/restic"
+# Descomprimir con Python estándar (bz2) sin depender del paquete bzip2.
+# SHA256 se verifica ANTES de abrir el archivo.
+python3 - "$STAGE/$ARCHIVE" "$STAGE/restic" <<'PY'
+import bz2
+import shutil
+import sys
+with bz2.open(sys.argv[1], "rb") as source, open(sys.argv[2], "xb") as target:
+    shutil.copyfileobj(source, target, length=1024 * 1024)
+PY
+echo "DESCOMPRESION_PYTHON_BZ2=OK"
 chmod 700 "$STAGE/restic"
 test -s "$STAGE/restic"
 test "$("$STAGE/restic" version | awk '{print $2}')" = "$VERSION"
