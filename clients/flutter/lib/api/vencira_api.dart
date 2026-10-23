@@ -410,7 +410,8 @@ class VenciraAgendaEvent {
 
   factory VenciraAgendaEvent.fromJson(Map<String, dynamic> json) {
     final kind = json['kind'];
-    if (kind != 'expiry' && kind != 'notice_deadline' && kind != 'reminder') {
+    if (kind != 'expiry' && kind != 'notice_deadline' &&
+        kind != 'reminder' && kind != 'follow_up') {
       throw const FormatException('Unsupported agenda event');
     }
     final candidateId = json['candidate_id'];
@@ -492,11 +493,12 @@ class VenciraMonthCounts {
 
 class VenciraMonthDay {
   const VenciraMonthDay({required this.day, required this.expiry,
-    required this.notice, required this.reminder});
+    required this.notice, required this.reminder, this.followUp = const VenciraMonthCounts(pending: 0, contacted: 0)});
   final DateTime day;
   final VenciraMonthCounts expiry;
   final VenciraMonthCounts notice;
   final VenciraMonthCounts reminder;
+  final VenciraMonthCounts followUp;
   factory VenciraMonthDay.fromJson(Map<String, dynamic> json) {
     final raw = json['day'];
     if (raw is! String || !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(raw)) {
@@ -509,6 +511,10 @@ class VenciraMonthDay {
       expiry: VenciraMonthCounts.fromJson(json['expiry'] as Map<String, dynamic>),
       notice: VenciraMonthCounts.fromJson(json['notice_deadline'] as Map<String, dynamic>),
       reminder: VenciraMonthCounts.fromJson(json['reminder'] as Map<String, dynamic>),
+      followUp: json['follow_up'] == null
+        ? const VenciraMonthCounts(pending: 0, contacted: 0)
+        : VenciraMonthCounts.fromJson(
+            json['follow_up'] as Map<String, dynamic>),
     );
   }
 }
@@ -533,7 +539,8 @@ class VenciraAgendaMonth {
     for (final day in days) {
       final iso = _civilDayIso(day.day);
       if (!iso.startsWith(raw + '-') || !seen.add(iso) ||
-          day.expiry.total + day.notice.total + day.reminder.total == 0) {
+          day.expiry.total + day.notice.total +
+          day.reminder.total + day.followUp.total == 0) {
         throw const FormatException('Out-of-month, duplicate or empty day');
       }
     }
