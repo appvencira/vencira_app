@@ -158,7 +158,7 @@ echo "ESQUEMA_PREVIO_0013=OK"
 echo "MIGRACION_0014_PENDIENTE=1"
 
 # Guardar antiguas imagenes ANTES del build. Etiquetas unicas: no sobrescribir
-# referencias recuperables a la version O1. Esta operacion NO reinicia Docker.
+# referencias recuperables a la version O2. Esta operacion NO reinicia Docker.
 PHASE=GUARDAR_IMAGENES_PREVIAS
 OLD_API_ID="$(sudo docker inspect vencira_localcheck-api-1 --format '{{.Image}}')"
 OLD_WEB_ID="$(sudo docker inspect vencira_localcheck-web_preview-1 --format '{{.Image}}')"
@@ -190,7 +190,7 @@ if ! grep -Fq 'reminders.0014_renewal_outcomes' "$LOG"; then
   echo "ERROR: el plan no incluye la migracion esperada"
   exit 6
 fi
-echo "PLAN_MIGRACION_INCLUYE_0013=1"
+echo "PLAN_MIGRACION_INCLUYE_0014=1"
 
 # El up de la API ejecuta migrate --noinput AUTOMATICAMENTE. El backup
 # ya ha sido restaurado y verificado; no automatizar rollback con pg_restore.
@@ -218,7 +218,7 @@ test "$api_health" = healthy || exit 8
 PHASE=VERIFICAR_MIGRACION
 applied="$(sql_read "SELECT COUNT(*) FROM django_migrations WHERE app='reminders' AND name='0014_renewal_outcomes';")"
 test "$applied" = 1 || {
-  echo "ERROR: migracion 0013 no consta aplicada; detener"
+  echo "ERROR: migracion 0014 no consta aplicada; detener"
   exit 8
 }
 table_exists="$(sql_read "SELECT to_regclass('public.reminders_renewaloutcome') IS NOT NULL;")"
@@ -283,7 +283,7 @@ echo "DEV_VENCIRA_HTTPS_HTTP=${external:-sin_respuesta}"
 PHASE=VERIFICAR_BACKUP_POSTDEPLOY
 test "$(sha256sum "$BACKUP" | awk '{print $1}')" = "$BACKUP_SHA256"
 PHASE=REGISTRAR_DESPLIEGUE
-printf 'DEPLOY_SHA=%s\nMIGRATION_0013=APPLIED\nAPI_HEALTH=healthy\nWEB_HEALTH=healthy\nRESULTADO_GLOBAL=0\n' \
+printf 'DEPLOY_SHA=%s\nMIGRATION_0014=APPLIED\nAPI_HEALTH=healthy\nWEB_HEALTH=healthy\nRESULTADO_GLOBAL=0\n' \
   "$(git rev-parse HEAD)" >> "$RECEIPT"
 echo "COMMIT_VALIDADO=$(git rev-parse HEAD)"
 echo "SOLO_STACK_VENCIRA_LOCALCHECK=1"
