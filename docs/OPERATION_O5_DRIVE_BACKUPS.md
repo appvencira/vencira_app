@@ -320,3 +320,29 @@ echo "CONSOLA_ABIERTA"
 **PRIVACIDAD DE LA SALIDA:** El script imprime UNA VEZ la clave de cifrado para que el usuario la guarde en un gestor de contraseñas independiente. **No enviar toda la transcripción SSH ni capturas al chat ni registrar la sesión en terminal.** Informar exclusivamente los marcadores finales seguros (sin la clave): `GOOGLE_DRIVE_ACCESIBLE`, `RESTIC_REPOSITORIO_REMOTO`, `PRUEBA_CIFRADA_DRIVE_RESTAURACION`, `RESTIC_CHECK`, `CLAVE_GUARDADA_FUERA_DEL_SERVIDOR`, `CLAVE_EN_ARCHIVO_PRIVADO_ROOT_0600`, `REPO_RESTIC_REMOTO_INICIALIZADO`, `PRUEBA_CIFRADA_DRIVE_RESTAURADA`, `RESULTADO_GLOBAL`, `RESULTADO_EJECUCION`, o sólo `FASE_FALLIDA` si fracasa.
 
 **No declarar éxito** antes de la salida del usuario. Siguiente hito después del backup de prueba: ejecutar `scripts/o5_backup_to_drive.sh` para base `vencira_localcheck-db-1`, y `scripts/o5_restore_drill.sh` a PostgreSQL efímero (probar ambos/adaptarlos a snapshots por tag). Tras comprobar recuperación real, habilitar copias automáticas con retención, monitorización y atención a la caducidad de refresh token Google External/Testing de siete días: cambiar estado OAuth cuando sea adecuado y reautorizar si el token sigue siendo de Testing. Ninguno de estos hitos autoriza datos personales reales/producción.
+
+## Incidencia 24/10/2026 — lectura de TTY falla antes de custodiar la clave
+
+**Evidencia real Ubuntu (usuario):** al ejecutar `scripts/o5_init_restic_drive.sh` en checkout `b2d0bf698ff208a2986aab24d9cc99563e3ebad7`, pasó gates `HEALTH_api/db/web_preview=healthy`, `RCLONE_PRIVADO_SCOPE_Y_TOKEN=OK` y `GOOGLE_DRIVE_ACCESIBLE=OK`. Luego, en `CUSTODIA_CLAVE`, Python terminó con `io.UnsupportedOperation: File or stream is not seekable.` antes de mostrar/confirmar y guardar la clave de recuperación. El usuario aportó el mismo fallo dos veces; **no confundirlo con ejecuciones parcialmente exitosas**.
+
+Resultado certificado por script: `RESULTADO_GLOBAL=1`, `RESULTADO_EJECUCION=1`, `FASE_FALLIDA=CUSTODIA_CLAVE`, `CLAVE_PRIVADA_EN_SERVIDOR=0`, `REPO_RESTIC_REMOTO_INICIALIZADO=0`, `PRUEBA_CIFRADA_DRIVE_RESTAURADA=0`, `POSTGRES_NO_RESPALDADO_AUN=1`, `SIN_MIGRACIONES_NI_REINICIOS=1`. **No se creó contraseña persistente, repositorio Restic ni backup PostgreSQL**; Drive OAuth continúa conectado. El script abortó ANTES de crear `restic-password` o `config.env`. No volver a entrar en OAuth ni reinstalar Restic.
+
+**Causa en el script original:** Python empleaba `open("/dev/tty", "r+")` para leer y escribir un único stream. Al cambiar entre estas operaciones sobre un dispositivo no reposicionable, el buffer puede llamar `seek()` y generar `UnsupportedOperation`. No es problema de contraseñas, Rclone ni Google.
+
+**Corrección GitHub:** `scripts/o5_init_restic_drive.sh` commit `48a95556d7cbd4c5cc026824a04cf734eb77508a`. Usa **`/dev/tty` abierto en dos flujos separados**: salida solo `"w"` con `flush`, entrada solo `"r"`; la segunda introducción oculta se sigue haciendo mediante `getpass.getpass(stream=tty_out)` y la confirmación `GUARDADA` mediante `tty_in.readline()`. Python recibe código por heredoc y por ello no debe usar `input()` sobre stdin. Mantiene `secrets.token_hex(32)`, comprobación constante de 256 bits, `O_CREAT|O_EXCL|O_NOFOLLOW` y permisos root:0600. **Prueba fuera del servidor:** se reprodujo el diálogo modificado en una **pseudo-tty local** con entrada oculta simulada, reintroducción de clave y `GUARDADA`: `TTY_EXIT_CODE=0`, `TTY_TEST_STAGES=2`, `TTY_COMMITMENT_WRITTEN=True`, `TTY_SUCCESS_OUTPUT=True`. Esta prueba NO equivale a la ejecución de creación de repositorio ni OAuth en Ubuntu del usuario.
+
+**Próxima acción en Ubuntu, segura solo porque la salida anterior confirmó que no quedó ninguna clave/config persistente:** sincronizar rama y ejecutar **solo la versión corregida** con una subshell; el mismo script vuelve a rechazar si ya existen `/etc/vencira-backup/restic-password` o `config.env`, o si detecta repo ya inicializado.
+
+```bash
+(
+  cd /home/vencira/vencira-localcheck || exit 1
+  git fetch origin integration/local-e2e-prep || exit 1
+  git merge --ff-only FETCH_HEAD || exit 1
+  bash -n scripts/o5_init_restic_drive.sh || exit 1
+  sudo bash scripts/o5_init_restic_drive.sh
+)
+echo "RESULTADO_EJECUCION=$?"
+echo "CONSOLA_ABIERTA"
+```
+
+**Privacidad extrema:** el programa mostrará una clave de recuperación que el usuario debe guardar en un **gestor de contraseñas externo a Ubuntu y Drive** y reintroducir sin eco; no capturar, copiar o pegar esa parte de la transcripción en ChatGPT ni registrar el terminal. Solo comunicar marcadores finales: `CLAVE_GUARDADA_FUERA_DEL_SERVIDOR`, `CLAVE_EN_ARCHIVO_PRIVADO_ROOT_0600`, `REPO_RESTIC_REMOTO_INICIALIZADO`, `PRUEBA_CIFRADA_DRIVE_RESTAURADA`, `RESTIC_CHECK`, `RESULTADO_GLOBAL`, `RESULTADO_EJECUCION` o `FASE_FALLIDA`. **Si sale fallo después de `CLAVE_PRIVADA_EN_SERVIDOR=1` o `REPO_RESTIC_REMOTO_INICIALIZADO=1`, NO reintentar**, evitar crear clave distinta/repo inconsistente; recuperar con un script específico según resultado. Sigue pendiente la primera copia cifrada PG17 y su recuperación aislada.
