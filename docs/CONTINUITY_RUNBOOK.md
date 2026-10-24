@@ -699,3 +699,17 @@ El usuario confirmó: Caddy activo y nginx/apache2 inactivos; /etc/caddy/Caddyfi
 **Próxima ejecución autorizada en SSH por titular**, como usuario vencira: entrar en /home/vencira/vencira-localcheck; git fetch origin integration/local-e2e-prep; git merge --ff-only FETCH_HEAD; bash -n scripts/o5_remove_dev_basic_auth.sh; sudo bash scripts/o5_remove_dev_basic_auth.sh. Verificar RESULTADO_GLOBAL=0, RESULTADO_EJECUCION=0, BASIC_AUTH_DEV_RETIRADA=OK, DEV_ME_ANONIMO_HTTP=401/403 y DEV_ADMIN_ANONIMO_HTTP=404. Ante error: FASE_FALLIDA; no repetir a ciegas; comprobar CADDY_CONFIG_ORIGINAL_RESTAURADA=1 y CADDY_RECARGA_REVERSION=OK.
 
 **Riesgo**: retirar la barrera perimetral expone la interfaz DEV y el formulario login de Django a Internet, aunque la autenticación de aplicación y CSRF permanezcan. Solamente datos sintéticos, no habilitar producción. Esta modificación no resuelve el HTTPS/DNS del dominio raíz vencira.es (actualmente 213.186.33.5), ni desbloquea por sí sola Google OAuth External/Testing o la ausencia de URLs públicas de privacidad y página principal.
+
+## 24/10/2026 — FALLO al retirar Basic Auth DEV: Caddy reload y rollback no confirmado
+
+**Salida real del titular** de scripts/o5_remove_dev_basic_auth.sh (commit del script 4fa66ab563aeadfe2bb1f6de3d437adaa9bcf8bd): `CADDY_ACTIVO=1`, `CONFIG_CADDY_COPIA_PRIVADA=OK`, `BACKUP_PRIVADO_LOCAL=/etc/caddy/.vencira-dev-auth-rollback.ce2ECir6`, `CAMBIO_LIMITADO_A_L2_L4=OK`, `CADDY_CANDIDATO_VALIDADO=OK`, **`ERROR=RECARGA_CADDY`**, `=== REVERSION DE CADDY ===`, **`ATENCION=REVISION_MANUAL_DE_CADDY_NECESARIA`**, `FASE_FALLIDA=APLICAR_Y_RECARGAR`, `NO_DOCKER_NI_POSTGRES_NI_RESTIC_MODIFICADOS=1`, **`RESULTADO_GLOBAL=9`, `RESULTADO_EJECUCION=9`**.
+
+**No declarar éxito ni asumir rollback completado**. Del código revisado: la rama de reversión intenta `install` de original al candidato temporal, `mv` candidato a `/etc/caddy/Caddyfile`, `caddy validate` y `systemctl reload caddy`. Su mensaje genérico de error significa que al menos una de esas operaciones falló; si solo falla la última recarga, el archivo original ya puede estar restaurado en disco aunque la recarga del servicio no haya ocurrido. La configuración en memoria puede ser la antigua o la nueva. Es necesario medir ambas. Posibilidad (no verificada): unidad `caddy.service` sin `ExecReload` (CanReload=no) o error del comando de reload; la validación sintáctica bajo root no prueba que el servicio acepte reload.
+
+**Próximo paso URGENTE de solo lectura, no volver a ejecutar script**:
+- `systemctl show caddy --no-pager -p ActiveState -p SubState -p CanReload -p Result` para estado y soporte de recarga.
+- `sudo cmp -s /etc/caddy/.vencira-dev-auth-rollback.ce2ECir6/Caddyfile.original /etc/caddy/Caddyfile` reportando solamente `CONFIG_DISCO_ES_ORIGINAL=SI/NO`, sin publicar fichero ni credenciales.
+- `sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile` con salida suprimida y código; `curl` HTTPS anónimo para raíz y endpoints sin imprimir cuerpos ni cookies; confirmar si raíz sigue 401 o abre anónima.
+- No reiniciar Caddy, Docker/Postgres/Restic, no mover archivos, no modificar Google OAuth, no eliminar respaldo privado. Si hay exposición de DEV, priorizar acceso protegido y plan de recarga/reversión controlados tras diagnosticar unidad y logs redaccionados.
+
+**Estado actual**: configuración en disco y memoria PENDIENTE de comprobar; privacidad y seguridad DEV no certificadas. OAuth Testing; raíz `vencira.es` sin HTTPS verificado; no backup diario automático.
