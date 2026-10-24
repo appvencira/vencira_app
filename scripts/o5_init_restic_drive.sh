@@ -44,8 +44,8 @@ echo "COMMIT=$(gitrepo rev-parse HEAD)"
 test "$(restic version | awk '{print $2}')" = 0.19.1
 command -v rclone >/dev/null
 # Comprobar capacidad del servidor Restic de Rclone antes de pedir/guardar la clave.
-rclone serve restic --help 2>/dev/null | grep -F -- "--b2-hard-delete" >/dev/null || {
-  echo "ERROR: Rclone carece de compatibilidad con las opciones que usa Restic"; exit 2;
+rclone serve restic --help >/dev/null 2>&1 || {
+  echo "ERROR: Rclone no dispone de servicio Restic"; exit 2;
 }
 command -v openssl >/dev/null
 command -v flock >/dev/null
