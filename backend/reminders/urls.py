@@ -7,6 +7,7 @@ from .person_suggestions import person_suggestions
 from .follow_up import manual_follow_up
 from .outcomes import renewal_outcomes
 from .results import results_summary
+from .reminder_preview import renewal_reminder_preview
 
 urlpatterns = [
     path("me/", views.me, name="api-me"),
@@ -23,6 +24,7 @@ urlpatterns = [
     path("workspaces/<uuid:workspace_id>/renewals/", views.renewals, name="api-renewals"),
     path("workspaces/<uuid:workspace_id>/renewals/<uuid:renewal_id>/", views.renewal_detail, name="api-renewal-detail"),
     path("workspaces/<uuid:workspace_id>/renewals/<uuid:renewal_id>/history/", views.renewal_history, name="api-renewal-history"),
+    path("workspaces/<uuid:workspace_id>/renewals/<uuid:renewal_id>/reminder-preview/", renewal_reminder_preview, name="api-reminder-preview"),
     path("workspaces/<uuid:workspace_id>/renewals/<uuid:renewal_id>/follow-up/", manual_follow_up, name="api-manual-follow-up"),
     path("workspaces/<uuid:workspace_id>/renewals/<uuid:renewal_id>/outcomes/", renewal_outcomes, name="api-renewal-outcomes"),
 ]
