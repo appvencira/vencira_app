@@ -138,6 +138,26 @@ else
   exit 4
 fi
 
+PHASE=SNAPSHOT_EXISTENTE
+# No se permite habilitar un timer si el OAuth nuevo no abre el
+# repositorio Restic previamente existente.
+sudo bash scripts/o5_verify_existing_drive.sh
+echo "O5_REPO_ORIGINAL_TRAS_RECONNECT=OK"
+
+PHASE=CONSTANCIA_OAUTH
+# Marcador privado SOLO despues de reconectar Rclone y leer Restic real.
+# Este marcador indica renovacion valida tras la declaracion In production
+# del titular; no es prueba independiente del estado en Google Cloud.
+sudo install -d -o root -g root -m 0700 /var/lib/vencira-o5
+sudo bash -euc '
+  umask 077
+  f="$(mktemp /var/lib/vencira-o5/.oauth.XXXXXXXX)"
+  date -u +%s > "$f"
+  chmod 0600 "$f"
+  mv -f -- "$f" /var/lib/vencira-o5/oauth-postproduction.epoch
+'
+echo "O5_POSTPRODUCTION_RECONNECT_REGISTRADO=OK"
+
 PHASE=OK
 echo "O5_OAUTH_CONFIGURADO=1"
 OAUTH_OK=1
