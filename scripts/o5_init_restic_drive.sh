@@ -37,9 +37,10 @@ test -t 0 && test -t 1 || {
   echo "ERROR: usar terminal SSH interactivo sin grabación"
   exit 2
 }
-test "$(git branch --show-current)" = integration/local-e2e-prep
-test -z "$(git diff --name-only)" && test -z "$(git diff --cached --name-only)"
-echo "COMMIT=$(git rev-parse HEAD)"
+gitrepo() { git -c safe.directory=/home/vencira/vencira-localcheck "$@"; }
+test "$(gitrepo branch --show-current)" = integration/local-e2e-prep
+test -z "$(gitrepo diff --name-only)" && test -z "$(gitrepo diff --cached --name-only)"
+echo "COMMIT=$(gitrepo rev-parse HEAD)"
 test "$(restic version | awk '{print $2}')" = 0.19.1
 command -v rclone >/dev/null
 command -v openssl >/dev/null
