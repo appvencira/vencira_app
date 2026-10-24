@@ -117,10 +117,9 @@ void main() {
       expect(api.lastPage, 1);
       expect(find.text('DEMO-CONSEGUIDO'), findsOneWidget);
       expect(find.text('DEMO-ANTIGUO'), findsOneWidget);
-      expect(find.text(lang == 'ca'
+      expect(find.textContaining(lang == 'ca'
         ? 'Tancament anterior · Sense desenllaç registrat'
-        : 'Cierre anterior · Sin desenlace registrado',
-        findRichText: true), findsNothing);
+        : 'Cierre anterior · Sin desenlace registrado'), findsOneWidget);
       expect(find.byKey(const ValueKey(
         'archive-item-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')), findsOneWidget);
       expect(tester.takeException(), isNull);
