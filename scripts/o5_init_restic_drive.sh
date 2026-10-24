@@ -43,6 +43,10 @@ test -z "$(gitrepo diff --name-only)" && test -z "$(gitrepo diff --cached --name
 echo "COMMIT=$(gitrepo rev-parse HEAD)"
 test "$(restic version | awk '{print $2}')" = 0.19.1
 command -v rclone >/dev/null
+# Comprobar capacidad del servidor Restic de Rclone antes de pedir/guardar la clave.
+rclone serve restic --help 2>/dev/null | grep -F -- "--b2-hard-delete" >/dev/null || {
+  echo "ERROR: Rclone carece de compatibilidad con las opciones que usa Restic"; exit 2;
+}
 command -v openssl >/dev/null
 command -v flock >/dev/null
 command -v python3 >/dev/null
@@ -67,6 +71,8 @@ RCLONE_CONFIG="$ROOT/rclone.conf"
 RESTIC_PASSWORD_FILE="$ROOT/restic-password"
 CONFIG_FILE="$ROOT/config.env"
 RESTIC_REPOSITORY="rclone:vencira_google:VENCIRA-Backups/PostgreSQL"
+# Rclone debe usar exclusivamente las credenciales privadas del backend, también en el preflight.
+export RCLONE_CONFIG
 test -d "$ROOT" && test ! -L "$ROOT"
 test "$(stat -c '%u:%a' "$ROOT")" = 0:700
 test -f "$RCLONE_CONFIG" && test ! -L "$RCLONE_CONFIG"
