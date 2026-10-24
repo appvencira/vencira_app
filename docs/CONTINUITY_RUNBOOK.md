@@ -661,3 +661,11 @@ Confirmado por salida del usuario desde Ubuntu en commit `28830104fbbcf579b7ccbf
 **Normativa oficial:** https://support.google.com/cloud/answer/15549049 ; https://support.google.com/cloud/answer/13807376 ; https://developers.google.com/identity/protocols/oauth2/policies ; `drive.file` no sensible https://developers.google.com/workspace/drive/api/guides/api-specific-auth .
 
 **Estado al cierre del diagnóstico:** causa del bloqueo **identificada de forma directa en HTML**; sitio público y política **pendientes de crear/publicar**, OAuth sigue Testing y backups automáticos desactivados; backup cifrado manual y restauración aislada válidos.
+
+## 24/10/2026 — Solicitud del titular: retirar contraseña HTTP del acceso web
+
+**Petición explícita del titular:** indica que la web tiene contraseña HTTP y solicita quitarla para dejar acceso libre. **No se ha cambiado ni retirado ninguna protección aún.** Debe distinguirse el host `dev.vencira.es` (la observación histórica es HTTP 401 anónimo y app de desarrollo `vencira_localcheck` protegida) del raíz `vencira.es` (DNS reportado por Ubuntu `213.186.33.5`, `curl https://vencira.es/` HTTP=000 con conexión TLS reiniciada; `www` conexión fallida). Eliminar Basic Auth de DEV **no** resuelve TLS/DNS del apex ni publica automáticamente las páginas OAuth que necesita Google.
+
+**Criterio para ejecutar la petición sin dañar el entorno:** primero diagnosticar de solo lectura el proxy real Caddy/Nginx del VPS, rutas de ficheros de configuración y existencia de la directiva `basic_auth`/`basicauth`/`auth_basic`; **nunca imprimir hashes, credenciales ni el Caddyfile completo**. Si se autoriza retirar la barrera global de `dev.vencira.es`, exigir que la autenticación Django, rutas Admin inaccesibles, CSRF, endpoints sensibles restringidos, y datos exclusivamente sintéticos sigan vigentes; tomar copia privada del archivo de configuración, validar el nuevo proxy y hacer reload con posibilidad de rollback, sin Docker ni BD. Recomendación más restrictiva: dejar DEV tras la barrera y abrir solo estáticos informativos OAuth en host público independiente `vencira.es`, tras resolver DNS/TLS.
+
+**Estado:** en espera de diagnóstico del proxy real, sin cambios en firewall/proxy/Docker/Google OAuth/Restic; programación automática de backups aún bloqueada.
