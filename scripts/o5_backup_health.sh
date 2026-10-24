@@ -18,6 +18,10 @@ if [ "$age" -lt 0 ] || [ "$age" -gt 129600 ]; then
   echo "ANTIGUEDAD_SEGUNDOS=$age"
   exit 1
 fi
+if systemctl is-failed --quiet vencira-o5-backup.service; then
+  echo "O5_SERVICIO_COPIA=FAILED"
+  exit 1
+fi
 if [ -f "$STATE/last-failure.epoch" ]; then
   echo "O5_ULTIMA_EJECUCION=ERROR"
   exit 1
