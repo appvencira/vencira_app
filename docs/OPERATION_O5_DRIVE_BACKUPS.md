@@ -1,6 +1,6 @@
 # VENCIRA O5 — Copias cifradas PostgreSQL en Google Drive
 
-**Estado 23/10/2026:** O5 **herramientas verificadas en Ubuntu, OAuth y copias Drive PENDIENTES**. Restic oficial `0.19.1` instalado en `/usr/local/bin/restic` tras comprobar SHA-256 del release, soporte `--stdin-from-command` y prueba real cifrada de backup/restauración local; Rclone `1.60.1-DEV` disponible. Resultado usuario `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0` y Docker API/DB/Web healthy sin reinicios ni migraciones. **No se ha conectado Google Drive, no se ha generado una copia remota ni hay automatización**. Cuenta Google interna confirmada por usuario: `appvencira@gmail.com`; **no es una dirección de soporte público**. Se instalaron las herramientas locales indicadas; **no** se han recibido credenciales OAuth, no se ha accedido a Drive ni se ha configurado autenticación. No usar información personal real.
+**Estado actualizado 24/10/2026:** O5 **GOOGLE DRIVE OAUTH VERIFICADO** en servidor DEV con cuenta interna `appvencira@gmail.com`, `vencira_google` y scope `drive.file`. Restic oficial 0.19.1 y Rclone 1.60.1 instalados; prueba LOCAL cifrada/restaurada OK. **AÚN NO EXISTE REPOSITORIO CIFRADO REMOTO NI BACKUP POSTGRES REMOTO**, no hay automatización. Google OAuth External/Testing implica caducidad de refresh token a 7 días; antes de automatizar es necesario resolver estado OAuth y comprobar su duración. No datos personales reales.
 
 ## Objetivo y límites
 
@@ -265,3 +265,26 @@ El usuario mostró la salida del servidor tras la pantalla de éxito OAuth: `NOT
 **Punto interactivo vigente:** Rclone pregunta `Configure this as a Shared Drive (Team Drive)? [y/n]`. Para el Drive personal exclusivo `appvencira@gmail.com`, seleccionar **`n`** y pulsar Enter; no se utiliza unidad compartida Workspace. Esperar a que concluya `scripts/o5_reauthorize_existing_drive.sh` y **no asumir todavía éxito definitivo**: siguen pendientes `RCLONE_TOKEN_OAUTH_VALIDO=OK`, `RCLONE_GOOGLE_DRIVE_ACCESO=OK`, `O5_GOOGLE_OAUTH_VERIFICADO=1`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`.
 
 El enlace `localhost` OAuth compartido por error contiene parámetro `state`; **no reproducir ese valor en documentación**, ni registrar URL/token/secret de la sesión. Solicitar solo marcadores terminales sin credenciales. Todavía no hay evidencia de repositorio Restic remoto ni de copias cifradas subidas a Drive.
+
+## 24/10/2026 — OAuth Google Drive VERIFICADO en Ubuntu
+
+El usuario aportó salida final de `scripts/o5_reauthorize_existing_drive.sh` (tras `Got code`, elección **n** en Shared Drive y autorización para `appvencira@gmail.com`):
+
+```text
+RCLONE_TOKEN_OAUTH_VALIDO=OK
+RCLONE_SCOPE_DRIVE_FILE=OK
+RCLONE_CONF_ROOT_PERMISOS=OK
+RCLONE_GOOGLE_DRIVE_ACCESO=OK
+O5_OAUTH_CONFIGURADO=1
+RESULTADO_GLOBAL=0
+O5_GOOGLE_OAUTH_VERIFICADO=1
+SIN_ARCHIVOS_CREADOS_EN_DRIVE=1
+SIN_COPIAS_NI_MIGRACIONES=1
+RESULTADO_EJECUCION=0
+```
+
+**Hito cerrado:** Rclone autentica y puede consultar Drive desde `vencira_localcheck`, con configuración root privada. **No repetir reconnect ni OAuth**, ni reinstalación de herramientas. No se ha creado copia ni repositorio Restic remoto todavía. Cualquier token o URL OAuth sensible mencionado durante el flujo no debe incluirse aquí ni repetirse. Se exige un repositorio cifrado Restic antes de subir cualquier información de PostgreSQL.
+
+**Siguiente hito**: crear `rclone:vencira_google:VENCIRA-Backups/PostgreSQL` mediante Restic con contraseña aleatoria protegida en `/etc/vencira-backup/restic-password`, backup de esa contraseña **fuera del servidor y de Google Drive**, y una copia/restauración de **datos ficticios**. Comprobar existencia previa, permisos root y acceso Drive antes de realizar cambios. La contraseña jamás en GitHub, logs ni chat; usuario debe custodiarla para recuperar las copias si se pierde el servidor. No crear todavía backup PostgreSQL ni schedule hasta recuperar contenido de prueba y realizar restauración PostgreSQL 17 aislada posteriormente.
+
+Fuentes: [Restic con rclone](https://restic.readthedocs.io/en/stable/030_preparing_a_new_repo.html), [Rclone Drive scope drive.file](https://rclone.org/drive/#scopes), [Google OAuth Testing — refresh tokens](https://developers.google.com/identity/protocols/oauth2).
