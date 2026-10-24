@@ -8,6 +8,7 @@ import '../l10n/app_localizations.dart';
 import 'vencira_preferences.dart';
 import 'renewal_editor.dart';
 import 'renewal_detail_screen.dart';
+import 'renewal_archive_screen.dart';
 import 'modality_catalog_screen.dart';
 import 'insurer_catalog_screen.dart';
 import 'modality_labels.dart';
@@ -548,6 +549,19 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     );
   }
 
+  void _openArchive() {
+    final workspace = _selected;
+    if (workspace == null || _loadingRenewals || _saving) return;
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => VenciraArchiveScreen(
+        api: _api, workspace: workspace,
+      ),
+    )).then((_) {
+      // La recuperacion de una poliza puede cambiar la lista principal.
+      if (mounted && _selected?.id == workspace.id) _loadRenewals(1);
+    });
+  }
+
   void _openAgenda() {
     final workspace = _selected;
     if (workspace == null) return;
@@ -634,6 +648,17 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                     maxLines: 1, overflow: TextOverflow.ellipsis),
                 )),
           ]),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              key: const ValueKey('open-archive'),
+              onPressed: _loadingRenewals || _saving || _selected == null
+                  ? null : _openArchive,
+              icon: const Icon(Icons.inventory_2_outlined),
+              label: Text(_t.archiveOpen),
+            ),
+          ),
           if (_selected?.role == 'owner') ...[
             const SizedBox(height: 8),
             ExpansionTile(
