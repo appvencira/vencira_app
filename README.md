@@ -1,5 +1,7 @@
 # VENCIRA
 
+> **24/10/2026 — O5 DEV operativo:** confirmadas copias PostgreSQL cifradas a Google Drive mediante Restic y OAuth renovado; copia inmediata posterior a autorización correcta, snapshot remoto nuevo verificado, temporizador diario **03:00 Europe/Madrid** y chequeo local **08:00 Europe/Madrid**, ambos activos y habilitados. Restauración aislada PG17 previamente probada. **Pendientes**: alertas externas, política automatizada de retención/poda, residencia UE verificada y preparación RGPD para información real. O6 Archivo aceptada, incluida recuperación de «Conseguido». El historial inferior puede reflejar estados anteriores; ver [operativa O5](docs/OPERATION_O5_DAILY_SCHEDULE.md) y [continuidad](docs/CONTINUITY_RUNBOOK.md).
+
 > **Actualización 24/10/2026 — O5/O6:** O6 «Archivo» aceptada por el titular; se aprobó recuperar también «Conseguido». La cadencia propuesta de copias es DEV 24 h a las 03:00 Europe/Madrid y producción futura 6 h, pero **no hay aún temporizadores instalados/activados en el VPS**. La nueva automatización y sus gates de OAuth están preparadas en `docs/OPERATION_O5_DAILY_SCHEDULE.md`. Falta reautorizar el remoto Rclone existente tras pasar Google OAuth a In production y ejecutar el instalador controlado; no usar datos reales.
 
 
