@@ -713,3 +713,19 @@ El usuario confirmó: Caddy activo y nginx/apache2 inactivos; /etc/caddy/Caddyfi
 - No reiniciar Caddy, Docker/Postgres/Restic, no mover archivos, no modificar Google OAuth, no eliminar respaldo privado. Si hay exposición de DEV, priorizar acceso protegido y plan de recarga/reversión controlados tras diagnosticar unidad y logs redaccionados.
 
 **Estado actual**: configuración en disco y memoria PENDIENTE de comprobar; privacidad y seguridad DEV no certificadas. OAuth Testing; raíz `vencira.es` sin HTTPS verificado; no backup diario automático.
+
+## 24/10/2026 — Caddy Basic Auth: rollback en DISCO confirmado, proteccion externa sigue 401
+
+**Nueva evidencia real del usuario** tras script fallido:
+```
+COPIA_ORIGINAL_EXISTE=SI
+CONFIG_DISCO_ES_ORIGINAL=SI
+CADDYFILE_VALIDO=SI
+RUTA=/ HTTP=401 TLS=0
+RUTA=/api/v1/me/ HTTP=401 TLS=0
+RUTA=/admin/ HTTP=401 TLS=0
+DIAGNOSTICO_RECUPERACION_TERMINADO=1
+```
+**Conclusión probada:** copia intacta y Caddyfile activo idéntico al original, válido; credencial perimetral sigue operativa desde Internet para las tres rutas, HTTPS válido. No se acredita que se haya modificado la configuración activa en memoria porque el primer reload falló y el siguiente también; sí que los endpoints siguen protegidos y el archivo quedó restaurado. Los campos de servicio `ActiveState/SubState/CanReload/Result` se solicitaron pero no aparecen en la transcripción recibida; no inventar resultado.
+
+**Punto pendiente:** diagnosticar por qué `systemctl reload caddy` devuelve error mientras Caddy continúa sirviendo HTTPS 401. Según https://caddyserver.com/docs/command-line , `caddy reload` usa API administrativa local y necesita que esté habilitada; según https://caddyserver.com/docs/running , `systemctl reload` precisa `ExecReload` válido en la unidad. Determinar de forma NO modificadora `CanReload` y estado, si hay ExecReload sin imprimir parámetros secretos, si el API local escucha en 127.0.0.1:2019 y si hay indicación clasificada de fallo de reload en registros (no compartir logs sin depurar). No ejecutar script nuevamente, no reiniciar Caddy, no quitar Basic Auth sin un mecanismo de recarga verificado previamente. El script o5_remove_dev_basic_auth.sh de esta etapa NO ha tenido éxito; necesita hardening después de diagnóstico.
