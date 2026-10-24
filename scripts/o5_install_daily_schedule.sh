@@ -44,6 +44,12 @@ cd "$BASE"
 test "$(git branch --show-current)" = integration/local-e2e-prep
 test -z "$(git diff --name-only)"
 test -z "$(git diff --cached --name-only)"
+extra_untracked="$(git ls-files --others --exclude-standard |
+  grep -vx 'clients/flutter/pubspec.lock' || true)"
+if [ -n "$extra_untracked" ]; then
+  echo "ERROR=ARCHIVOS_AJENOS_SIN_VERSIONAR"
+  exit 3
+fi
 echo "COMMIT=$(git rev-parse HEAD)"
 
 PHASE=RESTRICCIONES
