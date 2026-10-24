@@ -3,6 +3,7 @@ Description=VENCIRA DEV PostgreSQL encrypted backup to private Restic Drive
 Wants=network-online.target
 After=network-online.target docker.service
 Requires=docker.service
+OnFailure=vencira-o5-health.service
 
 [Service]
 Type=oneshot
