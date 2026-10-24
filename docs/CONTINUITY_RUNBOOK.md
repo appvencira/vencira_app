@@ -1,6 +1,6 @@
 # VENCIRA — CONTINUIDAD OPERATIVA (leer al comenzar un chat)
 
-Fecha de revisión: 2026-10-23. Fuente de verdad: repositorio privado `appvencira/vencira_app`, rama `integration/local-e2e-prep`. Este documento describe **estado probado en GitHub y pasos pendientes**, no garantiza el estado de un servidor.
+Fecha de revisión: 2026-10-24. Fuente de verdad: repositorio privado `appvencira/vencira_app`, rama `integration/local-e2e-prep`. Este documento describe **estado probado en GitHub y pasos pendientes**, no garantiza el estado de un servidor.
 
 ## CONTRATO DE TRABAJO PERMANENTE — obligatorio en todos los chats
 
@@ -611,3 +611,14 @@ echo "CONSOLA_ABIERTA"
 Ante cualquier fallo: **no repetir todo el bloque** ni cambiar clave ni recrear repositorio; aportar solo marcadores seguros, `FASE_FALLIDA` y, si procede, errores acotados sin credenciales ni datos de clientes. No ejecutar restauración contra el PostgreSQL en uso.
 
 **No activar backup diario todavía.** Google OAuth External/Testing con `drive.file` puede emitir refresh token caducable a los 7 días: revisar Audience/publishing status y autorización adecuada antes de systemd. Falta política de retención, alerta en fallo y defensa de segunda ubicación independiente ante borrado/ransomware. Estado OAuth `In production` no equivale a producto VENCIRA en producción. Fuente Google: https://developers.google.com/identity/protocols/oauth2 .
+
+## ÚLTIMO ESTADO — O5 copia PostgreSQL remota y restore en PG17 verificados (24/10/2026)
+
+Confirmado por salida del usuario desde Ubuntu en commit `28830104fbbcf579b7ccbf32912c1053137b90d5`:
+- `DB_LOCALCHECK_HEALTHY=1`, `RESTIC_DRIVE_ACCESIBLE=1`, `GOOGLE_DRIVE_BACKUP_CIFRADO=OK`, `RESTIC_INTEGRIDAD_METADATA=OK`, `RESULTADO_GLOBAL=0`.
+- Snapshot Restic cifrado de PostgreSQL `7a2f5018`, 70,332 KiB procesados, 16,025 KiB almacenados; backup con `--stdin-from-command`, sin crear dump local.
+- Restauración desde Drive en PostgreSQL 17 efímero sin red, `RESTAURACION_PG17_DESDE_DRIVE=OK`, esquema `0014_renewal_outcomes`, `TABLAS_PUBLIC_RESTAURADAS=21`, `POSTGRES_ORIGINAL_INTACTO=1`, `O5_RESTAURACION_REMOTA_VERIFICADA=1`, `RESULTADO_EJECUCION=0`.
+- **No repetir** inicialización de Restic, recuperación de clave, reconexión OAuth ni este primer ensayo por defecto. Secretos no expuestos. **Copia manual validada, automatización aún deshabilitada**.
+- Detalle operativo, limitaciones de integridad e instrucciones: `docs/OPERATION_O5_DRIVE_BACKUPS.md`, nueva sección final del 24/10.
+- **Próximo paso inmediato**: pedir solo el dato `Google Auth Platform → Audience → Publishing status` del proyecto OAuth VENCIRA Backups (`Testing` o `In production`). No puede deducirse desde el token Rclone. `Testing` implica caducidad de refresh token a 7 días con `drive.file` (https://developers.google.com/identity/protocols/oauth2). Si cambia el estado, evaluar reautorización protegida y comprobar acceso sin sobrescribir el repo; no ordenar reconectar ciegamente. Después preparar/probar systemd timer, retención, alerta de fallos y de antigüedad, restauraciones periódicas e independencia ante borrado malicioso. **No activar cron/timer hasta resolver OAuth**.
+- No producción ni datos personales reales; no migraciones ni reinicios autorizados.
