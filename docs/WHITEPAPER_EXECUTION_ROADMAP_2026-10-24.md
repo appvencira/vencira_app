@@ -1,0 +1,61 @@
+# VENCIRA — Plan maestro de ejecución basado en whitepaper v1
+**Corte de revisión:** 24/10/2026. **Fuente primaria:** `White_paper_agenda_vencimientos.pdf`, @Bibroker Mediadores, S.L.U., 18/10/2026, 23 páginas. Revisión de §1–18 y estado del repositorio privado en rama `integration/local-e2e-prep`.
+
+## Principio de entrega
+Una anotación = una póliza EXTERNA; no construir CRM ni administrar cartera propia. Agenda diaria tipo papel, Cliente/Candidato, vencimiento civil, avisos reprogramables, pregunta legal de control, desenlaces, consulta sincronizada y permisos por cuenta. Primero completar motor y seguridad; después móvil nativo, pagos y publicación. **Solo datos ficticios en DEV** hasta cerrar RGPD, MFA, alojamiento/backup con residencia UE y controles sobre adjuntos. Nada de declarar `ReminderCandidate` como notificación efectivamente enviada.
+
+## Inventario por sección del whitepaper
+
+| Sección | Requisito | Estado revisado (código y evidencias) | Riesgo / dependencia |
+| --- | --- | --- | --- |
+| §1–2 | Agenda de pólizas externas, sin CRM | Implementado como `Renewal` por anotación; no ficha global | Mantener separación entre póliza y datos de contacto |
+| §3 | Individual/Equipo, aislamiento, asignación, alta/baja de usuarios | Workspace, miembros owner/member, filtro por responsable; asignación API owner | Altas/bajas, traspaso de Individual a Equipo y ciclo de reasignación pendientes |
+| §4 | Web + Android/iOS, offline, avisos locales sin red, resolución de conflictos | Flutter Web DEV funcionando; sin offline nativo ni auth móvil | Requiere política de conflictos y credenciales nativas seguras |
+| §5 | Portada en agenda HOY, franja semanal, swipe, colores, mes, filtros y búsqueda | Agenda día/mes existen y panel de listados; **inicio real sigue siendo panel**, no abre agenda directamente | Prioridad UX; definir aviso vencido/no atendido (§18) |
+| §6 | Anotación: Entrada, nombre, nick, póliza, teléfono, email, modalidad, aseguradora, notas, archivos y asignación | Campos principales y catálogos ya implementados, sugerencias de persona, O1; **archivos aún bloqueados** | Acceso a contactos móvil pendiente, límites adjuntos sin decidir |
+| §7 | Tres avisos por defecto a 60/45/35 días, motivos, reglas por anotación, hora/sonido 09:00, notificación móvil, web y email opcional | Política/candidato provisional con `enabled=False`, no envíos. O8 agrega funciones puras para fechas por defecto; NO políticas automáticas | Motivos de 60/45/35 sin confirmar (§18), definición de canales y prueba offline |
+| §8 | Fecha límite LEGAL un mes civil anterior; pregunta en último aviso anterior al límite; sí/no con motivos y tope de repetición | Campo `notice_deadline_on` actual es **contractual y opcional**, NO legal. O8 pure functions preparadas; falta flujo de pregunta/respuesta y auditoría | No confundir con preaviso mostrado en agenda; excepción seguros Vida |
+| §9–10 | Conseguido / No aceptó (+1 año) / Aún sin decidir / Descartar y ciclo completo | O3 y O2 aceptados por usuario en Android; Archivo O6 aceptado. Recuperación de Conseguidas añadida por decisión expresa posterior del promotor | No convertir candidatos globalmente en cliente CRM |
+| §11 | Historial web, importar/exportar Excel, contadores por mes/trimestre/año | Historial web parcial y protegido; Excel ausente; **O7 resultados agregados owner-only en preparación** | §18 deja abiertas exportación y resultados para empleados; event audit no inmutable a nivel BD |
+| §12 | MFA, bloqueo móvil, cifrado, almacenamiento UE, backups, retención/borrado y bloqueo | O4 migración controlada; O5 backups cifrados diarios 03:00 activos y verificados tras OAuth; RGPD, MFA, cifrado DB, residencia UE y borrado siguen pendientes | Puerta absoluta antes de datos reales o producción |
+| §13 | ES/CA en interfaz y notificaciones | Flutter ES/CA probado, locales ARB; notificaciones futuras y textos de backend aún por completar | Pruebas de idioma y accesibilidad |
+| §14 | Planes/precios/suscripciones | Deliberadamente pendiente según whitepaper | No inventar importe, medio de cobro o reglas de suscripción |
+| §15 | Carta de oposición firmada/certificada y OCR pólizas | Expresamente FUERA DE V1, extensiones de pago | No bloquear MVP por ellas |
+| §16 | RGPD/LOPDGDD, Ley de Contrato Seguro, DORA, LSSI y firma digital | Riesgos documentados, no cierre jurídico | Revisar con especialista; fuente reconoce apartados por confirmar |
+| §17 | Marca y dominio | Nombre definitivo VENCIRA posterior al whitepaper, dominio `vencira.es` | OEPM/EUIPO y tiendas sin validar |
+| §18 | 20 decisiones abiertas (14 promotor, 6 desarrollador) | Algunas resueltas posteriormente (VENCIRA, tecnología, backups, recuperación de Conseguidas), mayoría sin aprobar | Registrar cada decisión, no asumir propuestas como hechos |
+
+## Plan de ejecución por dependencias y frentes paralelos
+
+| Lote | Prioridad | Trabajo y salida verificable | Dependencias | Puerta de validación |
+| --- | --- | --- | --- | --- |
+| **O7 — Resultados** | Alta / rápida | API agregada owner-only con periodos mes/trimestre/año; pantalla solo Web escritorio ES/CA; prueba tenant, historial y límites. **Código versionado; NO desplegado** | O3, rol owner; acceso miembros §18 pendiente | Django SQLite/PG17 + Flutter test/analyze/build + prueba desktop real |
+| **O8a — Cálculos puros** | Crítica / rápida | Un mes civil antes y calendario 60/45/35 con pregunta de control en último aviso anterior al tope; casos 29/02 y horario. **Código versionado; sin programar avisos** | §7–8, no requiere migración | Unit tests, contraste ejemplos whitepaper |
+| **O8b — Avisos por anotación** | Crítica | CRUD permisos/edición de días y motivos; tres reglas por defecto (una vez aprobados motivos), edición/quitar/añadir, agenda de previstas, reprogramación/cancelación idempotente. | Definir defaults y creación tardía §18; O8a | Migración aditiva con backup+restore pre-migración, tests aislamiento y horario |
+| **O9 — Pregunta de control y respuesta** | Crítica | Pregunta con «Sí» (3 opciones) / «No» y selector nunca después de fecha legal, repetirla según respuesta; auditoría con actor y momento. | O8b y casos Vida/late/no avisos | Tests mes civil, límites, audit y sin falsas entregas |
+| **O10 — Bandeja de avisos** | Crítica | Responder «Completada», «Mañana», «Otro día»; avisos atrasados a resolver por promotor; estados reales separado de candidatos; recuento y escritorio sin falsas entregas. | O9, diseño entrega | Estados/eventos probados, reintento, deduplicación y seguridad |
+| **O11 — Inicio diario UX** | Alta / en paralelo | Agenda HOY como página inicial, franja semanal, swipe, colores, buscador y botones +/hoy/mes; conservar acceso a configuración, Archivo y panel. | APIs día/mes ya existentes; control backlog pendientes | Flutter ES/CA 320–1440 px, pruebas táctiles y aceptación Android |
+| **O12 — Equipos** | Alta / paralelo | Alta/baja miembros, reasignación transaccional y auditoría, permisos owner/member, actualización inmediata; upgrade Individual→Equipo. | MFA owner, UX roles | Negaciones cruzadas tenant y usuario, test de baja sin orfandad |
+| **O13 — Resumen / Excel web** | Media / paralelo | Completar resultados **por usuario** (si se aprueba), plantilla de importación, previsualización de errores, import transaccional y export filtrada con permisos. | O7, decisiones de permisos Excel §18 | Export nunca mezcla tenants; sanitización de fórmulas Excel; cuotas, test CSV/XLSX |
+| **O14 — Seguridad y archivo** | Bloqueante producción | MFA, cifrado DB/documentos, adjuntos privados con antivirus/límites, políticas RGPD de bloqueo y eliminación, 2 años por defecto, advertencias a 3 y 1 mes, contratos de subencargo, residencia UE, alerta externa de backup, segundo destino/restores. | Revisión jurídica, decisiones adjuntos | Auditoría seguridad independiente, RGPD, restauración y revocación de acceso |
+| **O15 — Móvil y offline** | Bloqueante app stores | Flutter Android/iOS, sesiones móviles seguras y biometría, base local cifrada, cola y conflictos, avisos del dispositivo sin cobertura. | O8–O10 estable, política de conflictos §18 | Sin red/duplicados/cambio hora/zona, tests Android/iOS |
+| **O16 — Comercialización** | Final | Precios y modalidades, pagos y tiendas, marca/legal, observabilidad, soporte y onboarding | Producto y seguridad aceptados; decisiones promotor §14 | Beta cerrada, privacidad validada, aprobación tiendas |
+
+**Paralelización propuesta:** frente A lógica/casos límite (O8a→O8b→O9→O10); frente B interfaz y productividad (O7/O11/O13); frente C plataforma y permisos (O12/O14/O15), con gates propios. Mantener un único repositorio y pequeños commits con documentación de continuidad. No iniciar tres migraciones sobre PostgreSQL persistente simultáneamente. El cuello de botella real son notificaciones offline/seguridad, no la creación de pantallas.
+
+## Decisiones del whitepaper aún abiertas; no resolver tácitamente
+
+- Promotor: motivos predeterminados de los tres avisos; qué hacer con un aviso sin atender; alta tardía y aviso legal vencido; ausencia de aviso anterior al tope; motivo y repetición del recordatorio «Comunicar no renovación»; advertencia/fecha en Vida; permisos resultados/Excel y catálogo para empleados; MFA Individual; borrado/bloqueo y plazo formal del mediador; suscripción, precios y sociedad titular.
+- Desarrollador: conflictos offline; tamaños y cuotas de archivos; residencia real de datos/backup en UE; proveedores de notificación/hosting/email con acuerdos; normas de pagos Apple/Google.
+- Cerradas después de fuente: nombre **VENCIRA**; Flutter + Django + PostgreSQL; backups DEV diarios 03:00 Europe/Madrid y propuesta productiva cada 6 h; recuperar **también Conseguidas** por autorización expresa del promotor. Estas decisiones quedan trazadas como adendas, no reescriben el PDF.
+
+## Norma de ejecución acelerada y segura
+
+1. Desarrollar primero código puro, GET de lectura y pruebas sin migraciones ni comunicaciones externas.
+2. Un validador único realiza Django completo SQLite + PG17 temporal, Flutter analyze/tests/build. Fallos se corrigen en GitHub; no desplegar a medias.
+3. Para migraciones, seguir O4: backup previo restaurado en PG efímero, plan SQL, aplicar explícitamente **solo a `vencira_localcheck`** y verificar; nunca `down -v`.
+4. Para notificaciones usar dobles sintéticos y no enviar correo, push ni alertas a terceros en DEV; ningún estado «entregado» inventado.
+5. No introducir datos de clientes; no ampliar OAuth ni crear canales sin decisión. Registrar aceptación del usuario por escenario, no declarar `producción` solo por HTTPS saludable.
+6. Mantener README y CONTINUITY_RUNBOOK actualizados en cada hito; GitHub PR o commit concreto, tests, resultado de despliegue y pendientes.
+
+**Limitación de este corte:** los cambios O7 y O8a están preparados en código pero todavía no cuentan con ejecución real de tests sobre Ubuntu/CI, ni despliegue o aceptación funcional. O1–O6 aceptados y O5 rutina backup DEV operativa por evidencias del titular, no equivalen a V1 final.
