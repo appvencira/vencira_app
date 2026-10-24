@@ -847,3 +847,20 @@ Si falla `DNS_OAUTH_NO_LISTO=1`, no tocar Caddy; esperar propagación o revisar 
 **Paso posterior:** en `https://console.cloud.google.com/auth/branding?project=vencira-backups` configurar URL de página principal, privacidad y condiciones; guardar. En `https://console.cloud.google.com/auth/audience?project=vencira-backups` publicar app / In production, atender requisitos adicionales reales si aparecen, no inventar aprobación. En Google Search Console verificar dominio si exigido. Solo tras In production reautorizar remoto rclone existente con script ya guardado, leer snapshot cifrado PG real `7a2f5018` y posteriormente diseñar timer diario. No inicializar otro repositorio, regenerar contraseña o dar por terminada publicación OAuth antes del cambio real de estado.
 
 **Fuentes Google actualizadas**: https://support.google.com/cloud/answer/15549049 , https://developers.google.com/identity/verification/authentication-policy-compliance , https://developers.google.com/identity/protocols/oauth2/production-readiness/brand-verification .
+
+## 24/10/2026 — Resultado real del primer intento de publicar el sitio OAuth: DNS aún no listo
+
+El titular sincronizó HEAD `7934e248c85751a957507deb9f791f26bf89d72d` y ejecutó `scripts/o5_publish_oauth_pages.sh`. Resultado:
+```text
+COMMIT=7934e248c85751a957507deb9f791f26bf89d72d
+CADDY_PRECHECK=OK
+DNS_OAUTH_NO_LISTO=1
+ACCION=VERIFICAR_REGISTROS_A_Y_AAAA
+FASE_FALLIDA=DNS
+DOCKER_PG_RESTIC_DEV_NO_MODIFICADOS=1
+RESULTADO_GLOBAL=4
+RESULTADO_EJECUCION=4
+```
+**Interpretación:** corte preventivo antes de crear archivos estáticos o modificar Caddy. `oauth.vencira.es` no resuelve en Ubuntu exactamente al conjunto `{93.93.112.172}` según `socket.getaddrinfo`. No diagnosticar sin prueba si falta A, si hay caché, registro wildcard u otro A/AAAA. La apertura previa de `dev.vencira.es` permanece completada, no revertir. No tocar Docker, PostgreSQL, Restic ni OAuth.
+
+**Siguiente acción**: confirmar en panel DNS del dominio que exista `A oauth -> 93.93.112.172`, sin CNAME, A antiguos ni AAAA para ese host salvo IPv6 propia verificada, y sin cambiar registros `@`, `www` o MX. Ejecutar diagnóstico de solo lectura con Python `socket.getaddrinfo` separado AF_INET/AF_INET6 y, si `dig` está disponible, consultar `@1.1.1.1` y `@8.8.8.8` para A/AAAA; sin imprimir más información. Si públicos correctos pero caché local antigua, esperar actualización/reintentar solo tras resolución correcta. Después volver a ejecutar script una sola vez y verificar HTTP 200/TLS en tres páginas y DEV sin regresiones. **No** usar --resolve para esquivar el guard DNS de despliegue.
