@@ -739,3 +739,27 @@ Estos resultados descartan que falle el reload por ausencia de ExecReload o inex
 **Próxima operación**: comprobación **estrictamente de lectura** de User= definido por systemd, permisos de lectura del Caddyfile bajo ese usuario y clasificación de mensajes recientes del journal sin volcar contenido sensible. **NO repetir** scripts/o5_remove_dev_basic_auth.sh, **NO ejecutar** reload ni restart con cambios pendientes y no modificar DNS/OAuth/DB. Si los permisos son correctos, comprobar códigos de error de journal redaccionados y causa efectiva antes de editar de nuevo.
 
 La retirada de Basic Auth continúa PENDIENTE; OAuth sigue Testing y el dominio raíz vencira.es no sirve HTTPS.
+
+## 24/10/2026 — Causa raíz de Caddy reload IDENTIFICADA: permisos 600 root:caddy
+
+**Salida real y concluyente del titular:**
+```text
+USUARIO_CADDY=caddy
+CADDYFILE_PERMISOS=600 PROPIETARIO=root GRUPO=caddy
+SERVICIO_PUEDE_LEER_CONFIG=NO
+ERROR_PERMISOS=1
+ERROR_CONEXION_ADMIN=0
+ERROR_ENVIO_CONFIG=0
+ERROR_CARGA_CONFIG=0
+ERROR_ADAPTACION_CONFIG=0
+ERROR_RECARGA_SYSTEMD=1
+DIAGNOSTICO_COMPLETADO=1
+```
+
+**Diagnóstico:** Caddy bajo `User=caddy` no puede leer `/etc/caddy/Caddyfile` `root:caddy 0600`; raíz muy probable/efectiva del fallo de `systemctl reload caddy`. La configuración original ya estaba restaurada y validada, con HTTPS 401 y la API administrativa local HTTP 200, CanReload=yes. Se corrige acceso mínimo con `root:caddy 0640`: propietario lectura/escritura, grupo lectura, otros nada; **no usar 644 ni 777**. Fuente oficial: https://caddyserver.com/docs/running (usuario servicio debe poder leer la configuración).
+
+**Código endurecido:** `scripts/o5_remove_dev_basic_auth.sh` commit `ab76ca3677111adf7c590d89ef2ac0a228e25bc4`: preflight exige que usuario de systemd pueda leer tanto Caddyfile actual como candidato antes de modificarlo. Ya **no** se reproducirá el mismo intento de cambio con 0600; primero se corrigen los permisos.
+
+**Paso inmediato SEGREGADO (todavía NO ejecutado)**: como usuario `vencira`, verificar copia raíz `/etc/caddy/.vencira-dev-auth-rollback.ce2ECir6/Caddyfile.original` idéntica con `cmp -s`, propietario/grupo actuales, servicio Caddy activo; aplicar `sudo chmod 0640 /etc/caddy/Caddyfile`, comprobar `sudo -u caddy test -r /etc/caddy/Caddyfile`, validar `caddy validate` en modo silencioso, `sudo systemctl reload caddy`, verificar HTTP 401 anónimo (la protección original debe mantenerse tras la recarga); **no borrar la copia privada**. Si falla alguna prueba, NO lanzar todavía script de retirar contraseña y diagnosticar solo marcadores. No reiniciar Caddy, Docker, PostgreSQL ni tocar OAuth o Restic.
+
+**Después de confirmar recarga original OK**: sincronizar rama GitHub y ejecutar una sola vez `sudo bash scripts/o5_remove_dev_basic_auth.sh` endurecido para retirar Basic Auth de DEV, con recuperación y pruebas de acceso anon API/admin, documentando salida real. El hecho de hacer DEV pública sigue siendo decisión explícita del titular; no habilita producción/datos reales. El dominio apex `vencira.es` mantiene DNS hacia `213.186.33.5` y HTTPS no operativo, por lo que OAuth continuará bloqueado por su falta de landing page/política.
