@@ -1,5 +1,6 @@
 """O8: fechas, orden, control y no automatización según whitepaper §7/8."""
 from datetime import date
+from dataclasses import FrozenInstanceError
 
 from django.test import SimpleTestCase
 
@@ -40,7 +41,7 @@ class ReminderDefaultsTests(SimpleTestCase):
         # Los objetos son dataclasses inmutables: solo fechas calculadas.
         plans = default_reminders(date(2027, 12, 31))
         self.assertTrue(all(p.days_before in DEFAULT_DAYS_BEFORE for p in plans))
-        with self.assertRaises(Exception):
+        with self.assertRaises(FrozenInstanceError):
             plans[0].days_before = 10
 
     def test_invalid_input(self):
