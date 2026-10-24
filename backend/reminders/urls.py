@@ -6,11 +6,13 @@ from .agenda_month import agenda_month
 from .person_suggestions import person_suggestions
 from .follow_up import manual_follow_up
 from .outcomes import renewal_outcomes
+from .results import results_summary
 
 urlpatterns = [
     path("me/", views.me, name="api-me"),
     path("workspaces/", views.workspaces, name="api-workspaces"),
     path("workspaces/<uuid:workspace_id>/members/", views.workspace_members, name="api-workspace-members"),
+    path("workspaces/<uuid:workspace_id>/results/", results_summary, name="api-results-summary"),
     path("workspaces/<uuid:workspace_id>/modalities/", modalities, name="api-modalities"),
     path("workspaces/<uuid:workspace_id>/insurers/", insurers, name="api-insurers"),
     path("workspaces/<uuid:workspace_id>/insurers/<uuid:insurer_id>/", insurer_detail, name="api-insurer-detail"),
