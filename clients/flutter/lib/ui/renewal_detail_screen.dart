@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
 import 'renewal_editor.dart';
+import 'reminder_preview_card.dart';
 import 'vencira_select.dart';
 
 /// Una anotación es una póliza externa, no una ficha CRM (whitepaper §6).
@@ -820,6 +821,15 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                     ],
                   ),
                 ),
+              ),
+            ],
+            if (renewal.status != 'closed' &&
+                renewal.archiveOutcome.isEmpty) ...[
+              const SizedBox(height: 12),
+              VenciraReminderPreviewCard(
+                api: widget.api,
+                workspaceId: widget.workspace.id,
+                renewalId: renewal.id,
               ),
             ],
             if (renewal.status != 'closed') ...[
