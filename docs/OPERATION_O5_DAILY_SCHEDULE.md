@@ -103,3 +103,25 @@ Conclusión técnica: el gate RESTRICCIONES del instalador fallaba porque el des
 Nuevo script GitHub scripts/o5_verify_active_schedule.sh (SOLO LECTURA): comprueba active/enabled, unidades no failed, marcadores privados, compara último éxito frente a fecha de OAuth postproduction, lee metadata de snapshots PostgreSQL cifrados via Restic y muestra próximos disparos systemd. No imprime secretos, no crea snapshots, no borra ni modifica. Ejecutar después de git fetch/merge --ff-only, con sudo bash scripts/o5_verify_active_schedule.sh; comunicar exclusivamente marcadores. Si COPIA_TRAS_REAUTORIZACION=NO o ULTIMO_SNAPSHOT_MENOS_36H=NO, evaluar un único arranque manual controlado de vencira-o5-backup.service y revalidación antes de dar el gate por cerrado.
 
 Alerta local journal activa, no se ha configurado notificación externa por email/push, ni retención/poda automática; Google Drive no acredita residencia en la UE para datos reales. Persisten los límites DEV sintético.
+
+## 24/10/2026 — Verificación final timers y snapshot OK; nueva copia tras OAuth pendiente
+
+Salida REAL aportada del script scripts/o5_verify_active_schedule.sh:
+```text
+TIMERS_ACTIVOS_Y_HABILITADOS=OK
+SERVICIOS_SIN_ESTADO_FAILED=OK
+MARCADOR_EXITO_MENOS_36H=OK
+COPIA_TRAS_REAUTORIZACION=NO
+SNAPSHOTS_POSTGRES_EN_RESTIC=OK
+ULTIMO_SNAPSHOT_ANTIGUEDAD_SEGUNDOS=5475
+ULTIMO_SNAPSHOT_MENOS_36H=SI
+ACCESO_RESTIC_READ_ONLY=OK
+Sun 2026-10-25 02:00:00 UTC ... vencira-o5-backup.timer
+Sun 2026-10-25 07:00:00 UTC ... vencira-o5-health.timer
+AUDITORIA_FINAL_O5=OK
+RESULTADO_GLOBAL=0
+RESULTADO_VERIFICACION=0
+```
+**Interpretación:** programados y activos con último snapshot real reciente (5475 s, aprox. 91 min) y sin estado de fallo. El marcador de último éxito es ANTERIOR al nuevo token OAuth: hace falta una copia completa con la autorización renovada. Los horarios se traducen a **03:00 y 08:00 hora de Madrid el 25/10/2026** porque justo esa noche cambia CEST a CET (UTC+1). No es un desfase de una hora.
+
+**Siguiente acción sugerida:** iniciar ONESHOT una vez `sudo systemctl start vencira-o5-backup.service` (no modificar ni reinstalar timer) y después ejecutar `sudo bash scripts/o5_verify_active_schedule.sh` para exigir COPIA_TRAS_REAUTORIZACION=SI, snapshot fresco y timers activos. Si el servicio falla, no imprimir secretos y no reintentar a ciegas; revisar estado y diagnóstico filtrados. No usar `restic init/forget/prune` ni alterar la DB. Confirmar estado con salida real antes de declarar O5 cerrado. Alertas siguen solo locales y Google Drive UE no verificado.
