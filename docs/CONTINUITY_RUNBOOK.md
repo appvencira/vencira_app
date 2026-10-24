@@ -536,6 +536,12 @@ Suite Flutter, web build y despliegue localcheck completados sobre `ab5b12b3`: `
 - Google afirma 7 días de vigencia para refresh tokens externos en Testing con alcance Drive: no activar systemd/cron hasta resolver credenciales de larga duración adecuadas y política OAuth. Fuente oficial `https://support.google.com/cloud/answer/15549945` y `https://developers.google.com/identity/protocols/oauth2`.
 - Documento O5 actualizado en commit `b52b1777646dad2d98a70310e332c12ca1951271`; no se cambió código. Esperar `RCLONE_GOOGLE_DRIVE_ACCESO=OK`, `O5_GOOGLE_OAUTH_VERIFICADO=1`, `RESULTADO_GLOBAL=0` antes de proceder a repo Restic cifrado y restauración remota. **No afirmar que O5 terminó.**
 
+## O5 — Consentimiento OAuth navegador exitoso, esperando validación de Rclone (24/10/2026)
+
+- Usuario informa pantalla Google «Success! All done. Please go back to rclone.» tras corregir 403 añadiendo tester. OAuth de navegador culminó; **aún no se ha recibido salida del terminal Ubuntu**, de modo que no se puede afirmar token OAuth persistido ni acceso remoto a Drive ni copia.
+- Siguiente paso: volver a la ventana SSH manteniendo túnel, dejar finalizar `scripts/o5_reauthorize_existing_drive.sh` y compartir **únicamente** indicadores sin secretos: `RCLONE_TOKEN_OAUTH_VALIDO`, `RCLONE_GOOGLE_DRIVE_ACCESO`, `O5_OAUTH_CONFIGURADO`, `O5_GOOGLE_OAUTH_VERIFICADO`, `RESULTADO_GLOBAL`, `RESULTADO_EJECUCION`; jamás transcripción interactiva del OAuth, URLs o tokens.
+- Documento O5 complementario actualizado, commit `97ed687bc93d00d99d0f4952cb9d6dd7c3cdc9cb`. No se ha modificado el servidor ni código desde esta confirmación. Tras OAuth validado, fase de Restic cifrado y restauración aislada, no habilitar automatización con refresh token Testing que caduca a los 7 días.
+
 ## Límites de lanzamiento
 
 - **No apto para datos personales reales ni producción**. Ver `docs/SECURITY_RELEASE_READINESS_2026-10-22.md` y `docs/SECURITY.md`: MFA, backups externos cifrados/restauración, cifrado en reposo, permisos, retención, RGPD/LOPDGDD y control de adjuntos aún pendientes.
