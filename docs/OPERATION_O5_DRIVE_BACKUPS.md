@@ -425,3 +425,28 @@ Ante cualquier fallo: **no repetir todo el bloque** ni cambiar clave ni recrear 
 **Verificación posterior obligatoria**: con config `root:700/600`, comprobar acceso al repositorio Restic existente y al snapshot de PostgreSQL **`7a2f5018`**, sin mostrar ni restaurar los datos en pantalla, ni publicar rutas privadas/token. Debe comprobarse que la autorización nueva permite renovar credenciales posteriormente. No recrear repo, no ejecutar `restic init`, no regenerar clave ni modificar Docker; no cron/timer, retención/poda o migraciones hasta que esa fase sea OK.
 
 **Estado actual:** snapshot cifrado real de PG17 `7a2f5018` y restauración sin red con 21 tablas y migración `0014_renewal_outcomes` ya verificados el 24/10; **OAuth Testing confirmado**, transición y renovación pendientes, política de copia automatizada no habilitada.
+
+## 24/10/2026 — Diagnóstico confirmado del bloqueo «Publicar app» (HTML real Google Cloud)
+
+**Evidencia aportada por el titular:** dos capturas HTML SingleFile de `Google Auth Platform → Público` (16:45:36 CEST) y `Información de la marca` (16:46:10 CEST), proyecto `vencira-backups`. No subir esos HTML completos a GitHub: contienen contenido de consola administrativa y podrían incluir datos de sesión.
+
+**Error literal de la UI (Público):** «Se requieren un nombre de app, un correo electrónico de asistencia, una URL de página principal y una URL de política de privacidad válidos para cambiar la app al modo de producción externo. Debes ingresar la información faltante ... Visita la página de desarrollo de la marca para terminar de configurar tu app». `Publicar app` aparece en Testing, sin completar branding.
+
+**Verificación precisa del formulario Branding por valores de INPUT del HTML (no solo etiquetas):**
+- Nombre de aplicación **ya establecido**: `VENCIRA Internal Backups`.
+- Correo de asistencia y del desarrollador **ya establecido**: `appvencira@gmail.com`, mantener **interno** y no añadirlo gratuitamente como email público de la web. Google ya lo puede mostrar en la pantalla de consentimiento, en función de sus reglas.
+- Dominio autorizado **ya añadido**: `vencira.es`, pero su presencia en consola no demuestra por sí sola dominio verificado en Google Search Console ni sitio público accesible.
+- Campos **vacíos**: `Página principal de la aplicación`, `Vínculo a la Política de Privacidad`, `Vínculo a las Condiciones del Servicio`. Los dos primeros son los bloqueantes declarados por Google; términos son opcionales en esta pantalla.
+- Logo no aportado, **no necesario** para la corrección; añadirlo puede desencadenar revisión de marca.
+- Tipo de usuario `External`; cuenta de pruebas registrada, 1/100. No es un error de límite de testers, Rclone, Restic ni permisos de PostgreSQL.
+
+**Plan de corrección, sin cambios aún en hosting:**
+1. Antes de inventar URLs, comprobar si `https://vencira.es/` tiene un sitio funcional y accesible públicamente sin credenciales. La comprobación web desde esta sesión no pudo validar el host; no afirmar que exista/funcione o que el dominio raíz apunte ya al VPS. `dev.vencira.es` es privado/entorno DEV, no usar como página principal OAuth.
+2. Proponer rutas a crear en el dominio controlado: `https://vencira.es/oauth-backups/` (explica que se trata de una integración administrativa interna de copias cifradas de VENCIRA a Google Drive vía Restic/Rclone, no un servicio público) y `https://vencira.es/oauth-backups/privacidad/` (política transparente y exacta sobre accesos `drive.file`, tipo de datos, cifrado, custodia, almacenamiento, terceros, retención y contacto responsable; revisar jurídicamente y no inventar identidades o buzones no configurados). Son URLs **futuras propuestas, no publicadas**.
+3. Publicar los dos recursos estáticos exclusivamente después de determinar la configuración DNS/web actual y el destino Nginx adecuado; no tocar `vencira_localcheck`, `vencira_preview`, los contenedores ni Docker/postgres. Garantizar HTTPS válido y que ambas páginas son públicas sin autenticación y se enlazan entre sí. Verificar propiedad de `vencira.es` en Google Search Console si Google lo exige.
+4. En Google Auth Platform → Branding guardar URL pública de la página principal y de la privacidad (términos opcionales). Luego Audience → `Publish app`; detenerse si hay nueva exigencia de verificación y revisarla. Los cambios en branding no requieren recrear el cliente OAuth Desktop ni ampliar scope.
+5. Tras estado `In production` verificado, renovación controlada del **remoto existente** con script ya documentado, y lectura segura del snapshot `7a2f5018` antes de systemd. No iniciar `restic init`, cambiar clave, reautorizar antes de solucionar branding ni activar backups desatendidos.
+
+**Normativa oficial:** https://support.google.com/cloud/answer/15549049 ; https://support.google.com/cloud/answer/13807376 ; https://developers.google.com/identity/protocols/oauth2/policies ; `drive.file` no sensible https://developers.google.com/workspace/drive/api/guides/api-specific-auth .
+
+**Estado al cierre del diagnóstico:** causa del bloqueo **identificada de forma directa en HTML**; sitio público y política **pendientes de crear/publicar**, OAuth sigue Testing y backups automáticos desactivados; backup cifrado manual y restauración aislada válidos.
