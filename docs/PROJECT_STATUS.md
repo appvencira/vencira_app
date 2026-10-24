@@ -54,3 +54,13 @@ Documentación: `docs/API_MVP.md`, `docs/WEB_LOCAL.md` y `clients/flutter/README
 4. Crear una referencia DEMO, editarla y cerrar sesión. Confirmar que no hay fuga entre organizaciones ni envíos de avisos.
 
 Nota: la primera prueba manual del navegador sigue siendo necesaria; CI no sustituye al uso real.
+
+## 24/10/2026 — O7/O8a desplegadas en DEV; pruebas técnicas y seguridad superadas
+
+**Fuente: salida real del titular en Ubuntu.** Checkout/despliegue `b61e357f06b7396d1018cb072ef39b6bc0974777`. `FUENTES_IGUALES_GATE_VALIDADO=OK`, `COMPOSE_IDENTIDAD_Y_MIGRATE_CHECK_ONLY=OK`, `COMPOSE_CONFIG=OK`, `O5_BACKUP_READ_ONLY=OK`, `BACKUP_O5_RECIENTE_Y_CIFRADO=OK`, esquema previo `0014` verificado, imágenes antiguas de API y Web etiquetadas, `BUILD_API_WEB=OK`, `MIGRATIONS_CHECK_ONLY_NEW_IMAGE=OK`, `ESQUEMA_SIN_MIGRACIONES_PENDIENTES=OK`, `DEPLOY_API=OK`, `DEPLOY_WEB=OK`, `POSTGRES_0014_SIN_CAMBIOS=OK`, cuatro rutas básicas HTTP 200, endpoint O7 anon HTTP 403 y O3 anon HTTP 403, `HEALTH_api/db/web_preview=healthy`, `DEV_VENCIRA_HTTPS_HTTP=200`, `DESPLIEGUE_O7_O8_LOCALCHECK=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`, sin migraciones, reinicio PostgreSQL, cambios a Caddy, Restic o timers. Versión web `b61e357f06b7396d1018cb072ef39b6bc0974777`.
+
+**Imágenes de recuperación conservadas:** `vencira-o7-pre-api:20261024T214020Z_2326206` y `vencira-o7-pre-web:20261024T214020Z_2326206`. Recibo privado de despliegue: `/tmp/vencira-o7-o8-20261024T214020Z_2326206.bc7EwG0D.receipt`; log privado `/tmp/vencira-o7-o8-deploy.NyAOMxIF.log`. No destruir imágenes ni recibo hasta aceptación manual.
+
+**Estado:** O7 **DESPLEGADA Y VALIDADA TÉCNICAMENTE**; pendiente aceptación visual del administrador en navegador PC ancho >=800: botón «Resumen de resultados», navegación mes/trimestre/año y números correctos sobre registros ficticios. No mostrar resumen en móvil o cuentas member; backend owner-only ya tiene regresiones unitarias y anónimo devuelve 403. O8a cálculo legal y 60/45/35 **DESPLEGADO COMO LÓGICA PURA**, sin notificaciones activas, sin trabajos externos ni ajustes de esquemas. No declarar O7 funcionalmente aceptada sin prueba manual.
+
+Próximo desarrollo acelerado O8b y O9 puede codificarse y probarse en GitHub sobre la misma rama tras este gate sin desplegar automáticamente. Mantener inalterados backups O5 y base `0014`; nuevas migraciones solo con protocolo O4 específico. Nunca ejecutar de nuevo `deploy_o7_o8_no_migrations.sh` si ya salió OK.
