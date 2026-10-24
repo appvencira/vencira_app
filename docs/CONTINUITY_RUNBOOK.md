@@ -669,3 +669,23 @@ Confirmado por salida del usuario desde Ubuntu en commit `28830104fbbcf579b7ccbf
 **Criterio para ejecutar la petición sin dañar el entorno:** primero diagnosticar de solo lectura el proxy real Caddy/Nginx del VPS, rutas de ficheros de configuración y existencia de la directiva `basic_auth`/`basicauth`/`auth_basic`; **nunca imprimir hashes, credenciales ni el Caddyfile completo**. Si se autoriza retirar la barrera global de `dev.vencira.es`, exigir que la autenticación Django, rutas Admin inaccesibles, CSRF, endpoints sensibles restringidos, y datos exclusivamente sintéticos sigan vigentes; tomar copia privada del archivo de configuración, validar el nuevo proxy y hacer reload con posibilidad de rollback, sin Docker ni BD. Recomendación más restrictiva: dejar DEV tras la barrera y abrir solo estáticos informativos OAuth en host público independiente `vencira.es`, tras resolver DNS/TLS.
 
 **Estado:** en espera de diagnóstico del proxy real, sin cambios en firewall/proxy/Docker/Google OAuth/Restic; programación automática de backups aún bloqueada.
+
+## 24/10/2026 — Preflight real Caddy: diagnóstico recibido; aún sin retirar Basic Auth
+
+Salida confirmada del titular desde el VPS:
+```text
+caddy=active
+nginx=inactive
+apache2=inactive
+/etc/caddy/Caddyfile
+/etc/caddy/Caddyfile.vencira-backup.kNTE0UnB
+/etc/caddy/Caddyfile.vencira-backup.EafhDzyW
+/etc/caddy/Caddyfile.pre-api-directa.bak
+DEV_HTTP=401 TLS=0
+DIAGNOSTICO_TERMINADO=1
+```
+En `/etc/caddy/Caddyfile` vigente hay directiva `basic_auth`/`basicauth`, y también en copias históricas (las copias no se tocan). Caddy es el **único proxy activo** de los tres evaluados. El HTTP 401 anónimo es consistente con la barrera Basic Auth, aunque los resultados no muestran aún el **alcance/sitio** exacto de esa directiva; no está autorizado suprimir indiscriminadamente todos los `basic_auth`. `TLS=0` es validación de certificado satisfactoria. El DNS apex `vencira.es` continúa apuntando a `213.186.33.5`, donde HTTPS falla; la futura página pública de OAuth permanece pendiente y no se resuelve retirando auth de DEV.
+
+**Siguiente paso seguro:** inspección de la **estructura redaccionada** del Caddyfile activo (números de línea, hostnames conocidos, nombres de directiva `basic_auth`, `reverse_proxy`, `handle`, `route`, `import`, y apertura/cierre de llaves) sin imprimir hashes, nombres de usuario, tokens, credenciales, rutas privadas ni el archivo en bruto. Tras ver esa estructura, preparar cambio mínimo solo en sitio `dev.vencira.es`, una copia de reversión privada, `caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile`, `systemctl reload caddy`, comprobación anónima de respuesta y rollback automático si falla. No tocar PostgreSQL, Docker, Restic ni otros sitios. Fuentes de Caddy: https://caddyserver.com/docs/caddyfile/directives/basic_auth y https://caddyserver.com/docs/command-line .
+
+**Precaución:** eliminar la autenticación perimetral de DEV expone la fachada Django/Flutter a Internet aunque requiera login de app. Mantener datos sintéticos, CSRF/autenticación de app, endpoint /admin bloqueado y restricciones de API; no habilitar uso real ni producción.
