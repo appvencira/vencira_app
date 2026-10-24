@@ -43,3 +43,9 @@ Se versionó `scripts/deploy_o7_o8_no_migrations.sh`, despliegue de una sola eje
 **Estado:** O7 **DESPLEGADA Y VALIDADA TÉCNICAMENTE**; pendiente aceptación visual del administrador en navegador PC ancho >=800: botón «Resumen de resultados», navegación mes/trimestre/año y números correctos sobre registros ficticios. No mostrar resumen en móvil o cuentas member; backend owner-only ya tiene regresiones unitarias y anónimo devuelve 403. O8a cálculo legal y 60/45/35 **DESPLEGADO COMO LÓGICA PURA**, sin notificaciones activas, sin trabajos externos ni ajustes de esquemas. No declarar O7 funcionalmente aceptada sin prueba manual.
 
 Próximo desarrollo acelerado O8b y O9 puede codificarse y probarse en GitHub sobre la misma rama tras este gate sin desplegar automáticamente. Mantener inalterados backups O5 y base `0014`; nuevas migraciones solo con protocolo O4 específico. Nunca ejecutar de nuevo `deploy_o7_o8_no_migrations.sh` si ya salió OK.
+
+## 24/10/2026 — Confirmación manual del promotor: navegación entre periodos
+
+El titular confirmó literalmente desde la prueba en la web: **«Sí pude cambiar entre mes, trimestre y año»**. Se marca como **ACEPTADA VISUALMENTE LA NAVEGACIÓN POR PERIODOS DE O7** (Mes / Trimestre / Año), sobre el despliegue DEV `b61e357f06b7396d1018cb072ef39b6bc0974777` que ya había pasado suites SQLite, PostgreSQL 17 y Flutter y comprobaciones HTTP/health. No deducir ni atribuir una verificación de **exactitud de las cifras reales** ni prueba manual de permisos de un miembro de Equipo, que no fueron afirmadas; ambos puntos permanecen en UAT detallada.
+
+El proyecto progresa con O8b en GitHub y sin despliegue. Para continuidad hacia otro chat consultar `docs/NEXT_CHAT_HANDOFF.md` y `docs/CONTINUITY_RUNBOOK.md`.
