@@ -61,9 +61,16 @@ class ReminderPreviewApiTests(APITestCase):
            return_value=date(2027, 2, 9))
     def test_custom_late_controls_and_missing_notice(self, _):
         self.client.force_authenticate(user=self.assignee)
-        response = self.client.get(self.url(), {"days": "15,30"})
+        response = self.client.get(self.url(), {"days": "15,20"})
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.data["no_pre_cutoff_notice"])
+        # 30 días antes del 15/03 cae el 13/02, que es ANTERIOR
+        # al límite civil del 15/02: no es el caso sin control.
+        eligible = self.client.get(self.url(), {"days": "15,30"})
+        self.assertEqual(eligible.status_code, 200)
+        self.assertFalse(eligible.data["no_pre_cutoff_notice"])
+        self.assertEqual([row["days_before"] for row in eligible.data["reminders"]
+                          if row["control_question"]], [30])
         response = self.client.get(self.url(), {"days": "35,45,60"})
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.data["late_control_needs_decision"])
