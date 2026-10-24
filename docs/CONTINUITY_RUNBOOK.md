@@ -893,3 +893,32 @@ echo "CONSOLA_ABIERTA"
 Se espera `DNS_OAUTH=OK`, `CADDY_CANDIDATO_VALIDADO=OK`, `CADDY_RELOAD=OK`, `OAUTH_HOME_HTTP=200`, `OAUTH_PRIVACIDAD_HTTP=200`, `OAUTH_CONDICIONES_HTTP=200`, `DEV_SIN_REGRESIONES=OK`, `SITIO_OAUTH_PUBLICADO=OK`, `RESULTADO_GLOBAL=0`. **No declarar desplegado ni HTTPS funcionando antes de recibir esa evidencia real**. Si falla, no reintentar a ciegas; comprobar `CADDY_REVERSION`, `FASE_FALLIDA` y marcador.
 
 Tras validación pública, rellenar Branding Google (homepage, privacidad, condiciones) y comprobar si permite publicar External/In production; si exige propiedad Search Console, verificarla con TXT auténtico. Aún no reautorizar Rclone, ni cambiar contraseña Restic o programar backups hasta OAuth In production.
+
+## 24/10/2026 — Sitio HTTPS OAuth PUBLICADO; salida completa de despliegue confirmada
+
+El titular ejecutó `scripts/o5_publish_oauth_pages.sh` después de corregir DNS. **Salida real satisfactoria**:
+```text
+CADDY_PRECHECK=OK
+DNS_OAUTH=OK
+DEV_PRECHECK=OK
+CADDY_RESPALDO_PRIVADO=OK
+COPIA_CADDY_PRIVADA=/etc/caddy/.vencira-oauth-rollback.9FhSoUju/Caddyfile.original
+STATIC_SITE=OK
+CADDY_CANDIDATO_VALIDADO=OK
+CADDY_RELOAD=OK
+OAUTH_HOME_HTTP=200
+OAUTH_PRIVACIDAD_HTTP=200
+OAUTH_CONDICIONES_HTTP=200
+DEV_SIN_REGRESIONES=OK
+SITIO_OAUTH_PUBLICADO=OK
+HTTPS_OAUTH_PUBLICO=OK
+DOCKER_PG_RESTIC_DEV_NO_MODIFICADOS=1
+RESULTADO_GLOBAL=0
+RESULTADO_EJECUCION=0
+```
+
+**Estado**: el VPS confirma accesibilidad HTTPS sin autenticación a estas tres direcciones: `https://oauth.vencira.es/`, `https://oauth.vencira.es/privacidad/`, `https://oauth.vencira.es/condiciones/` (todas HTTP 200). Caddy recargado, sitio estático en `/srv/vencira-oauth-site`, rollback Caddy privado en la ruta antes indicada. Protección de Django y estado de DEV sin regresiones. El cambio no toca DB, Docker ni secretos Restic. No repetir script de despliegue: es deliberadamente no idempotente para evitar duplicar host.
+
+**Siguiente operación pendiente del titular en Google Cloud, NO realizada:** en proyecto `vencira-backups`, Google Auth Platform → Branding, configurar/guardar las tres URLs exactas anteriores y revisar nombre `VENCIRA Internal Backups`, correo de soporte y dominio autorizado `vencira.es`. Según documentación actual de Google (https://support.google.com/cloud/answer/15549049), los enlaces son obligatorios para External/Production; el dominio autorizado `vencira.es` ampara subdominios como oauth.vencira.es; puede exigir titularidad verificada en Google Search Console. Branding puede requerir `Verify Branding` y luego `Publish branding` al quedar `Ready to publish`; diferenciarlos de Audience → `Publish app` / estado `In production`. No dar por verificado/publicado hasta capturar estado concreto de consola. Consultar y cumplir requisitos reales si Google pide más. El recurso web propio no pudo ser verificado independientemente por herramienta de navegación en esta sesión, pero los tres HTTP 200 fueron registrados por el VPS del titular. Valorar si Google pide identificación adicional del responsable/contacto en privacidad y ajustar antes de verificación.
+
+**Aún pendiente**: Google OAuth sigue External/Testing según última evidencia, refresh token sujeto a caducidad de Testing, reautorización del remoto Rclone aún no hecha, copia cifrada y restauración aislada previas válidas (snapshot `7a2f5018`), timer automático/retención/segundo destino NO activados. No renovar OAuth ni alterar repositorio Restic o clave hasta estado `In production`.
