@@ -864,3 +864,32 @@ RESULTADO_EJECUCION=4
 **Interpretación:** corte preventivo antes de crear archivos estáticos o modificar Caddy. `oauth.vencira.es` no resuelve en Ubuntu exactamente al conjunto `{93.93.112.172}` según `socket.getaddrinfo`. No diagnosticar sin prueba si falta A, si hay caché, registro wildcard u otro A/AAAA. La apertura previa de `dev.vencira.es` permanece completada, no revertir. No tocar Docker, PostgreSQL, Restic ni OAuth.
 
 **Siguiente acción**: confirmar en panel DNS del dominio que exista `A oauth -> 93.93.112.172`, sin CNAME, A antiguos ni AAAA para ese host salvo IPv6 propia verificada, y sin cambiar registros `@`, `www` o MX. Ejecutar diagnóstico de solo lectura con Python `socket.getaddrinfo` separado AF_INET/AF_INET6 y, si `dig` está disponible, consultar `@1.1.1.1` y `@8.8.8.8` para A/AAAA; sin imprimir más información. Si públicos correctos pero caché local antigua, esperar actualización/reintentar solo tras resolución correcta. Después volver a ejecutar script una sola vez y verificar HTTP 200/TLS en tres páginas y DEV sin regresiones. **No** usar --resolve para esquivar el guard DNS de despliegue.
+
+## 24/10/2026 — DNS OAuth resuelto; publicación pendiente
+
+**Diagnóstico real del VPS del usuario**, posterior al primer bloqueo `DNS_OAUTH_NO_LISTO=1`:
+```text
+A_IPV4=93.93.112.172
+AAAA_IPV6=SIN_RESOLUCION
+1.1.1.1 A=93.93.112.172; AAAA=VACIO; CNAME=VACIO
+8.8.8.8 A=93.93.112.172; AAAA=VACIO; CNAME=VACIO
+DIAGNOSTICO_DNS_COMPLETADO=1
+```
+**Conclusión validada:** el host `oauth.vencira.es` apunta ya a la IP del VPS `93.93.112.172`, sin AAAA ni CNAME incoherentes según la salida; DNS local y dos resolvedores públicos coinciden. No se requiere otra edición DNS ahora; **evitar tocar registros raíz, www, dev, MX**.
+
+**Próximo paso autorizado, pendiente de ejecución en Ubuntu:**
+```bash
+(
+  cd /home/vencira/vencira-localcheck || exit 1
+  git fetch origin integration/local-e2e-prep || exit 1
+  git merge --ff-only FETCH_HEAD || exit 1
+  echo "COMMIT=$(git rev-parse HEAD)"
+  bash -n scripts/o5_publish_oauth_pages.sh || exit 1
+  sudo bash scripts/o5_publish_oauth_pages.sh
+)
+echo "RESULTADO_EJECUCION=$?"
+echo "CONSOLA_ABIERTA"
+```
+Se espera `DNS_OAUTH=OK`, `CADDY_CANDIDATO_VALIDADO=OK`, `CADDY_RELOAD=OK`, `OAUTH_HOME_HTTP=200`, `OAUTH_PRIVACIDAD_HTTP=200`, `OAUTH_CONDICIONES_HTTP=200`, `DEV_SIN_REGRESIONES=OK`, `SITIO_OAUTH_PUBLICADO=OK`, `RESULTADO_GLOBAL=0`. **No declarar desplegado ni HTTPS funcionando antes de recibir esa evidencia real**. Si falla, no reintentar a ciegas; comprobar `CADDY_REVERSION`, `FASE_FALLIDA` y marcador.
+
+Tras validación pública, rellenar Branding Google (homepage, privacidad, condiciones) y comprobar si permite publicar External/In production; si exige propiedad Search Console, verificarla con TXT auténtico. Aún no reautorizar Rclone, ni cambiar contraseña Restic o programar backups hasta OAuth In production.
