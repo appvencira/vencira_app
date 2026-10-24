@@ -27,7 +27,7 @@ abstract class VenciraApi {
 
   /// Vista previa informativa §7–8 sin persistir ni enviar avisos.
   Future<VenciraReminderPreview> fetchReminderPreview(
-    String workspaceId, String renewalId, {List<int>? daysBefore},
+    String workspaceId, String renewalId, {List<int>? daysBefore}
   ) async => throw const VenciraApiException();
 
   Future<VenciraRenewal> fetchRenewalDetail(
