@@ -20,9 +20,11 @@ Estado (23/10/2026): **entorno de desarrollo DEV en `https://dev.vencira.es`**, 
 
 El arranque de API se endurece en O4 para **comprobar migraciones pendientes sin aplicarlas automáticamente** (`manage.py migrate --check --noinput`). Las migraciones futuras se ejecutarán expresamente, con preflight, respaldo y restauración comprobada, según [el procedimiento O4](docs/OPERATION_O4_MIGRATION_GUARD.md). **O4 ya está desplegada y comprobada en Ubuntu el 23/10/2026**: `API_RUNTIME_MIGRATE_POLICY=CHECK_ONLY`, respaldo del esquema O3 con restauración completa en PostgreSQL 17, 119 pruebas Django, API/DB/Web saludables y `RESULTADO_GLOBAL=0`. El arranque no aplica migraciones. Consulta [el acta O4](docs/OPERATION_O4_MIGRATION_GUARD.md).
 
-## Copias externas cifradas (O5, en preparación)
+## Copias externas cifradas (O5, validación DEV en curso)
 
-La cuenta Google **interna** `appvencira@gmail.com` se ha reservado para Drive y administración técnica (no es un email público de soporte). Se han preparado [el procedimiento O5](docs/OPERATION_O5_DRIVE_BACKUPS.md) y scripts para diagnóstico sin cambios, `pg_dump` en streaming a Restic cifrado en Google Drive mediante Rclone y restauración aislada. **O5 NO está conectada, desplegada, autorizada ni programada**: falta preflight en Ubuntu, OAuth propio de Google, custodia separada de clave de cifrado y prueba real de recuperación. No copiar dumps de respaldo locales sin cifrar a Drive.
+El **24/10/2026** el titular confirmó que Google Drive de la cuenta interna `appvencira@gmail.com` está autorizado mediante Rclone con OAuth propio `drive.file`, que el repositorio Restic cifrado `rclone:vencira_google:VENCIRA-Backups/PostgreSQL` fue creado, y que la prueba sintética de subida, recuperación y `restic check` fue correcta. La clave operativa está bajo root 0600 y el titular confirmó custodia externa de la clave de recuperación. **No repetir OAuth ni inicialización de Restic.**
+
+**Pendiente:** primer respaldo cifrado de **PostgreSQL DEV** y restauración completa en contenedor PostgreSQL 17 aislado. Los scripts `scripts/o5_backup_to_drive.sh` y `scripts/o5_restore_drill.sh` están preparados, sin ejecución confirmada de esta fase. **No hay copias diarias programadas ni cobertura de producción**. Antes de automatizar, resolver el refresh token OAuth External/Testing (posible caducidad a 7 días), retención, alertas y recuperación independiente. Procedimiento y evidencia: [O5 Google Drive](docs/OPERATION_O5_DRIVE_BACKUPS.md). No enviar dumps descifrados a Drive, GitHub ni al chat.
 
 ## Primer arranque
 ```bash
