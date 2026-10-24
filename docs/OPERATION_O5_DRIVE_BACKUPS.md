@@ -450,3 +450,30 @@ Ante cualquier fallo: **no repetir todo el bloque** ni cambiar clave ni recrear 
 **Normativa oficial:** https://support.google.com/cloud/answer/15549049 ; https://support.google.com/cloud/answer/13807376 ; https://developers.google.com/identity/protocols/oauth2/policies ; `drive.file` no sensible https://developers.google.com/workspace/drive/api/guides/api-specific-auth .
 
 **Estado al cierre del diagnóstico:** causa del bloqueo **identificada de forma directa en HTML**; sitio público y política **pendientes de crear/publicar**, OAuth sigue Testing y backups automáticos desactivados; backup cifrado manual y restauración aislada válidos.
+
+## 24/10/2026 — Retirada de Basic Auth de DEV COMPLETADA Y VERIFICADA
+
+**Evidencia reportada del script en Ubuntu por el titular** (última ejecución):
+```text
+CADDY_SERVICIO_PUEDE_LEER_CONFIG=OK
+CADDY_ACTIVO=1
+CONFIG_ESTRUCTURA_L1_L19=PREVALIDACION
+CONFIG_CADDY_COPIA_PRIVADA=OK
+BACKUP_PRIVADO_LOCAL=/etc/caddy/.vencira-dev-auth-rollback.kpXvFpJX
+CAMBIO_LIMITADO_A_L2_L4=OK
+CADDY_CANDIDATO_VALIDADO=OK
+CADDY_RELOAD_INICIAL=OK
+DEV_RAIZ_HTTP=200
+DEV_ME_ANONIMO_HTTP=403
+DEV_ADMIN_ANONIMO_HTTP=404
+INICIO_SESION_APP_Y_ADMIN_PROTEGIDOS=OK
+BASIC_AUTH_DEV_RETIRADA=OK
+CADDY_RECARGADO=OK
+NO_DOCKER_NI_POSTGRES_NI_RESTIC_MODIFICADOS=1
+RESULTADO_GLOBAL=0
+RESULTADO_EJECUCION=0
+```
+
+**Estado definitivo probado en VPS**: `dev.vencira.es` se sirve públicamente por HTTPS sin Basic Auth (GET anónimo / devuelve 200). El endpoint de identidad `GET /api/v1/me/` rechaza acceso anónimo (403); `/admin/` permanece oculto (404). Caddy validado y recargado, sin cambios de Docker, PG ni Restic. La protección por sesión Django/CSRF permanece según código y tests anteriores, pero no sustituye a una auditoría de seguridad de producción. El único contenido admisible en DEV continúa siendo sintético. Guardar la copia privada de reversión bajo `/etc/caddy/.vencira-dev-auth-rollback.kpXvFpJX` sin poner hashes en el repositorio. No repetir el script de retirada: el bloque Basic Auth ya no está en la config activa y su guard lo rechazará.
+
+**Siguiente objetivo Google OAuth:** no confundir apertura de `dev.vencira.es` con disponer de página pública de marca/política. El dominio raíz `vencira.es` sigue con el último DNS confirmado `213.186.33.5` y HTTPS no operativo; no se ha publicado `https://vencira.es/oauth-backups/` ni `.../privacidad/`. Resolver sitio público, propiedad de dominio, contenido real y HTTPS antes de rellenar Branding y pasar OAuth External/Testing a In production. Token OAuth actual puede caducar a los siete días, por ello automación de respaldos **deshabilitada**. Tras publicación, reautorizar remoto existente sin cambiar clave Restic ni repo y verificar snapshot remoto PG `7a2f5018`. No usar datos de clientes.
