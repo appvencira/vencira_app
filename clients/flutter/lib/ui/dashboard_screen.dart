@@ -9,6 +9,7 @@ import 'vencira_preferences.dart';
 import 'renewal_editor.dart';
 import 'renewal_detail_screen.dart';
 import 'renewal_archive_screen.dart';
+import 'results_screen.dart';
 import 'modality_catalog_screen.dart';
 import 'insurer_catalog_screen.dart';
 import 'modality_labels.dart';
@@ -549,6 +550,20 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     );
   }
 
+  void _openResults() {
+    final workspace = _selected;
+    // §11: resultados solo web escritorio; acceso de usuarios Equipo
+    // sigue pendiente §18, por eso únicamente owner.
+    if (!kIsWeb || MediaQuery.sizeOf(context).width < 800 ||
+        workspace == null || workspace.role != 'owner' ||
+        _saving || _loadingRenewals) return;
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => VenciraResultsScreen(
+        api: _api, workspace: workspace,
+      ),
+    ));
+  }
+
   void _openArchive() {
     final workspace = _selected;
     if (workspace == null || _loadingRenewals || _saving) return;
@@ -659,6 +674,19 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
               label: Text(_t.archiveOpen),
             ),
           ),
+          if (kIsWeb && MediaQuery.sizeOf(context).width >= 800 &&
+              _selected?.role == 'owner') ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                key: const ValueKey('open-results'),
+                onPressed: _loadingRenewals || _saving ? null : _openResults,
+                icon: const Icon(Icons.bar_chart_outlined),
+                label: Text(_t.resultsOpen),
+              ),
+            ),
+          ],
           if (_selected?.role == 'owner') ...[
             const SizedBox(height: 8),
             ExpansionTile(
