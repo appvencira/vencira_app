@@ -75,3 +75,11 @@ Ante `RESULTADO_GLOBAL!=0` o `FASE_FALLIDA`, revisar `sudo journalctl -u vencira
 ## Pendientes de seguridad/operación
 
 Residencia UE verificable para copias reales; segundo destino independiente (proteger frente a borrados y cuenta comprometida); alertas **externas** de copia fallida o desactualizada; política formal de restauración y retención; periodicidad mensual de ensayos de restauración; pruebas de autenticación OAuth tras renovación real de access token y vigilancia de caducidad/revocación; permisos de claves y RGPD. Copia PostgreSQL no incluye necesariamente documentos adjuntos y otros recursos futuros: ampliar plan de backup con inventario completo antes de producción.
+
+## 24/10/2026 — OAuth reconectado correctamente; instalador detenido en preflight
+
+Resultado real proporcionado por el titular: RCLONE_TOKEN_OAUTH_VALIDO=OK, RCLONE_SCOPE_DRIVE_FILE=OK, RCLONE_CONF_ROOT_PERMISOS=OK, RCLONE_GOOGLE_DRIVE_ACCESO=OK, RESTIC_SNAPSHOT_ORIGINAL=OK, RESTIC_REPOSITORIO_EXISTENTE=OK, O5_POSTPRODUCTION_RECONNECT_REGISTRADO=OK, O5_GOOGLE_OAUTH_VERIFICADO=1 y RESULTADO_GLOBAL=0. No se generaron copias durante esa reconexión. No reautorizar OAuth otra vez.
+
+En la segunda fase, scripts/o5_install_daily_schedule.sh llegó hasta COMMIT=82cf438bbdd9ce194929b2f4b0c018ab7c22b504, pero terminó FASE_FALLIDA=RESTRICCIONES, RESULTADO_GLOBAL=1, RESULTADO_EJECUCION=1. No hubo PRELIGHT_O5=OK, no se alcanzó STACK_DEV, RESTIC, instalación de unidades ni copia de prueba. No declarar timers activos. Es una comprobación fallida de existencia/permisos/fuentes/calendarios; todavía no está identificado cuál.
+
+Se creó scripts/o5_diagnose_daily_schedule.sh, diagnóstico exclusivamente de lectura, con indicadores individuales para destino /usr/local/libexec/vencira libre, cuatro unidades existentes/ausentes, fuentes del repo, sintaxis Bash, directorio marcador root 700, token postproducción root 600 y calendarios systemd Madrid. No modifica servidor, no imprime secretos, no instala servicio, no realiza copia. Ejecutar tras git fetch + merge --ff-only y `sudo bash scripts/o5_diagnose_daily_schedule.sh`, publicar solo marcadores OK/FALLO. Si el destino o unidad ya existía, NO borrar de forma improvisada: primero identificar su origen.
