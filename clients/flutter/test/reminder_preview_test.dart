@@ -20,7 +20,7 @@ class FakePreviewApi extends VenciraApi {
       cutoffAlreadyElapsed: false,
       lifeRuleRequiresReview: false,
       reminders: [
-        const VenciraPreviewReminder(
+        VenciraPreviewReminder(
           daysBefore: 60, scheduledFor: _day,
           controlQuestion: false, alreadyElapsed: false),
       ],
