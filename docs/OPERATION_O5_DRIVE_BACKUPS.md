@@ -477,3 +477,41 @@ RESULTADO_EJECUCION=0
 **Estado definitivo probado en VPS**: `dev.vencira.es` se sirve públicamente por HTTPS sin Basic Auth (GET anónimo / devuelve 200). El endpoint de identidad `GET /api/v1/me/` rechaza acceso anónimo (403); `/admin/` permanece oculto (404). Caddy validado y recargado, sin cambios de Docker, PG ni Restic. La protección por sesión Django/CSRF permanece según código y tests anteriores, pero no sustituye a una auditoría de seguridad de producción. El único contenido admisible en DEV continúa siendo sintético. Guardar la copia privada de reversión bajo `/etc/caddy/.vencira-dev-auth-rollback.kpXvFpJX` sin poner hashes en el repositorio. No repetir el script de retirada: el bloque Basic Auth ya no está en la config activa y su guard lo rechazará.
 
 **Siguiente objetivo Google OAuth:** no confundir apertura de `dev.vencira.es` con disponer de página pública de marca/política. El dominio raíz `vencira.es` sigue con el último DNS confirmado `213.186.33.5` y HTTPS no operativo; no se ha publicado `https://vencira.es/oauth-backups/` ni `.../privacidad/`. Resolver sitio público, propiedad de dominio, contenido real y HTTPS antes de rellenar Branding y pasar OAuth External/Testing a In production. Token OAuth actual puede caducar a los siete días, por ello automación de respaldos **deshabilitada**. Tras publicación, reautorizar remoto existente sin cambiar clave Restic ni repo y verificar snapshot remoto PG `7a2f5018`. No usar datos de clientes.
+
+## 24/10/2026 — Publicación OAuth O5: páginas estáticas y despliegue Caddy preparados (NO EJECUTADOS)
+
+**Objetivo:** desbloquear publicación `External / Testing` del cliente OAuth **VENCIRA Internal Backups** (de Restic/Rclone), no desplegar la app comercial VENCIRA. Los HTML de Google Cloud aportados identificaron como bloqueantes la URL pública de homepage y de privacidad; el dominio autorizado `vencira.es` y nombre de app ya existían en Branding.
+
+**Decisión de infraestructura sin interrumpir lo existente:** un **subdominio independiente** `oauth.vencira.es`, NO alterar el registro raíz `vencira.es` que resuelve a `213.186.33.5`, NI `www`, NI `dev.vencira.es`, MX o correo. El nuevo DNS **A** `oauth` debe resolver exclusivamente a IP IPv4 del VPS de VENCIRA `93.93.112.172`. No publicar AAAA hasta disponer de una dirección IPv6 validada. La modificación de DNS en el proveedor es una acción pendiente del titular, no hay acceso a su panel desde GitHub. No afirmar DNS listo ni webs públicas todavía.
+
+**Sitio contenido en GitHub y únicamente informativo (pendiente de despliegue):**
+- `public/oauth-backups/index.html`: descripción inequívoca de integración técnica y cuentas administrativas, uso de Restic/Rclone con copias cifradas, alcance `drive.file`, sin acceso a la app VENCIRA comercial; enlace a privacidad.
+- `public/oauth-backups/privacidad/index.html`: alcance OAuth, datos de Google, finalidad, retención actualmente manual sin falsos plazos automáticos, seguridad, revocación y contacto referenciado al correo de soporte que Google presenta en pantalla de consentimiento. Evita publicar el correo Gmail administrativo en el sitio; debe verificarse suficiencia jurídica si Google exige identificación adicional del responsable.
+- `public/oauth-backups/condiciones/index.html`: condiciones técnicas del servicio interno.
+- `public/oauth-backups/assets/site.css` y `robots.txt`; HTML estático sin JS, cookies de analítica, trackers ni credenciales.
+
+**URLs a incorporar en Google Auth Platform → Branding** únicamente cuando HTTPS responda 200 sin credenciales:
+- `https://oauth.vencira.es/` — página principal
+- `https://oauth.vencira.es/privacidad/` — política de privacidad
+- `https://oauth.vencira.es/condiciones/` — condiciones de servicio (opcional en UI)
+Dominio autorizado debe seguir siendo `vencira.es` conforme a Google (dominio registrable), no añadir `oauth.vencira.es` como otro dominio autorizado sin que lo solicite la consola. Cuando Google lo requiera, verificar propiedad de `vencira.es` en Search Console, usando cuenta propietaria del proyecto OAuth y un registro TXT indicado por Google; no inventar el TXT.
+
+**Despliegue preparado:** `scripts/o5_publish_oauth_pages.sh` commit `863c22b38871d968064349130e25a25e0d759053`. Requiere DNS correcto, rama `integration/local-e2e-prep`, archivo `/etc/caddy/Caddyfile` original root:caddy 0640 y servicio Caddy activo/legible. Verifica previo DEV 200/403/404, crea respaldo privado root:0700/0600, copia documentos a `/srv/vencira-oauth-site` (estáticos legibles por caddy), añade SOLO sitio independiente `oauth.vencira.es` al Caddyfile, valida candidato con usuario caddy, `systemctl reload caddy`, verifica HTTPS público 200 en las tres páginas y que DEV continúa 200/403/404. Ante fallo después de cambiar Caddyfile intenta rollback del archivo y recarga Caddy. Puede dejar archivos estáticos locales inertes si falla para inspección, sin secretos. No ejecuta restic, DB, Docker ni amplía alcance Google.
+
+**Ejecución UNA VEZ después de configurar DNS**:
+```bash
+(
+  cd /home/vencira/vencira-localcheck || exit 1
+  git fetch origin integration/local-e2e-prep || exit 1
+  git merge --ff-only FETCH_HEAD || exit 1
+  bash -n scripts/o5_publish_oauth_pages.sh || exit 1
+  sudo bash scripts/o5_publish_oauth_pages.sh
+)
+echo "RESULTADO_EJECUCION=$?"
+echo "CONSOLA_ABIERTA"
+```
+Si falla `DNS_OAUTH_NO_LISTO=1`, no tocar Caddy; esperar propagación o revisar A/AAAA. Si falla `CADDY_REVERSION=REVISION_MANUAL_NECESARIA`, detenerse y revisar antes de repetir. No usar `caddy restart` ni `docker compose down`. Verificar `SITIO_OAUTH_PUBLICADO=OK`, `HTTPS_OAUTH_PUBLICO=OK`, `DEV_SIN_REGRESIONES=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`.
+
+**Paso posterior:** en `https://console.cloud.google.com/auth/branding?project=vencira-backups` configurar URL de página principal, privacidad y condiciones; guardar. En `https://console.cloud.google.com/auth/audience?project=vencira-backups` publicar app / In production, atender requisitos adicionales reales si aparecen, no inventar aprobación. En Google Search Console verificar dominio si exigido. Solo tras In production reautorizar remoto rclone existente con script ya guardado, leer snapshot cifrado PG real `7a2f5018` y posteriormente diseñar timer diario. No inicializar otro repositorio, regenerar contraseña o dar por terminada publicación OAuth antes del cambio real de estado.
+
+**Fuentes Google actualizadas**: https://support.google.com/cloud/answer/15549049 , https://developers.google.com/identity/verification/authentication-policy-compliance , https://developers.google.com/identity/protocols/oauth2/production-readiness/brand-verification .
