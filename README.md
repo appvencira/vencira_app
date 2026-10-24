@@ -1,5 +1,8 @@
 # VENCIRA
 
+> **Actualización 24/10/2026 — O5/O6:** O6 «Archivo» aceptada por el titular; se aprobó recuperar también «Conseguido». La cadencia propuesta de copias es DEV 24 h a las 03:00 Europe/Madrid y producción futura 6 h, pero **no hay aún temporizadores instalados/activados en el VPS**. La nueva automatización y sus gates de OAuth están preparadas en `docs/OPERATION_O5_DAILY_SCHEDULE.md`. Falta reautorizar el remoto Rclone existente tras pasar Google OAuth a In production y ejecutar el instalador controlado; no usar datos reales.
+
+
 > **Estado 24/10/2026 (más reciente):** el titular confirma que el cliente Google OAuth `VENCIRA Internal Backups` está **In production** en Google Cloud y el sitio informativo `https://oauth.vencira.es/` dispone de HTTPS comprobado (las tres páginas HTTP 200). Esto **no es** un lanzamiento comercial de VENCIRA. `https://dev.vencira.es/` es accesible sin HTTP Basic Auth pero mantiene login Django y API anónima 403; **solo DEMO**. O5 cuenta con copia PostgreSQL cifrada/restaurada; **pendiente reautorizar el remoto Rclone con un token emitido tras publicación**, verificar snapshot existente y definir backups automáticos/retención/alertas. El desarrollo de producto continúa con **O6 «Archivo y cerrados»**: fuentes Flutter y tests en GitHub, aún **sin validación ni despliegue**. Ver `docs/OPERATION_O6_ARCHIVE.md` y `docs/CONTINUITY_RUNBOOK.md`. Los párrafos históricos inferiores describen estados anteriores y no sustituyen este hito.
 
 
