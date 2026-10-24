@@ -1,6 +1,6 @@
 # VENCIRA O5 — Copias cifradas PostgreSQL en Google Drive
 
-**Estado actualizado 24/10/2026:** O5 **GOOGLE DRIVE OAUTH VERIFICADO** en servidor DEV con cuenta interna `appvencira@gmail.com`, `vencira_google` y scope `drive.file`. Restic oficial 0.19.1 y Rclone 1.60.1 instalados; prueba LOCAL cifrada/restaurada OK. **AÚN NO EXISTE REPOSITORIO CIFRADO REMOTO NI BACKUP POSTGRES REMOTO**, no hay automatización. Google OAuth External/Testing implica caducidad de refresh token a 7 días; antes de automatizar es necesario resolver estado OAuth y comprobar su duración. No datos personales reales.
+**Estado actualizado 24/10/2026:** O5 **PRIMER BACKUP REAL CIFRADO DE POSTGRESQL DEV Y RESTAURACIÓN AISLADA SUPERADOS**. Google Drive OAuth propio `drive.file` verificado; Restic 0.19.1 y Rclone 1.60.1; repositorio remoto cifrado iniciado y probado. Snapshot PostgreSQL `7a2f5018`, PostgreSQL 17 temporal restaurado, migración `0014_renewal_outcomes` y 21 tablas públicas comprobadas. **La copia manual ya funciona, pero O5 automática NO está habilitada**: falta confirmar durabilidad OAuth (si External/Testing, refresh tokens caducan a 7 días), retención, monitorización y alertas. No datos reales de clientes ni autorización de producción.
 
 ## Objetivo y límites
 
@@ -390,3 +390,24 @@ echo "CONSOLA_ABIERTA"
 Ante cualquier fallo: **no repetir todo el bloque** ni cambiar clave ni recrear repositorio; aportar solo marcadores seguros, `FASE_FALLIDA` y, si procede, errores acotados sin credenciales ni datos de clientes. No ejecutar restauración contra el PostgreSQL en uso.
 
 **No activar backup diario todavía.** Google OAuth External/Testing con `drive.file` puede emitir refresh token caducable a los 7 días: revisar Audience/publishing status y autorización adecuada antes de systemd. Falta política de retención, alerta en fallo y defensa de segunda ubicación independiente ante borrado/ransomware. Estado OAuth `In production` no equivale a producto VENCIRA en producción. Fuente Google: https://developers.google.com/identity/protocols/oauth2 .
+
+## 24/10/2026 — Primera copia PostgreSQL REAL cifrada y restauración aislada confirmadas
+
+**Evidencia exclusiva de ejecución sobre Ubuntu aportada por el usuario**, tras sincronizar el commit `28830104fbbcf579b7ccbf32912c1053137b90d5` en `integration/local-e2e-prep`. Se ejecutaron por primera vez en esta fase `scripts/o5_backup_to_drive.sh` y `scripts/o5_restore_drill.sh` con sus comprobaciones de sintaxis Bash superadas; no se ejecutó el script de inicialización (que **NO debe repetirse**).
+
+**Backup cifrado de PostgreSQL DEV a Drive:**
+- `DB_LOCALCHECK_HEALTHY=1`, `RESTIC_DRIVE_ACCESIBLE=1`.
+- `restic backup --tag vencira-postgresql --stdin-from-command` guardó el dump `pg_dump -Fc` como snapshot **`7a2f5018`** en repo cifrado previamente creado. 70,332 KiB procesados; 16,025 KiB almacenados según salida de Restic. La salida de `pg_dump` se transmitió hacia Restic sin persistir dump en claro en el host.
+- `RESTIC_INTEGRIDAD_METADATA=OK`, `GOOGLE_DRIVE_BACKUP_CIFRADO=OK`, `RESULTADO_GLOBAL=0`, `NO_SE_MIGRO_NI_REINICIO_POSTGRES=1`, `SIN_DUMP_EN_DISCO_LOCAL=1`.
+
+**Recuperación real desde el remoto:**
+- `DRIVE_SNAPSHOT_ACCESIBLE=1`, `PG17_EFIMERO_SIN_RED=OK`.
+- `restic dump --tag vencira-postgresql latest vencira-postgres.dump | docker exec ... pg_restore` completó la restauración en contenedor PostgreSQL 17 **sin red**, **sin volumen persistente**, y distinto al original.
+- `RESTAURACION_PG17_DESDE_DRIVE=OK`, `ESQUEMA_O3_RESTAURADO=0014_renewal_outcomes`, `TABLAS_PUBLIC_RESTAURADAS=21`, `RESTIC_SNAPSHOT_TAG=vencira-postgresql`, `POSTGRES_ORIGINAL_INTACTO=1`, `POSTGRES_LOCALCHECK_NO_MODIFICADO=1`.
+- `RESULTADO_GLOBAL=0`, `O5_RESTAURACION_REMOTA_VERIFICADA=1`, `SIN_DUMP_DESCIFRADO_EN_DISCO=1`, **`RESULTADO_EJECUCION=0`**. Log local del ensayo en `/tmp/vencira-o5-restore.jxgcmHGS.log` (no copiar a repositorio ni publicar sin inspección).
+
+**Veredicto:** primera copia real cifrada DEV y restauración funcional **verificadas**. Esto prueba que el dump es restaurable, pero no prueba integridad de todos los registros por comparación fila-a-fila, no es una prueba de reconstrucción completa del servicio, ni proporciona retención/inmutabilidad/automatización. `restic check` sin opción de lectura completa no prueba por sí solo todos los bloques de contenido; la restauración desde Drive aporta una validación complementaria del snapshot restaurado.
+
+**Siguiente puerta, sin tocar Ubuntu aún**: abrir Google Cloud Console con el proyecto OAuth **VENCIRA Backups** y leer `Google Auth Platform → Audience → Publishing status` de la aplicación que generó el cliente OAuth Desktop usado por Rclone. Comunicar únicamente `Testing` o `In production`, sin Client ID, Client Secret, refresh token ni `rclone.conf`. Según Google, **External / Testing** genera refresh tokens de 7 días cuando se usa Drive. `drive.file` es un scope no sensible, pero la posibilidad de publicar y requisitos de verificación deben comprobarse en Google Auth Platform; no presuponer que el cliente ya está en In production. Fuentes: https://support.google.com/cloud/answer/15549945 y https://developers.google.com/identity/protocols/oauth2 y https://developers.google.com/workspace/drive/api/guides/api-specific-auth .
+
+**No habilitar aún cron/systemd timer**. Después de asegurar credenciales duraderas y probar su renovación, planificar backup diario verificable, retención y poda segura, alertas de fallos/copias viejas, restauraciones periódicas, protección ante borrado/ransomware mediante otro destino independiente y guía de recuperación en otro servidor. No ejecutar `restic forget --prune` ni `rclone sync` improvisados. Mantener `vencira_localcheck` (DEV) sin datos personales reales; no autoriza producción.
