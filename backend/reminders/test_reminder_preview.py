@@ -78,6 +78,20 @@ class ReminderPreviewApiTests(APITestCase):
                 self.assertEqual(self.client.get(self.url(), params).status_code, 400)
         self.assertEqual(self.client.post(self.url(), {"days": "60"}).status_code, 405)
 
+    def test_closed_annotations_not_schedulable_and_life_warning(self):
+        self.client.force_authenticate(user=self.owner)
+        self.item.modality = "vida"
+        self.item.save(update_fields=["modality"])
+        response = self.client.get(self.url())
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data["life_rule_requires_review"])
+        self.item.status = "closed"
+        self.item.save(update_fields=["status"])
+        rejected = self.client.get(self.url())
+        self.assertEqual(rejected.status_code, 409)
+        self.assertEqual(rejected["Cache-Control"], "no-store")
+        self.assertFalse(ReminderCandidate.objects.exists())
+
     def test_authorization_and_account_boundaries(self):
         self.client.force_authenticate(user=self.other_user)
         self.assertEqual(self.client.get(self.url()).status_code, 404)
