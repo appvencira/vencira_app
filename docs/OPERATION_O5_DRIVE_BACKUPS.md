@@ -288,3 +288,35 @@ RESULTADO_EJECUCION=0
 **Siguiente hito**: crear `rclone:vencira_google:VENCIRA-Backups/PostgreSQL` mediante Restic con contraseña aleatoria protegida en `/etc/vencira-backup/restic-password`, backup de esa contraseña **fuera del servidor y de Google Drive**, y una copia/restauración de **datos ficticios**. Comprobar existencia previa, permisos root y acceso Drive antes de realizar cambios. La contraseña jamás en GitHub, logs ni chat; usuario debe custodiarla para recuperar las copias si se pierde el servidor. No crear todavía backup PostgreSQL ni schedule hasta recuperar contenido de prueba y realizar restauración PostgreSQL 17 aislada posteriormente.
 
 Fuentes: [Restic con rclone](https://restic.readthedocs.io/en/stable/030_preparing_a_new_repo.html), [Rclone Drive scope drive.file](https://rclone.org/drive/#scopes), [Google OAuth Testing — refresh tokens](https://developers.google.com/identity/protocols/oauth2).
+
+## 24/10/2026 — Alta segura del repositorio Restic cifrado (pendiente de ejecución)
+
+**Estado de entrada contrastado:** el usuario ha verificado `RCLONE_TOKEN_OAUTH_VALIDO=OK`, `RCLONE_SCOPE_DRIVE_FILE=OK`, `RCLONE_CONF_ROOT_PERMISOS=OK`, `RCLONE_GOOGLE_DRIVE_ACCESO=OK`, `O5_OAUTH_CONFIGURADO=1`, `O5_GOOGLE_OAUTH_VERIFICADO=1`, `RESULTADO_GLOBAL=0` y `RESULTADO_EJECUCION=0`. La cuenta Google interna es `appvencira@gmail.com`. OAuth quedó conectado, pero **antes de ejecutar la nueva fase NO existía una prueba de carga, repositorio Restic remoto ni respaldo PostgreSQL remoto**.
+
+**Nuevo script único**: `scripts/o5_init_restic_drive.sh` en GitHub, con correcciones de permisos Git `7e71728e9e61467f7f4eadb39a8e32d26d597d84`, export de la ruta Rclone y comprobaciones previas `cce8a9905259662de0bbc786a17f1ed3f3302c38`, y simplificación de la prueba de backend `1b2251b5ab5b9f7a9b36a4e6e3ca962b9e117f9c`. **Todavía NO ejecutado en Ubuntu**.
+
+Contrato de seguridad:
+- **Root + TTY privada** y lock `/run/lock/vencira-o5-backup.lock`, rama Git correcta, Git limpio, Restic 0.19.1, Rclone `serve restic`, tres servicios healthy con etiqueta exclusiva `vencira_localcheck`.
+- `/etc/vencira-backup` directorio `root:700`, `rclone.conf` `root:600`, `vencira_google` limitado a `drive.file` con OAuth propio/token válido, comprobación de acceso remoto de sólo lectura. **No reautoriza ni sobrescribe el remoto existente**.
+- Rechaza crear `/etc/vencira-backup/restic-password` o `config.env` si cualquiera ya existe; intenta impedir pisar un repo Restic con fichero `config` remoto ya creado. Nunca poner contraseña en GitHub, archivos en repositorio ni salida del chat.
+- Genera clave cifrado Restic de **256 bits aleatorios** con Python `secrets`, **la muestra únicamente en TTY privado** (NO copiar transcripción completa), exige que el titular la copie fuera del servidor y de Drive, la vuelva a introducir con eco deshabilitado y confirme `GUARDADA`. Después crea `restic-password` `root:600` y `config.env` `root:600` con solo rutas públicas. El archivo root tiene la copia operativa: la clave fuera del host es vital ante desastre. **Si se pierde la clave, las copias no son recuperables.**
+- Inicializa `rclone:vencira_google:VENCIRA-Backups/PostgreSQL` con Restic, luego hace un backup/restauración de un archivo **SINTÉTICO** y `restic check`; imprime únicamente marcadores. Restic cifra antes de que Rclone suba; no se envían dumps PostgreSQL ni datos reales a Drive en esta fase.
+- En fallo tras crear clave o repositorio, no repetir ciegamente el script; **los archivos de clave/config se preservan deliberadamente para recuperación**. No activar automatización todavía. Este script **no modifica Docker ni migra DB**, pero sí crea objetos cifrados de prueba en Drive si todo funciona.
+
+Ejecución en Ubuntu (desde cuenta `vencira`; el script es de root por necesitar proteger la clave y config):
+
+```bash
+(
+  cd /home/vencira/vencira-localcheck || exit 1
+  git fetch origin integration/local-e2e-prep || exit 1
+  git merge --ff-only FETCH_HEAD || exit 1
+  bash -n scripts/o5_init_restic_drive.sh || exit 1
+  sudo bash scripts/o5_init_restic_drive.sh
+)
+echo "RESULTADO_EJECUCION=$?"
+echo "CONSOLA_ABIERTA"
+```
+
+**PRIVACIDAD DE LA SALIDA:** El script imprime UNA VEZ la clave de cifrado para que el usuario la guarde en un gestor de contraseñas independiente. **No enviar toda la transcripción SSH ni capturas al chat ni registrar la sesión en terminal.** Informar exclusivamente los marcadores finales seguros (sin la clave): `GOOGLE_DRIVE_ACCESIBLE`, `RESTIC_REPOSITORIO_REMOTO`, `PRUEBA_CIFRADA_DRIVE_RESTAURACION`, `RESTIC_CHECK`, `CLAVE_GUARDADA_FUERA_DEL_SERVIDOR`, `CLAVE_EN_ARCHIVO_PRIVADO_ROOT_0600`, `REPO_RESTIC_REMOTO_INICIALIZADO`, `PRUEBA_CIFRADA_DRIVE_RESTAURADA`, `RESULTADO_GLOBAL`, `RESULTADO_EJECUCION`, o sólo `FASE_FALLIDA` si fracasa.
+
+**No declarar éxito** antes de la salida del usuario. Siguiente hito después del backup de prueba: ejecutar `scripts/o5_backup_to_drive.sh` para base `vencira_localcheck-db-1`, y `scripts/o5_restore_drill.sh` a PostgreSQL efímero (probar ambos/adaptarlos a snapshots por tag). Tras comprobar recuperación real, habilitar copias automáticas con retención, monitorización y atención a la caducidad de refresh token Google External/Testing de siete días: cambiar estado OAuth cuando sea adecuado y reautorizar si el token sigue siendo de Testing. Ninguno de estos hitos autoriza datos personales reales/producción.
