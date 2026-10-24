@@ -58,6 +58,14 @@ test -f "$CONFIG" && test ! -L "$CONFIG"
 OWNER="$(stat -c %u "$CONFIG")"
 GROUP="$(stat -c %g "$CONFIG")"
 MODE="$(stat -c %a "$CONFIG")"
+SERVICE_USER="$(systemctl show caddy -p User --value)"
+test -n "$SERVICE_USER" || { echo "ERROR=SERVICIO_CADDY_SIN_USUARIO_IDENTIFICABLE"; exit 2; }
+command -v runuser >/dev/null
+if ! runuser -u "$SERVICE_USER" -- test -r "$CONFIG"; then
+  echo "ERROR=CADDY_NO_PUEDE_LEER_CONFIG_CORREGIR_PERMISOS_ANTES"
+  exit 2
+fi
+echo "CADDY_SERVICIO_PUEDE_LEER_CONFIG=OK"
 echo "CADDY_ACTIVO=1"
 echo "CONFIG_ESTRUCTURA_L1_L19=PREVALIDACION"
 
@@ -103,6 +111,10 @@ print("CAMBIO_LIMITADO_A_L2_L4=OK")
 PY
 chown "$OWNER:$GROUP" "$CANDIDATE"
 chmod "$MODE" "$CANDIDATE"
+if ! runuser -u "$SERVICE_USER" -- test -r "$CANDIDATE"; then
+  echo "ERROR=CADDY_NO_PUEDE_LEER_CONFIG_CANDIDATA"
+  exit 2
+fi
 
 PHASE=VALIDAR_CANDIDATO
 if ! caddy validate --config "$CANDIDATE" --adapter caddyfile >/dev/null 2>&1; then
