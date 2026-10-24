@@ -45,6 +45,10 @@ class FakePreviewApi extends VenciraApi {
   Future<VenciraRenewal> fetchRenewalDetail(
       String workspaceId, String renewalId) async => throw UnimplementedError();
   @override
+  Future<VenciraHistoryPage> fetchRenewalHistory(
+      String workspaceId, String renewalId, {int page = 1}) async =>
+      const VenciraHistoryPage(total: 0, events: [], hasNext: false);
+  @override
   Future<VenciraRenewal> createRenewal(
       String workspaceId, VenciraRenewalInput input) async =>
       throw UnimplementedError();
