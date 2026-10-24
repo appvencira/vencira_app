@@ -58,3 +58,9 @@ Revisión directa del original White_paper_agenda_vencimientos.pdf de 23 página
 - O6 ofrece acceso independiente al Archivo y consulta de cerrados por organización y usuario autorizado. La recuperación ya existía en ficha O3. Cierres legacy se muestran como tales, sin desenlace inventado.
 - Divergencia que precisa decisión del promotor: O3 permite recuperar también Conseguido, pero el whitepaper menciona recuperación expresamente solo para Descartar.
 - Falta implementar el control del plazo de retención, avisos previos, supresión segura y su coordinación con histórico de auditoría y derechos RGPD. No habilitar borrado todavía.
+
+## 24/10/2026 — Decisión confirmada de recuperar anotaciones Conseguidas
+
+El titular aprobó expresamente «Ok conseguidas también». Se mantiene por decisión de producto la capacidad de recuperar desde Archivo tanto Descartado como Conseguido, con historial O3 auditado y protección por cuenta. Es una ampliación deliberada respecto a la frase del whitepaper que menciona expresamente la recuperación de Descartar. La anotación Conseguida se recupera como pendiente sin afirmar que una póliza propia se transforme en externa de forma automática: la acción debe entenderse como corrección de cierre o reactivación explícita dentro de VENCIRA, sujeta a revisión de reglas cuando haya datos reales.
+
+El resto del archivo no se da por completado hasta implementar retención de 2 años por defecto, control del plazo por administrador, avisos de 3 y 1 mes y supresión compatible con historial/auditoría, conforme al documento fuente.
