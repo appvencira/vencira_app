@@ -136,21 +136,27 @@ import sys
 
 path = sys.argv[1]
 key = secrets.token_hex(32)
-with open("/dev/tty", "r+") as tty:
-    tty.write("\nCLAVE CIFRADO RESTIC (GUARDAR FUERA DEL SERVIDOR):\n")
-    tty.write(key + "\n\n")
-    tty.write("GUARDA AHORA LA CLAVE EN TU GESTOR DE CONTRASENAS.\n")
-    tty.flush()
-    repeat = getpass.getpass("Vuelve a pegar la clave guardada (no se mostrara): ")
+# Nunca abrir /dev/tty como r+: el cambio lectura/escritura en el mismo
+# stream puede intentar seek(), que los terminales SSH no admiten.
+# Usar descriptores independientes para leer y escribir. Python recibe
+# este programa por heredoc en stdin, así que input()/sys.stdin NO sirven.
+with open("/dev/tty", "w", buffering=1, encoding="utf-8") as tty_out, \
+     open("/dev/tty", "r", buffering=1, encoding="utf-8") as tty_in:
+    tty_out.write("\nCLAVE CIFRADO RESTIC (GUARDAR FUERA DEL SERVIDOR):\n")
+    tty_out.write(key + "\n\n")
+    tty_out.write("GUARDA AHORA LA CLAVE EN TU GESTOR DE CONTRASENAS.\n")
+    tty_out.flush()
+    repeat = getpass.getpass(
+        "Vuelve a pegar la clave guardada (no se mostrara): ",
+        stream=tty_out,
+    )
     if not secrets.compare_digest(key, repeat):
-        tty.write("ERROR: no coincide. Ninguna clave se ha guardado.\n")
-        tty.flush()
+        tty_out.write("ERROR: no coincide. Ninguna clave se ha guardado.\n")
         raise SystemExit(7)
-    tty.write("Escribe GUARDADA si tienes una copia fuera de Ubuntu y Drive: ")
-    tty.flush()
-    if tty.readline().strip() != "GUARDADA":
-        tty.write("Cancelado: no declaraste custodia externa.\n")
-        tty.flush()
+    tty_out.write("Escribe GUARDADA si tienes una copia fuera de Ubuntu y Drive: ")
+    tty_out.flush()
+    if tty_in.readline().strip() != "GUARDADA":
+        tty_out.write("Cancelado: no declaraste custodia externa.\n")
         raise SystemExit(7)
 fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
 with os.fdopen(fd, "w") as output:
