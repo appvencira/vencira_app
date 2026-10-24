@@ -25,6 +25,11 @@ abstract class VenciraApi {
 
   Future<VenciraAgendaMonth> fetchAgendaMonth(String workspaceId, DateTime month);
 
+  /// Vista previa no persistente §7–8. Ningún aviso se entrega ni guarda.
+  Future<VenciraReminderPreview> fetchReminderPreview(
+    String workspaceId, String renewalId, {List<int>? daysBefore},
+  ) async => throw const VenciraApiException();
+
   Future<VenciraRenewal> fetchRenewalDetail(
       String workspaceId, String renewalId);
 
@@ -271,6 +276,1195 @@ class VenciraRenewal {
       archiveOutcome: json['archive_outcome'] as String? ?? '',
     );
   }
+}
+
+class VenciraReminderPreview {
+  const VenciraReminderPreview({
+    required this.expiresOn, required this.cutoffOn, required this.referenceDay,
+    required this.noPreCutoffNotice, required this.lateControlNeedsDecision,
+    required this.cutoffAlreadyElapsed, required this.lifeRuleRequiresReview,
+    required this.reminders,
+  });
+
+  final DateTime expiresOn;
+  final DateTime cutoffOn;
+  final DateTime referenceDay;
+  final bool noPreCutoffNotice;
+  final bool lateControlNeedsDecision;
+  final bool cutoffAlreadyElapsed;
+  final bool lifeRuleRequiresReview;
+  final List<VenciraPreviewReminder> reminders;
+
+  static DateTime _readDay(dynamic raw) {
+    if (raw is! String || !RegExp(r'^\\d{4}-\\d{2}-\\d{2}
+  const VenciraResultsSummary({
+    required this.period, required this.won, required this.declined,
+    required this.discarded, required this.pending,
+  });
+
+  final String period;
+  final int won;
+  final int declined;
+  final int discarded;
+  final int pending;
+
+  factory VenciraResultsSummary.fromJson(Map<String, dynamic> json) {
+    final period = json['period'];
+    final keys = [json['won'], json['declined'], json['discarded'], json['pending']];
+    if (!const ['month','quarter','year'].contains(period) ||
+        keys.any((x) => x is! int || x < 0) ||
+        json['from'] is! String || json['to_exclusive'] is! String) {
+      throw const FormatException('Invalid results summary');
+    }
+    return VenciraResultsSummary(
+      period: period as String,
+      won: json['won'] as int,
+      declined: json['declined'] as int,
+      discarded: json['discarded'] as int,
+      pending: json['pending'] as int,
+    );
+  }
+}
+
+class VenciraFollowUp {
+  const VenciraFollowUp({required this.id, required this.scheduledFor});
+  final String id;
+  final DateTime scheduledFor;
+
+  factory VenciraFollowUp.fromJson(Map<String, dynamic> json) {
+    final id = json['id'], day = json['scheduled_for'];
+    if (id is! String ||
+        !RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
+                r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$').hasMatch(id) ||
+        day is! String || day.length != 10) {
+      throw const FormatException('Invalid manual follow-up');
+    }
+    final parsed = DateTime.parse(day);
+    if (_civilDayIso(parsed) != day || json['state'] != 'planned') {
+      throw const FormatException('Invalid follow-up state/date');
+    }
+    return VenciraFollowUp(id: id, scheduledFor: parsed);
+  }
+}
+
+class VenciraRenewalInput {
+  const VenciraRenewalInput({
+    required this.reference,
+    required this.expiresOn,
+    this.noticeDeadlineOn,
+    this.status = 'pending',
+    this.entry,
+    this.modality = '',
+    this.insurerId,
+    this.fullName = '',
+    this.nickname = '',
+    this.phone = '',
+    this.email = '',
+    this.policyNumber = '',
+    this.notes = '',
+  });
+
+  final String reference;
+  final String? entry;
+  final String modality;
+  final String? insurerId;
+  final String fullName;
+  final String nickname;
+  final String phone;
+  final String email;
+  final String policyNumber;
+  final String notes;
+  final DateTime expiresOn;
+  final DateTime? noticeDeadlineOn;
+  final String status;
+
+  static String _isoDate(DateTime date) {
+    final y = date.year.toString().padLeft(4, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  Map<String, dynamic> toJson() => {
+        'customer_reference': reference.trim(),
+        if (entry != null) 'entry': entry,
+        'modality': modality.trim(),
+        'insurer': insurerId,
+        'full_name': fullName.trim(),
+        'nickname': nickname.trim(),
+        'phone': phone.trim(),
+        'email': email.trim(),
+        'policy_number': policyNumber.trim(),
+        'notes': notes.trim(),
+        'expires_on': _isoDate(expiresOn),
+        'notice_deadline_on':
+            noticeDeadlineOn == null ? null : _isoDate(noticeDeadlineOn!),
+        'status': status,
+      };
+}
+
+class VenciraRenewalPage {
+  const VenciraRenewalPage({
+    required this.total,
+    required this.items,
+    required this.hasNext,
+  });
+
+  final int total;
+  final List<VenciraRenewal> items;
+  final bool hasNext;
+
+  factory VenciraRenewalPage.fromJson(Map<String, dynamic> json) {
+    return VenciraRenewalPage(
+      total: json['count'] as int,
+      items: (json['results'] as List<dynamic>)
+          .map((value) => VenciraRenewal.fromJson(value as Map<String, dynamic>))
+          .toList(growable: false),
+      hasNext: json['next'] != null,
+    );
+  }
+}
+
+class VenciraHistoryEvent {
+  const VenciraHistoryEvent({
+    required this.action, required this.timestamp, required this.fields,
+    this.actor, required this.metadata,
+  });
+  final String action;
+  final DateTime timestamp;
+  final String? actor;
+  final List<String> fields;
+  final Map<String, dynamic> metadata;
+
+  factory VenciraHistoryEvent.fromJson(Map<String, dynamic> json) {
+    final action = json['action'];
+    if (action != 'created' && action != 'updated') {
+      throw const FormatException('Unknown audit action');
+    }
+    final fields = (json['changed_fields'] as List<dynamic>)
+        .map((v) => v as String).toList(growable: false);
+    return VenciraHistoryEvent(
+      action: action as String,
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      actor: json['actor'] as String?,
+      fields: fields,
+      metadata: json['metadata'] as Map<String, dynamic>,
+    );
+  }
+}
+
+class VenciraHistoryPage {
+  const VenciraHistoryPage({
+    required this.total, required this.events, required this.hasNext,
+  });
+  final int total;
+  final List<VenciraHistoryEvent> events;
+  final bool hasNext;
+  factory VenciraHistoryPage.fromJson(Map<String, dynamic> json) {
+    return VenciraHistoryPage(
+      total: json['count'] as int,
+      events: (json['results'] as List<dynamic>)
+          .map((e) => VenciraHistoryEvent.fromJson(e as Map<String, dynamic>))
+          .toList(growable: false),
+      hasNext: json['next'] != null,
+    );
+  }
+}
+
+/// Evento tipado de la proyección diaria; los valores son códigos de la API.
+class VenciraAgendaEvent {
+  const VenciraAgendaEvent({required this.kind, this.basis, this.candidateId});
+
+  final String kind;
+  final String? basis;
+  final String? candidateId;
+
+  factory VenciraAgendaEvent.fromJson(Map<String, dynamic> json) {
+    final kind = json['kind'];
+    if (kind != 'expiry' && kind != 'notice_deadline' &&
+        kind != 'reminder' && kind != 'follow_up') {
+      throw const FormatException('Unsupported agenda event');
+    }
+    final candidateId = json['candidate_id'];
+    final basis = json['basis'];
+    if (kind == 'reminder' &&
+        (candidateId is! String ||
+         (basis != 'expiry' && basis != 'notice_deadline'))) {
+      throw const FormatException('Invalid reminder event');
+    }
+    return VenciraAgendaEvent(
+      kind: kind as String,
+      candidateId: candidateId as String?,
+      basis: basis as String?,
+    );
+  }
+}
+
+class VenciraAgendaEntry {
+  const VenciraAgendaEntry({required this.renewal, required this.events});
+
+  final VenciraRenewal renewal;
+  final List<VenciraAgendaEvent> events;
+
+  factory VenciraAgendaEntry.fromJson(Map<String, dynamic> json) {
+    return VenciraAgendaEntry(
+      renewal: VenciraRenewal.fromJson(json['renewal'] as Map<String, dynamic>),
+      events: (json['events'] as List<dynamic>)
+          .map((value) => VenciraAgendaEvent.fromJson(value as Map<String, dynamic>))
+          .toList(growable: false),
+    );
+  }
+}
+
+class VenciraAgendaDayPage {
+  const VenciraAgendaDayPage({
+    required this.day,
+    required this.total,
+    required this.entries,
+    required this.hasNext,
+  });
+
+  final DateTime day;
+  /// Cuenta anotaciones, NO cantidad total de recordatorios.
+  final int total;
+  final List<VenciraAgendaEntry> entries;
+  final bool hasNext;
+
+  factory VenciraAgendaDayPage.fromJson(Map<String, dynamic> json) {
+    final dayString = json['day'] as String;
+    final date = DateTime.parse(dayString);
+    if (dayString != _civilDayIso(date)) {
+      throw const FormatException('Invalid civil day');
+    }
+    return VenciraAgendaDayPage(
+      day: date,
+      total: json['count'] as int,
+      hasNext: json['next'] != null,
+      entries: (json['results'] as List<dynamic>)
+          .map((value) => VenciraAgendaEntry.fromJson(
+              value as Map<String, dynamic>))
+          .toList(growable: false),
+    );
+  }
+}
+
+class VenciraMonthCounts {
+  const VenciraMonthCounts({required this.pending, required this.contacted});
+  final int pending;
+  final int contacted;
+  int get total => pending + contacted;
+  factory VenciraMonthCounts.fromJson(Map<String, dynamic> json) {
+    final p = json['pending'], c = json['contacted'];
+    if (p is! int || c is! int || p < 0 || c < 0) {
+      throw const FormatException('Invalid month counts');
+    }
+    return VenciraMonthCounts(pending: p, contacted: c);
+  }
+}
+
+class VenciraMonthDay {
+  const VenciraMonthDay({required this.day, required this.expiry,
+    required this.notice, required this.reminder, this.followUp = const VenciraMonthCounts(pending: 0, contacted: 0)});
+  final DateTime day;
+  final VenciraMonthCounts expiry;
+  final VenciraMonthCounts notice;
+  final VenciraMonthCounts reminder;
+  final VenciraMonthCounts followUp;
+  factory VenciraMonthDay.fromJson(Map<String, dynamic> json) {
+    final raw = json['day'];
+    if (raw is! String || !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(raw)) {
+      throw const FormatException('Invalid month day');
+    }
+    final date = DateTime.parse(raw);
+    if (_civilDayIso(date) != raw) throw const FormatException('Invalid civil day');
+    return VenciraMonthDay(
+      day: date,
+      expiry: VenciraMonthCounts.fromJson(json['expiry'] as Map<String, dynamic>),
+      notice: VenciraMonthCounts.fromJson(json['notice_deadline'] as Map<String, dynamic>),
+      reminder: VenciraMonthCounts.fromJson(json['reminder'] as Map<String, dynamic>),
+      followUp: json['follow_up'] == null
+        ? const VenciraMonthCounts(pending: 0, contacted: 0)
+        : VenciraMonthCounts.fromJson(
+            json['follow_up'] as Map<String, dynamic>),
+    );
+  }
+}
+
+class VenciraAgendaMonth {
+  const VenciraAgendaMonth({required this.month, required this.days});
+  final DateTime month;
+  final List<VenciraMonthDay> days;
+  factory VenciraAgendaMonth.fromJson(Map<String, dynamic> json) {
+    final raw = json['month'];
+    if (raw is! String || !RegExp(r'^\d{4}-(0[1-9]|1[0-2])$').hasMatch(raw)) {
+      throw const FormatException('Invalid month');
+    }
+    final month = DateTime.parse(raw + '-01');
+    if (_civilDayIso(month).substring(0, 7) != raw) {
+      throw const FormatException('Invalid month period');
+    }
+    final days = (json['days'] as List<dynamic>)
+      .map((value) => VenciraMonthDay.fromJson(value as Map<String, dynamic>))
+      .toList(growable: false);
+    final seen = <String>{};
+    for (final day in days) {
+      final iso = _civilDayIso(day.day);
+      if (!iso.startsWith(raw + '-') || !seen.add(iso) ||
+          day.expiry.total + day.notice.total +
+          day.reminder.total + day.followUp.total == 0) {
+        throw const FormatException('Out-of-month, duplicate or empty day');
+      }
+    }
+    return VenciraAgendaMonth(month: month, days: days);
+  }
+}
+
+/// Fecha civil, independiente de UTC, huso del servidor o hora de verano.
+String _civilDayIso(DateTime day) {
+  final y = day.year.toString().padLeft(4, '0');
+  final m = day.month.toString().padLeft(2, '0');
+  final d = day.day.toString().padLeft(2, '0');
+  return '$y-$m-$d';
+}
+
+class HttpVenciraApi implements VenciraApi {
+  @override
+  Future<VenciraReminderPreview> fetchReminderPreview(
+      String workspaceId, String renewalId, {List<int>? daysBefore}) async {
+    if (!_validUuid(workspaceId) || !_validUuid(renewalId) ||
+        (daysBefore != null &&
+          (daysBefore.isEmpty || daysBefore.length > 12 ||
+           daysBefore.any((days) => days < 0 || days > 365) ||
+           daysBefore.toSet().length != daysBefore.length))) {
+      throw const VenciraApiException();
+    }
+    final url = Uri(
+      path: '/api/v1/workspaces/$workspaceId/renewals/$renewalId/reminder-preview/',
+      queryParameters: {
+        if (daysBefore != null) 'days': daysBefore.join(','),
+      },
+    );
+    try {
+      final raw = await _fetch(url.toString());
+      return VenciraReminderPreview.fromJson(raw as Map<String, dynamic>);
+    } on VenciraUnauthorized {
+      rethrow;
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<VenciraResultsSummary> fetchResults(
+      String workspaceId, {required String period, required int year,
+      int? month, int? quarter}) async {
+    if (!_validUuid(workspaceId) || year < 2000 || year > 2100 ||
+        !const ['month', 'quarter', 'year'].contains(period) ||
+        (period == 'month' && (month == null || month < 1 || month > 12 || quarter != null)) ||
+        (period == 'quarter' && (quarter == null || quarter < 1 || quarter > 4 || month != null)) ||
+        (period == 'year' && (month != null || quarter != null))) {
+      throw const VenciraApiException();
+    }
+    final uri = Uri(
+      path: '/api/v1/workspaces/$workspaceId/results/',
+      queryParameters: {
+        'period': period, 'year': '$year',
+        if (period == 'month') 'month': '$month',
+        if (period == 'quarter') 'quarter': '$quarter',
+      },
+    );
+    try {
+      final data = await _fetch(uri.toString()) as Map<String, dynamic>;
+      final summary = VenciraResultsSummary.fromJson(data);
+      if (summary.period != period) throw const VenciraApiException();
+      return summary;
+    } on VenciraUnauthorized {
+      rethrow;
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+  @override
+  Future<List<VenciraPersonSuggestion>> suggestPeople(
+      String workspaceId, String query, {String by = 'name', String? excludeId}) async {
+    final q = query.trim();
+    if (!_validUuid(workspaceId) || q.length < 3 || q.length > 160 ||
+        !const ['name', 'phone'].contains(by) ||
+        (excludeId != null && !_validUuid(excludeId))) {
+      throw const VenciraApiException();
+    }
+    final uri = Uri(
+      path: '/api/v1/workspaces/$workspaceId/renewals/suggestions/',
+      queryParameters: {
+        'by': by, 'q': q,
+        if (excludeId != null) 'exclude': excludeId,
+      },
+    );
+    try {
+      final raw = await _fetch(uri.toString()) as List<dynamic>;
+      return raw.map((item) => VenciraPersonSuggestion.fromJson(
+        item as Map<String, dynamic>)).toList(growable: false);
+    } on VenciraUnauthorized {
+      rethrow;
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+
+  HttpVenciraApi({http.Client? client, Uri? baseUri})
+      : _client = client ?? http.Client(),
+        _ownsClient = client == null,
+        _baseUri = baseUri ?? Uri.base;
+
+  final http.Client _client;
+  final bool _ownsClient;
+  final Uri _baseUri;
+
+  /// No sigue URLs next suministradas por el servidor ni orígenes externos.
+  /// El path y los UUID proceden de los valores seleccionados en la app.
+  Future<Object?> _fetch(String path) async {
+    final uri = _baseUri.resolve(path);
+    late http.Response response;
+    try {
+      response = await _client.get(uri, headers: const {
+        'Accept': 'application/json',
+      });
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const VenciraUnauthorized();
+    }
+    if (response.statusCode != 200) {
+      throw const VenciraApiException();
+    }
+    try {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<List<VenciraWorkspace>> fetchWorkspaces() async {
+    try {
+      final payload = await _fetch('/api/v1/workspaces/') as List<dynamic>;
+      return payload
+          .map((value) => VenciraWorkspace.fromJson(value as Map<String, dynamic>))
+          .toList(growable: false);
+    } on VenciraUnauthorized {
+      rethrow;
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<VenciraRenewalPage> fetchRenewals(
+    String workspaceId, {
+    int page = 1,
+    String search = '',
+    String status = '',
+  }) async {
+    // UUID estrictos; no admitimos paths arbitrarios ni traversal.
+    final uuid = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
+      r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    );
+    final cleanedSearch = search.trim();
+    if (!uuid.hasMatch(workspaceId) ||
+        page < 1 ||
+        cleanedSearch.length > 80 ||
+        (status.isNotEmpty && !const ['pending', 'contacted', 'closed'].contains(status))) {
+      throw const VenciraApiException();
+    }
+    try {
+      final params = <String, String>{
+        'page': '$page',
+        if (cleanedSearch.isNotEmpty) 'q': cleanedSearch,
+        if (status.isNotEmpty) 'status': status,
+      };
+      final path = Uri(
+        path: '/api/v1/workspaces/$workspaceId/renewals/',
+        queryParameters: params,
+      ).toString();
+      final payload = await _fetch(path) as Map<String, dynamic>;
+      return VenciraRenewalPage.fromJson(payload);
+    } on VenciraUnauthorized {
+      rethrow;
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<VenciraAgendaDayPage> fetchAgendaDay(
+    String workspaceId, DateTime day, {int page = 1}) async {
+    if (!_validUuid(workspaceId) || page < 1 ||
+        day.year < 1 || day.year > 9999) {
+      throw const VenciraApiException();
+    }
+    final requested = _civilDayIso(day);
+    final path = Uri(
+      path: '/api/v1/workspaces/$workspaceId/agenda/',
+      queryParameters: {'day': requested, 'page': '$page'},
+    ).toString();
+    try {
+      final result = VenciraAgendaDayPage.fromJson(
+          await _fetch(path) as Map<String, dynamic>);
+      // Un servidor o proxy mal configurado no debe mezclar fechas en pantalla.
+      if (_civilDayIso(result.day) != requested) {
+        throw const VenciraApiException();
+      }
+      return result;
+    } on VenciraUnauthorized {
+      rethrow;
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<VenciraAgendaMonth> fetchAgendaMonth(
+      String workspaceId, DateTime month) async {
+    if (!_validUuid(workspaceId) || month.year < 2000 || month.year > 2100) {
+      throw const VenciraApiException();
+    }
+    final requested = _civilDayIso(DateTime(month.year, month.month, 1))
+        .substring(0, 7);
+    final path = Uri(
+      path: '/api/v1/workspaces/$workspaceId/agenda/month/',
+      queryParameters: {'month': requested},
+    ).toString();
+    try {
+      final result = VenciraAgendaMonth.fromJson(
+          await _fetch(path) as Map<String, dynamic>);
+      if (_civilDayIso(result.month).substring(0, 7) != requested) {
+        throw const VenciraApiException();
+      }
+      return result;
+    } on VenciraUnauthorized {
+      rethrow;
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<List<VenciraModalityOption>> fetchModalities(String workspaceId) async {
+    if (!_validUuid(workspaceId)) throw const VenciraApiException();
+    try {
+      final payload = await _fetch('/api/v1/workspaces/$workspaceId/modalities/')
+          as List<dynamic>;
+      return payload.map((v) =>
+          VenciraModalityOption.fromJson(v as Map<String, dynamic>)).toList();
+    } on VenciraUnauthorized { rethrow; } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  Future<http.Response> _catalogWrite(String workspaceId, String method,
+      {String? code, Map<String, Object>? body}) async {
+    if (!_validUuid(workspaceId) ||
+        (code != null &&
+         !RegExp(r'^[a-z][a-z0-9_-]{0,63}$').hasMatch(code))) {
+      throw const VenciraApiException();
+    }
+    final token = await _csrf();
+    final path = '/api/v1/workspaces/$workspaceId/modalities/' +
+        (code == null ? '' : '$code/');
+    late http.Response response;
+    try {
+      final req = http.Request(method, _baseUri.resolve(path));
+      req.headers.addAll({
+        'Accept':'application/json', 'Content-Type':'application/json',
+        'X-CSRFToken':token,
+      });
+      if (body != null) req.body = jsonEncode(body);
+      response = await http.Response.fromStream(await _client.send(req));
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const VenciraUnauthorized();
+    }
+    final expected = method == 'POST' ? 201 : method == 'DELETE' ? 204 : 200;
+    if (response.statusCode != expected) throw const VenciraApiException();
+    return response;
+  }
+
+  Future<VenciraModalityOption> _catalogResult(Future<http.Response> request) async {
+    final res = await request;
+    try {
+      return VenciraModalityOption.fromJson(
+        jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>);
+    } catch (_) { throw const VenciraApiException(); }
+  }
+
+  @override
+  Future<VenciraModalityOption> addModality(String workspaceId, String label) =>
+    _catalogResult(_catalogWrite(workspaceId, 'POST', body:{'label':label}));
+
+  @override
+  Future<VenciraModalityOption> editModality(
+      String workspaceId, String code, String label) =>
+    _catalogResult(_catalogWrite(workspaceId, 'PATCH',
+      code:code, body:{'label':label}));
+
+  @override
+  Future<VenciraModalityOption> enableModality(
+      String workspaceId, String code) =>
+    _catalogResult(_catalogWrite(workspaceId, 'PATCH',
+      code:code, body:{'active':true}));
+
+  @override
+  Future<void> removeModality(String workspaceId, String code) async {
+    await _catalogWrite(workspaceId, 'DELETE', code:code);
+  }
+
+  bool _filtersValid(String entry, String modality) =>
+    (entry.isEmpty || const ['clients', 'prospects'].contains(entry)) &&
+    (modality.isEmpty ||
+      RegExp(r'^[a-z][a-z0-9_-]{0,63}$').hasMatch(modality));
+
+  @override
+  Future<VenciraRenewalPage> fetchFilteredRenewals(
+      String workspaceId, {int page = 1, String search = '',
+      String status = '', String entry = '', String modality = '', String insurer = ''}) async {
+    if (!_validUuid(workspaceId) || page < 1 || search.trim().length > 80 ||
+        (insurer.isNotEmpty && !_validUuid(insurer)) ||
+        !_filtersValid(entry,modality) ||
+        (status.isNotEmpty &&
+          !const ['pending','contacted','closed'].contains(status))) {
+      throw const VenciraApiException();
+    }
+    final uri = Uri(path:'/api/v1/workspaces/$workspaceId/renewals/',
+      queryParameters:{
+        'page':'$page', if(search.trim().isNotEmpty)'q':search.trim(),
+        if(status.isNotEmpty)'status':status,
+        if(entry.isNotEmpty)'entry':entry,
+        if(modality.isNotEmpty)'modality':modality,
+        if(insurer.isNotEmpty)'insurer':insurer,
+      });
+    try {
+      return VenciraRenewalPage.fromJson(
+        await _fetch(uri.toString()) as Map<String,dynamic>);
+    } on VenciraUnauthorized { rethrow; } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<VenciraAgendaDayPage> fetchFilteredAgendaDay(
+      String workspaceId, DateTime day,
+      {int page = 1, String entry = '', String modality = '', String insurer = ''}) async {
+    if (!_validUuid(workspaceId) || page < 1 ||
+        (insurer.isNotEmpty && !_validUuid(insurer)) ||
+        !_filtersValid(entry,modality)) {
+      throw const VenciraApiException();
+    }
+    final date = _civilDayIso(day);
+    final uri = Uri(path:'/api/v1/workspaces/$workspaceId/agenda/',
+      queryParameters:{
+        'day':date,'page':'$page',
+        if(entry.isNotEmpty)'entry':entry,
+        if(modality.isNotEmpty)'modality':modality,
+        if(insurer.isNotEmpty)'insurer':insurer,
+      });
+    try {
+      final data = VenciraAgendaDayPage.fromJson(
+        await _fetch(uri.toString()) as Map<String,dynamic>);
+      if (_civilDayIso(data.day) != date) throw const VenciraApiException();
+      return data;
+    } on VenciraUnauthorized { rethrow; } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<VenciraAgendaMonth> fetchFilteredAgendaMonth(
+      String workspaceId, DateTime month,
+      {String entry = '', String modality = '', String insurer = ''}) async {
+    if (!_validUuid(workspaceId) || month.year < 2000 || month.year > 2100 ||
+        (insurer.isNotEmpty && !_validUuid(insurer)) ||
+        !_filtersValid(entry,modality)) {
+      throw const VenciraApiException();
+    }
+    final period = _civilDayIso(DateTime(month.year,month.month,1)).substring(0,7);
+    final uri = Uri(path:'/api/v1/workspaces/$workspaceId/agenda/month/',
+      queryParameters:{
+        'month':period,
+        if(entry.isNotEmpty)'entry':entry,
+        if(modality.isNotEmpty)'modality':modality,
+        if(insurer.isNotEmpty)'insurer':insurer,
+      });
+    try {
+      final data = VenciraAgendaMonth.fromJson(
+        await _fetch(uri.toString()) as Map<String,dynamic>);
+      if (_civilDayIso(data.month).substring(0,7) != period) {
+        throw const VenciraApiException();
+      }
+      return data;
+    } on VenciraUnauthorized { rethrow; } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<List<VenciraInsurer>> fetchInsurers(
+      String workspaceId, {String search = ''}) async {
+    if (!_validUuid(workspaceId) || search.length > 80) {
+      throw const VenciraApiException();
+    }
+    final uri = Uri(
+      path: '/api/v1/workspaces/$workspaceId/insurers/',
+      queryParameters: {if (search.trim().isNotEmpty) 'q': search.trim()},
+    );
+    try {
+      final rows = await _fetch(uri.toString()) as List<dynamic>;
+      return rows.map((r) =>
+        VenciraInsurer.fromJson(r as Map<String, dynamic>)).toList();
+    } on VenciraUnauthorized { rethrow; } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  Future<http.Response> _insurerWrite(
+      String workspaceId, String method,
+      {String? insurerId, String? name, bool? active}) async {
+    if (!_validUuid(workspaceId) ||
+        (insurerId != null && !_validUuid(insurerId))) {
+      throw const VenciraApiException();
+    }
+    final csrf = await _csrf();
+    final uri = _baseUri.resolve('/api/v1/workspaces/$workspaceId/insurers/' +
+        (insurerId == null ? '' : '$insurerId/'));
+    final request = http.Request(method, uri);
+    request.headers.addAll({
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrf,
+    });
+    if (name != null) request.body = jsonEncode({'name': name});
+    if (active != null) request.body = jsonEncode({'active': active});
+    late http.Response response;
+    try {
+      response = await http.Response.fromStream(await _client.send(request));
+    } catch (_) { throw const VenciraApiException(); }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const VenciraUnauthorized();
+    }
+    final code = method == 'POST' ? 201 : method == 'DELETE' ? 204 : 200;
+    if (response.statusCode != code) throw const VenciraApiException();
+    return response;
+  }
+
+  Future<VenciraInsurer> _insurerResult(Future<http.Response> request) async {
+    final response = await request;
+    try {
+      return VenciraInsurer.fromJson(
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String,dynamic>);
+    } catch (_) { throw const VenciraApiException(); }
+  }
+
+  @override
+  Future<VenciraInsurer> createInsurer(String workspaceId, String name) =>
+      _insurerResult(_insurerWrite(workspaceId, 'POST', name: name));
+
+  @override
+  Future<VenciraInsurer> renameInsurer(
+      String workspaceId, String id, String name) =>
+      _insurerResult(_insurerWrite(workspaceId, 'PATCH',
+        insurerId: id, name: name));
+
+  @override
+  Future<VenciraInsurer> reactivateInsurer(String workspaceId, String id) =>
+      _insurerResult(_insurerWrite(workspaceId, 'PATCH',
+        insurerId: id, active: true));
+
+  @override
+  Future<void> deactivateInsurer(String workspaceId, String id) async {
+    await _insurerWrite(workspaceId, 'DELETE', insurerId: id);
+  }
+
+  bool _validUuid(String id) {
+    return RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
+      r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    ).hasMatch(id);
+  }
+
+  Future<String> _csrf() async {
+    final response = await _fetch('/api/v1/csrf/') as Map<String, dynamic>;
+    final token = response['csrfToken'];
+    if (token is! String || token.length < 32) {
+      throw const VenciraApiException();
+    }
+    return token;
+  }
+
+  Future<VenciraRenewal> _write(
+    String workspaceId,
+    VenciraRenewalInput input, {
+    String? renewalId,
+  }) async {
+    if (!_validUuid(workspaceId) ||
+        (renewalId != null && !_validUuid(renewalId))) {
+      throw const VenciraApiException();
+    }
+    final csrfToken = await _csrf();
+    final target = renewalId == null
+        ? '/api/v1/workspaces/$workspaceId/renewals/'
+        : '/api/v1/workspaces/$workspaceId/renewals/$renewalId/';
+    final uri = _baseUri.resolve(target);
+    late http.Response response;
+    try {
+      final headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+      };
+      final body = jsonEncode(input.toJson());
+      response = renewalId == null
+          ? await _client.post(uri, headers: headers, body: body)
+          : await _client.patch(uri, headers: headers, body: body);
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const VenciraUnauthorized();
+    }
+    if (response.statusCode != (renewalId == null ? 201 : 200)) {
+      throw const VenciraApiException();
+    }
+    try {
+      return VenciraRenewal.fromJson(
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>,
+      );
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<VenciraRenewal> fetchRenewalDetail(
+      String workspaceId, String renewalId) async {
+    if (!_validUuid(workspaceId) || !_validUuid(renewalId)) {
+      throw const VenciraApiException();
+    }
+    try {
+      final json = await _fetch(
+        '/api/v1/workspaces/$workspaceId/renewals/$renewalId/',
+      ) as Map<String, dynamic>;
+      final renewal = VenciraRenewal.fromJson(json);
+      if (renewal.id.toLowerCase() != renewalId.toLowerCase()) {
+        throw const VenciraApiException();
+      }
+      return renewal;
+    } on VenciraUnauthorized {
+      rethrow;
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<VenciraHistoryPage> fetchRenewalHistory(
+      String workspaceId, String renewalId, {int page = 1}) async {
+    if (!_validUuid(workspaceId) || !_validUuid(renewalId) || page < 1) {
+      throw const VenciraApiException();
+    }
+    try {
+      final path = Uri(
+        path: '/api/v1/workspaces/$workspaceId/renewals/$renewalId/history/',
+        queryParameters: {'page': '$page'},
+      ).toString();
+      return VenciraHistoryPage.fromJson(
+          await _fetch(path) as Map<String, dynamic>);
+    } on VenciraUnauthorized {
+      rethrow;
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<VenciraRenewal> createRenewal(
+      String workspaceId, VenciraRenewalInput input) =>
+      _write(workspaceId, input);
+
+  @override
+  Future<VenciraRenewal> updateRenewal(
+          String workspaceId, String renewalId, VenciraRenewalInput input) =>
+      _write(workspaceId, input, renewalId: renewalId);
+
+  @override
+  Future<VenciraRenewal> changeRenewalStatus(
+      String workspaceId, String renewalId, String status) async {
+    if (!_validUuid(workspaceId) || !_validUuid(renewalId) ||
+        !const ['pending', 'contacted'].contains(status)) {
+      throw const VenciraApiException();
+    }
+
+    final csrfToken = await _csrf();
+    late http.Response response;
+    try {
+      response = await _client.patch(
+        _baseUri.resolve(
+          '/api/v1/workspaces/$workspaceId/renewals/$renewalId/',
+        ),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+        },
+        body: jsonEncode({'status': status}),
+      );
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const VenciraUnauthorized();
+    }
+    if (response.statusCode != 200) {
+      throw const VenciraApiException();
+    }
+    try {
+      final updated = VenciraRenewal.fromJson(
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>,
+      );
+      if (updated.id.toLowerCase() != renewalId.toLowerCase() ||
+          updated.status != status) {
+        throw const VenciraApiException();
+      }
+      return updated;
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<void> applyOutcome(
+    String workspaceId, String renewalId, String kind, {
+    DateTime? scheduledFor,
+  }) async {
+    if (!_validUuid(workspaceId) || !_validUuid(renewalId) ||
+        !const ['won', 'declined', 'undecided', 'discarded', 'restored']
+            .contains(kind) ||
+        (kind == 'undecided') != (scheduledFor != null)) {
+      throw const VenciraApiException();
+    }
+    final csrf = await _csrf();
+    final payload = <String, dynamic>{'kind': kind};
+    if (scheduledFor != null) {
+      payload['scheduled_for'] = _civilDayIso(scheduledFor);
+    }
+    final path = '/api/v1/workspaces/$workspaceId/renewals/$renewalId/outcomes/';
+    late http.Response response;
+    try {
+      response = await _client.post(_baseUri.resolve(path),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrf,
+        },
+        body: jsonEncode(payload),
+      );
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const VenciraUnauthorized();
+    }
+    if (response.statusCode != 201) {
+      throw const VenciraApiException();
+    }
+    try {
+      final object = jsonDecode(utf8.decode(response.bodyBytes))
+          as Map<String, dynamic>;
+      final event = object['event'] as Map<String, dynamic>;
+      if (event['kind'] != kind || event['id'] is! String) {
+        throw const FormatException('Unexpected resolution response');
+      }
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  String _manualFollowUpPath(String workspaceId, String renewalId) {
+    if (!_validUuid(workspaceId) || !_validUuid(renewalId)) {
+      throw const VenciraApiException();
+    }
+    return '/api/v1/workspaces/$workspaceId/renewals/$renewalId/follow-up/';
+  }
+
+  @override
+  Future<VenciraFollowUp?> fetchManualFollowUp(
+      String workspaceId, String renewalId) async {
+    final path = _manualFollowUpPath(workspaceId, renewalId);
+    try {
+      final json = await _fetch(path) as Map<String, dynamic>;
+      final item = json['active'];
+      return item == null
+          ? null : VenciraFollowUp.fromJson(item as Map<String, dynamic>);
+    } on VenciraUnauthorized {
+      rethrow;
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<VenciraFollowUp> scheduleManualFollowUp(
+      String workspaceId, String renewalId, DateTime day) async {
+    final path = _manualFollowUpPath(workspaceId, renewalId);
+    final csrf = await _csrf();
+    late http.Response response;
+    try {
+      response = await _client.post(_baseUri.resolve(path),
+        headers: {'Accept': 'application/json',
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': csrf},
+        body: jsonEncode({'scheduled_for': _civilDayIso(day)}),
+      );
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const VenciraUnauthorized();
+    }
+    if (response.statusCode != 201 && response.statusCode != 200) {
+      throw const VenciraApiException();
+    }
+    try {
+      final json = jsonDecode(utf8.decode(response.bodyBytes))
+          as Map<String, dynamic>;
+      return VenciraFollowUp.fromJson(json['active'] as Map<String, dynamic>);
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<void> resolveManualFollowUp(
+      String workspaceId, String renewalId, String followUpId,
+      String action) async {
+    final path = _manualFollowUpPath(workspaceId, renewalId);
+    if (!_validUuid(followUpId) ||
+        !const ['complete', 'cancel'].contains(action)) {
+      throw const VenciraApiException();
+    }
+    final csrf = await _csrf();
+    late http.Response response;
+    try {
+      response = await _client.patch(_baseUri.resolve(path),
+        headers: {'Accept': 'application/json',
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': csrf},
+        body: jsonEncode({'id': followUpId, 'action': action}),
+      );
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const VenciraUnauthorized();
+    }
+    if (response.statusCode != 200) {
+      throw const VenciraApiException();
+    }
+    try {
+      final json = jsonDecode(utf8.decode(response.bodyBytes))
+          as Map<String, dynamic>;
+      if (json['active'] != null) throw const VenciraApiException();
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<void> logout() async {
+    final token = await _csrf();
+    late http.Response response;
+    try {
+      response = await _client.post(
+        _baseUri.resolve('/accounts/logout/'),
+        headers: {
+          'X-CSRFToken': token,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: '',
+      );
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+    // Django redirige tras terminar la sesión; el cliente puede seguir 302.
+    if (response.statusCode != 200 && response.statusCode != 302) {
+      throw const VenciraApiException();
+    }
+  }
+
+  void close() {
+    if (_ownsClient) _client.close();
+  }
+}).hasMatch(raw)) {
+      throw const FormatException('Invalid civil date');
+    }
+    final day = DateTime.tryParse(raw);
+    if (day == null || day.toIso8601String().substring(0, 10) != raw) {
+      throw const FormatException('Invalid civil date');
+    }
+    return day;
+  }
+
+  factory VenciraReminderPreview.fromJson(Map<String, dynamic> json) {
+    final raw = json['reminders'];
+    if (json['preview_only'] != true || json['delivered'] != false ||
+        raw is! List || raw.isEmpty || raw.length > 12 ||
+        json['no_pre_cutoff_notice'] is! bool ||
+        json['late_control_needs_decision'] is! bool ||
+        json['cutoff_already_elapsed'] is! bool ||
+        json['life_rule_requires_review'] is! bool) {
+      throw const FormatException('Invalid reminder preview');
+    }
+    final reminders = raw.map((item) {
+      if (item is! Map<String, dynamic> ||
+          item['days_before'] is! int ||
+          item['days_before'] < 0 || item['days_before'] > 365 ||
+          item['before_cutoff'] is! bool ||
+          item['control_question'] is! bool ||
+          item['already_elapsed'] is! bool) {
+        throw const FormatException('Invalid reminder');
+      }
+      return VenciraPreviewReminder(
+        daysBefore: item['days_before'] as int,
+        scheduledFor: _readDay(item['scheduled_for']),
+        controlQuestion: item['control_question'] as bool,
+        alreadyElapsed: item['already_elapsed'] as bool,
+      );
+    }).toList(growable: false);
+    return VenciraReminderPreview(
+      expiresOn: _readDay(json['expires_on']),
+      cutoffOn: _readDay(json['informational_cutoff_on']),
+      referenceDay: _readDay(json['reference_day']),
+      noPreCutoffNotice: json['no_pre_cutoff_notice'] as bool,
+      lateControlNeedsDecision: json['late_control_needs_decision'] as bool,
+      cutoffAlreadyElapsed: json['cutoff_already_elapsed'] as bool,
+      lifeRuleRequiresReview: json['life_rule_requires_review'] as bool,
+      reminders: reminders,
+    );
+  }
+}
+
+class VenciraPreviewReminder {
+  const VenciraPreviewReminder({
+    required this.daysBefore, required this.scheduledFor,
+    required this.controlQuestion, required this.alreadyElapsed,
+  });
+  final int daysBefore;
+  final DateTime scheduledFor;
+  final bool controlQuestion;
+  final bool alreadyElapsed;
 }
 
 class VenciraResultsSummary {
