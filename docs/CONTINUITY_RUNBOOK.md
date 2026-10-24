@@ -763,3 +763,22 @@ DIAGNOSTICO_COMPLETADO=1
 **Paso inmediato SEGREGADO (todavía NO ejecutado)**: como usuario `vencira`, verificar copia raíz `/etc/caddy/.vencira-dev-auth-rollback.ce2ECir6/Caddyfile.original` idéntica con `cmp -s`, propietario/grupo actuales, servicio Caddy activo; aplicar `sudo chmod 0640 /etc/caddy/Caddyfile`, comprobar `sudo -u caddy test -r /etc/caddy/Caddyfile`, validar `caddy validate` en modo silencioso, `sudo systemctl reload caddy`, verificar HTTP 401 anónimo (la protección original debe mantenerse tras la recarga); **no borrar la copia privada**. Si falla alguna prueba, NO lanzar todavía script de retirar contraseña y diagnosticar solo marcadores. No reiniciar Caddy, Docker, PostgreSQL ni tocar OAuth o Restic.
 
 **Después de confirmar recarga original OK**: sincronizar rama GitHub y ejecutar una sola vez `sudo bash scripts/o5_remove_dev_basic_auth.sh` endurecido para retirar Basic Auth de DEV, con recuperación y pruebas de acceso anon API/admin, documentando salida real. El hecho de hacer DEV pública sigue siendo decisión explícita del titular; no habilita producción/datos reales. El dominio apex `vencira.es` mantiene DNS hacia `213.186.33.5` y HTTPS no operativo, por lo que OAuth continuará bloqueado por su falta de landing page/política.
+
+## 24/10/2026 — Reparación permisos Caddy y recarga ORIGINAL SUPERADA (confirmada)
+
+El titular ejecutó el bloque segregado de corrección mínima y aportó:
+```text
+CONFIG_ORIGINAL_INTACTA=OK
+LECTURA_USUARIO_CADDY=OK
+VALIDACION_CADDY=OK
+RECARGA_CADDY=OK
+DEV_HTTP=401
+REPARACION_PERMISOS=OK
+RESULTADO_EJECUCION=0
+```
+
+**Demostrado en el VPS**: Caddyfile original intacto antes del cambio, se aplicó `chmod 0640 /etc/caddy/Caddyfile` sobre `root:caddy`, el usuario `caddy` puede leerlo y validar la configuración, `systemctl reload caddy` ahora termina con éxito, la web DEV permanece en HTTP 401 para visitantes anónimos. Esta corrección resuelve el fallo de reload por permisos previos `0600`; no equivale a haber retirado Basic Auth.
+
+**Próxima operación separada, NO ejecutada al documentarlo**: sincronizar `integration/local-e2e-prep`, comprobar `bash -n scripts/o5_remove_dev_basic_auth.sh` y ejecutar una única vez como root `sudo bash scripts/o5_remove_dev_basic_auth.sh`. La versión de script desde `ab76ca3677111adf7c590d89ef2ac0a228e25bc4` bloquea si `User=caddy` no puede leer la configuración actual o candidata; guarda respaldo root:600 y retira solo líneas 2–4. Exige `BASIC_AUTH_DEV_RETIRADA=OK`, `INICIO_SESION_APP_Y_ADMIN_PROTEGIDOS=OK`, `DEV_RAIZ_HTTP=200` (o 3xx), `DEV_ME_ANONIMO_HTTP=401/403`, `DEV_ADMIN_ANONIMO_HTTP=404`, `RESULTADO_EJECUCION=0`; si falla, revisar `FASE_FALLIDA` y resultado del rollback, **no volver a ejecutar indiscriminadamente**.
+
+Esta apertura afecta únicamente a `dev.vencira.es` para datos sintéticos; NO proporciona las páginas públicas Google OAuth en el dominio raíz `vencira.es`. Estado OAuth External/Testing y backups diarios deshabilitados permanecen.
