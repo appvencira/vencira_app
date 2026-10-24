@@ -40,3 +40,9 @@ echo "RESULTADO_EJECUCION=$?"
 echo "CONSOLA_ABIERTA"
 ```
 Confirmar `FLUTTER_V3_1_Y_TESTS=OK`, `DESPLIEGUE_WEB_V3_1_LOCALCHECK=OK`, `SIN_MIGRACIONES_NI_CAMBIOS_API_DB=1`, `RESULTADO_GLOBAL=0` y `RESULTADO_EJECUCION=0`. Después abrir `https://dev.vencira.es/` desde Android/PC con usuario DEMO, pulsar `Archivo`, comprobar elementos `DEMO` cerrados, abrir uno `Conseguido`/ `Descartado`, recuperar y confirmar desaparición del archivo y vuelta a lista activa. Registrar capturas sin PII ni credenciales. Si falla, NO repetir despliegue y corregir en GitHub primero.
+
+## 24/10/2026 — O6 compilada, probada y desplegada en entorno DEV
+
+El usuario ejecutó el validador `scripts/validate_ui_v3_1.sh` desde la rama `integration/local-e2e-prep`, versión `924f8f959fb7206d98535ff6fff47c823d0904d7`. Resultado real comunicado: Git limpio salvo `clients/flutter/pubspec.lock` generado, identidad Docker correcta, `COMPOSE_CONFIG=OK`, `FLUTTER_PUB_GET_ANALYZE_TEST_BUILD=OK`, `FLUTTER_V3_1_Y_TESTS=OK`, `WEB_BUILD=OK`, `WEB_DEPLOY=OK`, `WEB_HEALTH=healthy`, endpoints de la web, salud API, readiness y login todos HTTP 200, `HEALTH_api/db/web_preview=healthy`, `DEV_VENCIRA_HTTPS_HTTP=200`, `DESPLIEGUE_WEB_V3_1_LOCALCHECK=OK`, `SIN_MIGRACIONES_NI_CAMBIOS_API_DB=1`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`. Registro en Ubuntu: `/tmp/vencira-ui-v3-1.Rerg7fJg.log`.
+
+El primer análisis había fallado con errores de sintaxis en el test O6, líneas 61 y 78; solucionados en el mismo commit validado. **O6 desplegada y pruebas automatizadas aprobadas; aceptación manual de Archivo desde Android/PC pendiente**. Verificar acceso al Archivo de una organización, dos desenlaces y cierre legado, apertura de ficha y recuperación sin salir de workspace; solo datos DEMO. No repetir el despliegue salvo regresión. No se alteraron DB, Caddy, credenciales Google ni Restic.
