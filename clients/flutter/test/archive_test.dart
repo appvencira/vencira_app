@@ -58,7 +58,7 @@ class ArchiveApi extends VenciraApi {
 
   @override
   Future<VenciraAgendaDayPage> fetchAgendaDay(
-    String workspaceId, DateTime day, {int page = 1},
+    String workspaceId, DateTime day, {int page = 1}
   ) async => VenciraAgendaDayPage(
     day: day, total: 0, entries: const [], hasNext: false,
   );
@@ -75,7 +75,7 @@ class ArchiveApi extends VenciraApi {
 
   @override
   Future<VenciraHistoryPage> fetchRenewalHistory(
-    String workspaceId, String renewalId, {int page = 1},
+    String workspaceId, String renewalId, {int page = 1}
   ) async => const VenciraHistoryPage(total: 0, events: [], hasNext: false);
 
   @override
