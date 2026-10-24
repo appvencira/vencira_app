@@ -567,3 +567,47 @@ Suite Flutter, web build y despliegue localcheck completados sobre `ab5b12b3`: `
 ## En un chat nuevo
 
 Leer primero este archivo desde GitHub y consultar las últimas confirmaciones del usuario sobre resultados del servidor. **No asumir que un PR fusionado equivale a despliegue.** Mantener el esquema `GitHub → pruebas aisladas → backup → migraciones → despliegue localcheck → Android → documentación final`. Evitar requerir al usuario información o verificaciones ya conocidas.
+
+## O5 — Restic remoto cifrado VERIFICADO; primera restauración PostgreSQL pendiente (24/10/2026)
+
+**Resultado real aportado por el usuario** tras corregir el TTY, sin copiar la clave privada:
+```text
+CLAVE_GUARDADA_FUERA_DEL_SERVIDOR=CONFIRMADA_POR_USUARIO
+CLAVE_EN_ARCHIVO_PRIVADO_ROOT_0600=OK
+RESTIC_REPOSITORIO_REMOTO=CREADO
+PRUEBA_CIFRADA_DRIVE_RESTAURACION=OK
+RESTIC_CHECK=OK
+CLAVE_PRIVADA_EN_SERVIDOR=1
+REPO_RESTIC_REMOTO_INICIALIZADO=1
+PRUEBA_CIFRADA_DRIVE_RESTAURADA=1
+POSTGRES_NO_RESPALDADO_AUN=1
+SIN_MIGRACIONES_NI_REINICIOS=1
+RESULTADO_GLOBAL=0
+RESULTADO_EJECUCION=0
+```
+
+**Hito real confirmado:** acceso Rclone con OAuth propio y alcance `drive.file`, clave Restic protegida por root y declarada bajo custodia externa por el usuario, repositorio `rclone:vencira_google:VENCIRA-Backups/PostgreSQL` inicializado, snapshot sintético subido y leído/descifrado desde Drive y `restic check` correcto. **NO reejecutar `o5_init_restic_drive.sh`, no generar una segunda clave, ni repetir OAuth.** No hay aún copia real de la BD.
+
+**Corrección preventiva del ensayo**: `scripts/o5_restore_drill.sh` deja de usar `restic dump latest vencira-postgres.dump` (podría elegir el snapshot sintético O5 u otro), y utiliza `restic dump --tag vencira-postgresql latest vencira-postgres.dump`. El filtro `--tag` sobre `latest` está documentado por Restic 0.19.1. Se añade confirmación de tablas públicas restauradas. El ensayo mantiene PostgreSQL 17 temporal sin red ni volumen persistente, limpia contenedor al terminar, verifica migración 0014 e identidad Docker original sin alteraciones.
+
+**Siguiente operación, aún NO ejecutada por el usuario:** primera copia PostgreSQL del stack DEV + recuperación remota íntegra en contenedor efímero. Ejecutar como usuario `vencira`, desde SSH, una sola vez:
+```bash
+(
+  cd /home/vencira/vencira-localcheck || exit 1
+  git fetch origin integration/local-e2e-prep || exit 1
+  git merge --ff-only FETCH_HEAD || exit 1
+  echo "COMMIT=$(git rev-parse HEAD)"
+  bash -n scripts/o5_backup_to_drive.sh || exit 1
+  bash -n scripts/o5_restore_drill.sh || exit 1
+  sudo bash scripts/o5_backup_to_drive.sh || exit 1
+  sudo bash scripts/o5_restore_drill.sh || exit 1
+)
+echo "RESULTADO_EJECUCION=$?"
+echo "CONSOLA_ABIERTA"
+```
+
+Éxito esperado **solo tras ejecutar**: en copia `DB_LOCALCHECK_HEALTHY=1`, `RESTIC_DRIVE_ACCESIBLE=1`, `GOOGLE_DRIVE_BACKUP_CIFRADO=OK`, `RESTIC_INTEGRIDAD_METADATA=OK`, `RESULTADO_GLOBAL=0`; en ensayo `DRIVE_SNAPSHOT_ACCESIBLE=1`, `PG17_EFIMERO_SIN_RED=OK`, `RESTAURACION_PG17_DESDE_DRIVE=OK`, `ESQUEMA_O3_RESTAURADO=0014_renewal_outcomes`, `RESTIC_SNAPSHOT_TAG=vencira-postgresql`, `POSTGRES_ORIGINAL_INTACTO=1`, `O5_RESTAURACION_REMOTA_VERIFICADA=1`, `RESULTADO_GLOBAL=0`; al final `RESULTADO_EJECUCION=0`. La copia incluye **solo datos sintéticos del entorno DEV**, no permite subir datos de clientes ni habilitar producción.
+
+Ante cualquier fallo: **no repetir todo el bloque** ni cambiar clave ni recrear repositorio; aportar solo marcadores seguros, `FASE_FALLIDA` y, si procede, errores acotados sin credenciales ni datos de clientes. No ejecutar restauración contra el PostgreSQL en uso.
+
+**No activar backup diario todavía.** Google OAuth External/Testing con `drive.file` puede emitir refresh token caducable a los 7 días: revisar Audience/publishing status y autorización adecuada antes de systemd. Falta política de retención, alerta en fallo y defensa de segunda ubicación independiente ante borrado/ransomware. Estado OAuth `In production` no equivale a producto VENCIRA en producción. Fuente Google: https://developers.google.com/identity/protocols/oauth2 .
