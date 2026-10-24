@@ -63,6 +63,8 @@ test "$(docker inspect "$DB" --format '{{index .Config.Labels "com.docker.compos
 test "$(docker inspect "$DB" --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}')" = healthy
 restic snapshots --quiet >/dev/null
 echo "DRIVE_SNAPSHOT_ACCESIBLE=1"
+# No seleccionar el snapshot sintetico O5: la restauracion usa solo
+# el ultimo snapshot etiquetado de PostgreSQL real.
 
 PHASE=RESTORE_CONTAINER
 RESTORE_NAME="vencira_o5_pg_restore_$$"
@@ -84,7 +86,7 @@ echo "PG17_EFIMERO_SIN_RED=OK"
 
 PHASE=RESTIC_DUMP_TO_PG_RESTORE
 echo "=== DESCIFRAR SOLO EN TRANSITO HACIA POSTGRES TEMPORAL ==="
-restic dump latest vencira-postgres.dump 2>>"$LOG" |
+restic dump --tag vencira-postgresql latest vencira-postgres.dump 2>>"$LOG" |
   docker exec -i "$RESTORE_NAME" pg_restore \
     --clean --if-exists --no-owner --no-privileges --exit-on-error \
     -U o5_restore -d o5_restore >>"$LOG" 2>&1
@@ -98,6 +100,12 @@ test "$schema" = 0014_renewal_outcomes
 n_migrations="$(docker exec "$RESTORE_NAME" psql -X -v ON_ERROR_STOP=1 \
   -U o5_restore -d o5_restore -Atqc "SELECT COUNT(*) FROM django_migrations;")"
 test "$n_migrations" -gt 0
+restored_tables="$(docker exec "$RESTORE_NAME" psql -X -v ON_ERROR_STOP=1 \
+  -U o5_restore -d o5_restore -Atqc \
+  "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';")"
+test "$restored_tables" -gt 0
 test "$BEFORE_DB_ID" = "$(docker inspect "$DB" --format '{{.Id}}')"
 echo "ESQUEMA_O3_RESTAURADO=0014_renewal_outcomes"
+echo "TABLAS_PUBLIC_RESTAURADAS=$restored_tables"
+echo "RESTIC_SNAPSHOT_TAG=vencira-postgresql"
 echo "POSTGRES_ORIGINAL_INTACTO=1"
