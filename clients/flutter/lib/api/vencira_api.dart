@@ -7,6 +7,15 @@ import 'package:http/http.dart' as http;
 abstract class VenciraApi {
   Future<List<VenciraWorkspace>> fetchWorkspaces();
 
+  /// Estadísticas agregadas del §11; solo web escritorio y propietarios.
+  /// Los clientes de tests antiguos siguen siendo compatibles.
+  Future<VenciraResultsSummary> fetchResults(
+    String workspaceId, {required String period, required int year,
+    int? month, int? quarter,
+  }) async => throw const VenciraApiException();
+
+
+
   Future<VenciraRenewalPage> fetchRenewals(
     String workspaceId, {int page = 1, String search = '', String status = ''});
 
@@ -260,6 +269,36 @@ class VenciraRenewal {
       policyNumber: json['policy_number'] as String? ?? '',
       notes: json['notes'] as String? ?? '',
       archiveOutcome: json['archive_outcome'] as String? ?? '',
+    );
+  }
+}
+
+class VenciraResultsSummary {
+  const VenciraResultsSummary({
+    required this.period, required this.won, required this.declined,
+    required this.discarded, required this.pending,
+  });
+
+  final String period;
+  final int won;
+  final int declined;
+  final int discarded;
+  final int pending;
+
+  factory VenciraResultsSummary.fromJson(Map<String, dynamic> json) {
+    final period = json['period'];
+    final keys = [json['won'], json['declined'], json['discarded'], json['pending']];
+    if (!const ['month','quarter','year'].contains(period) ||
+        keys.any((x) => x is! int || x < 0) ||
+        json['from'] is! String || json['to_exclusive'] is! String) {
+      throw const FormatException('Invalid results summary');
+    }
+    return VenciraResultsSummary(
+      period: period as String,
+      won: json['won'] as int,
+      declined: json['declined'] as int,
+      discarded: json['discarded'] as int,
+      pending: json['pending'] as int,
     );
   }
 }
@@ -566,6 +605,36 @@ String _civilDayIso(DateTime day) {
 }
 
 class HttpVenciraApi implements VenciraApi {
+  @override
+  Future<VenciraResultsSummary> fetchResults(
+      String workspaceId, {required String period, required int year,
+      int? month, int? quarter}) async {
+    if (!_validUuid(workspaceId) || year < 2000 || year > 2100 ||
+        !const ['month', 'quarter', 'year'].contains(period) ||
+        (period == 'month' && (month == null || month < 1 || month > 12 || quarter != null)) ||
+        (period == 'quarter' && (quarter == null || quarter < 1 || quarter > 4 || month != null)) ||
+        (period == 'year' && (month != null || quarter != null))) {
+      throw const VenciraApiException();
+    }
+    final uri = Uri(
+      path: '/api/v1/workspaces/$workspaceId/results/',
+      queryParameters: {
+        'period': period, 'year': '$year',
+        if (period == 'month') 'month': '$month',
+        if (period == 'quarter') 'quarter': '$quarter',
+      },
+    );
+    try {
+      final data = await _fetch(uri.toString()) as Map<String, dynamic>;
+      final summary = VenciraResultsSummary.fromJson(data);
+      if (summary.period != period) throw const VenciraApiException();
+      return summary;
+    } on VenciraUnauthorized {
+      rethrow;
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
   @override
   Future<List<VenciraPersonSuggestion>> suggestPeople(
       String workspaceId, String query, {String by = 'name', String? excludeId}) async {
