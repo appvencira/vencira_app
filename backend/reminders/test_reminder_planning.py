@@ -24,7 +24,15 @@ class ReminderPlanningTests(SimpleTestCase):
         self.assertEqual([r.days_before for r in plan.reminders], [60, 45, 40, 15])
         self.assertEqual([r.days_before for r in plan.reminders
                           if r.control_question], [40])
-        missing = preview_reminder_plan(date(2027, 3, 15), (15, 30),
+        # 30 días desde el 15/03/2027 = 13/02/2027, anterior
+        # al límite civil del 15/02: sí permite la pregunta de control.
+        valid_30 = preview_reminder_plan(date(2027, 3, 15), (15, 30),
+                                         as_of=date(2027, 1, 1))
+        self.assertFalse(valid_30.no_pre_cutoff_notice)
+        self.assertEqual([r.days_before for r in valid_30.reminders
+                          if r.control_question], [30])
+        # A 20 y 15 días, ambos avisos son posteriores al 15/02.
+        missing = preview_reminder_plan(date(2027, 3, 15), (15, 20),
                                         as_of=date(2027, 1, 1))
         self.assertTrue(missing.no_pre_cutoff_notice)
         self.assertFalse(any(r.control_question for r in missing.reminders))
