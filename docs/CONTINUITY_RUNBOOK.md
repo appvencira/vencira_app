@@ -782,3 +782,30 @@ RESULTADO_EJECUCION=0
 **Próxima operación separada, NO ejecutada al documentarlo**: sincronizar `integration/local-e2e-prep`, comprobar `bash -n scripts/o5_remove_dev_basic_auth.sh` y ejecutar una única vez como root `sudo bash scripts/o5_remove_dev_basic_auth.sh`. La versión de script desde `ab76ca3677111adf7c590d89ef2ac0a228e25bc4` bloquea si `User=caddy` no puede leer la configuración actual o candidata; guarda respaldo root:600 y retira solo líneas 2–4. Exige `BASIC_AUTH_DEV_RETIRADA=OK`, `INICIO_SESION_APP_Y_ADMIN_PROTEGIDOS=OK`, `DEV_RAIZ_HTTP=200` (o 3xx), `DEV_ME_ANONIMO_HTTP=401/403`, `DEV_ADMIN_ANONIMO_HTTP=404`, `RESULTADO_EJECUCION=0`; si falla, revisar `FASE_FALLIDA` y resultado del rollback, **no volver a ejecutar indiscriminadamente**.
 
 Esta apertura afecta únicamente a `dev.vencira.es` para datos sintéticos; NO proporciona las páginas públicas Google OAuth en el dominio raíz `vencira.es`. Estado OAuth External/Testing y backups diarios deshabilitados permanecen.
+
+## 24/10/2026 — Retirada de Basic Auth de DEV COMPLETADA Y VERIFICADA
+
+**Evidencia reportada del script en Ubuntu por el titular** (última ejecución):
+```text
+CADDY_SERVICIO_PUEDE_LEER_CONFIG=OK
+CADDY_ACTIVO=1
+CONFIG_ESTRUCTURA_L1_L19=PREVALIDACION
+CONFIG_CADDY_COPIA_PRIVADA=OK
+BACKUP_PRIVADO_LOCAL=/etc/caddy/.vencira-dev-auth-rollback.kpXvFpJX
+CAMBIO_LIMITADO_A_L2_L4=OK
+CADDY_CANDIDATO_VALIDADO=OK
+CADDY_RELOAD_INICIAL=OK
+DEV_RAIZ_HTTP=200
+DEV_ME_ANONIMO_HTTP=403
+DEV_ADMIN_ANONIMO_HTTP=404
+INICIO_SESION_APP_Y_ADMIN_PROTEGIDOS=OK
+BASIC_AUTH_DEV_RETIRADA=OK
+CADDY_RECARGADO=OK
+NO_DOCKER_NI_POSTGRES_NI_RESTIC_MODIFICADOS=1
+RESULTADO_GLOBAL=0
+RESULTADO_EJECUCION=0
+```
+
+**Estado definitivo probado en VPS**: `dev.vencira.es` se sirve públicamente por HTTPS sin Basic Auth (GET anónimo / devuelve 200). El endpoint de identidad `GET /api/v1/me/` rechaza acceso anónimo (403); `/admin/` permanece oculto (404). Caddy validado y recargado, sin cambios de Docker, PG ni Restic. La protección por sesión Django/CSRF permanece según código y tests anteriores, pero no sustituye a una auditoría de seguridad de producción. El único contenido admisible en DEV continúa siendo sintético. Guardar la copia privada de reversión bajo `/etc/caddy/.vencira-dev-auth-rollback.kpXvFpJX` sin poner hashes en el repositorio. No repetir el script de retirada: el bloque Basic Auth ya no está en la config activa y su guard lo rechazará.
+
+**Siguiente objetivo Google OAuth:** no confundir apertura de `dev.vencira.es` con disponer de página pública de marca/política. El dominio raíz `vencira.es` sigue con el último DNS confirmado `213.186.33.5` y HTTPS no operativo; no se ha publicado `https://vencira.es/oauth-backups/` ni `.../privacidad/`. Resolver sitio público, propiedad de dominio, contenido real y HTTPS antes de rellenar Branding y pasar OAuth External/Testing a In production. Token OAuth actual puede caducar a los siete días, por ello automación de respaldos **deshabilitada**. Tras publicación, reautorizar remoto existente sin cambiar clave Restic ni repo y verificar snapshot remoto PG `7a2f5018`. No usar datos de clientes.
