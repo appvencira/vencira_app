@@ -46,3 +46,15 @@ Confirmar `FLUTTER_V3_1_Y_TESTS=OK`, `DESPLIEGUE_WEB_V3_1_LOCALCHECK=OK`, `SIN_M
 El usuario ejecutó el validador `scripts/validate_ui_v3_1.sh` desde la rama `integration/local-e2e-prep`, versión `924f8f959fb7206d98535ff6fff47c823d0904d7`. Resultado real comunicado: Git limpio salvo `clients/flutter/pubspec.lock` generado, identidad Docker correcta, `COMPOSE_CONFIG=OK`, `FLUTTER_PUB_GET_ANALYZE_TEST_BUILD=OK`, `FLUTTER_V3_1_Y_TESTS=OK`, `WEB_BUILD=OK`, `WEB_DEPLOY=OK`, `WEB_HEALTH=healthy`, endpoints de la web, salud API, readiness y login todos HTTP 200, `HEALTH_api/db/web_preview=healthy`, `DEV_VENCIRA_HTTPS_HTTP=200`, `DESPLIEGUE_WEB_V3_1_LOCALCHECK=OK`, `SIN_MIGRACIONES_NI_CAMBIOS_API_DB=1`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`. Registro en Ubuntu: `/tmp/vencira-ui-v3-1.Rerg7fJg.log`.
 
 El primer análisis había fallado con errores de sintaxis en el test O6, líneas 61 y 78; solucionados en el mismo commit validado. **O6 desplegada y pruebas automatizadas aprobadas; aceptación manual de Archivo desde Android/PC pendiente**. Verificar acceso al Archivo de una organización, dos desenlaces y cierre legado, apertura de ficha y recuperación sin salir de workspace; solo datos DEMO. No repetir el despliegue salvo regresión. No se alteraron DB, Caddy, credenciales Google ni Restic.
+
+## 24/10/2026 — O6 aceptada y verificada contra whitepaper original
+
+El titular confirmó «Todo ok» después de probar O6 en el entorno DEV, que ya estaba desplegado sobre código 924f8f959fb7206d98535ff6fff47c823d0904d7. Aceptación funcional positiva del usuario sin atribuir escenarios que no detalló.
+
+Revisión directa del original White_paper_agenda_vencimientos.pdf de 23 páginas (18/10/2026):
+- §2, página 2: Archivo = anotaciones cerradas como Conseguido o Descartar fuera de agenda; borrado a los dos años.
+- §9, página 12: Conseguido y Descartar salen de agenda al Archivo. El documento permite expresamente recuperar la anotación Descartada mientras siga archivada. Cada cierre deja historial con fecha, hora y usuario.
+- §12, página 15: eliminación automática 2 años desde cierre por defecto, plazo modificable por administrador o cuenta Individual, preavisos 3 meses y 1 mes antes, con lista de datos afectados.
+- O6 ofrece acceso independiente al Archivo y consulta de cerrados por organización y usuario autorizado. La recuperación ya existía en ficha O3. Cierres legacy se muestran como tales, sin desenlace inventado.
+- Divergencia que precisa decisión del promotor: O3 permite recuperar también Conseguido, pero el whitepaper menciona recuperación expresamente solo para Descartar.
+- Falta implementar el control del plazo de retención, avisos previos, supresión segura y su coordinación con histórico de auditoría y derechos RGPD. No habilitar borrado todavía.
