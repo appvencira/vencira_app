@@ -11,6 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .control_responses import validate_control_response
+from .control_repeat_schedule import plan_control_repeat
 from .models import Renewal, RenewalControlResponse
 from .views import _membership, _visible_renewals
 
@@ -22,6 +23,8 @@ def _reply(body, code=status.HTTP_200_OK):
 
 
 def _serialize(obj):
+    # Historical answers remain manual; only persisted internal occurrences count.
+    scheduled = obj.answer == "no" and obj.scheduled_operational_reminders.exists()
     return {
         "id": str(obj.pk),
         "answer": obj.answer,
@@ -32,7 +35,7 @@ def _serialize(obj):
         "answered_at": obj.answered_at.isoformat(),
         "actor_id": obj.actor_id,
         "origin": "manual",
-        "notice_scheduled": False,
+        "notice_scheduled": scheduled,
         "notice_delivered": False,
     }
 
@@ -113,4 +116,7 @@ def control_responses(request, workspace_id, renewal_id):
             cutoff_on=plan.cutoff_on, revision=revision + 1,
             idempotency_key=key,
         )
+        if plan.answer == "no":
+            # Same DB transaction as the answer: either both persist or neither.
+            plan_control_repeat(row.pk, actor=request.user)
         return _reply(_serialize(row), 201)
