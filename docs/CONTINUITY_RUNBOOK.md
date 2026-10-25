@@ -1179,3 +1179,10 @@ Documento completo de alcance/evidencia: `docs/PHASE_WHITEPAPER_ALIGNMENT_2026-1
 El usuario confirmó «Done, todo ok» tras gate y publicación de la tarjeta premium `Historial de avisos` de ancho completo y paginación uniforme. Macrofase B **aceptada según comunicación del usuario**; no consta aquí un recibo `RESULTADO_GLOBAL=0` transcrito del último despliegue y no se debe inventar. Script web-only actual: `scripts/deploy_macro_b_premium_ui_web_guarded.sh`, fuente pin `d891c2df6e742698c99d4cf84cbc3573025feefd`. No repetir despliegues B.
 
 Handoff autoritativo al abrir otro chat: `docs/HANDOFF_MACROFASE_C_2026-10-25.md`. Macrofase C propuesta: auditar primero código O9b **ya existente** (Sí/No manual, repetición como aviso interno), contrastar con whitepaper §§7–10/18 y cerrar solo decisiones pendientes antes de nuevos automatismos. Mantener PostgreSQL 0018, O5, OAuth, Caddy y timers hasta nuevo gate/aprobación. Sin emails/push ni entrega real por ahora.
+
+
+## C1 — Primera decisión aprobada (25/10/2026)
+
+El promotor respondió «Ok, mantenemos actualizados durante los trabajos, seguimos» a la propuesta de motivos. Se registra **aprobación conversacional** de los motivos predeterminados editables: **60 días** «Revisar vencimiento y contactar con el cliente»; **45 días** «Enviar notificación de no renovación»; **35 días** «Comprobar comunicación de no renovación y responder a la pregunta de control». Ello no supone envío real. La pregunta aparece en el último aviso elegible estrictamente anterior al límite del mes civil, que puede no ser el de 35 días. La configuración por cuenta/anotación sigue el §7 y no se alteran borradores existentes sin acción expresa. Esta actualización documental no ejecuta cambios funcionales, gates ni migraciones.
+
+**C1 abierto:** avisos pendientes HOY, alta tardía, ausencia de aviso anterior al corte, Vida, autorización/evidencia de «Notificado por mí», canales y reintentos. Las propuestas §18 no equivalen a decisiones. Antes de C2 cotejar código existente y preparar pruebas; no repetir fases A/B.
