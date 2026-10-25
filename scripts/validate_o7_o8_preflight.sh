@@ -92,7 +92,7 @@ step DJANGO_POSTGRES17_SUITE_COMPLETA sudo docker run --rm --network "$NETWORK" 
 step FLUTTER_ANALYZE_TEST_BUILD sudo docker run --rm \
   -v "$PWD/clients/flutter:/work" -w /work \
   ghcr.io/cirruslabs/flutter:stable \
-  sh -ec 'flutter pub get && flutter analyze && flutter test test/reminder_preview_test.dart test/contact_followup_test.dart test/manual_follow_up_test.dart && flutter test && flutter build web --release --pwa-strategy=none'
+  sh -ec 'flutter pub get && flutter analyze && flutter test test/reminder_draft_test.dart test/reminder_preview_test.dart test/contact_followup_test.dart test/manual_follow_up_test.dart && flutter test && flutter build web --release --pwa-strategy=none'
 
 PHASE=LOCALCHECK_FINAL
 for service in api db web_preview; do
