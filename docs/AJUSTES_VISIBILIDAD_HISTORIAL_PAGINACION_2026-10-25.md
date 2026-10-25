@@ -31,3 +31,11 @@ Capturas Android, tema oscuro: no encontraba ningún botón de historial desde A
 5. Android: abrir Inicio -> Archivo -> una anotación cerrada -> botón visible `Historial de avisos`; elegir aviso completo/cancelado; revisar empty state. Comprobar paginación centrada en Inicio, Agenda, Archivo y Bandeja a 320/375px, claro/oscuro.
 
 Si `API_HISTORIAL_PRESENTE_Y_PROTEGIDA` falla, NO repetir despliegue web ni inventar rutas: comprobar si se desplegó previamente el endpoint de historial de la macrofase B. Evitar publicar Flutter que enlace con una API ausente.
+
+## Refinamiento premium del acceso a historial (25/10/2026, posterior al primer despliegue)
+
+Usuario mostró en Android el acceso antiguo de ancho automático dejando gran vacío a la derecha. Nuevo diseño en `renewal_detail_screen.dart`: `Card.outlined` interactiva con fondo/borde/radio del `VenciraTheme`, 46px icono en contenedor `primaryContainer`, título «Historial de avisos», subtítulo breve «Consultar actuaciones registradas», chevron a la derecha y alto mínimo 76px. La tarjeta ocupa **el mismo ancho horizontal que Contacto y Póliza**, respetando los 16px exteriores de la pantalla; margen solo vertical como el resto de cards. ES/CA completos. Visible tanto en anotaciones activas como cerradas, sin modificar su destino ni seguridad.
+
+Test de regresión `clients/flutter/test/history_entry_pagination_test.dart`: a 320/375/768 px, en tema real `VenciraTheme.dark()`, compara geometría horizontal de la tarjeta con Contacto, ancho y altura, y comprueba el subtítulo. El test de navegación a historial de completados/cancelados se mantiene.
+
+Script de despliegue **solo Flutter Web** `scripts/deploy_macro_b_premium_ui_web_guarded.sh` actualizado con `VALIDATED=d891c2df6e742698c99d4cf84cbc3573025feefd`. **Aún no desplegado ni validado con gate para este cambio**. Usuario debe ejecutar `git pull --ff-only origin integration/local-e2e-prep`; primero `bash scripts/validate_macro_b_readonly.sh` y exigir `FLUTTER_WEB_DOCKERFILE_PIN=OK`, `MACRO_B_GATE_RESULTADO=0`; solo entonces `sudo env MACRO_B_PREMIUM_UI_CONFIRM=DEPLOY_PREMIUM_WEB_DEV bash scripts/deploy_macro_b_premium_ui_web_guarded.sh`. Revisar visualmente Android 320/375 px y modos claro/oscuro; solo recrea `web_preview`, API/DB/O5 y esquema 0018 intactos.
