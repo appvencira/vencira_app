@@ -133,6 +133,58 @@ void main() {
     });
   }
 
+  for (final lang in ['es', 'ca']) {
+    for (final dark in [false, true]) {
+      testWidgets('O8c márgenes legibles a 320px: $lang dark=$dark',
+          (tester) async {
+        tester.view.physicalSize = const Size(320, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final api = FakeDraftApi()
+          ..revision = 1
+          ..days = [20, 15];
+        await tester.pumpWidget(Theme(
+          data: ThemeData(
+            brightness: dark ? Brightness.dark : Brightness.light,
+            useMaterial3: true,
+          ),
+          child: shell(api, lang),
+        ));
+        await tester.pumpAndSettle();
+
+        final savedText = lang == 'ca'
+            ? 'Esborrany desat' : 'Borrador guardado';
+        final warningText = lang == 'ca'
+            ? 'Sense avís anterior al límit informatiu.'
+            : 'Sin aviso anterior al límite informativo.';
+        final saved = find.text(savedText);
+        final field = find.byKey(const ValueKey('draft-days'));
+        final warning = find.text(warningText);
+        final save = find.byKey(const ValueKey('save-draft'));
+
+        expect(saved, findsOneWidget);
+        expect(field, findsOneWidget);
+        expect(warning, findsOneWidget);
+        await tester.ensureVisible(save);
+        await tester.pumpAndSettle();
+
+        // El estado no puede pisar la etiqueta flotante del TextField.
+        final statusBottom = tester.getBottomLeft(saved).dy;
+        final inputTop = tester.getTopLeft(field).dy;
+        expect(inputTop - statusBottom, greaterThanOrEqualTo(16));
+
+        // El aviso legal debe terminar antes del botón de guardar.
+        final warningBottom = tester.getBottomLeft(warning).dy;
+        final buttonTop = tester.getTopLeft(save).dy;
+        expect(buttonTop - warningBottom, greaterThanOrEqualTo(12));
+        expect(tester.takeException(), isNull);
+        expect(api.writes, 0);
+      });
+    }
+  }
+
   testWidgets('O8c conflicto exige recargar y nunca sobrescribe', (tester) async {
     tester.view.physicalSize = const Size(420, 1000);
     tester.view.devicePixelRatio = 1;
