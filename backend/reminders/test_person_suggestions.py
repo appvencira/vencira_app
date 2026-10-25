@@ -81,3 +81,24 @@ class PersonSuggestionTests(TestCase):
             self.assertEqual(self.client.get(self._url(), {"q": query}).status_code, 400)
         self.assertEqual(self.client.get(self._url() + "?q=Pers&q=Persona").status_code, 400)
         self.assertEqual(self.client.get(self._url(), {"q": "Pers", "unexpected": "1"}).status_code, 400)
+
+    def test_converted_prospect_suggests_clients_only_to_authorized_source(self):
+        self.mine.entry = Renewal.Entry.CLIENTS
+        self.mine.archive_outcome = "won"
+        self.mine.save(update_fields=["entry", "archive_outcome"])
+        self.client.force_login(self.member)
+        response = self.client.get(self._url(), {"q": "Persona Eje"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()[0]["suggested_entry"], "clients")
+        self.assertNotIn("customer_reference", response.json()[0])
+        self.client.force_login(self.other_user)
+        self.assertEqual(self.client.get(self._url(), {"q": "Persona Eje"}).status_code, 404)
+        self.client.force_login(self.owner)
+        response = self.client.get(self._url(), {"q": "Persona Eje"})
+        self.assertEqual(response.json()[0]["suggested_entry"], "clients")
+
+    def test_unconverted_person_never_auto_reclassified(self):
+        self.client.force_login(self.member)
+        response = self.client.get(self._url(), {"q": "Persona Eje"})
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.json()[0]["suggested_entry"])
