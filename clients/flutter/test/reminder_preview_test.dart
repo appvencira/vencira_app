@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vencira/api/vencira_api.dart';
+import 'package:vencira/l10n/app_localizations.dart';
 import 'package:vencira/ui/reminder_preview_card.dart';
 
 class FakePreviewApi extends VenciraApi {
@@ -64,7 +65,8 @@ final DateTime _day = DateTime(2027, 1, 14);
 
 Widget screen(FakePreviewApi api, String lang) => MaterialApp(
   locale: Locale(lang),
-  supportedLocales: const [Locale('es'), Locale('ca')],
+  supportedLocales: AppLocalizations.supportedLocales,
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
   home: Scaffold(body: ListView(children: [
     VenciraReminderPreviewCard(
       api: api,
@@ -105,6 +107,10 @@ void main() {
   for (final lang in ['es', 'ca']) {
     testWidgets('O8b localized preview is read-only and validates input $lang',
         (tester) async {
+      tester.view.physicalSize = const Size(375, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final api = FakePreviewApi();
       await tester.pumpWidget(screen(api, lang));
       await tester.pumpAndSettle();
@@ -114,6 +120,8 @@ void main() {
       expect(find.textContaining('60'), findsWidgets);
       await tester.enterText(find.byKey(const ValueKey('reminder-preview-days')),
           '20,15');
+      await tester.ensureVisible(find.byKey(
+          const ValueKey('reminder-preview-calculate')));
       await tester.tap(find.byKey(const ValueKey('reminder-preview-calculate')));
       await tester.pumpAndSettle();
       expect(api.reads, 2);
