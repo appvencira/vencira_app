@@ -187,8 +187,6 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
     ));
   }
 
-  String _designLabel(String es, String ca) =>
-      Localizations.localeOf(context).languageCode == 'ca' ? ca : es;
 
   Widget _formSection(IconData icon, String title) {
     final colors = Theme.of(context).colorScheme;
@@ -226,7 +224,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 _formSection(Icons.badge_outlined,
-                  _designLabel('Identificación', 'Identificació')),
+                  _t.editorIdentification),
                 // La referencia es solo metadato legado, nunca un requisito
                 // para crear anotaciones. En nuevas, la API genera ID opaco.
                 if (widget.existing != null) ...[
@@ -280,8 +278,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                   decoration: InputDecoration(labelText: _t.personPolicyLabel, border: OutlineInputBorder()),
                 ),
                 _formSection(Icons.policy_outlined,
-                  _designLabel('Póliza y clasificación',
-                    'Pòlissa i classificació')),
+                  _t.editorPolicySection),
                 if (widget.api != null && widget.workspaceId != null) ...[
                   OutlinedButton.icon(
                     key: const ValueKey('lookup-person'),
@@ -365,13 +362,12 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                   maxLength: 4000,
                   maxLines: 4,
                   decoration: const InputDecoration(
-                    labelText: 'Notas',
+                    labelText: _t.editorNotes,
                     border: OutlineInputBorder(),
                   ),
                 ),
                 _formSection(Icons.event_outlined,
-                  _designLabel('Fechas y seguimiento',
-                    'Dates i seguiment')),
+                  _t.editorDateSection),
                 SizedBox(width: double.infinity, child: OutlinedButton.icon(
                   onPressed: () => _chooseDate(notice: false),
                   icon: const Icon(Icons.event),
