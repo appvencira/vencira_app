@@ -184,6 +184,7 @@ class ScopedRenewalApiTests(APITestCase):
         url = self.list_url(self.workspace_a)
         created = self.client.post(url, {
             "customer_reference": "ALTA-MIEMBRO",
+            "full_name": "Entidad sintética", "entry": "clients",
             "expires_on": "2027-09-01",
         }, format="json")
         self.assertEqual(created.status_code, 201)
@@ -247,7 +248,8 @@ class ScopedRenewalApiTests(APITestCase):
         }, format="json")
         self.assertEqual(forbidden.status_code, 400)
         success = self.client.post(url, {
-            "customer_reference": "NUEVO", "expires_on": "2027-06-10", "status": "pending"
+            "customer_reference": "NUEVO", "full_name": "Entidad sintética",
+            "entry": "clients", "expires_on": "2027-06-10", "status": "pending"
         }, format="json")
         self.assertEqual(success.status_code, 201)
         item = Renewal.objects.get(pk=success.data["id"])
