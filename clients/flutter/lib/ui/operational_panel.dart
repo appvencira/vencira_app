@@ -136,32 +136,55 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
             Text('${AppLocalizations.of(context)!.opReason} · $day ${AppLocalizations.of(context)!.opBefore}',
               style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              isExpanded: true,
-              decoration: InputDecoration(
-                labelText: AppLocalizations.of(context)!.opPresetLabel,
-                border: const OutlineInputBorder()),
-              hint: Text(AppLocalizations.of(context)!.opPresetChoose),
-              items: [
-                AppLocalizations.of(context)!.opPresetReview,
-                AppLocalizations.of(context)!.opPresetContact,
-                AppLocalizations.of(context)!.opPresetRenewal,
-                AppLocalizations.of(context)!.opPresetNonRenewal,
-                AppLocalizations.of(context)!.opPresetDocuments,
-              ].map((value) => DropdownMenuItem<String>(
-                value: value,
-                child: Text(value, overflow: TextOverflow.ellipsis),
-              )).toList(),
-              onChanged: _busy ? null : (value) {
-                if (value != null) _controllers[day]!.text = value;
-              },
-            ),
-            const SizedBox(height: 10),
-            TextField(controller: _controllers[day], maxLength: 160,
-              maxLines: 2, minLines: 1,
+            TextField(
+              controller: _controllers[day],
+              maxLength: 160,
+              maxLines: 1,
+              onTap: () => _controllers[day]!.selection =
+                  TextSelection(baseOffset: 0, extentOffset: _controllers[day]!.text.length),
               decoration: InputDecoration(
                 hintText: AppLocalizations.of(context)!.opCustomReason,
-                border: const OutlineInputBorder())),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                suffixIcon: IconButton(
+                  tooltip: AppLocalizations.of(context)!.opPresetChoose,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                  onPressed: _busy ? null : () async {
+                    final t = AppLocalizations.of(context)!;
+                    final options = [
+                      t.opPresetReview, t.opPresetContact, t.opPresetRenewal,
+                      t.opPresetNonRenewal, t.opPresetDocuments,
+                    ];
+                    final chosen = await showModalBottomSheet<String>(
+                      context: context,
+                      useSafeArea: true,
+                      showDragHandle: true,
+                      isScrollControlled: true,
+                      builder: (sheetContext) => Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                        child: Column(mainAxisSize: MainAxisSize.min, children: [
+                          Text(t.opPresetLabel,
+                            style: Theme.of(sheetContext).textTheme.titleLarge),
+                          const SizedBox(height: 12),
+                          ...options.map((option) => Card(
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            child: ListTile(
+                              leading: const Icon(Icons.bookmark_outline),
+                              title: Text(option),
+                              trailing: const Icon(Icons.chevron_right),
+                              onTap: () => Navigator.pop(sheetContext, option),
+                            ),
+                          )),
+                        ]),
+                      ),
+                    );
+                    if (chosen != null && mounted) {
+                      setState(() => _controllers[day]!.text = chosen);
+                    }
+                  },
+                ),
+              ),
+            ),
           ],
           TextButton(onPressed: _busy ? null : _saveReasons,
             child: Text(AppLocalizations.of(context)!.opSave)),
