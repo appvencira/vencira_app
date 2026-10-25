@@ -77,9 +77,15 @@ def control_responses(request, workspace_id, renewal_id):
             renewal=renewal, idempotency_key=key,
         ).first()
         if old is not None:
+            original_day = timezone.localtime(old.answered_at).date()
+            same_no_repeat = (payload["answer"] == "no"
+                and type(payload["days_later"]) is int
+                and old.repeat_on is not None
+                and (old.repeat_on - original_day).days == payload["days_later"])
             if (old.answer != payload["answer"]
                     or (old.yes_option or None) != payload["yes_option"]
-                    or old.repeat_on is not None and payload["answer"] == "yes"
+                    or (payload["answer"] == "no" and not same_no_repeat)
+                    or (payload["answer"] == "yes" and payload["days_later"] is not None)
                     or old.revision != revision + 1):
                 return _reply({"detail": "Clave reutilizada con otros datos."}, 409)
             return _reply(_serialize(old))
