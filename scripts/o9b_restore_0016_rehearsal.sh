@@ -95,7 +95,7 @@ echo "RESTIC_RESTORE_0015=OK"
 PHASE=CLONE_MIGRATION
 docker run --rm --network "$NET" \
  -e VENCIRA_ENV=development -e DJANGO_DEBUG=0 \
- -e DJANGO_SECRET_KEY=o9b-temporary-only-2026 \
+ -e DJANGO_SECRET_KEY=o9b-ephemeral-clone-only-django-secret-2026-10-25 \
  -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1 \
  -e POSTGRES_HOST=o9bdb -e POSTGRES_PORT=5432 \
  -e POSTGRES_DB=o9b_clone -e POSTGRES_USER=o9b_clone \
