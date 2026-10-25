@@ -235,5 +235,22 @@
   "editorIdentification": "Identificació",
   "editorPolicySection": "Pòlissa i classificació",
   "editorDateSection": "Dates i seguiment",
-  "editorNotes": "Notes"
+  "editorNotes": "Notes",
+  "detailCaption01": "Registrar contacte",
+  "detailCaption02": "Tornar a pendent",
+  "detailCaption03": "Confirma que el contacte ja s’ha fet fora de VENCIRA. Només s’actualitzarà l’estat; no s’enviarà cap missatge.",
+  "detailCaption04": "L’anotació tornarà a pendent. No s’esborraran les notes ni l’historial de canvis.",
+  "detailCaption05": "Confirmar",
+  "detailCaption06": "Contacte registrat",
+  "detailCaption07": "Estat pendent restaurat",
+  "detailCaption08": "Contacte",
+  "detailCaption09": "Pòlissa",
+  "detailCaption10": "Dates",
+  "detailCaption11": "Notes",
+  "detailCaption12": "Observacions",
+  "detailCaption13": "Seguiment",
+  "detailCaption14": "Registra un contacte fet fora de VENCIRA. Aquesta acció no envia missatges ni programa avisos.",
+  "detailCaption15": "Marcar com a contactat",
+  "detailCaption16": "Simular avisos de venciment",
+  "detailCaption17": "Vista prèvia. No desa ni envia avisos."
 }
