@@ -1,3 +1,5 @@
+> **NUEVO CHAT — CIERRE DE MACROFASE B (25/10/2026):** leer primero [`HANDOFF_MACROFASE_C_2026-10-25.md`](HANDOFF_MACROFASE_C_2026-10-25.md). El promotor confirma «Done, todo ok» tras las pruebas y publicación de la tarjeta premium de historial. Macrofase B aceptada por comunicación del usuario; los apuntes antiguos inferiores pueden indicar estados anteriores al cierre. La próxima macrofase C empieza con auditoría del código real O9b (Sí/No manual y repetición interna ya existen) frente al whitepaper §§7–10/18; decisiones §18 no aprobadas siguen abiertas. No repetir despliegues ni tocar O5/Caddy/OAuth ni PostgreSQL sin gates.
+
 # VENCIRA — resumen de continuidad (25/10/2026)
 
 ## Estado de DEV confirmado
