@@ -119,3 +119,9 @@ Se endureció `scripts/validate_o7_o8_preflight.sh` (`515a4440d196ce747e0fe81a77
 ## 25/10/2026 — Preparado O8c para seguir inmediatamente
 
 Se añadió el contrato técnico seguro `docs/OPERATION_O8C_PERSISTED_RULES_PLAN.md`: borrador de configuración **por anotación** separado de políticas globales `ReminderPolicy`, versionado contra concurrencia, permisos por workspace/responsable, no escribe candidatos ni envía mensajes, migración 0015 **solo futura y aditiva** bajo gate O4, decisiones de motivos/alta tardía/Vida y estados pendientes. **Solo documento de diseño, NO se creó migración ni se desplegó O8c.** O8b sí está desplegado por prueba real de orquestación 0; pendiente UAT del simulador en el navegador.
+
+## 25/10/2026 — O8b: aceptación funcional COMPLETA por el promotor
+
+Tras el despliegue seguro `O8B_VALIDADO_Y_DESPLEGADO=OK` y orquestación 0, el usuario confirma **«Comprobado, todo sí»** a la lista de aceptación: al abrir anotación DEMO activa se ve la sección desplegable «Simular avisos de vencimiento»; aparecen fechas calculadas para 60/45/35; cambiar a 20/15 actualiza fechas y presenta advertencias adecuadas; al salir y regresar se restauran defaults porque nada se guarda. **O8b TECNICA Y FUNCIONALMENTE ACEPTADA EN DEV**. No se han autorizado envíos, persistencia de avisos ni uso de datos reales.
+
+Se puede avanzar al diseño O8c de guardado **draft** por anotación, sin habilitar notificaciones, bajo controles O4 y decisiones §18. Ver `docs/OPERATION_O8C_PERSISTED_RULES_PLAN.md`. No volver a ejecutar script de despliegue O8b completado.
