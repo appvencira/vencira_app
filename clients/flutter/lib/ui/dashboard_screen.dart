@@ -150,7 +150,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     final sequence = ++_sequence;
     setState(() {
       _page = page;
-      _renewals = null; // Evita mostrar datos de otro workspace mientras carga.
+      // Resultados conservados mientras refresca el MISMO workspace.
       _loadingRenewals = true;
       _failed = false;
       _unauthorized = false;
@@ -502,7 +502,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                     )),
                   const SizedBox(height: 22),
                   if (_saving) const LinearProgressIndicator(),
-                  if (_loadingWorkspaces || _loadingRenewals)
+                  if (_loadingWorkspaces || (_loadingRenewals && _renewals == null))
                     const Center(
                       child: Padding(
                         padding: EdgeInsets.all(32),
@@ -528,7 +528,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                         ),
                       ),
                     ),
-                  if (!_loadingWorkspaces && !_unauthorized && !_failed)
+                  if (!_loadingWorkspaces && !_unauthorized && (!_failed || _renewals != null))
                     ..._workspaceContent(colors),
                   const SizedBox(height: 20),
                   Text(
@@ -770,7 +770,13 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       else
         _advancedFilterPanel(),
       const SizedBox(height: 18),
-      if (!_loadingRenewals && _renewals != null) ...[
+      // Un espacio fijo de progreso evita reflujo al consultar de nuevo.
+      SizedBox(
+        height: 3,
+        child: _loadingRenewals && _renewals != null
+            ? const LinearProgressIndicator() : null,
+      ),
+      if (_renewals != null) ...[
         Text(
           '${_t.renewals}: $_totalLabel',
           style: Theme.of(context).textTheme.titleLarge,
