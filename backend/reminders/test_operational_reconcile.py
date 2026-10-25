@@ -70,7 +70,7 @@ class OperationalReconcileTests(TestCase):
     def test_missing_control_never_schedules(self):
         with self.assertRaises(ValueError):
             reconcile_expiry_reminders(self.renewal.pk,
-                as_of=date(2027, 1, 1), days_before=(30, 15))
+                as_of=date(2027, 1, 1), days_before=(25, 15))
         self.assertFalse(OperationalReminder.objects.exists())
 
     def test_late_creation_never_backfills(self):
