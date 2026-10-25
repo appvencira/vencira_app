@@ -35,7 +35,7 @@ test "$(git branch --show-current)" = integration/local-e2e-prep
 test -z "$(git diff --name-only)"
 test -z "$(git diff --cached --name-only)"
 test -z "$(git ls-files --others --exclude-standard | grep -vx 'clients/flutter/pubspec.lock' || true)"
-VALIDATED=e0fd537077dde84004af2adac5070bd8e0262003
+VALIDATED=88c03530485a21bd38f13b3a4780ca549323d7b2
 git cat-file -e "$VALIDATED^{commit}"
 git diff --quiet "$VALIDATED" HEAD -- clients/flutter backend compose.yaml compose.preview.yaml deploy
 echo "FUENTES_IDENTICAS_MACRO_B_PREMIUM_VALIDADO=OK"
@@ -67,6 +67,10 @@ PHASE=MACRO_B_API_PRECHECK
 B_AUTH="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "http://127.0.0.1:28731/api/v1/workspaces/11111111-1111-4111-8111-111111111111/operational-inbox/?day=2026-10-25")"
 test "$B_AUTH" = 401 || test "$B_AUTH" = 403
 echo "API_BANDEJA_PRESENTE_Y_PROTEGIDA=OK"
+HIST_URL="http://127.0.0.1:28731/api/v1/workspaces/11111111-1111-4111-8111-111111111111/renewals/11111111-1111-4111-8111-111111111111/operational-reminders/11111111-1111-4111-8111-111111111111/history/"
+HIST_AUTH="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$HIST_URL")"
+test "$HIST_AUTH" = 401 || test "$HIST_AUTH" = 403
+echo "API_HISTORIAL_PRESENTE_Y_PROTEGIDA=OK"
 PHASE=PRECONDITIONS
 
 OLD_TAG="vencira-macro-b-premium-pre-web:$(date -u +%Y%m%dT%H%M%SZ)_$$"
@@ -103,5 +107,8 @@ UUID2=b2222222-2222-4222-8222-222222222222
 AUTH="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "http://127.0.0.1:28732/api/v1/workspaces/$UUID1/operational-inbox/?day=2026-10-25")"
 test "$AUTH" = 401 || test "$AUTH" = 403
 echo "BANDEJA_ANON_HTTP=$AUTH"
+HIST_AUTH="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "http://127.0.0.1:28732/api/v1/workspaces/$UUID1/renewals/$UUID2/operational-reminders/$UUID2/history/")"
+test "$HIST_AUTH" = 401 || test "$HIST_AUTH" = 403
+echo "HISTORIAL_ANON_HTTP=$HIST_AUTH"
 echo "POSTGRES_0018_INTACTO=OK"
 echo "API_DB_IDENTIDAD_POST_DEPLOY=OK"
