@@ -244,3 +244,10 @@ Documento completo de alcance/evidencia: `docs/PHASE_WHITEPAPER_ALIGNMENT_2026-1
 - Campo `RenewalReminderDraft.reasons_by_day` JSON diccionario opcional añadido a modelos en commit `9147845db3862b2faf2c7c68e8fd94046ab23864`.
 - Migración aditiva `0018_draft_reasons.py` dependiente de `0017_operational_reminders` creada en commit `bdf847aad9a6790a511aa0c795719cdc69efab7c`. **No ejecutar en DEV**: sigue en `0016` y 0017/0018 requieren gates O5 y ensayo en clon.
 - Integración pendiente: validar motivos en API PUT/GET de borrador, pasar mapa a reconciliador de avisos y persistir en ocurrencia, tests con valores por defecto y permisos, Flutter ES/CA y circuito de activación. Intentos de modificar esos archivos bloqueados por herramienta; no declarar funcionalidad completada.
+
+## 25/10/2026 — Macro A: motivos configurables backend conectados (NO PROBADOS)
+
+- `reminder_draft.py` commit `b62f66f54c4da9f3ea0ca66ad98d628d4a29119e`: GET devuelve `reasons_by_day`; PUT opcional acepta mapa `{offset_en_dias: motivo}` validado (máximo 12, 1–160 caracteres y offsets presentes). Contrato anterior PUT sin este campo sigue admitido y conserva motivos válidos para días no eliminados. Versionado CAS cuando cambia motivo, sin activar envíos.
+- `operational_reconcile.py` commit `f1331ba450e9cb099d992a1209575d95a0747131`: recibe `reasons_by_day`, crea las ocurrencias con el motivo personalizado, y reemplaza generación si este cambia. `reminder_activate.py` commit `51092a62a65099000c3ab89e83d5285d5481d5e6` transmite motivos del borrador al conciliador.
+- Pruebas añadidas a `test_reminder_activate.py` (`827dbefe72d9e62a1c58720193ab0e2cb747671c`) y `test_reminder_draft.py` (`7b25d3a5a8de8b40300acca128e7b2acd0090298`) para flujo de motivo y validación. **NO EJECUTADAS**.
+- Sigue pendiente Flutter (edición de motivos, activación, acciones); revisar historial de reconciliación ante transcurso del tiempo, repetición de acciones después de medianoche, y realizar gate SQLite/PG17 migraciones 0017/0018. NO modificar DEV (0016) hasta gates.
