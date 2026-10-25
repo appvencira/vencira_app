@@ -1,5 +1,6 @@
 """Explicit activation requires saved draft, current revision and authorization."""
 import json
+from unittest.mock import patch
 from datetime import date
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -47,3 +48,18 @@ class ReminderActivationTests(TestCase):
             content_type="application/json")
         self.assertEqual(response.status_code, 400)
         self.assertFalse(OperationalReminder.objects.exists())
+
+    def test_repeated_activation_is_idempotent(self):
+        RenewalReminderDraft.objects.create(
+            renewal=self.renewal, days_before=[60, 45, 35], revision=1)
+        self.client.force_login(self.owner)
+        with patch("reminders.reminder_activate.timezone.localdate",
+                   return_value=date(2027, 1, 1)):
+            first = self.post(1)
+            second = self.post(1)
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(first.json()["planned_count"], 3)
+        self.assertEqual(second.json()["planned_count"], 3)
+        self.assertEqual(OperationalReminder.objects.count(), 3)
+        self.assertEqual(first.json()["notification_delivery"], "not_implemented")
