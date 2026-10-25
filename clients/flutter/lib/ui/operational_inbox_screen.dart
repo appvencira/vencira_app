@@ -409,7 +409,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
                 icon: Icons.today_outlined)),
               SizedBox(width: width, child: _scopeTile(
                 value: 'upcoming', label: t.inboxUpcoming,
-                icon: Icons.event_upcoming_outlined)),
+                icon: Icons.upcoming)),
             ]);
           }),
           const SizedBox(height: 10),
