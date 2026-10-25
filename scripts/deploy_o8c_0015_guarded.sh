@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # O8c — DEV-only one-time 0015 migration and API/Web deployment.
-# PROHIBIDO EJECUTAR: procedimiento incompleto, bloqueo de seguridad.
-echo 'O8C_DEPLOY_NO_HABILITADO=SCRIPT_INCOMPLETO' >&2
-exit 78
+# Rollout intencional, de uso único. Requiere ensayo restaurado de O5,
+# copia cifrada fresca, imagenes anteriores y migracion 0015 explicita.
 # Requires O5 restore proof. NEVER auto-rollback persistent database.
 set -Eeuo pipefail
 umask 077
