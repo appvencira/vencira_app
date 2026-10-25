@@ -440,3 +440,8 @@ El promotor respondió explícitamente «Sí, adelante» a la propuesta: en agen
 ## C1 — Altas tardías aprobadas, 25/10/2026
 
 Promotor aprueba: no generar avisos retroactivos ficticios; conservar avisos futuros válidos; si pasó el control, advertir al guardar con acceso a pregunta; si venció el límite civil, advertencia roja y revisión manual; permitir guardar registrando necesidad de revisión. **Sin avisos elegibles antes del límite** es otra decisión §18 aún pendiente. Solo actualización documental, sin gate ni deploy.
+
+
+## C1 — Sin aviso elegible anterior al límite (aprobado 25/10/2026)
+
+El promotor aprueba **permitir guardar la anotación** aunque no exista ningún aviso configurado estrictamente anterior al límite civil de un mes, pero con **advertencia roja visible y revisión manual obligatoria**. Si todavía existe margen anterior al límite, la interfaz **ofrecerá crear expresamente un aviso de control**, sin crearlo automáticamente y sin superar jamás el tope civil. Si el plazo ya ha transcurrido, no ofrecer agendar retroactivamente ni afirmar que la oposición esté en plazo; advertir y solicitar revisión humana. Registrar la incidencia sin fingir envío/entrega, conservar derechos y permisos de anotación. Esta es decisión funcional C1, **aún no implementada ni validada**: reutilizar cálculo `preview_reminder_plan` y ocurrencias A/B, probar meses cortos, 29/02, límite hoy, cero avisos elegibles, roles y reintentos. Sin migración ni despliegue con esta actualización.
