@@ -24,3 +24,8 @@ Tras validar el usuario las correcciones de fluidez, se completa el último bloq
 Script de despliegue conserva imágenes previas y verifica O5/PG17, fuente pin `0e6f621d834e882d437acbbf8ca15c89075224c7`, no migra ni reinicia DB. No desplegar si hay fallos.
 
 **Decisión de producto pendiente §18:** qué hacer con aviso no atendido. No se completan/cancelan automáticamente; los atrasados siguen visibles. No confundir acción interna con notificación enviada.
+
+
+## Estado actualizado tras aceptación del usuario — 25/10/2026
+
+El promotor comunicó «Done, todo ok» después de la validación/despliegue del último ajuste premium. Por tanto esta entrega se considera **aceptada por el promotor**. Los encabezados anteriores que decían «pendiente de gate/despliegue» eran válidos en su corte de escritura, pero no representan ya el estado comunicado. No se transcribió en este turno un nuevo recibo técnico de despliegue: no inventarlo. El historial sigue siendo de **actuaciones internas**, no evidencias de notificaciones externas entregadas. Ver `docs/HANDOFF_MACROFASE_C_2026-10-25.md` para próxima fase.
