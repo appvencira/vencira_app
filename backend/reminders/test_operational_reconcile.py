@@ -97,6 +97,22 @@ class OperationalReconcileTests(TestCase):
         self.assertEqual(OperationalReminder.objects.count(), 1)
         self.assertEqual(OperationalReminderEvent.objects.count(), 1)
 
+    def test_repeat_retry_after_due_date_keeps_original_identity(self):
+        response = RenewalControlResponse.objects.create(
+            renewal=self.renewal, answer="no",
+            cutoff_on=date(2027, 2, 15),
+            repeat_on=date(2027, 2, 10), revision=1,
+            idempotency_key=uuid.uuid4(),
+        )
+        with patch("reminders.control_repeat_schedule.timezone.localdate",
+                   return_value=date(2027, 2, 1)):
+            original = plan_control_repeat(response.pk)
+        with patch("reminders.control_repeat_schedule.timezone.localdate",
+                   return_value=date(2027, 2, 11)):
+            retried = plan_control_repeat(response.pk)
+        self.assertEqual(original.pk, retried.pk)
+        self.assertEqual(OperationalReminder.objects.count(), 1)
+
     def test_yes_never_generates_a_repeat(self):
         response = RenewalControlResponse.objects.create(
             renewal=self.renewal, answer="yes",
