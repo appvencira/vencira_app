@@ -5,6 +5,7 @@ import 'package:url_launcher/link.dart';
 
 import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
+import 'vencira_pagination_bar.dart';
 import 'vencira_preferences.dart';
 import 'renewal_editor.dart';
 import 'renewal_detail_screen.dart';
@@ -815,25 +816,14 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         else
           ..._renewals!.items.map((item) => _renewalTile(item, colors)),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            OutlinedButton.icon(
-              onPressed: _page > 1 ? () => _loadRenewals(_page - 1) : null,
-              icon: const Icon(Icons.chevron_left),
-              label: Text(_t.previous),
-            ),
-            Text('${_t.page} $_page'),
-            OutlinedButton.icon(
-              onPressed: _renewals!.hasNext
-                  ? () => _loadRenewals(_page + 1)
-                  : null,
-              icon: const Icon(Icons.chevron_right),
-              label: Text(_t.next),
-            ),
-          ],
+        VenciraPaginationBar(
+          pageLabel: '${_t.page} $_page',
+          previousLabel: _t.previous,
+          nextLabel: _t.next,
+          onPrevious: _page > 1 && !_loadingRenewals
+              ? () => _loadRenewals(_page - 1) : null,
+          onNext: _renewals!.hasNext && !_loadingRenewals
+              ? () => _loadRenewals(_page + 1) : null,
         ),
       ],
     ];
