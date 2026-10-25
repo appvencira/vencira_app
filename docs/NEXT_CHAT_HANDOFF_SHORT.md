@@ -491,3 +491,10 @@ Refinamiento visual posterior en commit `1756a54f2e9378db6e2ea51ec48da97839bc1fb
 El operador aportó recibo integral `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`, `LOCALCHECK_HEALTH_PRE/POST=OK`, `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `I18N_ES_CA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `O7_O8_PREFLIGHT_SIN_DESPLIEGUE=OK`, con `NO_SE_DESPLEGO_NI_MIGRO_DB_PERSISTENTE=1` y `SIN_CAMBIOS_OAUTH_RESTIC_CADDY=1` (log local `/tmp/vencira-o7-o8-preflight.pa7pRnLe.log`). Gate válido para versión anterior al cambio siguiente.
 
 Nuevo commit `cc86f88e6d4adfea320a5c60dadd633bf7635411` añade `VenciraC2Policy` y parser en `clients/flutter/lib/api/vencira_api.dart` para leer el contrato GET `c2_policy`, sin enviar ni persistir; campo opcional para compatibilidad. **Pendiente validación integral después de este commit**. También está pendiente la presentación UX definitiva de los avisos C2 y la confirmación de notificado por mí. No desplegar hasta gate real.
+
+
+## C2 — Tercer gate OK; tarjeta revisión manual posterior (25/10/2026)
+
+El operador confirma para el gate del modelo Flutter tipado: `LOCALCHECK_HEALTH_PRE/POST=OK`, `CONFIG_COMPOSE=OK`, `I18N_ES_CA=OK`, `BUILD_BACKEND_AISLADO=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `PG17_TEMPORAL=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `O7_O8_PREFLIGHT_SIN_DESPLIEGUE=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`; log `/tmp/vencira-o7-o8-preflight.r8jDE17f.log`; sin cambios en persistencia, OAuth, Restic o Caddy. Esto valida el commit anterior a la siguiente modificación.
+
+Nuevo commit UI `967f5fa456b233f5608fdde581909cd4c2ec03de`: tarjeta `VenciraControlAssessmentCard` muestra un aviso destacado cuando `c2Policy.manualReviewRequired`, usando textos ES/CA existentes, Material theme y sin acciones simuladas. No se han creado ni enviado avisos. **Requiere gate nuevo antes de deploy**; queda pendiente UI de oferta explícita y proceso de aceptación/revisión, así como aviso de modalidades y canales. No modificar datos reales.
