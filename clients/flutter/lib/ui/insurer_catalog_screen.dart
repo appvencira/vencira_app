@@ -44,6 +44,9 @@ class _InsurersState extends State<VenciraInsurerCatalogScreen> {
         search: _search.text.trim());
       if (!mounted || generation != _generation) return;
       setState(() { _rows = result; _loading = false; });
+    } on VenciraUnauthorized {
+      if (!mounted || generation != _generation) return;
+      setState(() { _rows = []; _loading = false; _failed = true; });
     } catch (_) {
       if (!mounted || generation != _generation) return;
       setState(() { _loading = false; _failed = true; });
