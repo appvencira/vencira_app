@@ -285,14 +285,14 @@ class ScopedRenewalApiTests(APITestCase):
         client.force_login(self.owner_a)
         url = self.list_url(self.workspace_a)
         denied = client.post(url, {
-            "customer_reference": "CSRF", "expires_on": "2027-01-01"
+            "customer_reference": "CSRF", "entry": "clients", "full_name": "Prueba CSRF", "expires_on": "2027-01-01"
         }, format="json")
         self.assertEqual(denied.status_code, 403)
         page = client.get(reverse("login"))
         self.assertEqual(page.status_code, 200)
         csrf = client.cookies[settings.CSRF_COOKIE_NAME].value
         allowed = client.post(url, {
-            "customer_reference": "CSRF", "expires_on": "2027-01-01"
+            "customer_reference": "CSRF", "entry": "clients", "full_name": "Prueba CSRF", "expires_on": "2027-01-01"
         }, format="json", HTTP_X_CSRFTOKEN=csrf)
         self.assertEqual(allowed.status_code, 201)
 
@@ -306,7 +306,7 @@ class ScopedRenewalApiTests(APITestCase):
         self.assertGreaterEqual(len(token), 32)
         create = client.post(
             self.list_url(self.workspace_a),
-            {"customer_reference": "CSRF-NEW", "expires_on": "2027-06-15"},
+            {"customer_reference": "CSRF-NEW", "entry": "clients", "full_name": "Prueba CSRF", "expires_on": "2027-06-15"},
             format="json", HTTP_X_CSRFTOKEN=token,
         )
         self.assertEqual(create.status_code, 201)
