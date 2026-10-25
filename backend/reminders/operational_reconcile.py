@@ -52,8 +52,14 @@ def reconcile_expiry_reminders(renewal_id, *, as_of: date,
         plan = build_renewal_plan(
             renewal.expires_on, today=as_of, days_before=days_before,
             life_insurance=renewal.modality == "vida")
-        if plan.manual_review_required or plan.no_pre_cutoff_control or plan.late_control:
+        if plan.manual_review_required or plan.no_pre_cutoff_control:
             raise ValueError("La anotación requiere revisión humana antes de programar")
+        if plan.late_control and not any(
+            item.control_question and item.days_before in days_before and
+            item.original_scheduled_for == renewal.expires_on - timedelta(days=item.days_before)
+            for item in history
+        ):
+            raise ValueError("El control pasado requiere revisión humana")
         desired = {
             f"expiry:{occ.days_before}": occ
             for occ in plan.occurrences
@@ -68,7 +74,7 @@ def reconcile_expiry_reminders(renewal_id, *, as_of: date,
 
     # Mantener el historial pendiente cuando el calendario ha avanzado.
     # No crear retrospectivamente nuevas ocurrencias: nunca equivale a enviar.
-    if history and desired:
+    if history and not (renewal.status == Renewal.Status.CLOSED or renewal.archived_at is not None):
         for item in history:
             if (item.state in ACTIVE and item.source_key not in desired and
                 item.original_scheduled_for < as_of and
