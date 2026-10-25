@@ -4,6 +4,7 @@ No implica envío, entrega ni un trabajo de background. Requiere llamada
 explícita desde flujo autenticado y bajo transacción de negocio.
 """
 from django.db import transaction
+from django.utils import timezone
 from .models import OperationalReminder, RenewalControlResponse
 from .operational_reconcile import _event
 
@@ -24,7 +25,6 @@ def plan_control_repeat(response_id, *, actor=None):
     if renewal.modality == "vida":
         raise ValueError("Vida requiere revisión humana")
     from .legal_deadlines import one_month_before
-    from django.utils import timezone
     cutoff = one_month_before(renewal.expires_on)
     key = f"control:{response.pk}"
     existing = OperationalReminder.objects.filter(
