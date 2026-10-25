@@ -334,5 +334,18 @@
   "inboxDue": "Per atendre",
   "inboxEmpty": "No hi ha avisos interns en aquest apartat.",
   "inboxOpenDetail": "Veure anotació",
-  "inboxShortcut": "Avisos"
+  "inboxShortcut": "Avisos",
+  "inboxHistoryTitle": "Historial de l'avís",
+  "inboxHistoryOpen": "Veure l'historial",
+  "inboxHistoryPlanned": "Avís programat",
+  "inboxHistoryCancelled": "Avís cancel·lat",
+  "inboxHistoryCompleted": "Marcat com a completat",
+  "inboxHistoryTomorrow": "Ajornat a demà",
+  "inboxHistoryAnotherDay": "Reprogramat",
+  "inboxHistoryScheduled": "Data programada",
+  "inboxHistoryActor": "Fet per",
+  "inboxHistoryUnknownActor": "Usuari no disponible",
+  "inboxHistoryError": "No s'ha pogut consultar l'historial.",
+  "inboxHistoryEmpty": "Aquest avís encara no té actuacions registrades.",
+  "inboxHistoryMore": "Mostrar més actuacions"
 }
