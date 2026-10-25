@@ -6,6 +6,23 @@ import 'package:vencira/api/vencira_api.dart';
 void main() {
   const workspaceId = '11111111-1111-4111-8111-111111111111';
 
+  test('§6 sugerencia tipo Clientes desde fuente convertida', () {
+    final converted = VenciraPersonSuggestion.fromJson({
+      'source_id': 'b2222222-2222-4222-8222-222222222222',
+      'full_name': 'Entidad ficticia', 'nickname': '',
+      'phone': '', 'email': '',
+      'suggested_entry': 'clients',
+    });
+    expect(converted.suggestedEntry, 'clients');
+    final candidate = VenciraPersonSuggestion.fromJson({
+      'source_id': 'b2222222-2222-4222-8222-222222222222',
+      'full_name': 'Entidad ficticia', 'nickname': '',
+      'phone': '', 'email': '',
+      'suggested_entry': null,
+    });
+    expect(candidate.suggestedEntry, isNull);
+  });
+
   test('carga organizaciones desde URL fija del mismo origen', () async {
     final client = MockClient((request) async {
       expect(request.url.origin, 'http://localhost:18731');
