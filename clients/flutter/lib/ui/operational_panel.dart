@@ -64,9 +64,9 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
     }
   }
 
-  Future<void> _saveReasons() async {
+  Future<bool> _saveReasons() async {
     final draft = _draft;
-    if (_busy || draft == null) return;
+    if (_busy || draft == null) return false;
     setState(() { _busy = true; _error = null; });
     try {
       final reasons = <String, String>{};
@@ -81,6 +81,7 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
         reasonsByDay: reasons);
       if (!mounted) return;
       setState(() => _draft = result);
+      return true;
     } on VenciraConflictException {
       if (mounted) setState(() => _error = AppLocalizations.of(context)!.opConflict);
     } catch (_) {
@@ -88,6 +89,7 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+    return false;
   }
 
   Future<void> _activate() async {
@@ -103,6 +105,17 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
       if (mounted) setState(() => _busy = false);
     }
     await _load();
+  }
+
+  Future<void> _choosePreset(int day, String chosen) async {
+    final controller = _controllers[day];
+    if (controller == null || _busy) return;
+    controller.text = chosen;
+    // The previous version only changed the TextField; the draft and
+    // existing planned occurrences kept their previous reasons.
+    if (await _saveReasons() && mounted) {
+      await _activate();
+    }
   }
 
   Future<void> _act(VenciraOperationalReminder row, String action, {int? days}) async {
@@ -166,20 +179,39 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
                           Text(t.opPresetLabel,
                             style: Theme.of(sheetContext).textTheme.titleLarge),
                           const SizedBox(height: 12),
-                          ...options.map((option) => Card(
-                            margin: const EdgeInsets.symmetric(vertical: 4),
-                            child: ListTile(
-                              leading: const Icon(Icons.bookmark_outline),
-                              title: Text(option),
-                              trailing: const Icon(Icons.chevron_right),
-                              onTap: () => Navigator.pop(sheetContext, option),
-                            ),
-                          )),
+                          ...options.map((option) {
+                            final selected = _controllers[day]?.text == option;
+                            final theme = Theme.of(sheetContext);
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Material(
+                                color: selected
+                                  ? theme.colorScheme.primaryContainer
+                                  : theme.colorScheme.surface,
+                                borderRadius: BorderRadius.circular(18),
+                                child: ListTile(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(18)),
+                                  leading: Icon(Icons.bookmark_outline,
+                                    color: selected ? theme.colorScheme.onPrimaryContainer
+                                      : theme.colorScheme.onSurfaceVariant),
+                                  title: Text(option,
+                                    style: TextStyle(
+                                      fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                                      color: selected ? theme.colorScheme.onPrimaryContainer : null)),
+                                  trailing: Icon(
+                                    selected ? Icons.check_circle : Icons.chevron_right,
+                                    color: selected ? theme.colorScheme.onPrimaryContainer : null),
+                                  onTap: () => Navigator.pop(sheetContext, option),
+                                ),
+                              ),
+                            );
+                          }),
                         ]),
                       ),
                     );
                     if (chosen != null && mounted) {
-                      setState(() => _controllers[day]!.text = chosen);
+                      await _choosePreset(day, chosen);
                     }
                   },
                 ),
