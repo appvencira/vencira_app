@@ -36,6 +36,14 @@ class _InboxApi extends VenciraApi {
   }
 
   @override
+  Future<VenciraOperationalHistory> fetchOperationalHistory(
+      String workspaceId, String renewalId, String reminderId,
+      {int page = 1}) async {
+    return const VenciraOperationalHistory(
+      count: 0, hasNext: false, items: []);
+  }
+
+  @override
   Future<VenciraOperationalReminder> updateOperationalReminder(
       String workspaceId, String renewalId,
       VenciraOperationalReminder reminder, String action,
@@ -138,6 +146,22 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('inbox-scope-overdue')));
     await tester.pumpAndSettle();
     expect(api.lastScope, 'overdue');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('B historial accesible desde menú de aviso sin nueva botonera',
+      (tester) async {
+    final api = _InboxApi();
+    await mount(tester, api);
+    await tester.tap(find.byKey(const ValueKey(
+        'inbox-more-11111111-1111-4111-8111-111111111111')));
+    await tester.pumpAndSettle();
+    expect(find.text('Ver historial'), findsOneWidget);
+    await tester.tap(find.text('Ver historial'));
+    await tester.pumpAndSettle();
+    expect(find.text('Historial del aviso'), findsOneWidget);
+    expect(find.text('Este aviso todavía no tiene actuaciones registradas.'),
+      findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
