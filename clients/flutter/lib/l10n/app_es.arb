@@ -151,5 +151,7 @@
   "detailHistoryCreated": "Anotación creada",
   "detailHistoryUpdated": "Anotación modificada",
   "detailActorUnavailable": "Usuario no disponible",
-  "agendaForecastDisclaimer": "Los avisos previstos no confirman ninguna entrega. Las fechas contractuales no son notificaciones."
+  "agendaForecastDisclaimer": "Los avisos previstos no confirman ninguna entrega. Las fechas contractuales no son notificaciones.",
+  "personFullName": "Nombre y apellidos o razón social",
+  "personFullNameRequired": "El nombre o razón social es obligatorio."
 }
