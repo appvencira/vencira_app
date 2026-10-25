@@ -127,50 +127,193 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
     if (mounted) _load(page: _page);
   }
 
+  /// Igual que Preferencias: fila táctil, sin flechas ni botones repetidos.
+  Widget _sheetRow(BuildContext sheetContext, String label,
+      IconData icon, VoidCallback onTap) {
+    final colors = Theme.of(sheetContext).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+            child: Row(children: [
+              Icon(icon, size: 20, color: colors.onSurfaceVariant),
+              const SizedBox(width: 13),
+              Expanded(child: Text(label,
+                style: Theme.of(sheetContext).textTheme.bodyLarge)),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showActions(VenciraInboxItem item) async {
+    if (_acting || _loading) return;
+    final colors = Theme.of(context).colorScheme;
+    final chosen = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      isScrollControlled: true,
+      backgroundColor: colors.surfaceContainerLow,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26))),
+      builder: (sheetContext) => Center(
+        heightFactor: 1,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 520,
+            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.78),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 22),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(t.opActions,
+                  style: Theme.of(sheetContext).textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 18),
+                _sheetRow(sheetContext, t.inboxOpenDetail,
+                  Icons.open_in_new, () => Navigator.pop(sheetContext, 'detail')),
+                _sheetRow(sheetContext, t.opDone,
+                  Icons.check_circle_outline,
+                  () => Navigator.pop(sheetContext, 'complete')),
+                _sheetRow(sheetContext, t.opTomorrow,
+                  Icons.wb_twilight_outlined,
+                  () => Navigator.pop(sheetContext, 'tomorrow')),
+                _sheetRow(sheetContext, t.opChoose,
+                  Icons.event_outlined,
+                  () => Navigator.pop(sheetContext, 'another_day')),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (!mounted || chosen == null) return;
+    switch (chosen) {
+      case 'detail':
+        await _openDetail(item);
+      case 'complete':
+        await _action(item, 'complete');
+      case 'tomorrow':
+        await _action(item, 'tomorrow');
+      case 'another_day':
+        await _otherDay(item);
+    }
+  }
+
+  Widget _summaryValue(String label, int count, {Color? color}) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return Expanded(child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 3),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text('$' + '{count}', style: theme.textTheme.headlineSmall?.copyWith(
+          fontWeight: FontWeight.w700, color: color ?? colors.onSurface)),
+        const SizedBox(height: 2),
+        Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: colors.onSurfaceVariant)),
+      ]),
+    ));
+  }
+
+  Widget _summary(VenciraOperationalInbox inbox) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20)),
+      child: Row(children: [
+        _summaryValue(t.inboxOverdue, inbox.overdue,
+          color: inbox.overdue > 0 ? colors.error : null),
+        Container(height: 38, width: 1, color: colors.outlineVariant),
+        _summaryValue(t.inboxToday, inbox.today),
+        Container(height: 38, width: 1, color: colors.outlineVariant),
+        _summaryValue(t.inboxUpcoming, inbox.upcoming),
+      ]),
+    );
+  }
+
   Widget _item(VenciraInboxItem item) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final isOverdue = item.overdue;
-    return Card(
+    final today = _inbox?.day;
+    final isToday = today != null &&
+      item.reminder.day.year == today.year &&
+      item.reminder.day.month == today.month &&
+      item.reminder.day.day == today.day;
+    final label = item.overdue ? t.inboxOverdue :
+      (isToday ? t.inboxToday : t.inboxUpcoming);
+    final tint = item.overdue ? colors.error :
+      (isToday ? colors.primary : colors.tertiary);
+    return Card.outlined(
+      key: ValueKey('inbox-item-' + item.reminder.id),
       margin: const EdgeInsets.symmetric(vertical: 6),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Expanded(child: Text(item.reference,
-              maxLines: 2, overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600))),
-            if (isOverdue) Chip(
-              label: Text(t.inboxOverdue),
-              visualDensity: VisualDensity.compact,
-              backgroundColor: colors.errorContainer,
-              labelStyle: TextStyle(color: colors.onErrorContainer)),
-          ]),
-          const SizedBox(height: 6),
-          Text(item.reminder.reason, style: theme.textTheme.bodyLarge),
-          const SizedBox(height: 5),
-          Text(DateFormat('dd/MM/yyyy').format(item.reminder.day),
-            style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant)),
-          const SizedBox(height: 10),
-          Wrap(spacing: 6, runSpacing: 6, children: [
-            OutlinedButton.icon(
-              onPressed: _acting ? null : () => _openDetail(item),
-              icon: const Icon(Icons.open_in_new, size: 17),
-              label: Text(t.inboxOpenDetail)),
-            OutlinedButton.icon(
-              onPressed: _acting ? null : () => _action(item, 'complete'),
-              icon: const Icon(Icons.check_circle_outline, size: 17),
-              label: Text(t.opDone)),
-            OutlinedButton.icon(
-              onPressed: _acting ? null : () => _action(item, 'tomorrow'),
-              icon: const Icon(Icons.wb_twilight_outlined, size: 17),
-              label: Text(t.opTomorrow)),
-            IconButton(
-              onPressed: _acting ? null : () => _otherDay(item),
-              tooltip: t.opChoose,
-              icon: const Icon(Icons.event_outlined)),
-          ]),
-        ]),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: colors.outlineVariant)),
+      child: InkWell(
+        onTap: _acting ? null : () => _openDetail(item),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(17, 15, 8, 16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(item.reference,
+                    maxLines: 2, overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 7),
+                  Text(item.reminder.reason,
+                    style: theme.textTheme.bodyLarge),
+                  const SizedBox(height: 12),
+                  Wrap(spacing: 10, runSpacing: 7,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.event_outlined, size: 16,
+                          color: colors.onSurfaceVariant),
+                        const SizedBox(width: 5),
+                        Text(DateFormat('dd/MM/yyyy').format(item.reminder.day),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant)),
+                      ]),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Color.lerp(colors.surface, tint, 0.13),
+                          borderRadius: BorderRadius.circular(9)),
+                        child: Text(label,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: tint, fontWeight: FontWeight.w700)),
+                      ),
+                    ],
+                  ),
+                ],
+              )),
+              IconButton(
+                key: ValueKey('inbox-more-' + item.reminder.id),
+                onPressed: _acting ? null : () => _showActions(item),
+                tooltip: t.opActions,
+                icon: const Icon(Icons.more_vert_rounded),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -189,23 +332,30 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
           Text(t.inboxDescription, style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 16),
           if (inbox != null) ...[
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              Chip(label: Text('${t.inboxOverdue}: ${inbox.overdue}')),
-              Chip(label: Text('${t.inboxToday}: ${inbox.today}')),
-              Chip(label: Text('${t.inboxUpcoming}: ${inbox.upcoming}')),
-            ]),
-            const SizedBox(height: 12),
+            _summary(inbox),
+            const SizedBox(height: 18),
           ],
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final pair in [
-              ('due', t.inboxDue), ('overdue', t.inboxOverdue),
-              ('today', t.inboxToday), ('upcoming', t.inboxUpcoming),
-            ]) ChoiceChip(
-              label: Text(pair.$2),
-              selected: pair.$1 == _scope,
-              onSelected: _loading || _acting ? null : (_) => _selectScope(pair.$1),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SegmentedButton<String>(
+                showSelectedIcon: false,
+                selected: {_scope},
+                onSelectionChanged: _loading || _acting ? null
+                  : (selected) => _selectScope(selected.first),
+                style: const ButtonStyle(
+                  visualDensity: VisualDensity.compact),
+                segments: [
+                  ButtonSegment(value: 'due', label: Text(t.inboxDue)),
+                  ButtonSegment(value: 'overdue', label: Text(t.inboxOverdue)),
+                  ButtonSegment(value: 'today', label: Text(t.inboxToday)),
+                  ButtonSegment(value: 'upcoming', label: Text(t.inboxUpcoming)),
+                ],
+              ),
             ),
-          ]),
+          ),
+          const SizedBox(height: 10),
           if (_loading) const Padding(
             padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
           if (_unauthorized) Text(t.loginRequired),
