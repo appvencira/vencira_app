@@ -56,6 +56,9 @@ def person_suggestions(request, workspace_id):
         "nickname": item.nickname,
         "phone": item.phone,
         "email": item.email,
+        # Únicamente al elegir explícitamente esta anotación visible:
+        # sugerir Clientes si ya está clasificada como tal.
+        "suggested_entry": "clients" if item.entry == "clients" else None,
     } for item in matches])
     response["Cache-Control"] = "no-store"
     return response
