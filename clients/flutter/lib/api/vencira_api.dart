@@ -45,6 +45,17 @@ abstract class VenciraApi {
       String workspaceId, String renewalId) async =>
       throw const VenciraApiException();
 
+  /// O9b: historial de respuestas manuales (no prueba de entrega).
+  Future<List<VenciraControlResponse>> fetchControlResponses(
+      String workspaceId, String renewalId) async =>
+      throw const VenciraApiException();
+
+  Future<VenciraControlResponse> saveControlResponse(
+      String workspaceId, String renewalId, {
+      required int revision, required String idempotencyKey,
+      required String answer, String? yesOption, int? daysLater,
+  }) async => throw const VenciraApiException();
+
   Future<VenciraRenewal> fetchRenewalDetail(
       String workspaceId, String renewalId);
 
@@ -813,7 +824,103 @@ String _civilDayIso(DateTime day) {
   return '$y-$m-$d';
 }
 
+class VenciraControlResponse {
+  const VenciraControlResponse({required this.id, required this.revision,
+    required this.answer, this.yesOption, this.repeatOn,
+    required this.answeredAt});
+  final String id;
+  final int revision;
+  final String answer;
+  final String? yesOption;
+  final DateTime? repeatOn;
+  final DateTime answeredAt;
+
+  factory VenciraControlResponse.fromJson(Map<String, dynamic> json) {
+    if (json['origin'] != 'manual' || json['notice_scheduled'] != false ||
+        json['notice_delivered'] != false || json['id'] is! String ||
+        json['revision'] is! int || json['revision'] < 1 ||
+        !const ['yes', 'no'].contains(json['answer']) ||
+        json['answered_at'] is! String) {
+      throw const FormatException('Invalid manual control response');
+    }
+    final option = json['yes_option'];
+    final repeat = json['repeat_on'];
+    if (option != null && option is! String || repeat != null && repeat is! String) {
+      throw const FormatException('Invalid control choices');
+    }
+    return VenciraControlResponse(
+      id: json['id'] as String, revision: json['revision'] as int,
+      answer: json['answer'] as String, yesOption: option as String?,
+      repeatOn: repeat == null ? null : DateTime.parse(repeat as String),
+      answeredAt: DateTime.parse(json['answered_at'] as String),
+    );
+  }
+}
+
 class HttpVenciraApi implements VenciraApi {
+  String _controlPath(String ws, String id) {
+    if (!_validUuid(ws) || !_validUuid(id)) {
+      throw const VenciraApiException();
+    }
+    return '/api/v1/workspaces/$ws/renewals/$id/control-responses/';
+  }
+
+  @override
+  Future<List<VenciraControlResponse>> fetchControlResponses(
+      String workspaceId, String renewalId) async {
+    try {
+      final json = await _fetch(_controlPath(workspaceId, renewalId))
+          as Map<String, dynamic>;
+      final items = json['results'] as List<dynamic>;
+      return items.map((v) => VenciraControlResponse.fromJson(
+          v as Map<String, dynamic>)).toList(growable: false);
+    } on VenciraUnauthorized { rethrow; }
+    catch (_) { throw const VenciraApiException(); }
+  }
+
+  @override
+  Future<VenciraControlResponse> saveControlResponse(
+      String workspaceId, String renewalId, {
+      required int revision, required String idempotencyKey,
+      required String answer, String? yesOption, int? daysLater,
+  }) async {
+    final path = _controlPath(workspaceId, renewalId);
+    if (revision < 0 || revision > 2147483646 ||
+        !const ['yes', 'no'].contains(answer) ||
+        (answer == 'yes' && (daysLater != null ||
+            !const ['notified_by_client', 'insurer_not_renewing',
+                    'notified_by_mediator'].contains(yesOption))) ||
+        (answer == 'no' && (yesOption != null ||
+            daysLater == null || daysLater < 1))) {
+      throw const VenciraApiException();
+    }
+    final csrf = await _csrf();
+    late http.Response response;
+    try {
+      response = await _client.post(_baseUri.resolve(path), headers: {
+        'Accept':'application/json', 'Content-Type':'application/json',
+        'X-CSRFToken':csrf,
+      }, body:jsonEncode({
+        'origin':'manual', 'revision':revision,
+        'idempotency_key':idempotencyKey, 'answer':answer,
+        'yes_option':yesOption, 'days_later':daysLater,
+      }));
+    } catch (_) { throw const VenciraApiException(); }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const VenciraUnauthorized();
+    }
+    if (response.statusCode == 409) {
+      throw const VenciraConflictException();
+    }
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw const VenciraApiException();
+    }
+    try {
+      return VenciraControlResponse.fromJson(
+          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>);
+    } catch (_) { throw const VenciraApiException(); }
+  }
+
   @override
   Future<VenciraControlAssessment> fetchControlAssessment(
       String workspaceId, String renewalId) async {
