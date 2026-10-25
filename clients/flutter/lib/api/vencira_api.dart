@@ -836,7 +836,7 @@ class VenciraControlResponse {
   final DateTime answeredAt;
 
   factory VenciraControlResponse.fromJson(Map<String, dynamic> json) {
-    if (json['origin'] != 'manual' || json['notice_scheduled'] != false ||
+    if (json['origin'] != 'manual' || json['notice_scheduled'] is! bool ||
         json['notice_delivered'] != false || json['id'] is! String ||
         json['revision'] is! int || json['revision'] < 1 ||
         !const ['yes', 'no'].contains(json['answer']) ||
