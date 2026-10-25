@@ -278,7 +278,7 @@
   "monthColorLegend": "Leyenda de colores",
   "workspaceCatalogHeading": "Catálogos de la organización",
   "controlResponseTitle": "Control de no renovación · registro manual",
-  "controlResponseManualWarning": "Declaración manual del usuario. No verifica que la pregunta se haya enviado, no programa recordatorios ni acredita comunicación a la aseguradora.",
+  "controlResponseManualWarning": "Declaración manual: al responder No se programa una revisión interna. No implica que se haya enviado una notificación ni que se haya comunicado nada a la aseguradora.",
   "controlResponseQuestion": "¿Se ha notificado a la aseguradora su no renovación?",
   "controlResponseYes": "Sí",
   "controlResponseNo": "No",
