@@ -46,7 +46,7 @@ class _ArchiveState extends State<VenciraArchiveScreen> {
     final request = ++_request;
     setState(() {
       _loading = true;
-      _archive = null;
+      // Mantener el archivo visible durante actualización de la misma cuenta.
       _error = false;
       _unauthorized = false;
     });
@@ -65,6 +65,7 @@ class _ArchiveState extends State<VenciraArchiveScreen> {
       setState(() {
         _loading = false;
         _unauthorized = true;
+        _archive = null;
       });
     } catch (_) {
       if (!mounted || request != _request) return;
@@ -136,7 +137,9 @@ class _ArchiveState extends State<VenciraArchiveScreen> {
                   style: Theme.of(context).textTheme.bodyMedium
                       ?.copyWith(color: scheme.onSurfaceVariant)),
                 const SizedBox(height: 20),
-                if (_loading)
+                SizedBox(height: 3, child: _loading && _archive != null
+                    ? const LinearProgressIndicator() : null),
+                if (_loading && _archive == null)
                   const Center(child: Padding(
                     padding: EdgeInsets.all(32),
                     child: CircularProgressIndicator(),
@@ -152,7 +155,7 @@ class _ArchiveState extends State<VenciraArchiveScreen> {
                       child: Text(_t.retry),
                     ),
                   ]),
-                if (!_loading && _archive != null) ...[
+                if (_archive != null && !_unauthorized) ...[
                   if (_archive!.items.isEmpty)
                     Padding(
                       padding: const EdgeInsets.all(18),
