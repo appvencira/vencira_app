@@ -21,6 +21,6 @@ Tras validar el usuario las correcciones de fluidez, se completa el último bloq
 3. Solo después: `bash -n scripts/deploy_macro_b_history_api_web_guarded.sh` y `sudo env MACRO_B_HISTORY_CONFIRM=DEPLOY_HISTORY_API_WEB_NO_MIGRATIONS bash scripts/deploy_macro_b_history_api_web_guarded.sh`.
 4. Verificar `HISTORIAL_PROXY_ANON_DENIED_HTTP` (401/403), `POSTGRES_0018_INTACTO=OK`, `RESULTADO_GLOBAL=0`. Confirmar en Android acceso a historial de avisos activos y ya completados.
 
-Script de despliegue conserva imágenes previas y verifica O5/PG17, fuente pin `ad2a069a525347607fa70f8b3d5feb8753013a96`, no migra ni reinicia DB. No desplegar si hay fallos.
+Script de despliegue conserva imágenes previas y verifica O5/PG17, fuente pin `0e6f621d834e882d437acbbf8ca15c89075224c7`, no migra ni reinicia DB. No desplegar si hay fallos.
 
 **Decisión de producto pendiente §18:** qué hacer con aviso no atendido. No se completan/cancelan automáticamente; los atrasados siguen visibles. No confundir acción interna con notificación enviada.
