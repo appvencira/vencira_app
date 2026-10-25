@@ -7,7 +7,7 @@ import uuid
 from datetime import date, timedelta
 from django.db import transaction
 from .models import OperationalReminder, OperationalReminderEvent, Renewal
-from .operational_schedule import build_renewal_plan
+from .operational_schedule import build_renewal_plan, PlannedOccurrence
 
 ACTIVE = ("planned", "pending", "snoozed")
 
@@ -74,11 +74,9 @@ def reconcile_expiry_reminders(renewal_id, *, as_of: date,
                 item.original_scheduled_for < as_of and
                 item.days_before in days_before and
                 item.original_scheduled_for == renewal.expires_on - timedelta(days=item.days_before)):
-                desired[item.source_key] = type('PriorOccurrence', (), {
-                    'days_before': item.days_before,
-                    'day': item.original_scheduled_for,
-                    'control_question': item.control_question,
-                })()
+                desired[item.source_key] = PlannedOccurrence(
+                    item.days_before, item.original_scheduled_for,
+                    item.control_question, True)
     result = []
     for key, occurrence in desired.items():
         reason = reasons_by_day.get(str(occurrence.days_before), 'Aviso de vencimiento')
