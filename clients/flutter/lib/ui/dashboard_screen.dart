@@ -713,7 +713,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
               tilePadding: EdgeInsets.zero,
               childrenPadding: const EdgeInsets.only(bottom: 12),
               leading: const Icon(Icons.settings_outlined),
-              title: Text('Catálogos de la organización',
+              title: Text(_t.workspaceCatalogHeading,
                 style: Theme.of(context).textTheme.bodyMedium),
               children: [
                 Wrap(spacing: 8, runSpacing: 8, children: [
