@@ -37,7 +37,8 @@ abstract class VenciraApi {
 
   Future<VenciraReminderDraft> saveReminderDraft(
       String workspaceId, String renewalId,
-      {required int revision, required List<int> daysBefore}) async =>
+      {required int revision, required List<int> daysBefore,
+       Map<String, String>? reasonsByDay}) async =>
       throw const VenciraApiException();
 
   /// O9a: evaluación de la pregunta de control, sin registrar respuesta.
@@ -457,10 +458,11 @@ class VenciraReminderDraft {
   const VenciraReminderDraft({
     required this.daysBefore, required this.revision,
     required this.isPersisted, required this.noPreCutoffNotice,
-    required this.lifeRuleRequiresReview,
+    required this.lifeRuleRequiresReview, this.reasonsByDay = const {},
   });
 
   final List<int> daysBefore;
+  final Map<String, String> reasonsByDay;
   final int revision;
   final bool isPersisted;
   final bool noPreCutoffNotice;
@@ -470,6 +472,7 @@ class VenciraReminderDraft {
     final days = json['days_before'];
     final revision = json['revision'];
     final persisted = json['is_persisted'];
+    final rawReasons = json['reasons_by_day'] ?? <String, dynamic>{};
     if (json['state'] != 'draft' || days is! List ||
         days.isEmpty || days.length > 12 ||
         days.any((value) => value is! int || value < 0 || value > 365) ||
@@ -483,7 +486,12 @@ class VenciraReminderDraft {
         json['life_rule_requires_review'] is! bool) {
       throw const FormatException('Invalid reminder draft');
     }
+    if (rawReasons is! Map<String, dynamic> || rawReasons.entries.any(
+      (entry) => !days.contains(int.tryParse(entry.key)) || entry.value is! String)) {
+      throw const FormatException('Invalid reasons');
+    }
     return VenciraReminderDraft(
+      reasonsByDay: Map<String, String>.unmodifiable(rawReasons.cast<String, String>()),
       daysBefore: List<int>.unmodifiable(days.cast<int>()),
       revision: revision,
       isPersisted: persisted,
@@ -964,7 +972,8 @@ class HttpVenciraApi implements VenciraApi {
   @override
   Future<VenciraReminderDraft> saveReminderDraft(
       String workspaceId, String renewalId,
-      {required int revision, required List<int> daysBefore}) async {
+      {required int revision, required List<int> daysBefore,
+       Map<String, String>? reasonsByDay}) async {
     final path = _draftPath(workspaceId, renewalId);
     if (revision < 0 || daysBefore.isEmpty || daysBefore.length > 12 ||
         daysBefore.any((n) => n < 0 || n > 365) ||
@@ -982,6 +991,7 @@ class HttpVenciraApi implements VenciraApi {
         'state': 'draft',
         'revision': revision,
         'days_before': daysBefore,
+        if (reasonsByDay != null) 'reasons_by_day': reasonsByDay,
       }));
     } catch (_) {
       throw const VenciraApiException();
