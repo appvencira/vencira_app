@@ -52,6 +52,30 @@ class ReminderDraftApiTests(APITestCase):
         return {"state": state, "revision": rev,
                 "days_before": [20, 15] if days is None else days}
 
+
+    def test_optional_reasons_are_saved_and_versioned(self):
+        self.client.force_authenticate(user=self.owner)
+        payload = self._payload([60, 45, 35])
+        payload["reasons_by_day"] = {"45": "Llamar al cliente"}
+        first = self.client.put(self.url(), payload, format="json")
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.data["reasons_by_day"], {"45": "Llamar al cliente"})
+        update = self._payload([60, 45, 35], rev=1)
+        update["reasons_by_day"] = {"45": "Revisar condiciones"}
+        second = self.client.put(self.url(), update, format="json")
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(second.data["revision"], 2)
+        self.assertEqual(second.data["reasons_by_day"]["45"], "Revisar condiciones")
+
+    def test_reasons_unknown_day_are_rejected(self):
+        self.client.force_authenticate(user=self.owner)
+        payload = self._payload([60, 45, 35])
+        payload["reasons_by_day"] = {"120": "Fuera de rango configurado"}
+        response = self.client.put(self.url(), payload, format="json")
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(RenewalReminderDraft.objects.exists())
+
+
     def test_get_returns_unpersisted_defaults_without_changes(self):
         self.client.force_authenticate(user=self.owner)
         response = self.client.get(self.url())
