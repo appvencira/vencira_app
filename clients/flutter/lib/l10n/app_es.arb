@@ -270,5 +270,7 @@
   "previewText15": "Pregunta de control prevista (no enviada)",
   "previewText16": "Fecha pasada",
   "previewText17": "Simulación, no aviso enviado ni tarea guardada.",
-  "agendaShort": "Agenda"
+  "agendaShort": "Agenda",
+  "detailInfoName": "Nombre o razón social",
+  "detailInfoNickname": "Apodo"
 }
