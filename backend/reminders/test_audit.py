@@ -58,7 +58,7 @@ class RenewalAuditTests(TestCase):
         self.assertEqual(event.workspace, self.a)
         self.assertEqual(str(event.renewal_id), str(response.data["id"]))
         self.assertEqual(event.action, "created")
-        self.assertEqual(set(event.changed_fields), {"customer_reference", "expires_on", "status", "assigned_to_id"})
+        self.assertEqual(set(event.changed_fields), {"customer_reference", "full_name", "entry", "expires_on", "status", "assigned_to_id"})
         self.assertNotIn("REFERENCIA-PRIVADA-12345", str(event.metadata))
         self.assertNotIn("customer_reference", event.metadata)
         self.assertEqual(event.metadata["expires_on"]["after"], "2027-02-27")
@@ -113,6 +113,7 @@ class RenewalAuditTests(TestCase):
             with self.assertRaises(RuntimeError):
                 self.client.post(self._create_url(), {
                     "customer_reference": "NO-DEBE-GUARDARSE",
+                    "entry": "clients", "full_name": "Prueba de rollback",
                     "expires_on": "2027-03-01",
                 }, format="json")
         self.assertEqual(Renewal.objects.count(), before_count)
