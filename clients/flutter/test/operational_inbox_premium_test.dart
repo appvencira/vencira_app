@@ -73,8 +73,23 @@ void main() {
       final api = _InboxApi();
       await mount(tester, api);
       expect(find.text('DEMO-AVISO-001'), findsOneWidget);
-      expect(find.byType(SegmentedButton<String>), findsOneWidget);
+      expect(find.byType(SegmentedButton<String>), findsNothing);
       expect(find.byType(ChoiceChip), findsNothing);
+      for (final scope in ['due', 'overdue', 'today', 'upcoming']) {
+        expect(find.byKey(ValueKey('inbox-scope-$scope')), findsOneWidget);
+      }
+      final due = tester.getTopLeft(find.byKey(
+        const ValueKey('inbox-scope-due')));
+      final overdue = tester.getTopLeft(find.byKey(
+        const ValueKey('inbox-scope-overdue')));
+      final today = tester.getTopLeft(find.byKey(
+        const ValueKey('inbox-scope-today')));
+      final upcoming = tester.getTopLeft(find.byKey(
+        const ValueKey('inbox-scope-upcoming')));
+      expect(due.dy, overdue.dy);
+      expect(today.dy, upcoming.dy);
+      expect(today.dy, greaterThan(due.dy));
+      expect(overdue.dx, greaterThan(due.dx));
       expect(find.byKey(const ValueKey(
           'inbox-more-11111111-1111-4111-8111-111111111111')), findsOneWidget);
       expect(find.text('Ver anotación'), findsNothing);
@@ -82,6 +97,20 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('B premium: selección de filtros actualiza el backend',
+      (tester) async {
+    final api = _InboxApi();
+    await mount(tester, api);
+    expect(api.lastScope, 'due');
+    await tester.tap(find.byKey(const ValueKey('inbox-scope-today')));
+    await tester.pumpAndSettle();
+    expect(api.lastScope, 'today');
+    await tester.tap(find.byKey(const ValueKey('inbox-scope-overdue')));
+    await tester.pumpAndSettle();
+    expect(api.lastScope, 'overdue');
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('B premium: acciones en sheet y aplazamiento preservado',
       (tester) async {
