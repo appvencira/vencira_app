@@ -54,7 +54,10 @@ class OperationalScheduleTests(SimpleTestCase):
 
     def test_repeat_must_fit_civil_cutoff(self):
         self.assertEqual(repeat_control_day(today=date(2027, 2, 12),
-            expiry=date(2027, 3, 15), days_later=3), date(2027, 2, 15))
+            expiry=date(2027, 3, 15), days_later=2), date(2027, 2, 14))
+        with self.assertRaises(ValueError):
+            repeat_control_day(today=date(2027, 2, 12),
+                expiry=date(2027, 3, 15), days_later=3)
         with self.assertRaises(ValueError):
             repeat_control_day(today=date(2027, 2, 12),
                 expiry=date(2027, 3, 15), days_later=4)
