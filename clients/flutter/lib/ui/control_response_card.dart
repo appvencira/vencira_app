@@ -144,7 +144,6 @@ class _ControlResponseCardState extends State<VenciraControlResponseCard> {
           ),
           if (_answer == 'no') ...[
             const SizedBox(height: 10),
-            Text(t.controlResponseDays),
             TextField(
               key: const ValueKey('control-repeat-days'),
               controller: _daysController,
