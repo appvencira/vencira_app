@@ -655,14 +655,14 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
               ? OutlinedButton(
                   onPressed: _saving || _loadingRenewals || _selected == null
                       ? null : _openAgenda,
-                  child: const Text('Agenda', maxLines: 1,
+                  child: Text(_t.agendaShort, maxLines: 1,
                     overflow: TextOverflow.ellipsis),
                 )
               : OutlinedButton.icon(
                   onPressed: _saving || _loadingRenewals || _selected == null
                       ? null : _openAgenda,
                   icon: const Icon(Icons.calendar_month_outlined),
-                  label: Text(compact ? 'Agenda' : _t.agendaOpenDay,
+                  label: Text(compact ? _t.agendaShort : _t.agendaOpenDay,
                     maxLines: 1, overflow: TextOverflow.ellipsis),
                 )),
             const SizedBox(width: 10),
