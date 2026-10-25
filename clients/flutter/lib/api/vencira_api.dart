@@ -221,8 +221,9 @@ class VenciraInsurer {
 class VenciraPersonSuggestion {
   const VenciraPersonSuggestion({
     required this.sourceId, required this.fullName, required this.nickname,
-    required this.phone, required this.email,
+    required this.phone, required this.email, this.suggestedEntry,
   });
+  final String? suggestedEntry;
   final String sourceId;
   final String fullName;
   final String nickname;
@@ -236,6 +237,7 @@ class VenciraPersonSuggestion {
         nickname: json['nickname'] as String,
         phone: json['phone'] as String,
         email: json['email'] as String,
+        suggestedEntry: json['suggested_entry'] == 'clients' ? 'clients' : null,
       );
 }
 
