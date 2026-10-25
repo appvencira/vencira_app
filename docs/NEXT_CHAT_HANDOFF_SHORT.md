@@ -259,3 +259,10 @@ Documento completo de alcance/evidencia: `docs/PHASE_WHITEPAPER_ALIGNMENT_2026-1
 - `clients/flutter/lib/ui/renewal_detail_screen.dart` commit `a94671a95e087e1f8facd3f69662f617e26def84`: integra panel en detalle de anotación junto a controles anteriores.
 - `backend/reminders/control_repeat_schedule.py` commit `ceb97cfcabbdeac2b529142e404b8dbbfb636628`: un reintento del mismo No posterior a fecha de aviso recupera el original en lugar de rechazar la petición; comprueba identidad. Test `test_operational_reconcile.py` commit `61d72344a83750f2530a228366cd231d01f306bd`.
 - **Importante**: código NO probado ni desplegado. Resta comprobar `dart analyze/test/build`, migraciones 0017/0018, Django SQLite/PG17, seguridad de accionamientos, migración sin divergencia, textos CA/ES, alertas retrasadas, reprogramación tras pasar de día y exactitud de UI. No afirmar macrobloque listo para DEV. DEV sigue 0016.
+
+## 25/10/2026 — Macro A: localización y revisión casos límite (sin gate)
+
+- ES/CA `controlResponseDaysHint` ya describe revisión interna (commits `80b6c614`, `1a228b42`).
+- Claves `op*` ES/CA incorporadas al ARB y usadas por `operational_panel.dart` en commits `e3e93ea3`, `1ebe0087`, `6262c883`. **Flutter intl generator no ejecutado; análisis compilación pendiente.**
+- `operational_reconcile.py` commit `20067256e41c04504dcf5f9c441041a94fdff3d3` conserva ocurrencias existentes vencidas que ya estaban planeadas al reactivar, evitando su eliminación silenciosa; **pendiente revisión y test de fechas transcurridas**: `build_renewal_plan` puede lanzar `late_control` antes de recuperación, revisar este punto antes de gate.
+- No hay pruebas locales, migraciones 0017/0018 no aplicadas, DEV sigue 0016. Para cerrar macro A todavía: test end-to-end SQLite/PG17, Flutter analyze/test/build y corrección de problemas detectados; no declarar listo/desplegar.
