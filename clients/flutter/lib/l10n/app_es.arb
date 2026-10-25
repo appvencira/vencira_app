@@ -309,5 +309,21 @@
   "opSaveError": "No se han podido guardar los motivos.",
   "opConflict": "Los datos han cambiado. Actualiza antes de guardar.",
   "opActivateError": "No se han podido programar los avisos internos. Comprueba las fechas.",
-  "opActionError": "No se ha podido actualizar. Revisa los datos."
+  "opActionError": "No se ha podido actualizar. Revisa los datos.",
+  "opPresetHint": "Selecciona un motivo habitual o escribe uno personalizado.",
+  "opPresetLabel": "Motivos habituales",
+  "opPresetChoose": "Seleccionar motivo",
+  "opCustomReason": "Motivo personalizado",
+  "opPresetReview": "Revisar próximo vencimiento",
+  "opPresetContact": "Contactar con el cliente",
+  "opPresetRenewal": "Confirmar renovación de la póliza",
+  "opPresetNonRenewal": "Comprobar comunicación de no renovación",
+  "opPresetDocuments": "Solicitar documentación pendiente",
+  "opActions": "Acciones del aviso",
+  "opStatePlanned": "Programado",
+  "opStatePending": "Pendiente",
+  "opStateSnoozed": "Aplazado",
+  "opStateCompleted": "Completado",
+  "opStateCancelled": "Cancelado",
+  "opStateUnknown": "Estado desconocido"
 }
