@@ -42,6 +42,7 @@ class _ReminderPreviewCardState extends State<VenciraReminderPreviewCard> {
         oldWidget.renewalId != widget.renewalId ||
         oldWidget.api != widget.api) {
       _days.text = '60,45,35';
+      _result = null; // No conservar simulaciones de otra anotación.
       _load(null);
     }
   }
@@ -79,7 +80,7 @@ class _ReminderPreviewCardState extends State<VenciraReminderPreviewCard> {
       _loading = true;
       _badInput = false;
       _error = false;
-      _result = null;
+      // Conservar la simulación visible durante el recálculo.
     });
     try {
       final result = await widget.api.fetchReminderPreview(
@@ -141,7 +142,9 @@ class _ReminderPreviewCardState extends State<VenciraReminderPreviewCard> {
             icon: const Icon(Icons.calculate_outlined),
             label: Text(_strings.previewText06),
           ),
-          if (_loading)
+          SizedBox(height: 3, child: _loading && result != null
+            ? const LinearProgressIndicator() : null),
+          if (_loading && result == null)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Center(child: CircularProgressIndicator()),
@@ -154,7 +157,7 @@ class _ReminderPreviewCardState extends State<VenciraReminderPreviewCard> {
               child: Text(_strings.previewText08),
             ),
           ],
-          if (!_loading && result != null) ...[
+          if (result != null) ...[
             const SizedBox(height: 14),
             Text(_strings.previewText09 + _date(result.cutoffOn),
               style: Theme.of(context).textTheme.bodyMedium),
