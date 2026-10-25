@@ -130,3 +130,8 @@ Implementado en GitHub `backend/reminders/c2_control_policy.py` con pruebas `bac
 ## C2 — API solo lectura integrada, pendiente gate Ubuntu (25/10/2026)
 
 Commit `059fac89a1235f5538c9d09ae55302b9a11c81fe`: `control_assessment_api.py` integra la política pura C2 en la ruta GET autenticada ya existente, devolviendo `c2_policy` (guardar, revisión manual, severidad/código, corte informativo no Vida, posible ofrecimiento explícito y último día válido, offsets futuros, `delivery_status=not_implemented`). Se preserva el contrato anterior y se aplica visibilidad del workspace. Commit `1e2541ba4e603b488e9345afb250b18c3756d732`: regresiones del GET normal y borrador sin aviso previo en `test_control_assessment.py`. **No supone programación ni notificación**; integración Flutter, persistencia de revisión y política HOY pendientes. **Sin pruebas ejecutadas todavía**: en Ubuntu correr `bash scripts/validate_o7_o8_preflight.sh` tras sincronizar rama, sin desplegar. No tocar PostgreSQL persistente, backups ni Caddy. Si falla, corregir antes de continuar.
+
+
+## C2 — Validación comunicada por usuario (25/10/2026)
+
+Tras ejecutar el bloque de preflight, el operador compartió solamente `RESULTADO_EJECUCION=0` y `CONSOLA_ABIERTA`, **sin marcadores individuales** de SQLite, PostgreSQL17, Flutter ni `RESULTADO_GLOBAL`. El código de `scripts/validate_o7_o8_preflight.sh` sí ejecuta estas suites y devuelve error ante fallos, pero sin recibo completo no se inventan marcadores. Tratar como ejecución comunicada con salida 0, pendiente evidencia de gate desglosada antes de autorizar deploy. No se reportó migración/despliegue. Siguiente paso: comprobar marcadores seguros desde el log existente del preflight (no volcar secretos) y conectar UI después del gate confirmado.
