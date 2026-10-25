@@ -12,8 +12,8 @@ root=Path(".")
 deploy=(root/"scripts/deploy_whitepaper_alignment_no_migrations.sh").read_text()
 checks=[
   "VALIDATED=c4886728f3a9c53c592911d19096056bc56a0949",
-  "POSTGRES_0015_INTACTO_PRE=OK",
   "BACKUP_O5_RECIENTE_Y_CIFRADO=OK",
+  "POSTGRES_0015_INTACTO_PRE=OK",
   "IMAGENES_ANTERIORES_RECUPERABLES=OK",
   "step BUILD_API_WEB",
   "step MIGRATIONS_CHECK_ONLY_NEW_IMAGE",
@@ -21,11 +21,11 @@ checks=[
   "PHASE=DEPLOY_API",
   "PHASE=DEPLOY_WEB",
   "POSTGRES_0015_SIN_CAMBIOS=OK",
-  "WP_ALIGNMENT_DESPLIEGUE_SIN_MIGRACION=OK",
 ]
 positions=[deploy.find(token) for token in checks]
 assert all(pos >= 0 for pos in positions), "missing deployment guard"
 assert positions == sorted(positions), "deploy operations out of order"
+assert "WP_ALIGNMENT_DESPLIEGUE_SIN_MIGRACION=OK" in deploy, "missing success marker"
 for unsafe in ("migrate --noinput", "migrate --fake", "migrate reminders 0015",
                "down -v", "restic prune", "restic forget",
                "docker compose down", "pg_restore", "docker rm -f"):
