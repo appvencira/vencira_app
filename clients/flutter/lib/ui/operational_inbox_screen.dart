@@ -247,6 +247,61 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
     );
   }
 
+  Widget _scopeTile({
+    required String value,
+    required String label,
+    required IconData icon,
+  }) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final selected = _scope == value;
+    final foreground = selected
+        ? colors.onPrimaryContainer : colors.onSurface;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: Material(
+        color: selected
+            ? colors.primaryContainer : colors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          key: ValueKey('inbox-scope-$value'),
+          onTap: _loading || _acting ? null : () => _selectScope(value),
+          borderRadius: BorderRadius.circular(16),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 77),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 13, vertical: 11),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(children: [
+                    Icon(icon, size: 19, color: foreground),
+                    const Spacer(),
+                    if (selected) Icon(Icons.check_circle_rounded,
+                      size: 19, color: colors.primary),
+                  ]),
+                  const SizedBox(height: 6),
+                  Text(label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.left,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: selected
+                          ? FontWeight.w700 : FontWeight.w500,
+                      color: foreground)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _item(VenciraInboxItem item) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
@@ -339,26 +394,24 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
             _summary(inbox),
             const SizedBox(height: 18),
           ],
-          Align(
-            alignment: Alignment.centerLeft,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SegmentedButton<String>(
-                showSelectedIcon: false,
-                selected: {_scope},
-                onSelectionChanged: _loading || _acting ? null
-                  : (selected) => _selectScope(selected.first),
-                style: const ButtonStyle(
-                  visualDensity: VisualDensity.compact),
-                segments: [
-                  ButtonSegment(value: 'due', label: Text(t.inboxDue)),
-                  ButtonSegment(value: 'overdue', label: Text(t.inboxOverdue)),
-                  ButtonSegment(value: 'today', label: Text(t.inboxToday)),
-                  ButtonSegment(value: 'upcoming', label: Text(t.inboxUpcoming)),
-                ],
-              ),
-            ),
-          ),
+          LayoutBuilder(builder: (context, constraints) {
+            const gap = 10.0;
+            final width = (constraints.maxWidth - gap) / 2;
+            return Wrap(spacing: gap, runSpacing: gap, children: [
+              SizedBox(width: width, child: _scopeTile(
+                value: 'due', label: t.inboxDue,
+                icon: Icons.inbox_outlined)),
+              SizedBox(width: width, child: _scopeTile(
+                value: 'overdue', label: t.inboxOverdue,
+                icon: Icons.schedule_outlined)),
+              SizedBox(width: width, child: _scopeTile(
+                value: 'today', label: t.inboxToday,
+                icon: Icons.today_outlined)),
+              SizedBox(width: width, child: _scopeTile(
+                value: 'upcoming', label: t.inboxUpcoming,
+                icon: Icons.event_upcoming_outlined)),
+            ]);
+          }),
           const SizedBox(height: 10),
           if (_loading) const Padding(
             padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
