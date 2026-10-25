@@ -136,3 +136,27 @@ test "$DB_ID" = "$(docker inspect vencira_localcheck-db-1 --format '{{.Id}}')"
 test "$OLD_API_ID" = "$(docker inspect vencira_localcheck-api-1 --format '{{.Image}}')"
 test "$OLD_WEB_ID" = "$(docker inspect vencira_localcheck-web_preview-1 --format '{{.Image}}')"
 echo "BUILD_Y_PLAN_0015_SIN_REINICIOS=OK"
+
+# Fresh encrypted O5 backup before live migration.
+step BACKUP_O5_FRESCO_CIFRADO bash scripts/o5_backup_to_drive.sh
+grep -Fxq 'GOOGLE_DRIVE_BACKUP_CIFRADO=OK' "$LOG"
+grep -Fxq 'RESTIC_INTEGRIDAD_METADATA=OK' "$LOG"
+echo "BACKUP_O5_PRE0015_FRESCO=OK"
+printf 'FRESH_O5_BACKUP=OK\n' >> "$RECEIPT"
+
+PHASE=MIGRACION_0015_PERSISTENTE
+MIGRATION_STARTED=1
+step APLICAR_0015_EXPLICITAMENTE "${COMPOSE[@]}" run --rm --no-deps api python manage.py migrate reminders 0015_renewal_reminder_drafts --noinput
+PHASE=VERIFICAR_0015
+test "$(sql_read "$LAST_SQL")" = 0015_renewal_reminder_drafts
+test "$(sql_read 'SELECT COUNT(*) FROM django_migrations;')" = "$((MIG_COUNT+1))"
+test "$(sql_read "SELECT to_regclass('public.reminders_renewalreminderdraft') IS NOT NULL;")" = t
+test "$(sql_read 'SELECT COUNT(*) FROM reminders_renewalreminderdraft;')" = 0
+constraint_count="$(sql_read "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.reminders_renewalreminderdraft'::regclass AND conname IN ('renewal_reminder_draft_only','renewal_reminder_revision_positive');")"
+test "$constraint_count" = 2
+echo "MIGRACION_0015_VERIFICADA=OK"
+echo "TABLA_BORRADORES_VACIA_Y_RESTRINGIDA=OK"
+step CHECK_MIGRACIONES_POST0015 "${COMPOSE[@]}" run --rm --no-deps api python manage.py migrate --check --noinput
+test "$DB_ID" = "$(docker inspect vencira_localcheck-db-1 --format '{{.Id}}')"
+MIGRATION_CONFIRMED=1
+printf 'LIVE_SCHEMA_0015_VERIFIED=OK\n' >> "$RECEIPT"
