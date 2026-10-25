@@ -272,5 +272,9 @@
   "previewText17": "Simulación, no aviso enviado ni tarea guardada.",
   "agendaShort": "Agenda",
   "detailInfoName": "Nombre o razón social",
-  "detailInfoNickname": "Apodo"
+  "detailInfoNickname": "Apodo",
+  "manualFollowUpShort": "Seguimiento manual",
+  "agendaFiltersShort": "Filtros",
+  "monthColorLegend": "Leyenda de colores",
+  "workspaceCatalogHeading": "Catálogos de la organización"
 }
