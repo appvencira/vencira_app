@@ -294,5 +294,20 @@
   "controlResponseConflict": "Una altra sessió ha registrat una resposta. Actualitza l'historial abans de continuar.",
   "controlResponseHistory": "Historial de respostes manuals",
   "controlResponseEmpty": "No hi ha respostes manuals registrades.",
-  "controlResponseRepeatOn": "Revisió sol·licitada per al"
+  "controlResponseRepeatOn": "Revisió sol·licitada per al",
+  "opTitle": "Avisos interns",
+  "opDescription": "Es guarden en l'agenda. Encara no s'envien notificacions.",
+  "opReason": "Motiu",
+  "opBefore": "dies abans",
+  "opSave": "Guardar motius",
+  "opActivate": "Programar avisos interns",
+  "opLoad": "Carregar avisos",
+  "opDone": "Completada",
+  "opTomorrow": "Demà",
+  "opChoose": "Triar data",
+  "opFetchError": "No s'han pogut consultar els avisos.",
+  "opSaveError": "No s'han pogut guardar els motius.",
+  "opConflict": "Les dades han canviat. Actualitza abans de guardar.",
+  "opActivateError": "No s'han pogut programar els avisos interns. Revisa les dates.",
+  "opActionError": "No s'ha pogut actualitzar. Revisa les dades."
 }
