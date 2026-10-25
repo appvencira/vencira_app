@@ -151,5 +151,7 @@
   "detailHistoryCreated": "Anotació creada",
   "detailHistoryUpdated": "Anotació modificada",
   "detailActorUnavailable": "Usuari no disponible",
-  "agendaForecastDisclaimer": "Els avisos previstos no confirmen cap lliurament. Les dates contractuals no són notificacions."
+  "agendaForecastDisclaimer": "Els avisos previstos no confirmen cap lliurament. Les dates contractuals no són notificacions.",
+  "personFullName": "Nom i cognoms o raó social",
+  "personFullNameRequired": "El nom o la raó social és obligatori."
 }
