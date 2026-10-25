@@ -20,6 +20,7 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
   bool _busy = false;
   String? _error;
   final Map<int, TextEditingController> _controllers = {};
+  final Map<String, String> _lastActions = {};
   String _localizedState(String state, AppLocalizations t) => switch (state) {
     'planned' => t.opStatePlanned,
     'pending' => t.opStatePending,
@@ -118,12 +119,96 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
     }
   }
 
+  Widget _sheetOption(BuildContext sheetContext, {
+    required String title, required IconData icon, required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final colors = Theme.of(sheetContext).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Material(
+        color: selected ? colors.primaryContainer : Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+            child: Row(children: [
+              Icon(icon, color: selected ? colors.onPrimaryContainer : colors.onSurface),
+              const SizedBox(width: 18),
+              Expanded(child: Text(title, style: TextStyle(
+                fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
+                color: selected ? colors.onPrimaryContainer : colors.onSurface,
+              ))),
+              if (selected) Icon(Icons.check_circle,
+                color: colors.onPrimaryContainer),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showActions(VenciraOperationalReminder reminder) async {
+    if (_busy) return;
+    final t = AppLocalizations.of(context)!;
+    final chosen = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(t.opActions, textAlign: TextAlign.left,
+              style: Theme.of(sheetContext).textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 18),
+            _sheetOption(sheetContext, title: t.opDone,
+              icon: Icons.check_circle_outline,
+              selected: _lastActions[reminder.id] == 'complete',
+              onTap: () => Navigator.pop(sheetContext, 'complete')),
+            _sheetOption(sheetContext, title: t.opTomorrow,
+              icon: Icons.wb_twilight_outlined,
+              selected: _lastActions[reminder.id] == 'tomorrow',
+              onTap: () => Navigator.pop(sheetContext, 'tomorrow')),
+            _sheetOption(sheetContext, title: t.opChoose,
+              icon: Icons.event_outlined,
+              selected: _lastActions[reminder.id] == 'another_day',
+              onTap: () => Navigator.pop(sheetContext, 'another_day')),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || chosen == null) return;
+    if (chosen == 'another_day') {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final selected = await showDatePicker(
+        context: context,
+        firstDate: today.add(const Duration(days: 2)),
+        lastDate: today.add(const Duration(days: 365)),
+        initialDate: today.add(const Duration(days: 7)),
+      );
+      if (selected == null || !mounted) return;
+      final days = DateTime.utc(selected.year, selected.month, selected.day)
+        .difference(DateTime.utc(today.year, today.month, today.day)).inDays;
+      await _act(reminder, chosen, days: days);
+    } else {
+      await _act(reminder, chosen);
+    }
+  }
+
   Future<void> _act(VenciraOperationalReminder row, String action, {int? days}) async {
     if (_busy) return;
     setState(() { _busy = true; _error = null; });
     try {
       await widget.api.updateOperationalReminder(widget.workspaceId,
         widget.renewalId, row, action, _key(), daysLater: days);
+      if (mounted) setState(() => _lastActions[row.id] = action);
     } catch (_) {
       if (mounted) setState(() => _error = AppLocalizations.of(context)!.opActionError);
     } finally {
@@ -174,40 +259,25 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
                       showDragHandle: true,
                       isScrollControlled: true,
                       builder: (sheetContext) => Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                        child: Column(mainAxisSize: MainAxisSize.min, children: [
-                          Text(t.opPresetLabel,
-                            style: Theme.of(sheetContext).textTheme.titleLarge),
-                          const SizedBox(height: 12),
-                          ...options.map((option) {
-                            final selected = _controllers[day]?.text == option;
-                            final theme = Theme.of(sheetContext);
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: Material(
-                                color: selected
-                                  ? theme.colorScheme.primaryContainer
-                                  : theme.colorScheme.surface,
-                                borderRadius: BorderRadius.circular(18),
-                                child: ListTile(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(18)),
-                                  leading: Icon(Icons.bookmark_outline,
-                                    color: selected ? theme.colorScheme.onPrimaryContainer
-                                      : theme.colorScheme.onSurfaceVariant),
-                                  title: Text(option,
-                                    style: TextStyle(
-                                      fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                                      color: selected ? theme.colorScheme.onPrimaryContainer : null)),
-                                  trailing: Icon(
-                                    selected ? Icons.check_circle : Icons.chevron_right,
-                                    color: selected ? theme.colorScheme.onPrimaryContainer : null),
-                                  onTap: () => Navigator.pop(sheetContext, option),
-                                ),
-                              ),
-                            );
-                          }),
-                        ]),
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(t.opPresetLabel,
+                              textAlign: TextAlign.left,
+                              style: Theme.of(sheetContext).textTheme.headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 18),
+                            ...options.map((option) => _sheetOption(
+                              sheetContext,
+                              title: option,
+                              icon: Icons.bookmark_outline,
+                              selected: _controllers[day]?.text == option,
+                              onTap: () => Navigator.pop(sheetContext, option),
+                            )),
+                          ],
+                        ),
                       ),
                     );
                     if (chosen != null && mounted) {
@@ -230,32 +300,10 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
             title: Text(reminder.reason),
             subtitle: Text('${reminder.day.day}/${reminder.day.month}/${reminder.day.year} · ${_localizedState(reminder.state, AppLocalizations.of(context)!)}'),
             trailing: reminder.state == 'completed' || reminder.state == 'cancelled'
-              ? null : PopupMenuButton<String>(
+              ? null : IconButton(
                 tooltip: AppLocalizations.of(context)!.opActions,
-                onSelected: (value) {
-                  if (value == 'another_day') {
-                    final now = DateTime.now();
-                    final today = DateTime(now.year, now.month, now.day);
-                    showDatePicker(
-                      context: context,
-                      firstDate: today.add(const Duration(days: 2)),
-                      lastDate: today.add(const Duration(days: 365)),
-                      initialDate: today.add(const Duration(days: 7)),
-                    ).then((selected) {
-                      if (selected == null || !mounted) return;
-                      final days = DateTime.utc(selected.year, selected.month, selected.day)
-                        .difference(DateTime.utc(today.year, today.month, today.day)).inDays;
-                      _act(reminder, value, days: days);
-                    });
-                  } else {
-                    _act(reminder, value);
-                  }
-                },
-                itemBuilder: (_) => [
-                  PopupMenuItem(value: 'complete', child: Row(children: [const Icon(Icons.check_circle_outline), const SizedBox(width: 12), Text(AppLocalizations.of(context)!.opDone)])),
-                  PopupMenuItem(value: 'tomorrow', child: Row(children: [const Icon(Icons.wb_twilight_outlined), const SizedBox(width: 12), Text(AppLocalizations.of(context)!.opTomorrow)])),
-                  PopupMenuItem(value: 'another_day', child: Row(children: [const Icon(Icons.event_outlined), const SizedBox(width: 12), Text(AppLocalizations.of(context)!.opChoose)])),
-                ],
+                icon: const Icon(Icons.more_vert),
+                onPressed: _busy ? null : () => _showActions(reminder),
               ),
           )),
       ]),
