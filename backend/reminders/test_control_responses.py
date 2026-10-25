@@ -21,16 +21,16 @@ class ControlResponseTests(SimpleTestCase):
 
     def test_no_respects_civil_cutoff(self):
         result = validate_control_response(
-            date(2028, 3, 31), as_of=date(2028, 2, 28),
+            date(2028, 3, 31), as_of=date(2028, 2, 27),
             answer="no", days_later=1,
         )
-        self.assertEqual(result.repeat_on, date(2028, 2, 29))
+        self.assertEqual(result.repeat_on, date(2028, 2, 28))
         self.assertTrue(result.question_again)
         self.assertFalse(result.notice_scheduled)
         with self.assertRaises(ValueError):
             validate_control_response(
                 date(2028, 3, 31), as_of=date(2028, 2, 28),
-                answer="no", days_later=2,
+                answer="no", days_later=1,
             )
 
     def test_no_new_repeat_at_cutoff(self):
