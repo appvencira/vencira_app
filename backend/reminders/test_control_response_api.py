@@ -65,11 +65,17 @@ class ManualControlApiTests(TestCase):
 
     @patch("reminders.control_response_api.timezone.localdate",
            return_value=date(2027, 2, 25))
-    def test_no_on_cutoff_is_plan_only_and_conflicts(self, _):
+    def test_no_on_cutoff_rejected_then_prior_day_accepted(self, _):
         data = self.payload(answer="no", yes_option=None, days_later=3)
         response = self.client.post(self.url(), data, format="json")
-        self.assertEqual(response.status_code, 201, response.data)
-        self.assertEqual(response.data["repeat_on"], "2027-02-28")
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertFalse(RenewalControlResponse.objects.exists())
+        valid = self.payload(answer="no", yes_option=None, days_later=2)
+        accepted = self.client.post(self.url(), valid, format="json")
+        self.assertEqual(accepted.status_code, 201, accepted.data)
+        self.assertEqual(accepted.data["repeat_on"], "2027-02-27")
+        self.assertFalse(accepted.data["notice_delivered"])
+        self.assertEqual(self.client.post(self.url(), valid, format="json").status_code, 200)
         self.assertEqual(self.client.post(
             self.url(), self.payload(revision=0), format="json",
         ).status_code, 409)
