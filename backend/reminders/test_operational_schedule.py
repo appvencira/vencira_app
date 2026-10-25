@@ -34,7 +34,7 @@ class OperationalScheduleTests(SimpleTestCase):
 
     def test_missing_control_is_explicit(self):
         p = build_renewal_plan(date(2027, 3, 15),
-            today=date(2027, 1, 1), days_before=(30, 15))
+            today=date(2027, 1, 1), days_before=(25, 15))
         self.assertTrue(p.no_pre_cutoff_control)
         self.assertFalse(any(x.control_question for x in p.occurrences))
 
