@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vencira/api/vencira_api.dart';
@@ -8,12 +9,14 @@ class _InboxApi extends VenciraApi {
   String? lastAction;
   String? lastScope;
   int requests = 0;
+  Completer<void>? fetchGate;
 
   @override
   Future<VenciraOperationalInbox> fetchOperationalInbox(
       String workspaceId, DateTime day, {String scope = 'due', int page = 1}) async {
     lastScope = scope;
     requests++;
+    if (fetchGate case final gate?) await gate.future;
     return VenciraOperationalInbox(
       day: day, scope: scope, overdue: 0, today: 1, upcoming: 0,
       hasNext: false,
@@ -97,6 +100,32 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('UX: filtros y tarjetas no saltan durante petición pendiente',
+      (tester) async {
+    tester.view.physicalSize = const Size(375, 850);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final api = _InboxApi();
+    await mount(tester, api);
+    final scope = find.byKey(const ValueKey('inbox-scope-overdue'));
+    final card = find.text('DEMO-AVISO-001');
+    final originalScopeY = tester.getTopLeft(scope).dy;
+    final originalCardY = tester.getTopLeft(card).dy;
+    api.fetchGate = Completer<void>();
+    await tester.tap(scope);
+    await tester.pump();
+    expect(api.lastScope, 'overdue');
+    expect(card, findsOneWidget);
+    expect(tester.getTopLeft(scope).dy, closeTo(originalScopeY, 1));
+    expect(tester.getTopLeft(card).dy, closeTo(originalCardY, 1));
+    api.fetchGate!.complete();
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(scope).dy, closeTo(originalScopeY, 1));
+    expect(tester.getTopLeft(card).dy, closeTo(originalCardY, 1));
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('B premium: selección de filtros actualiza el backend',
       (tester) async {
