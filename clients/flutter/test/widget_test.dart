@@ -327,7 +327,11 @@ void main() {
     await tester.pumpAndSettle();
     final scroll = tester.state<ScrollableState>(find.byType(Scrollable).first)
       .position;
-    final search = find.text('Buscar');
+    await tester.ensureVisible(find.byKey(
+      const ValueKey('dashboard-filters')));
+    await tester.tap(find.byKey(const ValueKey('dashboard-filters')));
+    await tester.pumpAndSettle();
+    final search = find.widgetWithText(FilledButton, 'Buscar');
     await tester.ensureVisible(search);
     await tester.pumpAndSettle();
     final originalScroll = scroll.pixels;
