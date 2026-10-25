@@ -823,15 +823,6 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                 ),
               ),
             ],
-            if (renewal.status != 'closed' &&
-                renewal.archiveOutcome.isEmpty) ...[
-              const SizedBox(height: 12),
-              VenciraReminderPreviewCard(
-                api: widget.api,
-                workspaceId: widget.workspace.id,
-                renewalId: renewal.id,
-              ),
-            ],
             if (renewal.status != 'closed') ...[
               const SizedBox(height: 12),
               _manualFollowUpCard(locale),
@@ -846,6 +837,34 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
             FilledButton.icon(onPressed: _saving ? null : _edit,
               icon: const Icon(Icons.edit_outlined),
               label: Text(_t.editRenewal)),
+            ],
+            if (renewal.status != 'closed' &&
+                renewal.archiveOutcome.isEmpty) ...[
+              const SizedBox(height: 12),
+              Card(
+                child: ExpansionTile(
+                  key: ValueKey('reminder-preview-expand-' + renewal.id),
+                  leading: const Icon(Icons.notifications_active_outlined),
+                  title: Text(_designLabel(
+                    'Simular avisos de vencimiento',
+                    'Simular avisos de venciment',
+                  )),
+                  subtitle: Text(_designLabel(
+                    'Vista previa. No guarda ni envía avisos.',
+                    'Vista prèvia. No desa ni envia avisos.',
+                  )),
+                  // La vista previa solo consulta la API después de abrirla.
+                  // No alterar la posición ni el comportamiento de los
+                  // controles de seguimiento/manuales ya existentes.
+                  children: [
+                    VenciraReminderPreviewCard(
+                      api: widget.api,
+                      workspaceId: widget.workspace.id,
+                      renewalId: renewal.id,
+                    ),
+                  ],
+                ),
+              ),
             ],
             const SizedBox(height: 12),
             Text(_t.detailPrototypeWarning,
