@@ -333,5 +333,6 @@
   "inboxUpcoming": "Próximos",
   "inboxDue": "Por atender",
   "inboxEmpty": "No hay avisos internos en este apartado.",
-  "inboxOpenDetail": "Ver anotación"
+  "inboxOpenDetail": "Ver anotación",
+  "inboxShortcut": "Avisos"
 }
