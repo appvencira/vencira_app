@@ -35,6 +35,7 @@ def _contract(renewal, draft):
         "is_persisted": not defaults,
         "revision": 0 if defaults else draft.revision,
         "days_before": days,
+        "reasons_by_day": {} if defaults else draft.reasons_by_day,
         "reference_day": preview.reference_day.isoformat(),
         "informational_cutoff_on": preview.cutoff_on.isoformat(),
         "no_pre_cutoff_notice": preview.no_pre_cutoff_notice,
@@ -50,9 +51,7 @@ def _clean_payload(request):
     if request.content_type.split(";", 1)[0].strip().lower() != "application/json":
         return None
     payload = request.data
-    if type(payload) is not dict or set(payload) != {
-        "state", "revision", "days_before",
-    }:
+    if type(payload) is not dict or not {"state", "revision", "days_before"} <= set(payload) or set(payload) - {"state", "revision", "days_before", "reasons_by_day"}:
         return None
     if payload["state"] != "draft":
         return None
@@ -65,7 +64,16 @@ def _clean_payload(request):
     if (any(type(x) is not int or not 0 <= x <= 365 for x in days)
             or len(set(days)) != len(days)):
         return None
-    return revision, sorted(days, reverse=True)
+    reasons = payload.get("reasons_by_day", None)
+    if reasons is not None:
+        if type(reasons) is not dict or len(reasons) > 12:
+            return None
+        if any(type(k) is not str or k not in {str(d) for d in days}
+               or type(v) is not str or not 1 <= len(v.strip()) <= 160
+               for k, v in reasons.items()):
+            return None
+        reasons = {k: v.strip() for k, v in reasons.items()}
+    return revision, sorted(days, reverse=True), reasons
 
 
 @api_view(["GET", "PUT"])
@@ -88,7 +96,7 @@ def reminder_draft(request, workspace_id, renewal_id):
     if parsed is None:
         return _response({"detail": "Borrador inválido: estado, revisión o días."},
                          status.HTTP_400_BAD_REQUEST)
-    desired_revision, days = parsed
+    desired_revision, days, reasons = parsed
     # Bloquear la anotación (por tenant y responsable) serializa dos PUT
     # concurrentes, incluso cuando todavía NO existe una fila de borrador.
     with transaction.atomic():
@@ -102,19 +110,22 @@ def reminder_draft(request, workspace_id, renewal_id):
             return _response({"detail": "Revisión obsoleta. Actualiza antes de guardar.",
                               "current_revision": actual_revision},
                              status.HTTP_409_CONFLICT)
+        if reasons is None:
+            reasons = {} if current is None else {k: v for k, v in current.reasons_by_day.items() if k in {str(d) for d in days}}
         # Si se persiste un borrador inicial, no se tocan las políticas
         # globales, los candidatos ni las anotaciones vecinas.
         if current is None:
             current = RenewalReminderDraft.objects.create(
-                renewal=renewal, days_before=days, revision=1,
+                renewal=renewal, days_before=days, reasons_by_day=reasons, revision=1,
                 state="draft", created_by=request.user,
                 updated_by=request.user,
             )
-        elif current.days_before != days:
+        elif current.days_before != days or current.reasons_by_day != reasons:
             current.days_before = days
+            current.reasons_by_day = reasons
             current.revision += 1
             current.updated_by = request.user
             current.save(update_fields=[
-                "days_before", "revision", "updated_by", "updated_at",
+                "days_before", "reasons_by_day", "revision", "updated_by", "updated_at",
             ])
         return _response(_contract(renewal, current))
