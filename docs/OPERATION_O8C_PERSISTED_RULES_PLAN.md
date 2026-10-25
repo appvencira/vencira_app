@@ -51,3 +51,25 @@ Una tabla independiente, por ejemplo `RenewalReminderConfiguration`, vinculada 1
 - Una vez disponible, incluir pantalla de editar/guardar como **borrador visible**, nunca presentar «avisos activados» ni «notificación enviada». La activación y entrega será una fase separada.
 
 **Siguiente hito recomendado:** obtener aprobación de regla de borrador por anotación y motivos predeterminados antes de crear la migración; en paralelo, comenzar O11 «agenda HOY» independiente de la política de avisos y O14 seguridad RGPD/MFA.
+
+## 25/10/2026 — Implementación draft-only versionada; NO desplegada
+
+El modelo pasó de propuesta documental a **primera implementación de guardado de borradores**, aún pendiente de ejecutar la validación integral. No se han decidido ni activado motivos, canales, estado «enabled» ni entregas.
+
+### Código preparado
+
+- `backend/reminders/models.py` y migración **aditiva** `0015_renewal_reminder_drafts.py`: `RenewalReminderDraft` OneToOne por anotación, lista JSON `days_before`, `state=draft` con restricción de BD para impedir estados enabled, revisión positiva, actor de alta/modificación y timestamps; sin backfill, sin tocar `ReminderPolicy` ni `ReminderCandidate`.
+- `backend/reminders/reminder_draft.py`: `GET /api/v1/workspaces/{workspace}/renewals/{renewal}/reminder-config/` devuelve defaults 60/45/35 con `is_persisted=false, revision=0` si no se guardó nada. `PUT` exclusivamente `Content-Type: application/json`, cuerpo exacto `{"state":"draft","revision":0,"days_before":[20,15]}` para primer guardado; respuestas `revision=1`. Para cambios posteriores, usar revisión vigente; edición en conflicto da HTTP 409, sin sobrescritura. Se bloquea con `select_for_update` la anotación autorizada en transacción para serializar escrituras. No aceptar cambios en cerradas/archivadas (409), ni usuarios ajenos (404); no PII en respuesta, `Cache-Control: no-store`; se informa de riesgo legal sin impedir guardar borradores.
+- `backend/reminders/test_reminder_draft.py`: pruebas de primer GET sin persistencia, guardado por anotación, normalización de días, idempotencia de valores iguales, conflicto de revisión, aislamiento por workspace y responsable, CSRF en PUT sesión, entradas inválidas, estados prohibidos y ausencia de cambios de políticas/candidatos.
+- `clients/flutter/lib/api/vencira_api.dart`: tipos seguros `VenciraReminderDraft`, `fetchReminderDraft`, `saveReminderDraft`, `VenciraConflictException`. Rechaza cualquier respuesta remota que diga `enabled` o `delivered=true`.
+- `clients/flutter/lib/ui/reminder_draft_card.dart` y detalle de anotación: editor plegado junto al simulador O8b; ES/CA, consulta sólo al abrir, botón **Guardar solo borrador**, manejo explícito de conflicto mediante recarga, sin control para programar o enviar.
+- `clients/flutter/test/reminder_draft_test.dart`: validación del tipo, ES/CA, guardado, días repetidos y conflicto 409; tests de O8b/contacto/seguimiento reejecutables como gate dirigido.
+
+### Próximo paso — NO desplegar
+
+Desde consola de Ubuntu, rama `integration/local-e2e-prep` sincronizada mediante fast-forward, ejecutar **sólo** `bash scripts/validate_o7_o8_preflight.sh`. Este preflight construye nueva API aislada, valida `makemigrations --check`, aplica migraciones en bases de test SQLite y PostgreSQL 17 efímero y ejecuta suite Django+Flutter completa. No aplica `0015` al PostgreSQL `vencira_localcheck`. **No utilizar** `scripts/deploy_o8b_no_migrations.sh` ni `scripts/validate_and_deploy_o8b.sh`: sus pin/checks pertenecen a un gate anterior y el despliegue O8c **sí requiere nueva migración**.
+
+Para un eventual despliegue O8c, crear protocolo **O4 independiente**: backup PostgreSQL reciente e integridad Restic, restauración probada en PG17 temporal, `migrate --plan` en clon, migración `0015` aditiva explícita y health después de actualizar las imágenes API/Web; conservar versiones previas, no permitir API con esquema pendiente, nunca `down -v`. Toda la preparación de esa operación será posterior a resultados verdes del preflight.
+
+**Estado a este corte: CÓDIGO Y TESTS EN GITHUB; SIN VALIDACIÓN REAL, SIN MIGRACIÓN VIVA, SIN DESPLIEGUE NI ACEPTACIÓN DE O8c.**
+
