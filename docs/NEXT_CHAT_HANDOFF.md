@@ -1,5 +1,7 @@
 # VENCIRA — RESUMEN DE CONTINUIDAD PARA NUEVO CHAT
 
+**Versión breve lista para copiar:** [`NEXT_CHAT_HANDOFF_SHORT.md`](NEXT_CHAT_HANDOFF_SHORT.md). Estado actual: O8b aceptada; O8c validada y ensayada en clon, pero migración 0015 aún NO desplegada en DEV.
+
 **Actualizado:** 25/10/2026; el estado más reciente está al final de este documento y en el recuadro de estado actual.  
 **Propósito:** documento corto que el usuario puede enlazar o pegar en una nueva conversación para continuar exactamente donde quedó el trabajo, sin repetir requisitos, accesos, validaciones o pasos peligrosos.  
 **Repositorio privado:** `appvencira/vencira_app` · rama `integration/local-e2e-prep`.  
