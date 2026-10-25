@@ -340,6 +340,9 @@ void main() {
     api.renewalFetchGate = Completer<void>();
     await tester.tap(search);
     await tester.pump();
+    // El campo conserva foco y el botón no se desactiva durante la espera.
+    expect(tester.widget<TextField>(find.byType(TextField).first).enabled, true);
+    expect(tester.widget<FilledButton>(search).onPressed, isNotNull);
     // La lista debe seguir ocupando su altura: antes caía a casi cero.
     expect(scroll.maxScrollExtent, closeTo(originalExtent, 10));
     expect(scroll.pixels, closeTo(originalScroll, 1));
