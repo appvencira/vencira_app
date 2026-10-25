@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
@@ -20,7 +21,10 @@ class _ControlResponseCardState extends State<VenciraControlResponseCard> {
   List<VenciraControlResponse>? _history;
   String? _answer;
   String? _option;
-  int _days = 1;
+  final TextEditingController _daysController = TextEditingController(text: '1');
+
+  @override
+  void dispose() { _daysController.dispose(); super.dispose(); }
   bool _busy = false;
   bool _error = false;
   bool _conflict = false;
@@ -64,13 +68,18 @@ class _ControlResponseCardState extends State<VenciraControlResponseCard> {
     final answer = _answer;
     if (_busy || _history == null || answer == null ||
         (answer == 'yes' && _option == null)) return;
+    final days = answer == 'no' ? int.tryParse(_daysController.text) : null;
+    if (answer == 'no' && (days == null || days < 1)) {
+      setState(() => _error = true);
+      return;
+    }
     setState(() { _busy = true; _error = false; _conflict = false; });
     try {
       final revision = _history!.isEmpty ? 0 : _history!.first.revision;
       await widget.api.saveControlResponse(widget.workspaceId, widget.renewalId,
         revision: revision, idempotencyKey: _uuid(), answer: answer,
         yesOption: answer == 'yes' ? _option : null,
-        daysLater: answer == 'no' ? _days : null);
+        daysLater: answer == 'no' ? days : null);
       final rows = await widget.api.fetchControlResponses(
           widget.workspaceId, widget.renewalId);
       if (!mounted) return;
@@ -131,12 +140,13 @@ class _ControlResponseCardState extends State<VenciraControlResponseCard> {
           if (_answer == 'no') ...[
             const SizedBox(height: 10),
             Text(t.controlResponseDays),
-            DropdownButtonFormField<int>(
-              value: _days, isExpanded: true,
-              items: List.generate(31, (i) => i + 1).map((v) =>
-                DropdownMenuItem(value: v, child: Text('$v'))).toList(),
-              onChanged: _busy ? null : (v) =>
-                setState(() => _days = v ?? 1),
+            TextField(
+              key: const ValueKey('control-repeat-days'),
+              controller: _daysController,
+              enabled: !_busy,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: InputDecoration(labelText: t.controlResponseDays),
             ),
             Text(t.controlResponseDaysHint,
               style: Theme.of(context).textTheme.bodySmall),
