@@ -23,3 +23,10 @@
 
 ## Continuidad
 Siguiente acción técnica: auditar endpoints actuales de agenda y modelos OperationalReminder antes de implementar bandeja; reutilizar los componentes y servicios existentes.
+
+## 25/10/2026 — Primera entrega implementada en GitHub; SIN pruebas locales ni despliegue
+- Endpoint GET `/api/v1/workspaces/<ws>/operational-inbox/?day=YYYY-MM-DD&scope=due|today|overdue|upcoming&page=1` en `backend/reminders/operational_inbox.py` y ruta `urls.py`. Scope obligatorio de membresía y asignación `_visible_renewals`, excluye cerradas/archivadas, estados activos solamente, conteos por ocurrencia, límite 30/página con máximo 100; `Cache-Control: no-store`, no mutaciones ni mensajes enviados.
+- `backend/reminders/test_operational_inbox.py`: tests previstos de corte por día, permisos multi-tenant, dueño/miembro, archivados, paginación y no side effects.
+- `clients/flutter/lib/api/vencira_api.dart`: DTO validado y petición HTTP autenticada a bandeja. `clients/flutter/lib/ui/operational_inbox_screen.dart`: pantalla móvil/escritorio con filtros, contadores, navegación a anotación y acciones existentes `complete/tomorrow/another_day`; acceso desde Dashboard; traducciones ES/CA y tests de parser.
+- `scripts/validate_macro_b_readonly.sh`: gate integral aislado Django SQLite + PG17 efímero y Flutter (analyze/test/build); **AÚN NO EJECUTADO** en Ubuntu. DEV NO ha cambiado (se mantiene migración 0018).
+- La decisión §18 sobre aviso no atendido sigue pendiente: la bandeja conserva las ocurrencias atrasadas y no altera estados automáticamente. Falta revisión de visual, histórico por evento en bandeja, límites funcionales y pruebas E2E con sesión autenticada. No confundir código en GitHub con producto desplegado.
