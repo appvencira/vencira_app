@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
 import 'renewal_detail_screen.dart';
+import 'vencira_pagination_bar.dart';
 
 /// Archivo de una sola organización, servido por la API autorizada.
 /// Incluye registros O3 archivados y los cierres legacy (sin inferir desenlace).
@@ -164,25 +165,14 @@ class _ArchiveState extends State<VenciraArchiveScreen> {
                   for (final value in _archive!.items)
                     _row(value),
                   const SizedBox(height: 14),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 12,
-                    runSpacing: 8,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: _page > 1 ? () => _load(_page - 1) : null,
-                        icon: const Icon(Icons.chevron_left),
-                        label: Text(_t.previous),
-                      ),
-                      Text('${_t.page} $_page'),
-                      OutlinedButton.icon(
-                        onPressed: _archive!.hasNext
-                            ? () => _load(_page + 1) : null,
-                        icon: const Icon(Icons.chevron_right),
-                        label: Text(_t.next),
-                      ),
-                    ],
+                  VenciraPaginationBar(
+                    pageLabel: '${_t.page} $_page',
+                    previousLabel: _t.previous,
+                    nextLabel: _t.next,
+                    onPrevious: _page > 1 && !_loading
+                        ? () => _load(_page - 1) : null,
+                    onNext: _archive!.hasNext && !_loading
+                        ? () => _load(_page + 1) : null,
                   ),
                 ],
               ],
