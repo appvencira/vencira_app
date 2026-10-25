@@ -361,7 +361,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                   controller: _notes,
                   maxLength: 4000,
                   maxLines: 4,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: _t.editorNotes,
                     border: OutlineInputBorder(),
                   ),
