@@ -735,19 +735,20 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
               title: Text(_t.workspaceCatalogHeading,
                 style: Theme.of(context).textTheme.bodyMedium),
               children: [
-                Wrap(spacing: 8, runSpacing: 8, children: [
-                  OutlinedButton.icon(
+                Row(children: [
+                  Expanded(child: _catalogShortcut(
                     key: const ValueKey('open-catalog'),
+                    icon: Icons.category_outlined,
+                    label: _t.modalityManage,
                     onPressed: _saving ? null : _openCatalog,
-                    icon: const Icon(Icons.category_outlined),
-                    label: Text(_t.modalityManage),
-                  ),
-                  OutlinedButton.icon(
+                  )),
+                  const SizedBox(width: 10),
+                  Expanded(child: _catalogShortcut(
                     key: const ValueKey('open-insurers'),
+                    icon: Icons.business_outlined,
+                    label: _t.insurerManage,
                     onPressed: _saving ? null : _openInsurers,
-                    icon: const Icon(Icons.business_outlined),
-                    label: Text(_t.insurerManage),
-                  ),
+                  )),
                 ]),
               ],
             ),
@@ -811,6 +812,37 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         ),
       ],
     ];
+  }
+
+  /// Catálogos: dos accesos equilibrados en la misma fila, incluso a 320 px.
+  Widget _catalogShortcut({
+    required Key key,
+    required IconData icon,
+    required String label,
+    required VoidCallback? onPressed,
+  }) {
+    final colors = Theme.of(context).colorScheme;
+    return OutlinedButton(
+      key: key,
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(0, 84),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 11),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18)),
+        side: BorderSide(color: colors.outlineVariant),
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 21),
+        const SizedBox(height: 6),
+        Text(label, maxLines: 2, textAlign: TextAlign.center,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: onPressed == null
+              ? colors.onSurfaceVariant : colors.primary,
+            fontWeight: FontWeight.w700)),
+      ]),
+    );
   }
 
   Widget _advancedFilterPanel() {
