@@ -272,6 +272,12 @@ void main() {
   }
 
   testWidgets('envía filtros al backend y puede limpiarlos', (tester) async {
+    // La bandeja B añade navegación encima de los filtros. Esta prueba
+    // verifica peticiones, no el scroll de un viewport de 800x600.
+    tester.view.physicalSize = const Size(1024, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final api = FakeVenciraApi(
       workspaces: [workspaceA],
       pages: {workspaceA.id: const VenciraRenewalPage(
@@ -279,15 +285,19 @@ void main() {
     );
     await tester.pumpWidget(VenciraApp(api: api));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byType(TextField).first);
     await tester.enterText(find.byType(TextField).first, 'CASA DEMO');
+    await tester.ensureVisible(find.text('Buscar'));
     await tester.tap(find.text('Buscar'));
     await tester.pumpAndSettle();
     expect(api.lastSearch, 'CASA DEMO');
+    await tester.ensureVisible(find.byKey(const ValueKey('status:11111111-1111-4111-8111-111111111111:')));
     await tester.tap(find.byKey(const ValueKey('status:11111111-1111-4111-8111-111111111111:')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Contactado').last);
     await tester.pumpAndSettle();
     expect(api.lastStatus, 'contacted');
+    await tester.ensureVisible(find.text('Limpiar filtros'));
     await tester.tap(find.text('Limpiar filtros'));
     await tester.pumpAndSettle();
     expect(api.lastSearch, '');
