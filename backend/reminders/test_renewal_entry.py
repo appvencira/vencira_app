@@ -47,6 +47,7 @@ class EntryModalityTests(APITestCase):
         self.client.force_authenticate(user=self.member)
         res = self.client.post(self.url(), {
             "customer_reference": "DEMO-CANDIDATO-1",
+            "full_name": "Candidato ficticio",
             "expires_on": "2027-05-01", "entry": "prospects",
             "modality": "autos", "status": "pending",
         }, format="json")
