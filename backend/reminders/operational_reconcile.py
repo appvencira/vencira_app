@@ -29,7 +29,7 @@ def _cancel(reminder, actor):
 
 @transaction.atomic
 def reconcile_expiry_reminders(renewal_id, *, as_of: date,
-                               days_before=(60, 45, 35), actor=None):
+                               days_before=(60, 45, 35), actor=None, reasons_by_day=None):
     """Mantiene la agenda interna en consonancia sin generar envíos.
 
     Llamadas repetidas mantienen la identidad de las ocurrencias. Una
@@ -37,6 +37,10 @@ def reconcile_expiry_reminders(renewal_id, *, as_of: date,
     el vencimiento se cancela la ocurrencia vieja y se crea otra generación.
     Los avisos ya completados nunca reaparecen por una simple reconciliación.
     """
+    if reasons_by_day is None:
+        reasons_by_day = {}
+    if type(reasons_by_day) is not dict:
+        raise ValueError('Motivos inválidos')
     renewal = Renewal.objects.select_for_update().get(pk=renewal_id)
     history = list(OperationalReminder.objects.select_for_update().filter(
         renewal=renewal, kind=OperationalReminder.Kind.EXPIRY,
@@ -64,11 +68,16 @@ def reconcile_expiry_reminders(renewal_id, *, as_of: date,
 
     result = []
     for key, occurrence in desired.items():
+        reason = reasons_by_day.get(str(occurrence.days_before), 'Aviso de vencimiento')
+        if type(reason) is not str or not 1 <= len(reason.strip()) <= 160:
+            raise ValueError('Motivo inválido')
+        reason = reason.strip()
         current = active_by_key.get(key)
         previous = history_by_key.get(key, [])
         if current is not None and (
             current.original_scheduled_for != occurrence.day or
-            current.control_question != occurrence.control_question
+            current.control_question != occurrence.control_question or
+            current.reason != reason
         ):
             _cancel(current, actor)
             current = None
@@ -87,7 +96,7 @@ def reconcile_expiry_reminders(renewal_id, *, as_of: date,
                 scheduled_for=occurrence.day,
                 original_scheduled_for=occurrence.day,
                 control_question=occurrence.control_question,
-                reason="Aviso de vencimiento",
+                reason=reason,
             )
             _event(current, "planned", "", actor)
         result.append(current)
