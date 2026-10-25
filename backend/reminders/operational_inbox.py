@@ -4,7 +4,6 @@ Fecha civil explícita del cliente. Una lectura nunca reconcilia, envía, marca
 como pendiente ni crea eventos. Solo ocurrencias internas realmente guardadas.
 """
 from datetime import date
-from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -50,8 +49,9 @@ def operational_inbox(request, workspace_id):
     for name in ("page", "page_size"):
         if name in request.query_params:
             raw_value = request.query_params[name]
-            if (not raw_value.isascii() or not raw_value.isdecimal() or
-                    int(raw_value) < 1 or int(raw_value) > 100000):
+            if (len(raw_value) > 6 or not raw_value.isascii() or
+                    not raw_value.isdecimal() or int(raw_value) < 1 or
+                    int(raw_value) > 100000):
                 return Response({name: "Número positivo inválido."},
                                 status=status.HTTP_400_BAD_REQUEST)
 
