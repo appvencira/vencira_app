@@ -230,6 +230,8 @@ class RenewalReminderDraft(models.Model):
         related_name="reminder_draft",
     )
     days_before = models.JSONField(default=list)
+    # Optional text per offset; blank means unapproved generic reason.
+    reasons_by_day = models.JSONField(default=dict)
     state = models.CharField(
         max_length=12, default="draft", choices=[("draft", "Borrador")],
     )
