@@ -40,3 +40,10 @@
 4. No solicitar de nuevo datos, credenciales, claves de backup ni configuraciones ya guardadas. Solo usar DEMO/sintético en DEV. Nunca imprimir secretos/logs privados completos en chat.
 
 **Starter sugerido para nuevo chat:** «Continuamos VENCIRA desde `docs/HANDOFF_MACROFASE_C_2026-10-25.md` en GitHub. La macrofase B y el último rediseño premium están aceptados. Empezamos macrofase C: audita primero el código real de control Sí/No y avisos, compáralo con el whitepaper, identifica exclusivamente las decisiones §18 aún abiertas, y prepara un desarrollo único, documentado y con gates; no cambies servidores ni datos reales hasta validación». 
+
+
+## C1 — Primera decisión aprobada (25/10/2026)
+
+El promotor respondió «Ok, mantenemos actualizados durante los trabajos, seguimos» a la propuesta de motivos. Se registra **aprobación conversacional** de los motivos predeterminados editables: **60 días** «Revisar vencimiento y contactar con el cliente»; **45 días** «Enviar notificación de no renovación»; **35 días** «Comprobar comunicación de no renovación y responder a la pregunta de control». Ello no supone envío real. La pregunta aparece en el último aviso elegible estrictamente anterior al límite del mes civil, que puede no ser el de 35 días. La configuración por cuenta/anotación sigue el §7 y no se alteran borradores existentes sin acción expresa. Esta actualización documental no ejecuta cambios funcionales, gates ni migraciones.
+
+**C1 abierto:** avisos pendientes HOY, alta tardía, ausencia de aviso anterior al corte, Vida, autorización/evidencia de «Notificado por mí», canales y reintentos. Las propuestas §18 no equivalen a decisiones. Antes de C2 cotejar código existente y preparar pruebas; no repetir fases A/B.
