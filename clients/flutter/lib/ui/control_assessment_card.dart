@@ -40,6 +40,7 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
     if (oldWidget.api != widget.api ||
         oldWidget.renewalId != widget.renewalId ||
         oldWidget.workspaceId != widget.workspaceId) {
+      _value = null; // Cambio de identidad: no mostrar control de otra ficha.
       _load();
     }
   }
@@ -55,7 +56,7 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
     setState(() {
       _loading = true;
       _error = false;
-      _value = null;
+      // La última evaluación sigue visible durante una recarga ordinaria.
     });
     try {
       final data = await widget.api.fetchControlAssessment(
@@ -107,11 +108,13 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
             ]),
             const SizedBox(height: 10),
             Text(_strings.controlReadOnlyInfo, style: Theme.of(context).textTheme.bodySmall),
-            if (_loading) ...[
+            SizedBox(height: 3, child: _loading && value != null
+              ? const LinearProgressIndicator() : null),
+            if (_loading && value == null) ...[
               const SizedBox(height: 16),
               const Center(child: CircularProgressIndicator()),
             ],
-            if (!_loading && value != null) ...[
+            if (value != null) ...[
               const SizedBox(height: 14),
               Text(
                 value.status == 'manual_review_required'
