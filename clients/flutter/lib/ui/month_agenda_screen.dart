@@ -126,8 +126,7 @@ class _VenciraMonthAgendaScreenState extends State<VenciraMonthAgendaScreen> {
   String _iso(DateTime day) => DateFormat('yyyy-MM-dd').format(day);
 
   Color get _followColor => const Color(0xFF956DC0);
-  String get _followTitle => Localizations.localeOf(context).languageCode == 'ca'
-      ? 'Seguiment manual' : 'Seguimiento manual';
+  String get _followTitle => _t.manualFollowUpShort;
 
   /// Color principal del día. Vencimiento > preaviso > aviso previsto.
   /// Cuando coinciden varios, mantenemos las marcas secundarias debajo.
@@ -305,7 +304,7 @@ class _VenciraMonthAgendaScreenState extends State<VenciraMonthAgendaScreen> {
             ExpansionTile(
               key: const ValueKey('month-legend'),
               tilePadding: const EdgeInsets.symmetric(horizontal: 4),
-              title: Text(locale == 'ca' ? 'Llegenda de colors' : 'Leyenda de colores',
+              title: Text(_t.monthColorLegend,
                 style: Theme.of(context).textTheme.bodyMedium),
               children: [
                 Wrap(
