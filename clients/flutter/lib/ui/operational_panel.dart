@@ -20,6 +20,15 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
   bool _busy = false;
   String? _error;
   final Map<int, TextEditingController> _controllers = {};
+  String _localizedState(String state, AppLocalizations t) => switch (state) {
+    'planned' => t.opStatePlanned,
+    'pending' => t.opStatePending,
+    'snoozed' => t.opStateSnoozed,
+    'completed' => t.opStateCompleted,
+    'cancelled' => t.opStateCancelled,
+    _ => t.opStateUnknown,
+  };
+
   String _key() {
     final rand = Random.secure();
     final b = List<int>.generate(16, (_) => rand.nextInt(256));
@@ -121,9 +130,39 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
         if (_error != null) Text(_error!, style: TextStyle(
           color: Theme.of(context).colorScheme.error)),
         if (draft != null) ...[
-          for (final day in draft.daysBefore)
+          Text(AppLocalizations.of(context)!.opPresetHint),
+          for (final day in draft.daysBefore) ...[
+            const SizedBox(height: 18),
+            Text('${AppLocalizations.of(context)!.opReason} · $day ${AppLocalizations.of(context)!.opBefore}',
+              style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.opPresetLabel,
+                border: const OutlineInputBorder()),
+              hint: Text(AppLocalizations.of(context)!.opPresetChoose),
+              items: [
+                AppLocalizations.of(context)!.opPresetReview,
+                AppLocalizations.of(context)!.opPresetContact,
+                AppLocalizations.of(context)!.opPresetRenewal,
+                AppLocalizations.of(context)!.opPresetNonRenewal,
+                AppLocalizations.of(context)!.opPresetDocuments,
+              ].map((value) => DropdownMenuItem<String>(
+                value: value,
+                child: Text(value, overflow: TextOverflow.ellipsis),
+              )).toList(),
+              onChanged: _busy ? null : (value) {
+                if (value != null) _controllers[day]!.text = value;
+              },
+            ),
+            const SizedBox(height: 10),
             TextField(controller: _controllers[day], maxLength: 160,
-              decoration: InputDecoration(labelText: '${AppLocalizations.of(context)!.opReason} · $day ${AppLocalizations.of(context)!.opBefore}')),
+              maxLines: 2, minLines: 1,
+              decoration: InputDecoration(
+                hintText: AppLocalizations.of(context)!.opCustomReason,
+                border: const OutlineInputBorder())),
+          ],
           TextButton(onPressed: _busy ? null : _saveReasons,
             child: Text(AppLocalizations.of(context)!.opSave)),
           FilledButton(onPressed: _busy || !draft.isPersisted ? null : _activate,
@@ -132,11 +171,12 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
         if (_rows == null) TextButton(onPressed: _busy ? null : _load,
           child: Text(AppLocalizations.of(context)!.opLoad)),
         for (final reminder in _rows ?? <VenciraOperationalReminder>[])
-          ListTile(
+          Card(margin: const EdgeInsets.symmetric(vertical: 5), child: ListTile(
             title: Text(reminder.reason),
-            subtitle: Text('${reminder.day.day}/${reminder.day.month}/${reminder.day.year} · ${reminder.state}'),
+            subtitle: Text('${reminder.day.day}/${reminder.day.month}/${reminder.day.year} · ${_localizedState(reminder.state, AppLocalizations.of(context)!)}'),
             trailing: reminder.state == 'completed' || reminder.state == 'cancelled'
               ? null : PopupMenuButton<String>(
+                tooltip: AppLocalizations.of(context)!.opActions,
                 onSelected: (value) {
                   if (value == 'another_day') {
                     final now = DateTime.now();
@@ -157,12 +197,12 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
                   }
                 },
                 itemBuilder: (_) => [
-                  PopupMenuItem(value: 'complete', child: Text(AppLocalizations.of(context)!.opDone)),
-                  PopupMenuItem(value: 'tomorrow', child: Text(AppLocalizations.of(context)!.opTomorrow)),
-                  PopupMenuItem(value: 'another_day', child: Text(AppLocalizations.of(context)!.opChoose)),
+                  PopupMenuItem(value: 'complete', child: Row(children: [const Icon(Icons.check_circle_outline), const SizedBox(width: 12), Text(AppLocalizations.of(context)!.opDone)])),
+                  PopupMenuItem(value: 'tomorrow', child: Row(children: [const Icon(Icons.wb_twilight_outlined), const SizedBox(width: 12), Text(AppLocalizations.of(context)!.opTomorrow)])),
+                  PopupMenuItem(value: 'another_day', child: Row(children: [const Icon(Icons.event_outlined), const SizedBox(width: 12), Text(AppLocalizations.of(context)!.opChoose)])),
                 ],
               ),
-          ),
+          )),
       ]),
     ));
   }
