@@ -94,3 +94,87 @@ grep -Fxq "GOOGLE_DRIVE_BACKUP_CIFRADO=OK" "$LOG"
 echo "O5_BACKUP_PRE0015=OK"
 exec 8>/run/lock/vencira-o5-backup.lock
 flock -n 8 || { echo "ERROR=O5_OCUPADO"; exit 4; }
+
+NET="vencira_o8c_internal_$$"
+CLONE="vencira_o8c_clone_$$"
+step RED_PRIVADA docker network create --internal "$NET"
+step POSTGRES17_TEMPORAL docker run -d --rm --name "$CLONE" --network "$NET" \
+ -e POSTGRES_USER=o8c_clone -e POSTGRES_DB=o8c_clone \
+ -e POSTGRES_PASSWORD=o8c-ephemeral-2026-only postgres:17-alpine
+ready=0
+for i in $(seq 1 45); do
+  if docker exec "$CLONE" pg_isready -U o8c_clone -d o8c_clone >>"$LOG" 2>&1; then ready=1; break; fi
+  sleep 2
+done
+test "$ready" = 1
+echo "PG17_TEMPORAL_AISLADO=OK"
+PHASE=RESTIC_DUMP_PIPE
+echo "=== RESTAURACION_O5_DRIVE_AL_CLON ==="
+restic dump --tag vencira-postgresql latest vencira-postgres.dump 2>>"$LOG" |
+  docker exec -i "$CLONE" pg_restore --clean --if-exists \
+   --no-owner --no-privileges --exit-on-error -U o8c_clone -d o8c_clone \
+   >>"$LOG" 2>&1
+echo "RESTAURACION_DRIVE_PG17_TEMPORAL=OK"
+clone_sql(){
+ docker exec "$CLONE" psql -X -v ON_ERROR_STOP=1 \
+   -U o8c_clone -d o8c_clone -Atqc "$1"
+}
+PHASE=RESTORE_VERIFY
+test "$(clone_sql "$MIG_SQL")" = 0014_renewal_outcomes
+test "$(clone_sql "SELECT to_regclass('public.reminders_renewalreminderdraft') IS NULL;")" = t
+CLONE_BEFORE="$(clone_sql "$COUNTS_SQL")"
+test "$CLONE_BEFORE" = "$COUNTS_BEFORE" || {
+  echo "ERROR=CONTEOS_BACKUP_Y_ORIGINAL_DIFIEREN; revisar escrituras concurrentes"
+  exit 5
+}
+echo "RESTAURACION_CONTEOS_VERIFICADOS=OK"
+IMAGE="vencira-o8c-rehearsal:$(git rev-parse --short=12 HEAD)"
+step BUILD_API_TEMPORAL docker build -t "$IMAGE" ./backend
+DJANGO=(docker run --rm --network "$NET"
+  -e VENCIRA_ENV=test -e VENCIRA_DB_ENGINE=postgresql
+  -e DJANGO_DEBUG=0
+  -e DJANGO_SECRET_KEY=o8c-ephemeral-only-django-secret-key-2026-unique
+  -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,testserver
+  -e POSTGRES_HOST="$CLONE" -e POSTGRES_PORT=5432
+  -e POSTGRES_DB=o8c_clone -e POSTGRES_USER=o8c_clone
+  -e POSTGRES_PASSWORD=o8c-ephemeral-2026-only "$IMAGE")
+step MIGRATE_PLAN_SOLO_CLON "${DJANGO[@]}" \
+  python manage.py migrate reminders 0015_renewal_reminder_drafts --plan
+grep -Fq "0015_renewal_reminder_drafts" "$LOG" || {
+ echo "ERROR=PLAN_NO_INCLUYE_0015"; exit 6;
+}
+echo "PLAN_MIGRACION_0015=OK"
+step MIGRATE_0015_SOLO_CLON "${DJANGO[@]}" \
+  python manage.py migrate reminders 0015_renewal_reminder_drafts --noinput
+PHASE=VERIFY_MIGRATION_CLONE
+test "$(clone_sql "$MIG_SQL")" = 0015_renewal_reminder_drafts
+test "$(clone_sql "SELECT to_regclass('public.reminders_renewalreminderdraft') IS NOT NULL;")" = t
+test "$(clone_sql "SELECT COUNT(*) FROM reminders_renewalreminderdraft;")" = 0
+test "$(clone_sql "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.reminders_renewalreminderdraft'::regclass AND conname IN ('renewal_reminder_draft_only','renewal_reminder_revision_positive');")" = 2
+AFTER="$(clone_sql "$COUNTS_SQL")"
+BASE="$(printf %s "$CLONE_BEFORE" | sed 's/:[^:]*$//')"
+CURRENT="$(printf %s "$AFTER" | sed 's/:[^:]*$//')"
+test "$BASE" = "$CURRENT"
+test "$(clone_sql 'SELECT COUNT(*) FROM django_migrations;')" = "$((MIG_COUNT+1))"
+echo "0015_APLICADA_SOLO_EN_CLON=OK"
+echo "DRAFT_ONLY_CONSTRAINTS=OK"
+echo "SIN_BACKFILL_Y_TABLAS_ANTERIORES_INTACTAS=OK"
+
+PHASE=VERIFY_ORIGINAL_UNCHANGED
+test "$DB_ID" = "$(docker inspect "$LIVE" --format '{{.Id}}')"
+test "$API_ID" = "$(docker inspect vencira_localcheck-api-1 --format '{{.Id}}')"
+test "$WEB_ID" = "$(docker inspect vencira_localcheck-web_preview-1 --format '{{.Id}}')"
+test "$(live_sql "$MIG_SQL")" = 0014_renewal_outcomes
+test "$(live_sql "SELECT to_regclass('public.reminders_renewalreminderdraft') IS NULL;")" = t
+test "$(live_sql 'SELECT COUNT(*) FROM django_migrations;')" = "$MIG_COUNT"
+for svc in api db web_preview; do
+ c="vencira_localcheck-$svc-1"
+ test "$(docker inspect "$c" --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}')" = healthy
+done
+echo "POSTGRES_0014_API_WEB_SIN_CAMBIOS=OK"
+PHASE=RECEIPT
+RECEIPT="$(mktemp /tmp/vencira-o8c-rehearsal.XXXXXXXX.receipt)"
+chmod 600 "$RECEIPT"
+printf 'VALIDATED_SHA=%s\nMIGRATION=reminders.0015_renewal_reminder_drafts\nRESTIC_RESTORE=OK\nCLONE_MIGRATION=OK\nLIVE_SCHEMA=0014_UNCHANGED\n' \
+ "$VALIDATED" > "$RECEIPT"
+echo "RECIBO_ENSAYO_O8C=OK"
