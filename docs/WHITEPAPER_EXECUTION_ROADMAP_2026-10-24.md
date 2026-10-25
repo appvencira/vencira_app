@@ -1,4 +1,7 @@
 # VENCIRA — Plan maestro de ejecución basado en whitepaper v1
+
+> **ACTUALIZACIÓN DE FUENTE — 25/10/2026.** El whitepaper original de 23 páginas fue recuperado y transcrito íntegramente en [`docs/source/WHITEPAPER_ORIGINAL_2026-10-18_TRANSCRIPCION.md`](source/WHITEPAPER_ORIGINAL_2026-10-18_TRANSCRIPCION.md). El PDF binario original aportado por el promotor se identifica por SHA-256 `7158c085a0771f1c09c19223284345899ef516394d4ddd77c3b63cdda5598c66`. **Corrección sustancial O9b:** §8 p.11 SÍ define texto exacto «¿Se ha notificado a la aseguradora su no renovación?», opciones Sí («Avisada por el cliente», «La aseguradora no renueva», «Notificado por mí») y No («Avísame dentro de [selector de días]»). Sí registra actor/fecha/hora y mantiene anotación abierta. No crea aviso «Comunicar no renovación de [nombre del cliente]» a fecha elegida `<=` mes civil de tope, que vuelve a preguntar según §10 p.13. No clasificar estas opciones y su comportamiento como pendientes §18. **SÍ siguen pendientes** excepciones de alta tardía, sin avisos pre-tope, Vida, motivos por defecto, aviso no atendido y otras decisiones enumeradas en §18 p.22. Ver `docs/OPERATION_O9B_RESPONSE_CONTRACT.md`. Esta actualización no cambia los estados de despliegue: O9a DEV funcionando, O9b sin migración ni notificaciones.
+
 **Corte de revisión:** 24/10/2026. **Fuente primaria:** `White_paper_agenda_vencimientos.pdf`, @Bibroker Mediadores, S.L.U., 18/10/2026, 23 páginas. Revisión de §1–18 y estado del repositorio privado en rama `integration/local-e2e-prep`.
 
 ## Principio de entrega
