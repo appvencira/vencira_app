@@ -132,6 +132,12 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
       _nickname.text = item.nickname;
       _phone.text = item.phone;
       _email.text = item.email;
+      // §6: si un candidato de esta persona pasó a Cliente, las NUEVAS
+      // anotaciones que copien sus datos parten de Clientes.
+      // Nunca cambiar de forma silenciosa una ficha existente.
+      if (widget.existing == null && item.suggestedEntry == 'clients') {
+        _entry = 'clients';
+      }
       _suggestions = [];
     });
   }
