@@ -76,8 +76,6 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
     }
   }
 
-  String _o2(String es, String ca) =>
-      Localizations.localeOf(context).languageCode == 'ca' ? ca : es;
 
   Future<void> _loadManualFollowUp(int token) async {
     if (!mounted) return;
@@ -103,22 +101,19 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       context: context, showDragHandle: true, useSafeArea: true,
       builder: (sheet) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          ListTile(title: Text(_o2('¿Cuándo quieres recordarlo?',
-              'Quan ho vols recordar?')),
-            subtitle: Text(_o2(
-              'Se mostrará en la agenda, sin enviar notificaciones.',
-              'Apareixerà a l’agenda, sense enviar notificacions.'))),
+          ListTile(title: Text(_t.detailText01),
+            subtitle: Text(_t.detailText02)),
           ListTile(leading: const Icon(Icons.wb_twilight_outlined),
-            title: Text(_o2('Mañana', 'Demà')),
+            title: Text(_t.detailText03),
             onTap: () => Navigator.of(sheet).pop(1)),
           ListTile(leading: const Icon(Icons.event_outlined),
-            title: Text(_o2('En 3 días', 'D’aquí a 3 dies')),
+            title: Text(_t.detailText04),
             onTap: () => Navigator.of(sheet).pop(3)),
           ListTile(leading: const Icon(Icons.calendar_month_outlined),
-            title: Text(_o2('En 7 días', 'D’aquí a 7 dies')),
+            title: Text(_t.detailText05),
             onTap: () => Navigator.of(sheet).pop(7)),
           ListTile(leading: const Icon(Icons.date_range_outlined),
-            title: Text(_o2('Elegir otra fecha', 'Triar una altra data')),
+            title: Text(_t.detailText06),
             onTap: () => Navigator.of(sheet).pop(0)),
           const SizedBox(height: 10),
         ]),
@@ -152,8 +147,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       if (!mounted) return;
       setState(() { _manualFollowUp = result; _followUpError = false; });
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
-        _o2('Seguimiento programado en agenda',
-            'Seguiment programat a l’agenda'))));
+        _t.detailText07)));
       if (_history != null) await _loadHistory(1);
     } on VenciraUnauthorized {
       if (mounted) setState(() => _unauthorized = true);
@@ -172,16 +166,14 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       context: context,
       builder: (dialog) => AlertDialog(
         title: Text(action == 'complete'
-            ? _o2('Marcar seguimiento atendido', 'Marcar seguiment atès')
-            : _o2('Cancelar seguimiento', 'Cancel·lar seguiment')),
-        content: Text(_o2(
-          'Se guardará la acción en el historial. No se enviará ningún aviso.',
-          'Es guardarà l’acció a l’historial. No s’enviarà cap avís.')),
+            ? _t.detailText08
+            : _t.detailText09),
+        content: Text(_t.detailText10),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialog, false),
             child: Text(_t.cancel)),
           FilledButton(onPressed: () => Navigator.pop(dialog, true),
-            child: Text(_o2('Confirmar', 'Confirmar'))),
+            child: Text(_t.detailText11)),
         ],
       ),
     );
@@ -194,8 +186,8 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       setState(() => _manualFollowUp = null);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
         action == 'complete'
-          ? _o2('Seguimiento atendido', 'Seguiment atès')
-          : _o2('Seguimiento cancelado', 'Seguiment cancel·lat'))));
+          ? _t.detailText12
+          : _t.detailText13)));
       if (_history != null) await _loadHistory(1);
     } on VenciraUnauthorized {
       if (mounted) setState(() => _unauthorized = true);
@@ -216,7 +208,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
           Icon(Icons.bookmark_added_outlined,
             color: const Color(0xFF956DC0), size: 21),
           const SizedBox(width: 10),
-          Expanded(child: Text(_o2('Recuérdamelo', 'Recorda-m’ho'),
+          Expanded(child: Text(_t.detailText14,
             style: Theme.of(context).textTheme.titleMedium
                 ?.copyWith(fontWeight: FontWeight.w700))),
         ]),
@@ -228,9 +220,8 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
             child: Text(_t.retry))
         else ...[
           Text(_manualFollowUp == null
-            ? _o2('Sin seguimiento manual programado.',
-                'Sense seguiment manual programat.')
-            : _o2('Próximo seguimiento: ', 'Pròxim seguiment: ') +
+            ? _t.detailText15
+            : _t.detailText16 +
               DateFormat.yMd(locale).format(_manualFollowUp!.scheduledFor),
             style: Theme.of(context).textTheme.bodyMedium
                 ?.copyWith(color: colors.onSurfaceVariant)),
@@ -240,8 +231,8 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
             onPressed: _saving ? null : _chooseManualDate,
             icon: const Icon(Icons.event_available_outlined),
             label: Text(_manualFollowUp == null
-              ? _o2('Elegir fecha', 'Triar data')
-              : _o2('Reprogramar', 'Reprogramar')),
+              ? _t.detailText17
+              : _t.detailText18),
           ),
           if (_manualFollowUp != null) ...[
             const SizedBox(height: 8),
@@ -250,7 +241,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                 key: const ValueKey('complete-follow-up'),
                 onPressed: _saving ? null : () => _resolveManual('complete'),
                 icon: const Icon(Icons.check_rounded),
-                label: Text(_o2('Atendido', 'Atès')),
+                label: Text(_t.detailText19),
               ),
               TextButton.icon(
                 key: const ValueKey('cancel-follow-up'),
@@ -261,8 +252,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
             ]),
           ],
           const SizedBox(height: 5),
-          Text(_o2('Fecha visible en la agenda; no es una notificación enviada.',
-              'Data visible a l’agenda; no és una notificació enviada.'),
+          Text(_t.detailText20,
             style: Theme.of(context).textTheme.bodySmall),
         ],
       ]),
@@ -391,13 +381,11 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
   }
 
   String _outcomeLabel(String kind) => switch (kind) {
-    'won' => _o2('Conseguido', 'Aconseguit'),
-    'declined' => _o2('No aceptó · el año que viene',
-                      'No va acceptar · l’any que ve'),
-    'undecided' => _o2('Aún sin decidir · recuérdamelo',
-                       'Encara sense decidir · recorda-m’ho'),
-    'discarded' => _o2('Descartar', 'Descartar'),
-    'restored' => _o2('Recuperar del archivo', 'Recuperar de l’arxiu'),
+    'won' => _t.detailText21,
+    'declined' => _t.detailText22,
+    'undecided' => _t.detailText23,
+    'discarded' => _t.detailText24,
+    'restored' => _t.detailText25,
     _ => kind,
   };
 
@@ -409,18 +397,17 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       isScrollControlled: true,
       builder: (sheet) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          ListTile(title: Text(_o2(
-            '¿Cuándo recordarlo?', 'Quan recordar-ho?'))),
-          ListTile(title: Text(_o2('Mañana', 'Demà')),
+          ListTile(title: Text(_t.detailText26)),
+          ListTile(title: Text(_t.detailText03),
             leading: const Icon(Icons.wb_twilight_outlined),
             onTap: () => Navigator.of(sheet).pop(1)),
-          ListTile(title: Text(_o2('En 3 días', 'D’aquí a 3 dies')),
+          ListTile(title: Text(_t.detailText04),
             leading: const Icon(Icons.event_outlined),
             onTap: () => Navigator.of(sheet).pop(3)),
-          ListTile(title: Text(_o2('En 7 días', 'D’aquí a 7 dies')),
+          ListTile(title: Text(_t.detailText05),
             leading: const Icon(Icons.calendar_month_outlined),
             onTap: () => Navigator.of(sheet).pop(7)),
-          ListTile(title: Text(_o2('Otra fecha', 'Una altra data')),
+          ListTile(title: Text(_t.detailText27),
             leading: const Icon(Icons.date_range_outlined),
             onTap: () => Navigator.of(sheet).pop(0)),
         ]),
@@ -451,11 +438,8 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
         builder: (sheet) => SafeArea(child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(title: Text(_o2(
-              'Resultado de la gestión', 'Resultat de la gestió')),
-              subtitle: Text(_o2(
-                'Selecciona un desenlace de esta póliza externa.',
-                'Selecciona un desenllaç d’aquesta pòlissa externa.'))),
+            ListTile(title: Text(_t.detailText28),
+              subtitle: Text(_t.detailText29)),
             for (final choice in const [
               ('won', Icons.verified_outlined),
               ('declined', Icons.event_repeat_outlined),
@@ -484,21 +468,11 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       builder: (dialog) => AlertDialog(
         title: Text(_outcomeLabel(selected)),
         content: Text(switch (selected) {
-          'won' => _o2(
-            'Se archivará como conseguida. No se gestionará como una póliza propia en VENCIRA.',
-            'S’arxivarà com a aconseguida. No es gestionarà com una pòlissa pròpia a VENCIRA.'),
-          'declined' => _o2(
-            'El vencimiento pasará al año siguiente. Se conservarán las notas y se recalcularán los avisos previstos activos.',
-            'El venciment passarà a l’any següent. Es conservaran les notes i es recalcularan els avisos previstos actius.'),
-          'undecided' => _o2(
-            'La anotación continuará abierta con seguimiento en la fecha elegida. No se enviará ninguna notificación.',
-            'L’anotació continuarà oberta amb seguiment a la data triada. No s’enviarà cap notificació.'),
-          'discarded' => _o2(
-            'La anotación saldrá de la agenda y se archivará. Podrás recuperarla.',
-            'L’anotació sortirà de l’agenda i s’arxivarà. La podràs recuperar.'),
-          _ => _o2(
-            'Se recuperará del archivo y volverá a pendiente.',
-            'Es recuperarà de l’arxiu i tornarà a pendent.'),
+          'won' => _t.detailText30,
+          'declined' => _t.detailText31,
+          'undecided' => _t.detailText32,
+          'discarded' => _t.detailText33,
+          _ => _t.detailText34,
         }),
         actions: [
           TextButton(
@@ -506,7 +480,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
             child: Text(_t.cancel)),
           FilledButton(
             onPressed: () => Navigator.of(dialog).pop(true),
-            child: Text(_o2('Confirmar', 'Confirmar'))),
+            child: Text(_t.detailText11)),
         ],
       ),
     );
@@ -519,9 +493,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(_o2(
-          'Resultado registrado en el historial',
-          'Resultat registrat a l’historial'))));
+        content: Text(_t.detailText35)));
       await _refresh();
       if (mounted && _history != null) await _loadHistory(1);
     } on VenciraUnauthorized {
@@ -544,12 +516,12 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(_o2('Desenlace', 'Desenllaç'),
+          Text(_t.detailText36,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           if (archived) ...[
-            Text(_o2('Archivado: ', 'Arxivat: ') +
+            Text(_t.detailText37 +
                 _outcomeLabel(renewal.archiveOutcome)),
             const SizedBox(height: 12),
             OutlinedButton.icon(
@@ -559,16 +531,14 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
               label: Text(_outcomeLabel('restored')),
             ),
           ] else ...[
-            Text(_o2(
-              'Registra el resultado de una gestión. No se envían comunicaciones.',
-              'Registra el resultat d’una gestió. No s’envien comunicacions.'),
+            Text(_t.detailText38,
               style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 12),
             FilledButton.tonalIcon(
               key: const ValueKey('choose-outcome'),
               onPressed: _saving ? null : _chooseOutcome,
               icon: const Icon(Icons.fact_check_outlined),
-              label: Text(_o2('Elegir desenlace', 'Triar desenllaç')),
+              label: Text(_t.detailText39),
             ),
           ],
         ],
@@ -612,10 +582,10 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
     'notice_deadline_on' => _t.noticeDate,
     'status' => _t.status,
     'assigned_to_id' => _t.detailAssignment,
-    'manual_follow_up' => _o2('Seguimiento manual', 'Seguiment manual'),
-    'outcome' => _o2('Desenlace', 'Desenllaç'),
-    'archived_at' => _o2('Archivado', 'Arxivat'),
-    'archive_outcome' => _o2('Resultado de archivo', 'Resultat d’arxiu'),
+    'manual_follow_up' => _t.detailText40,
+    'outcome' => _t.detailText36,
+    'archived_at' => _t.detailText41,
+    'archive_outcome' => _t.detailText42,
     _ => _t.detailOtherChange,
   };
 
