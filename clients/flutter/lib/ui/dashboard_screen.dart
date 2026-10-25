@@ -243,25 +243,25 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
   }
 
   void _changeEntry(String? value) {
-    if (value == null || _loadingRenewals || _saving) return;
+    if (value == null || _saving) return;
     setState(() => _entryFilter = value);
     _loadRenewals(1);
   }
 
   void _changeModality(String? value) {
-    if (value == null || _loadingRenewals || _saving) return;
+    if (value == null || _saving) return;
     setState(() => _modalityFilter = value);
     _loadRenewals(1);
   }
 
   void _changeInsurer(String? id) {
-    if (id == null || _loadingRenewals || _saving) return;
+    if (id == null || _saving) return;
     setState(() => _insurerFilter = id);
     _loadRenewals(1);
   }
 
   void _applySearch() {
-    if (_loadingRenewals || _saving) return;
+    if (_saving) return;
     final value = _searchController.text.trim();
     if (value.length > 80) return;
     setState(() => _appliedSearch = value);
@@ -269,13 +269,13 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
   }
 
   void _changeStatus(String? value) {
-    if (value == null || _loadingRenewals || _saving) return;
+    if (value == null || _saving) return;
     setState(() => _statusFilter = value);
     _loadRenewals(1);
   }
 
   void _clearFilters() {
-    if (_loadingRenewals || _saving) return;
+    if (_saving) return;
     setState(() {
       _searchController.clear();
       _appliedSearch = '';
@@ -289,7 +289,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
 
   Future<void> _editRenewal([VenciraRenewal? current]) async {
     final selected = _selected;
-    if (selected == null || _saving || _loadingRenewals) return;
+    if (selected == null || _saving || (current != null && _loadingRenewals)) return;
     final input = await showDialog<VenciraRenewalInput>(
       context: context,
       builder: (_) => VenciraRenewalEditor(
@@ -585,7 +585,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     // sigue pendiente §18, por eso únicamente owner.
     if (!kIsWeb || MediaQuery.sizeOf(context).width < 800 ||
         workspace == null || workspace.role != 'owner' ||
-        _saving || _loadingRenewals) return;
+        _saving) return;
     Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => VenciraResultsScreen(
         api: _api, workspace: workspace,
@@ -595,7 +595,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
 
   void _openArchive() {
     final workspace = _selected;
-    if (workspace == null || _loadingRenewals || _saving) return;
+    if (workspace == null || _saving) return;
     Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => VenciraArchiveScreen(
         api: _api, workspace: workspace,
@@ -608,7 +608,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
 
   void _openOperationalInbox() {
     final workspace = _selected;
-    if (workspace == null || _saving || _loadingRenewals) return;
+    if (workspace == null || _saving) return;
     Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => VenciraOperationalInboxScreen(
         api: _api, workspace: workspace),
@@ -651,7 +651,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
             for (final workspace in _workspaces)
               VenciraOption(value: workspace, label: workspace.name),
           ],
-          onChanged: _loadingRenewals || _saving
+          onChanged: _saving
               ? null : _selectWorkspace,
         ),
       if (_workspaces.length == 1)
@@ -672,13 +672,13 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
           Row(children: [
             Expanded(child: constraints.maxWidth < 340
               ? OutlinedButton(
-                  onPressed: _saving || _loadingRenewals || _selected == null
+                  onPressed: _saving || _selected == null
                       ? null : _openAgenda,
                   child: Text(_t.agendaShort, maxLines: 1,
                     overflow: TextOverflow.ellipsis),
                 )
               : OutlinedButton.icon(
-                  onPressed: _saving || _loadingRenewals || _selected == null
+                  onPressed: _saving || _selected == null
                       ? null : _openAgenda,
                   icon: const Icon(Icons.calendar_month_outlined),
                   label: Text(compact ? _t.agendaShort : _t.agendaOpenDay,
@@ -705,7 +705,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
           Row(children: [
             Expanded(child: OutlinedButton.icon(
               key: const ValueKey('open-archive'),
-              onPressed: _loadingRenewals || _saving || _selected == null
+              onPressed: _saving || _selected == null
                   ? null : _openArchive,
               icon: const Icon(Icons.inventory_2_outlined, size: 19),
               label: Text(_t.archiveOpen, maxLines: 1,
@@ -714,7 +714,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
             const SizedBox(width: 10),
             Expanded(child: OutlinedButton.icon(
               key: const ValueKey('open-operational-inbox'),
-              onPressed: _loadingRenewals || _saving || _selected == null
+              onPressed: _saving || _selected == null
                   ? null : _openOperationalInbox,
               icon: const Icon(Icons.notifications_active_outlined, size: 19),
               label: Text(_t.inboxShortcut, maxLines: 1,
@@ -728,7 +728,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
               width: double.infinity,
               child: OutlinedButton.icon(
                 key: const ValueKey('open-results'),
-                onPressed: _loadingRenewals || _saving ? null : _openResults,
+                onPressed: _saving ? null : _openResults,
                 icon: const Icon(Icons.bar_chart_outlined),
                 label: Text(_t.resultsOpen),
               ),
@@ -877,7 +877,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
             child: TextField(
               controller: _searchController,
               maxLength: 80,
-              enabled: !_loadingRenewals && !_saving,
+              enabled: !_saving,
               onSubmitted: (_) => _applySearch(),
               decoration: InputDecoration(
                 labelText: _t.searchReference,
@@ -901,7 +901,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
               VenciraOption(value: 'closed', label: _t.closed,
                 icon: Icons.check_circle_outline_rounded),
             ],
-            onChanged: _loadingRenewals || _saving ? null : _changeStatus,
+            onChanged: _saving ? null : _changeStatus,
           )),
           SizedBox(width: statusWidth, child: VenciraSelect<String>(
             key: ValueKey('entry-filter-${_selected?.id}-$_entryFilter'),
@@ -912,7 +912,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
               VenciraOption(value: 'clients', label: _t.entryClients),
               VenciraOption(value: 'prospects', label: _t.entryProspects),
             ],
-            onChanged: _loadingRenewals || _saving ? null : _changeEntry,
+            onChanged: _saving ? null : _changeEntry,
           )),
           SizedBox(width: statusWidth, child: VenciraSelect<String>(
             key: ValueKey('modality-filter-${_selected?.id}-$_modalityFilter'),
@@ -925,7 +925,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                   VenciraOption(value: option.code,
                     label: modalityCaption(context, option)),
             ],
-            onChanged: _loadingRenewals || _saving ? null : _changeModality,
+            onChanged: _saving ? null : _changeModality,
           )),
           SizedBox(width: statusWidth, child: VenciraSelect<String>(
             key: ValueKey('insurer-filter-$_insurerFilter'),
@@ -941,15 +941,15 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                 VenciraOption(value: _insurerFilter,
                   label: _t.insurerLegacy),
             ],
-            onChanged: _loadingRenewals || _saving ? null : _changeInsurer,
+            onChanged: _saving ? null : _changeInsurer,
           )),
           FilledButton.tonalIcon(
-            onPressed: _loadingRenewals || _saving ? null : _applySearch,
+            onPressed: _saving ? null : _applySearch,
             icon: const Icon(Icons.search),
             label: Text(_t.search),
           ),
           TextButton(
-            onPressed: _loadingRenewals || _saving ? null : _clearFilters,
+            onPressed: _saving ? null : _clearFilters,
             child: Text(_t.clearFilters),
           ),
             ],
