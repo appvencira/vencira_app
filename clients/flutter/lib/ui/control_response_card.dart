@@ -119,8 +119,10 @@ class _ControlResponseCardState extends State<VenciraControlResponseCard> {
           Text(t.controlResponseQuestion),
           RadioGroup<String>(
             groupValue: _answer,
-            onChanged: _busy ? null : (value) =>
-              setState(() { _answer = value; _option = null; }),
+            onChanged: (value) {
+              if (_busy) return;
+              setState(() { _answer = value; _option = null; });
+            },
             child: Column(children: [
               RadioListTile<String>(
                 title: Text(t.controlResponseYes), value: 'yes',
