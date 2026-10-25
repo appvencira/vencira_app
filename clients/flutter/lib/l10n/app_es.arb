@@ -252,5 +252,22 @@
   "detailCaption14": "Registra un contacto realizado fuera de VENCIRA. Esta acción no envía mensajes ni programa avisos.",
   "detailCaption15": "Marcar como contactado",
   "detailCaption16": "Simular avisos de vencimiento",
-  "detailCaption17": "Vista previa. No guarda ni envía avisos."
+  "detailCaption17": "Vista previa. No guarda ni envía avisos.",
+  "previewText01": "Simulador de avisos",
+  "previewText02": "Prueba las anticipaciones en días naturales. Solo calcula fechas: no guarda configuraciones ni envía notificaciones.",
+  "previewText03": "Días antes del vencimiento",
+  "previewText04": "De 1 a 12 avisos, entre 0 y 365 días; sin repetidos.",
+  "previewText05": "Revisa los días: usa valores separados por comas.",
+  "previewText06": "Calcular fechas",
+  "previewText07": "No se ha podido consultar la vista previa.",
+  "previewText08": "Reintentar",
+  "previewText09": "Referencia de un mes civil: ",
+  "previewText10": "Póliza de Vida: revisa su régimen específico antes de actuar.",
+  "previewText11": "No hay aviso anterior a la fecha de referencia. Se requiere decisión.",
+  "previewText12": "La pregunta de control prevista ya habría pasado.",
+  "previewText13": "La fecha de referencia ya ha llegado o pasado.",
+  "previewText14": "días antes · ",
+  "previewText15": "Pregunta de control prevista (no enviada)",
+  "previewText16": "Fecha pasada",
+  "previewText17": "Simulación, no aviso enviado ni tarea guardada."
 }
