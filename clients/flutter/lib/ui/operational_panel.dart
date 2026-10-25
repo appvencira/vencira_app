@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../api/vencira_api.dart';
+import '../l10n/app_localizations.dart';
 
 /// Control de avisos internos. No representa una notificación enviada.
 class VenciraOperationalPanel extends StatefulWidget {
@@ -48,7 +49,7 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
       }
       setState(() { _draft = draft; _rows = rows; });
     } catch (_) {
-      if (mounted) setState(() => _error = 'No se han podido consultar los avisos.');
+      if (mounted) setState(() => _error = AppLocalizations.of(context)!.opFetchError);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -72,9 +73,9 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
       if (!mounted) return;
       setState(() => _draft = result);
     } on VenciraConflictException {
-      if (mounted) setState(() => _error = 'Los datos han cambiado. Actualiza antes de guardar.');
+      if (mounted) setState(() => _error = AppLocalizations.of(context)!.opConflict);
     } catch (_) {
-      if (mounted) setState(() => _error = 'No se han podido guardar los motivos.');
+      if (mounted) setState(() => _error = AppLocalizations.of(context)!.opSaveError);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -88,7 +89,7 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
       await widget.api.activateOperationalReminders(
         widget.workspaceId, widget.renewalId, draft.revision);
     } catch (_) {
-      if (mounted) setState(() => _error = 'No se han podido activar los avisos internos. Comprueba las fechas.');
+      if (mounted) setState(() => _error = AppLocalizations.of(context)!.opActivateError);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -102,7 +103,7 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
       await widget.api.updateOperationalReminder(widget.workspaceId,
         widget.renewalId, row, action, _key(), daysLater: days);
     } catch (_) {
-      if (mounted) setState(() => _error = 'No se ha podido actualizar. Revisa los datos.');
+      if (mounted) setState(() => _error = AppLocalizations.of(context)!.opActionError);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -114,22 +115,22 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
     final draft = _draft;
     return Card(child: Padding(padding: const EdgeInsets.all(12), child:
       Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text('Avisos internos', style: Theme.of(context).textTheme.titleMedium),
-        const Text('Se guardan en la agenda. No se envían notificaciones todavía.'),
+        Text(AppLocalizations.of(context)!.opTitle, style: Theme.of(context).textTheme.titleMedium),
+        Text(AppLocalizations.of(context)!.opDescription),
         if (_busy) const LinearProgressIndicator(),
         if (_error != null) Text(_error!, style: TextStyle(
           color: Theme.of(context).colorScheme.error)),
         if (draft != null) ...[
           for (final day in draft.daysBefore)
             TextField(controller: _controllers[day], maxLength: 160,
-              decoration: InputDecoration(labelText: 'Motivo · $day días antes')),
+              decoration: InputDecoration(labelText: '${AppLocalizations.of(context)!.opReason} · $day ${AppLocalizations.of(context)!.opBefore}')),
           TextButton(onPressed: _busy ? null : _saveReasons,
-            child: const Text('Guardar motivos')),
+            child: Text(AppLocalizations.of(context)!.opSave)),
           FilledButton(onPressed: _busy || !draft.isPersisted ? null : _activate,
-            child: const Text('Programar avisos internos')),
+            child: Text(AppLocalizations.of(context)!.opActivate)),
         ],
         if (_rows == null) TextButton(onPressed: _busy ? null : _load,
-          child: const Text('Cargar avisos')),
+          child: Text(AppLocalizations.of(context)!.opLoad)),
         for (final reminder in _rows ?? <VenciraOperationalReminder>[])
           ListTile(
             title: Text(reminder.reason),
@@ -155,10 +156,10 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
                     _act(reminder, value);
                   }
                 },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'complete', child: Text('Completada')),
-                  PopupMenuItem(value: 'tomorrow', child: Text('Mañana')),
-                  PopupMenuItem(value: 'another_day', child: Text('Elegir fecha')),
+                itemBuilder: (_) => [
+                  PopupMenuItem(value: 'complete', child: Text(AppLocalizations.of(context)!.opDone)),
+                  PopupMenuItem(value: 'tomorrow', child: Text(AppLocalizations.of(context)!.opTomorrow)),
+                  PopupMenuItem(value: 'another_day', child: Text(AppLocalizations.of(context)!.opChoose)),
                 ],
               ),
           ),
