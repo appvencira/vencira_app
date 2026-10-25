@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
 import 'renewal_detail_screen.dart';
+import 'operational_history_screen.dart';
 
 /// B: bandeja de ocurrencias persistidas, nunca notificaciones entregadas.
 class VenciraOperationalInboxScreen extends StatefulWidget {
@@ -129,6 +130,15 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
     if (mounted) _load(page: _page);
   }
 
+  Future<void> _openHistory(VenciraInboxItem item) async {
+    await Navigator.of(context).push<void>(MaterialPageRoute(
+      builder: (_) => VenciraOperationalHistoryScreen(
+        api: widget.api, workspaceId: widget.workspace.id,
+        renewalId: item.renewalId, reminderId: item.reminder.id,
+        reason: item.reminder.reason),
+    ));
+  }
+
   /// Igual que Preferencias: fila táctil, sin flechas ni botones repetidos.
   Widget _sheetRow(BuildContext sheetContext, String label,
       IconData icon, VoidCallback onTap) {
@@ -184,6 +194,8 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
                 const SizedBox(height: 18),
                 _sheetRow(sheetContext, t.inboxOpenDetail,
                   Icons.open_in_new, () => Navigator.pop(sheetContext, 'detail')),
+                _sheetRow(sheetContext, t.inboxHistoryOpen,
+                  Icons.history_outlined, () => Navigator.pop(sheetContext, 'history')),
                 _sheetRow(sheetContext, t.opDone,
                   Icons.check_circle_outline,
                   () => Navigator.pop(sheetContext, 'complete')),
@@ -203,6 +215,9 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
     switch (chosen) {
       case 'detail':
         await _openDetail(item);
+        return;
+      case 'history':
+        await _openHistory(item);
         return;
       case 'complete':
         await _action(item, 'complete');
