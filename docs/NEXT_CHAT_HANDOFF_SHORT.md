@@ -24,4 +24,14 @@
 
 **UAT manual O8c en datos DEMO, desde navegador:** abrir anotación activa > desplegar `Simular avisos` > sección `Guardar borrador de avisos` > introducir `20,15` > `Guardar solo borrador`. Salir y volver: debe mantener `20,15` y mostrar borrador guardado. Otra anotación debe seguir con default `60,45,35`. Revisar mensajes ES/CA, que nunca aparezcan avisos entregados, y no confundir simulador O8b sin persistencia con borrador O8c. Si hay fallo, diagnosticar en GitHub y ejecutar sólo pruebas apropiadas, no repetir migración.
 
-Después de aceptar O8c: continuar O9 (pregunta de control/repetición), O10 (notificaciones) y O11 (agenda HOY), pendientes las decisiones §18 del whitepaper sobre motivos, Vida, altas tardías, reintentos y canales. No activar envíos sin resolverlas. 
+Después de aceptar O8c: continuar O9 (pregunta de control/repetición), O10 (notificaciones) y O11 (agenda HOY), pendientes las decisiones §18 del whitepaper sobre motivos, Vida, altas tardías, reintentos y canales. No activar envíos sin resolverlas.
+
+## 25/10/2026 — O8c UAT móvil: guardado visible, espacios corregidos EN GITHUB (no desplegados)
+
+Usuario aporta 3 capturas Android de `dev.vencira.es`: se ve `Guardar borrador de avisos` y estado `Borrador guardado` con `20,15`, además de advertencia `Sin aviso anterior al límite informativo`; comunica también `RESULTADO_EJECUCION=0`. **Evidencia visual de borrador guardado**, no necesariamente prueba de aislamiento en otra anotación ni confirma todavía la nueva corrección UI.
+
+Detecta espaciados demasiado estrechos: estado `Borrador guardado` casi toca etiqueta flotante `Días antes`, y advertencia legal pegada a botón de guardar. Se corrigió solo en `clients/flutter/lib/ui/reminder_draft_card.dart`: 20 px bajo estado, 16 px tras campo y 12 px bajo cada aviso. Pruebas `clients/flutter/test/reminder_draft_test.dart`: validación geométrica responsive 320px ES/CA tema claro/oscuro. Fuentes corregidas hasta commit `0f9c17b03fde147d780fdcff5fc2d3e162488a0c`. Documentación detallada `docs/OPERATION_O8C_UI_SPACING.md`.
+
+Preparado script NUEVO `scripts/deploy_o8c_spacing_web_only.sh`, gate a fuentes pin y esquema PostgreSQL persistente **0015**; etiqueta imagen anterior, construye/recrea únicamente `web_preview`, comprueba mismas IDs de contenedor DB+API, migraciones sin cambios, HTTP y protección auth. NO ejecutar de nuevo `deploy_o8c_0015_guarded.sh`, NO hay migraciones adicionales, NO se modifica O5. **ESTE CAMBIO DE ESPACIADO TODAVÍA NO SE HA VALIDADO NI DESPLEGADO EN EL SERVIDOR.**
+
+**Próximo comando de usuario**: `git fetch` + `git merge --ff-only`, `bash -n scripts/deploy_o8c_spacing_web_only.sh`, `bash scripts/validate_o7_o8_preflight.sh` y SOLO si éste sale 0, `bash scripts/deploy_o8c_spacing_web_only.sh`. Usar subshell y resultado al final. Si falla, inspeccionar fase; si Web ya recreada, no repetir automáticamente. Tras éxito, UAT visual con márgenes correctos y aislamiento entre anotaciones.
