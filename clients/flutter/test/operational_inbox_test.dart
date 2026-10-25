@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vencira_flutter/api/vencira_api.dart';
+import 'package:vencira/api/vencira_api.dart';
 
 void main() {
   final sample = <String, dynamic>{
@@ -39,7 +39,7 @@ void main() {
   test('B: delivery cannot be represented as implemented', () {
     final invalid = <String, dynamic>{
       ...sample, 'results': [
-        {...(sample['results'] as List).first as Map<String, dynamic>,
+        {...((sample['results'] as List).first as Map<String, dynamic>),
          'delivery_status': 'delivered'}
       ],
     };
