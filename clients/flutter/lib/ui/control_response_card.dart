@@ -117,18 +117,21 @@ class _ControlResponseCardState extends State<VenciraControlResponseCard> {
         ],
         if (_history != null) ...[
           Text(t.controlResponseQuestion),
-          RadioListTile<String>(
-            title: Text(t.controlResponseYes), value: 'yes',
-            groupValue: _answer, onChanged: _busy ? null :
-              (value) => setState(() { _answer = value; _option = null; }),
-          ),
-          RadioListTile<String>(
-            title: Text(t.controlResponseNo), value: 'no',
-            groupValue: _answer, onChanged: _busy ? null :
-              (value) => setState(() { _answer = value; _option = null; }),
+          RadioGroup<String>(
+            groupValue: _answer,
+            onChanged: _busy ? null : (value) =>
+              setState(() { _answer = value; _option = null; }),
+            child: Column(children: [
+              RadioListTile<String>(
+                title: Text(t.controlResponseYes), value: 'yes',
+              ),
+              RadioListTile<String>(
+                title: Text(t.controlResponseNo), value: 'no',
+              ),
+            ]),
           ),
           if (_answer == 'yes') DropdownButtonFormField<String>(
-            value: _option, isExpanded: true,
+            initialValue: _option, isExpanded: true,
             decoration: InputDecoration(labelText: t.controlResponseYesChoice),
             items: const [
               'notified_by_client', 'insurer_not_renewing',
