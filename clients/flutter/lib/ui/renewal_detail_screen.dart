@@ -55,7 +55,8 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
 
   Future<void> _refresh() async {
     final token = ++_generation;
-    setState(() { _loading = true; _error = false; _unauthorized = false; _renewal = null; });
+    // Mantener los campos montados durante la recarga de la misma ficha.
+    setState(() { _loading = true; _error = false; _unauthorized = false; });
     try {
       final value = await widget.api.fetchRenewalDetail(widget.workspace.id, widget.renewalId);
       if (!mounted || token != _generation) return;
@@ -71,7 +72,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       }
     } on VenciraUnauthorized {
       if (!mounted || token != _generation) return;
-      setState(() { _loading = false; _unauthorized = true; });
+      setState(() { _loading = false; _unauthorized = true; _renewal = null; });
     } catch (_) {
       if (!mounted || token != _generation) return;
       setState(() { _loading = false; _error = true; });
@@ -81,8 +82,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
 
   Future<void> _loadManualFollowUp(int token) async {
     if (!mounted) return;
-    setState(() { _followUpLoading = true; _followUpError = false;
-                  _manualFollowUp = null; });
+    setState(() { _followUpLoading = true; _followUpError = false; });
     try {
       final value = await widget.api.fetchManualFollowUp(
         widget.workspace.id, widget.renewalId);
@@ -664,15 +664,17 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       body: SafeArea(child: Center(child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 920),
         child: ListView(padding: const EdgeInsets.all(16), children: [
-          if (_loading)
-            const Center(child: CircularProgressIndicator())
-          else if (_unauthorized)
+          SizedBox(height: 3, child: _loading && renewal != null
+              ? const LinearProgressIndicator() : null),
+          if (_unauthorized)
             Text(_t.loginRequired)
           else if (_error)
             Column(children: [
               Text(_t.detailLoadError),
               TextButton(onPressed: _refresh, child: Text(_t.retry)),
             ])
+          else if (_loading && renewal == null)
+            const Center(child: CircularProgressIndicator())
           else if (renewal != null) ...[
             Padding(
               padding: const EdgeInsets.fromLTRB(4, 6, 4, 12),
