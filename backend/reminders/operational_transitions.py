@@ -21,9 +21,9 @@ def transition_reminder(*, renewal_id, reminder_id, action, expected_state,
                         as_of=None):
     if type(idempotency_key) is not uuid.UUID:
         raise ValueError("Clave idempotente UUID requerida")
-    if action not in ("complete", "tomorrow", "another_day"):
+    if type(action) is not str or action not in ("complete", "tomorrow", "another_day"):
         raise ValueError("Acción inválida")
-    if expected_state not in ACTIVE:
+    if type(expected_state) is not str or expected_state not in ACTIVE:
         raise ValueError("Estado previo inválido")
     if type(expected_day) is not type(timezone.localdate()):
         raise ValueError("Fecha civil previa inválida")
@@ -44,8 +44,11 @@ def transition_reminder(*, renewal_id, reminder_id, action, expected_state,
     previous = OperationalReminderEvent.objects.filter(
         reminder=reminder, idempotency_key=idempotency_key).first()
     if previous is not None:
+        requested_day = (expected_day if action == "complete" else
+                         today + timedelta(days=1 if action == "tomorrow" else days_later))
         if (previous.action != action or
             previous.previous_state != expected_state or
+            previous.scheduled_for != requested_day or
             (action == "complete" and previous.next_state != "completed")):
             raise ReminderConflict("Clave ya utilizada para otra acción")
         return reminder
