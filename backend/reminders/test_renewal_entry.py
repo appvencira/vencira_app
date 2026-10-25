@@ -98,3 +98,26 @@ class EntryModalityTests(APITestCase):
         self.assertEqual(self.legacy.expires_on, date(2027, 3, 31))
         self.assertEqual(self.legacy.entry, "clients")
         self.assertEqual(self.legacy.modality, "hogar")
+
+    def test_whitepaper_three_fields_required_and_opaque_reference_optional(self):
+        self.client.force_authenticate(user=self.owner)
+        base = {
+            "entry": "clients", "full_name": "Entidad ficticia",
+            "expires_on": "2027-05-01",
+        }
+        for missing in ("entry", "full_name", "expires_on"):
+            data = dict(base)
+            data.pop(missing)
+            response = self.client.post(self.url(), data, format="json")
+            self.assertEqual(response.status_code, 400, response.data)
+            self.assertIn(missing, response.data)
+        response = self.client.post(self.url(), base, format="json")
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(response.data["full_name"], "Entidad ficticia")
+        self.assertEqual(response.data["entry"], "clients")
+        self.assertTrue(response.data["customer_reference"].startswith("V-"))
+        self.assertEqual(len(response.data["customer_reference"]), 34)
+        self.assertEqual(RenewalAuditEvent.objects.filter(
+            renewal_id=response.data["id"]).count(), 1)
+        self.assertNotIn("Entidad ficticia", str(RenewalAuditEvent.objects.get(
+            renewal_id=response.data["id"]).metadata))
