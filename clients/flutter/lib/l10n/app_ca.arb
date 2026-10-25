@@ -252,5 +252,22 @@
   "detailCaption14": "Registra un contacte fet fora de VENCIRA. Aquesta acció no envia missatges ni programa avisos.",
   "detailCaption15": "Marcar com a contactat",
   "detailCaption16": "Simular avisos de venciment",
-  "detailCaption17": "Vista prèvia. No desa ni envia avisos."
+  "detailCaption17": "Vista prèvia. No desa ni envia avisos.",
+  "previewText01": "Simulador d’avisos",
+  "previewText02": "Prova les anticipacions en dies naturals. Només calcula dates: no desa configuracions ni envia notificacions.",
+  "previewText03": "Dies abans del venciment",
+  "previewText04": "D’1 a 12 avisos, entre 0 i 365 dies; sense repetits.",
+  "previewText05": "Revisa els dies: usa valors separats per comes.",
+  "previewText06": "Calcular dates",
+  "previewText07": "No s’ha pogut consultar la vista prèvia.",
+  "previewText08": "Torna-ho a provar",
+  "previewText09": "Referència d’un mes civil: ",
+  "previewText10": "Pòlissa de Vida: revisa el seu règim específic abans d’actuar.",
+  "previewText11": "No hi ha cap avís anterior a la data de referència. Cal decidir.",
+  "previewText12": "La pregunta de control prevista ja hauria passat.",
+  "previewText13": "La data de referència ja ha arribat o ha passat.",
+  "previewText14": "dies abans · ",
+  "previewText15": "Pregunta de control prevista (no enviada)",
+  "previewText16": "Data passada",
+  "previewText17": "Simulació, no avís enviat ni tasca desada."
 }
