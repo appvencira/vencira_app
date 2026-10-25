@@ -235,5 +235,22 @@
   "editorIdentification": "Identificación",
   "editorPolicySection": "Póliza y clasificación",
   "editorDateSection": "Fechas y seguimiento",
-  "editorNotes": "Notas"
+  "editorNotes": "Notas",
+  "detailCaption01": "Registrar contacto",
+  "detailCaption02": "Volver a pendiente",
+  "detailCaption03": "Confirma que el contacto ya se ha realizado fuera de VENCIRA. Solo se actualizará el estado; no se enviará ningún mensaje.",
+  "detailCaption04": "La anotación volverá a pendiente. No se borrarán sus notas ni el historial de cambios.",
+  "detailCaption05": "Confirmar",
+  "detailCaption06": "Contacto registrado",
+  "detailCaption07": "Estado pendiente restaurado",
+  "detailCaption08": "Contacto",
+  "detailCaption09": "Póliza",
+  "detailCaption10": "Fechas",
+  "detailCaption11": "Notas",
+  "detailCaption12": "Observaciones",
+  "detailCaption13": "Seguimiento",
+  "detailCaption14": "Registra un contacto realizado fuera de VENCIRA. Esta acción no envía mensajes ni programa avisos.",
+  "detailCaption15": "Marcar como contactado",
+  "detailCaption16": "Simular avisos de vencimiento",
+  "detailCaption17": "Vista previa. No guarda ni envía avisos."
 }
