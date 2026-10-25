@@ -49,7 +49,8 @@ step(){
   echo "=== $PHASE ==="
   if "$@" >>"$LOG" 2>&1; then echo "$PHASE=OK"; else return $?; fi
 }
-test "$(id -u)" -eq 0 || { echo "ERROR=USAR_SUDO_BASH"; exit 2; }
+PHASE=IDENTIDAD
+ test "$(id -u)" -eq 0 || { echo "ERROR=USAR_SUDO_BASH"; exit 2; }
 for cmd in docker git curl restic rclone python3; do command -v "$cmd" >/dev/null; done
 test "$(git branch --show-current)" = integration/local-e2e-prep
 test -z "$(git diff --name-only)"
@@ -65,6 +66,7 @@ echo "FUENTES_PREFLIGHT_O8C=OK"
 echo "COMMIT=$(git rev-parse HEAD)"
 
 # Immutable proof of actual O5-restored clone migration.
+PHASE=PRUEBA_RESTAURACION
 PROOF=/tmp/vencira-o8c-rehearsal.1tRiHwUA.receipt
 test -f "$PROOF" && test ! -L "$PROOF"
 test "$(stat -c '%u:%a' "$PROOF")" = 0:600
@@ -78,6 +80,7 @@ age=$(( $(date +%s) - $(stat -c %Y "$PROOF") ))
 test "$age" -ge 0 && test "$age" -le 86400
 echo "RECIBO_RESTAURACION_O8C_VALIDO=OK"
 
+PHASE=COMPOSE
 COMPOSE=(docker compose -p vencira_localcheck -f compose.yaml -f compose.preview.yaml)
 step COMPOSE_CONFIG "${COMPOSE[@]}" config --quiet
 "${COMPOSE[@]}" config --format json | python3 -c '
@@ -93,6 +96,8 @@ for svc in api db web_preview; do
   test "$(docker inspect "$name" --format '{{index .Config.Labels "com.docker.compose.project"}}')" = vencira_localcheck
   test "$(docker inspect "$name" --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}')" = healthy
 done
+ACTUAL_CMD="$(docker inspect vencira_localcheck-api-1 --format '{{json .Config.Cmd}}')"
+case "$ACTUAL_CMD" in *"migrate --check --noinput"*) ;; *) echo 'ERROR=API_ACTUAL_NO_FAIL_CLOSED'; exit 3;; esac
 DB_ID="$(docker inspect vencira_localcheck-db-1 --format '{{.Id}}')"
 echo "CONTENEDORES_PRE_HEALTHY=OK"
 
@@ -103,7 +108,10 @@ sql_read(){
 LAST_SQL="SELECT name FROM django_migrations WHERE app='reminders' ORDER BY name DESC LIMIT 1;"
 test "$(sql_read "$LAST_SQL")" = 0014_renewal_outcomes
 test "$(sql_read "SELECT to_regclass('public.reminders_renewalreminderdraft') IS NULL;")" = t
+PHASE=BASE_DATOS_PRE0015
 MIG_COUNT="$(sql_read 'SELECT COUNT(*) FROM django_migrations;')"
+PRE_POLICIES="$(sql_read 'SELECT COUNT(*) FROM reminders_reminderpolicy;')"
+PRE_CANDIDATES="$(sql_read 'SELECT COUNT(*) FROM reminders_remindercandidate;')"
 echo "POSTGRES_0014_PRE_MIGRACION=OK"
 step O5_READ_ONLY bash scripts/o5_verify_active_schedule.sh
 grep -Fxq 'TIMERS_ACTIVOS_Y_HABILITADOS=OK' "$LOG"
@@ -194,6 +202,8 @@ test "$DB_ID" = "$(docker inspect vencira_localcheck-db-1 --format '{{.Id}}')"
 test "$(sql_read "$LAST_SQL")" = 0015_renewal_reminder_drafts
 test "$(sql_read 'SELECT COUNT(*) FROM django_migrations;')" = "$((MIG_COUNT+1))"
 test "$(sql_read 'SELECT COUNT(*) FROM reminders_renewalreminderdraft;')" = 0
+test "$(sql_read 'SELECT COUNT(*) FROM reminders_reminderpolicy;')" = "$PRE_POLICIES"
+test "$(sql_read 'SELECT COUNT(*) FROM reminders_remindercandidate;')" = "$PRE_CANDIDATES"
 echo "POSTGRES_0015_SIN_REINICIO=OK"
 PHASE=HTTP_COMPROBACIONES
 for endpoint in / /api/health/ /api/ready/ /accounts/login/; do
