@@ -350,6 +350,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(scroll.maxScrollExtent, closeTo(originalExtent, 10));
     expect(scroll.pixels, closeTo(originalScroll, 1));
+
+    final clear = find.text('Limpiar filtros');
+    await tester.ensureVisible(clear);
+    await tester.pumpAndSettle();
+    final clearPosition = scroll.pixels;
+    api.renewalFetchGate = Completer<void>();
+    await tester.tap(clear);
+    await tester.pump();
+    expect(scroll.maxScrollExtent, closeTo(originalExtent, 10));
+    expect(scroll.pixels, closeTo(clearPosition, 1));
+    api.renewalFetchGate!.complete();
+    await tester.pumpAndSettle();
+    expect(scroll.pixels, closeTo(clearPosition, 1));
     expect(tester.takeException(), isNull);
   });
 
