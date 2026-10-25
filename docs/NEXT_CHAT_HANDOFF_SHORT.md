@@ -225,3 +225,9 @@ Documento completo de alcance/evidencia: `docs/PHASE_WHITEPAPER_ALIGNMENT_2026-1
 - `views.py` commit `d879326` y `agenda_month.py` commit `5a389964`: calendario incorpora avisos internos, el mensual deduplica por renovación/día. Tests añadidos `test_operational_agenda.py`.
 - `vencira_api.dart` commit `04e326db5a65a5e06d5cd85899e6e896911feb9b` acepta bool de `notice_scheduled`; aún debe revisarse toda la representación móvil y cambiar textos ES/CA que actualmente afirman que No nunca programa. Las escrituras de traducción fueron rechazadas por la herramienta. No desplegar hasta corregirlo.
 - **PENDIENTE DE COMPROBACIONES**: validar doble transacción, reintentos y semántica de indicadores históricos, Flutter lint/test, contrato fechas, seguridad, migración 0017 en clon. DEV sigue 0016. No activar correo/push.
+
+## 25/10/2026 — Macrobloque A: copy ES/CA y orden de bloqueo en repetición No
+
+- Actualizados textos `controlResponseManualWarning` para ES en commit `b0ff1ecd0ed12ee2e36af4743655872903d3e0a2` y CA en `05be7465946328926dd22ef4ced5a8e51df58d67`: indican que responder No crea una revisión **interna** y que no hay notificación ni comunicación acreditada.
+- `control_repeat_schedule.py` commit `bfa001ebbe1f98621d1b640d13c4a15421bafd6a`: bloqueo consistente por renovación antes de leer registro de respuesta. Pendiente prueba de concurrencia.
+- `control_response_api.py` sigue vinculado en misma transacción al aviso interno tras No y responde `notice_scheduled=true` cuando la ocurrencia existe; Flutter parser ahora admite bool. **No se ha probado localmente**: comprobar regresiones existentes, migración 0017, i18n, dinámica de UI y reintentos; no desplegar DEV 0016 todavía.
