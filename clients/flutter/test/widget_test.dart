@@ -271,6 +271,37 @@ void main() {
     });
   }
 
+  for (final width in <double>[320, 375]) {
+    testWidgets('Catálogos: accesos alineados en una fila a ${width.toInt()} px',
+        (tester) async {
+      tester.view.physicalSize = Size(width, 1100);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final api = FakeVenciraApi(
+        workspaces: [workspaceA],
+        pages: {workspaceA.id: const VenciraRenewalPage(
+          total: 0, items: [], hasNext: false)},
+      );
+      await tester.pumpWidget(VenciraApp(api: api));
+      await tester.pumpAndSettle();
+      final catalog = find.byKey(const ValueKey('workspace-tools'));
+      await tester.ensureVisible(catalog);
+      await tester.tap(catalog);
+      await tester.pumpAndSettle();
+      final first = find.byKey(const ValueKey('open-catalog'));
+      final second = find.byKey(const ValueKey('open-insurers'));
+      expect(first, findsOneWidget);
+      expect(second, findsOneWidget);
+      final firstRect = tester.getRect(first);
+      final secondRect = tester.getRect(second);
+      expect(firstRect.top, closeTo(secondRect.top, 0.5));
+      expect(firstRect.height, closeTo(secondRect.height, 0.5));
+      expect(secondRect.left, greaterThan(firstRect.right));
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('envía filtros al backend y puede limpiarlos', (tester) async {
     // La bandeja B añade navegación encima de los filtros. Esta prueba
     // verifica peticiones, no el scroll de un viewport de 800x600.
