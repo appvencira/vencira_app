@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
+import 'vencira_pagination_bar.dart';
 import 'renewal_detail_screen.dart';
 import 'operational_history_screen.dart';
 
@@ -445,17 +446,16 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
               padding: const EdgeInsets.symmetric(vertical: 28),
               child: Text(t.inboxEmpty)),
             for (final item in inbox.items) _item(item),
-            if (_page > 1 || inbox.hasNext) Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextButton(onPressed: _page > 1 && !_loading
+            if (_page > 1 || inbox.hasNext)
+              VenciraPaginationBar(
+                pageLabel: '${t.page} $_page',
+                previousLabel: t.previous,
+                nextLabel: t.next,
+                onPrevious: _page > 1 && !_loading
                     ? () => _load(page: _page - 1) : null,
-                  child: Text(t.previous)),
-                Text('$_page'),
-                TextButton(onPressed: inbox.hasNext && !_loading
+                onNext: inbox.hasNext && !_loading
                     ? () => _load(page: _page + 1) : null,
-                  child: Text(t.next)),
-              ]),
+              ),
           ],
         ]),
       ))),
