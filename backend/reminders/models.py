@@ -333,3 +333,57 @@ class RenewalAuditEvent(models.Model):
             models.Index(fields=["renewal", "created_at"], name="audit_renew_time_idx"),
         ]
         ordering = ["created_at", "id"]
+
+
+class RenewalControlResponse(models.Model):
+    """O9b: audited answer intent; not evidence of notice delivery.
+
+    No automatic send or actual reminder is created by this table.
+    """
+    class Answer(models.TextChoices):
+        YES = "yes", "Sí"
+        NO = "no", "No"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    renewal = models.ForeignKey(
+        Renewal, on_delete=models.PROTECT, related_name="control_responses",
+    )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, related_name="vencira_control_responses",
+    )
+    answer = models.CharField(max_length=3, choices=Answer.choices)
+    yes_option = models.CharField(max_length=32, blank=True, default="")
+    repeat_on = models.DateField(null=True, blank=True)
+    cutoff_on = models.DateField()
+    answered_at = models.DateTimeField(auto_now_add=True)
+    revision = models.PositiveIntegerField(default=1)
+    # An opaque retry key prevents replay of an identical POST.
+    idempotency_key = models.UUIDField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["renewal", "idempotency_key"],
+                name="uniq_control_response_retry",
+            ),
+            models.UniqueConstraint(
+                fields=["renewal", "revision"],
+                name="uniq_control_response_revision",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(revision__gte=1),
+                name="control_response_revision_positive",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(answer="yes", yes_option__in=[
+                        "notified_by_client", "insurer_not_renewing",
+                        "notified_by_mediator"], repeat_on__isnull=True)
+                    | models.Q(answer="no", yes_option="", repeat_on__isnull=False,
+                               repeat_on__lte=models.F("cutoff_on"))
+                ),
+                name="control_response_choice_shape",
+            ),
+        ]
+        ordering = ["answered_at", "id"]
