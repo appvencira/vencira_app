@@ -145,10 +145,20 @@ class _ReminderDraftCardState extends State<VenciraReminderDraftCard> {
           const SizedBox(height: 12),
           if (_loading) const Center(child: CircularProgressIndicator()),
           if (!_loading && draft != null) ...[
-            Text(_tr(
-              draft.isPersisted ? 'Borrador guardado' : 'Valores sugeridos, aún no guardados',
-              draft.isPersisted ? 'Esborrany desat' : 'Valors suggerits, encara no desats',
-            )),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: Text(
+                _tr(
+                  draft.isPersisted
+                      ? 'Borrador guardado'
+                      : 'Valores sugeridos, aún no guardados',
+                  draft.isPersisted
+                      ? 'Esborrany desat'
+                      : 'Valors suggerits, encara no desats',
+                ),
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
             TextField(
               key: const ValueKey('draft-days'),
               controller: _days,
@@ -164,15 +174,23 @@ class _ReminderDraftCardState extends State<VenciraReminderDraftCard> {
                   'Introdueix dies vàlids separats per comes.') : null,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             if (draft.noPreCutoffNotice)
-              Text(_tr(
-                'Sin aviso anterior al límite informativo.',
-                'Sense avís anterior al límit informatiu.')),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(_tr(
+                  'Sin aviso anterior al límite informativo.',
+                  'Sense avís anterior al límit informatiu.',
+                )),
+              ),
             if (draft.lifeRuleRequiresReview)
-              Text(_tr(
-                'Vida: pendiente de revisión del régimen específico.',
-                'Vida: pendent de revisió del règim específic.')),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(_tr(
+                  'Vida: pendiente de revisión del régimen específico.',
+                  'Vida: pendent de revisió del règim específic.',
+                )),
+              ),
             FilledButton.icon(
               key: const ValueKey('save-draft'),
               onPressed: _saving || _conflict ? null : _save,
