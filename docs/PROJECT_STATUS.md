@@ -1,5 +1,16 @@
 # Estado del proyecto VENCIRA — actualizado 21/10/2026
 
+## Estado confirmado el 25/10/2026 — O8c DEPLOY DEV CORRECTO; aceptación manual pendiente
+
+**EVIDENCIA REAL aportada por el usuario** al ejecutar `scripts/deploy_o8c_0015_guarded.sh` sobre fuente `9c404380e5801d8f9fd2d4dfe260d51df78264d6`: `RECIBO_RESTAURACION_O8C_VALIDO=OK`, `O5_CIFRADO_ACTIVO=OK`, `IMAGENES_O8B_CONSERVADAS=OK`, `BUILD_API_WEB=OK`, `PLAN_MIGRACION_0015=OK`, `BACKUP_O5_PRE0015_FRESCO=OK`, `APLICAR_0015_EXPLICITAMENTE=OK`, `MIGRACION_0015_VERIFICADA=OK`, `TABLA_BORRADORES_VACIA_Y_RESTRINGIDA=OK`, `CHECK_MIGRACIONES_POST0015=OK`, `API_O8C_DESPLEGADA=OK`, `FLUTTER_WEB_O8C_DESPLEGADA=OK`, `POSTGRES_0015_SIN_REINICIO=OK`, `ENDPOINTS_PRIVADOS_PROTEGIDOS=OK` (HTTP 403 sin sesión para O7/O8b/O8c/O3), `HEALTH_api=healthy`, `HEALTH_db=healthy`, `HEALTH_web_preview=healthy`, proxy local 200 y `DEV_VENCIRA_HTTPS_HTTP=200`, `O8C_GUARDADO_SOLO_BORRADOR=OK`, `O8C_DESPLIEGUE_0015_LOCALCHECK=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`. PostgreSQL LIVE está ahora en `reminders.0015_renewal_reminder_drafts`, **no 0014**. NO volver a ejecutar la migración ni el script de despliegue.
+
+**Recibo local privado** `/tmp/vencira-o8c-deploy.gst32W6O.receipt`, **log** `/tmp/vencira-o8c-deploy.6ggUPoJg.log`. Imágenes anteriores recuperables: `vencira-o8c-before-api:20261025T061256Z_2623430` y `vencira-o8c-before-web:20261025T061256Z_2623430`. Se realizó copia cifrada O5 nueva antes de migrar y no se cambiaron timers, Caddy u OAuth.
+
+**Pendiente únicamente UAT funcional O8c (NO afirmarlo aceptado):** abrir `https://dev.vencira.es/` con anotación ficticia abierta, expandir «Simular avisos de vencimiento», localizar «Guardar borrador de avisos», escribir `20,15` y guardar. Debe figurar borrador guardado; salir/volver y comprobar persistencia solo de esa anotación; otra anotación debe mantener defaults 60/45/35. Verificar que no existe notificación enviada, programada ni regla habilitada. Simulación O8b sigue temporal/no persistente; O8c solo guarda días como **draft**. Si falla UAT, corregir sin volver a aplicar 0015.
+
+**Fuente rápida para nuevo chat:** `docs/NEXT_CHAT_HANDOFF_SHORT.md`. Siguiente bloque tras UAT: O9, revisión de preguntas de control, plazos/repeticiones y decisiones whitepaper §18, sin activar notificaciones prematuramente.
+
+
 > **Estado 24/10/2026 (más reciente):** el titular confirma que el cliente Google OAuth `VENCIRA Internal Backups` está **In production** en Google Cloud y el sitio informativo `https://oauth.vencira.es/` dispone de HTTPS comprobado (las tres páginas HTTP 200). Esto **no es** un lanzamiento comercial de VENCIRA. `https://dev.vencira.es/` es accesible sin HTTP Basic Auth pero mantiene login Django y API anónima 403; **solo DEMO**. O5 cuenta con copia PostgreSQL cifrada/restaurada; **pendiente reautorizar el remoto Rclone con un token emitido tras publicación**, verificar snapshot existente y definir backups automáticos/retención/alertas. El desarrollo de producto continúa con **O6 «Archivo y cerrados»**: fuentes Flutter y tests en GitHub, aún **sin validación ni despliegue**. Ver `docs/OPERATION_O6_ARCHIVE.md` y `docs/CONTINUITY_RUNBOOK.md`. Los párrafos históricos inferiores describen estados anteriores y no sustituyen este hito.
 
 
