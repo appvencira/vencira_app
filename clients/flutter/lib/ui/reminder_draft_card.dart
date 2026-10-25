@@ -42,6 +42,8 @@ class _ReminderDraftCardState extends State<VenciraReminderDraftCard> {
     if (previous.workspaceId != widget.workspaceId ||
         previous.renewalId != widget.renewalId ||
         previous.api != widget.api) {
+      // Nunca conservar un borrador de otra anotación u organización.
+      _draft = null;
       _load();
     }
   }
@@ -61,7 +63,7 @@ class _ReminderDraftCardState extends State<VenciraReminderDraftCard> {
       _conflict = false;
       _error = false;
       _badInput = false;
-      _draft = null;
+      // Recarga del mismo borrador: mantener formulario y altura.
     });
     try {
       final result = await widget.api.fetchReminderDraft(
@@ -137,8 +139,11 @@ class _ReminderDraftCardState extends State<VenciraReminderDraftCard> {
           const SizedBox(height: 8),
           Text(_strings.draftIntro, style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 12),
-          if (_loading) const Center(child: CircularProgressIndicator()),
-          if (!_loading && draft != null) ...[
+          SizedBox(height: 3, child: _loading && draft != null
+            ? const LinearProgressIndicator() : null),
+          if (_loading && draft == null)
+            const Center(child: CircularProgressIndicator()),
+          if (draft != null) ...[
             Padding(
               padding: const EdgeInsets.only(bottom: 20),
               child: Text(
@@ -149,7 +154,7 @@ class _ReminderDraftCardState extends State<VenciraReminderDraftCard> {
             TextField(
               key: const ValueKey('draft-days'),
               controller: _days,
-              enabled: !_saving && !_conflict,
+              enabled: !_saving && !_conflict && !_loading,
               decoration: InputDecoration(
                 labelText: _strings.draftDays,
                 hintText: '60,45,35',
@@ -170,7 +175,7 @@ class _ReminderDraftCardState extends State<VenciraReminderDraftCard> {
               ),
             FilledButton.icon(
               key: const ValueKey('save-draft'),
-              onPressed: _saving || _conflict ? null : _save,
+              onPressed: _saving || _conflict || _loading ? null : _save,
               icon: const Icon(Icons.save_outlined),
               label: Text(_strings.draftSaveOnly),
             ),
