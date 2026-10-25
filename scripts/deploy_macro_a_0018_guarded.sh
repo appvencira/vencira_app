@@ -35,6 +35,14 @@ finish() {
 trap finish EXIT
 step() { PHASE="$1"; shift; echo "=== $PHASE ==="; "$@" >>"$LOG" 2>&1; echo "$PHASE=OK"; }
 test "$(id -u)" -eq 0
+if [ "${MACRO_A_DEPLOY_CONFIRM:-}" != "DEPLOY_0017_0018_DEV" ]; then
+  echo "ERROR=CONFIRMACION_EXPLICITA_REQUERIDA"
+  exit 3
+fi
+if [ "${MACRO_A_O5_VERIFIED_SNAPSHOT:-}" != "4341e05e" ]; then
+  echo "ERROR=ENSAYO_O5_NO_ACREDITADO"
+  exit 3
+fi
 test "$(git branch --show-current)" = integration/local-e2e-prep
 test -z "$(git diff --name-only)"
 test -z "$(git diff --cached --name-only)"
