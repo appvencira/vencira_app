@@ -350,5 +350,6 @@
   "inboxHistoryMore": "Mostrar més actuacions",
   "inboxHistoryIndexTitle": "Historial d'avisos",
   "inboxHistoryIndexDescription": "Actuacions registrades en els avisos interns d'aquesta anotació. No representen notificacions enviades.",
-  "inboxHistoryIndexEmpty": "Aquesta anotació no té avisos interns registrats."
+  "inboxHistoryIndexEmpty": "Aquesta anotació no té avisos interns registrats.",
+  "inboxHistoryShortcutDescription": "Consultar actuacions registrades"
 }
