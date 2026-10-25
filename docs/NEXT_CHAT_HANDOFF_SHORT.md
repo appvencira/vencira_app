@@ -77,3 +77,9 @@ Documento completo de alcance/evidencia: `docs/PHASE_WHITEPAPER_ALIGNMENT_2026-1
 - Validador puro `backend/reminders/control_responses.py`: pregunta exacta y tres opciones «Sí» del whitepaper; «No» con días positivos, día civil y fecha de repetición nunca posterior al límite de un mes civil. Resultado descriptivo `ControlResponsePlan`, siempre `notice_scheduled=False` / `notice_delivered=False`. Revisión manual bloquea validación. Sin lectura/escritura de modelos, sin API, sin motor de envío.
 - Tests `backend/reminders/test_control_responses.py`: opciones, límite en febrero bisiesto, fechas y entradas inválidas.
 - HEAD del lote al crear pruebas: `3fd78ba39350005a8e359c333d33eda859915d89`. **PENDIENTE ejecutar suite completa sobre Ubuntu**, no confundir commit con validación. No migración 0016 ni cambios en DEV; O9b-2 persistencia/auditoría es fase posterior.
+
+## 25/10/2026 — O9b-1 gate verde y O9b-2 esquema candidato
+
+- Usuario verificó suite integral O9b-1: `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`. Sin despliegue ni migración persistente. Log `/tmp/vencira-o7-o8-preflight.5CxTjnTL.log`.
+- O9b-2 **preparación en GitHub, NO aprobada ni aplicada**: modelo `RenewalControlResponse` y migración aditiva `0016_renewal_control_responses.py`. Guarda respuesta, subtipo sí, fecha repetición no, actor, instante, cutoff, revisión y clave idempotente; constraints de forma/revisión. **NO EXISTE TODAVÍA endpoint de escritura, cola ni notificación.**
+- Próximo gate: ejecutar `scripts/validate_o7_o8_preflight.sh` en Ubuntu sobre la rama actual para detectar divergencia de esquema con `makemigrations --check --dry-run`, tests SQLite/PG17 y Flutter; revisar SQL de 0016 y compatibilidad con PostgreSQL; ensayo O4/O5 de restauración antes de aplicar al servidor; no desplegar API con `migrate --check` antes de migrar 0016 (se negaría a arrancar).
