@@ -324,7 +324,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(color: colors.outlineVariant)),
       child: InkWell(
-        onTap: _acting ? null : () => _openDetail(item),
+        onTap: _acting || _loading ? null : () => _openDetail(item),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(17, 15, 8, 16),
           child: Row(
@@ -368,7 +368,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
               )),
               IconButton(
                 key: ValueKey('inbox-more-' + item.reminder.id),
-                onPressed: _acting ? null : () => _showActions(item),
+                onPressed: _acting || _loading ? null : () => _showActions(item),
                 tooltip: t.opActions,
                 icon: const Icon(Icons.more_vert_rounded),
               ),
@@ -418,6 +418,9 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
           // Mismo espacio ocupado en reposo y durante una consulta.
           SizedBox(height: 3, child: _loading
             ? const LinearProgressIndicator() : null),
+          if (_loading && inbox == null)
+            const Padding(padding: EdgeInsets.all(28),
+              child: Center(child: CircularProgressIndicator())),
           if (_unauthorized) Text(t.loginRequired),
           if (_failed) TextButton.icon(
             onPressed: () => _load(),
