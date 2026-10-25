@@ -287,7 +287,7 @@
   "controlResponseInsurer": "La aseguradora no renueva",
   "controlResponseMediator": "Notificado por mí",
   "controlResponseDays": "Avísame dentro de (días)",
-  "controlResponseDaysHint": "La fecha solicitada no se programa automáticamente. Debe respetar el límite de un mes civil; el servidor rechazará fechas fuera de plazo.",
+  "controlResponseDaysHint": "La respuesta No programa una revisión interna en la agenda, pero no envía ninguna notificación. El servidor comprueba el límite de un mes civil.",
   "controlResponseSave": "Registrar respuesta manual",
   "controlResponseSaved": "Respuesta manual registrada",
   "controlResponseError": "No se pudo consultar o guardar la respuesta.",
