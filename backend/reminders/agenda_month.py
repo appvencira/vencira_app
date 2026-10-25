@@ -71,37 +71,23 @@ def agenda_month(request, workspace_id):
     if membership.role != WorkspaceMember.Role.OWNER:
         candidates = candidates.filter(renewal__assigned_to_id=membership.user_id)
 
-    for row in (
-        candidates.values("scheduled_for", "renewal__status")
-        .annotate(total=Count("renewal_id", distinct=True))
-        .order_by()
-    ):
-        accumulate(row["scheduled_for"], "reminder", row["renewal__status"], row["total"])
-
-    # Ocurrencias operativas: se agregan separadamente de los candidatos
-    # previos y NUNCA se interpretan como notificaciones entregadas.
-    operational = (
-        OperationalReminder.objects.filter(
-            renewal_id__in=visible.values("pk"),
-            state__in=["planned", "pending", "snoozed"],
-            scheduled_for__gte=first, scheduled_for__lt=following,
-        ).values("scheduled_for", "renewal__status")
-        .annotate(total=Count("renewal_id", distinct=True)).order_by()
-    )
-    for row in operational:
-        day_key = row["scheduled_for"].isoformat()
-        record = days.setdefault(day_key, {
-            "day": day_key,
-            "expiry": {"pending": 0, "contacted": 0},
-            "notice_deadline": {"pending": 0, "contacted": 0},
-            "reminder": {"pending": 0, "contacted": 0},
-            "follow_up": {"pending": 0, "contacted": 0},
-        })
-        # Conservamos el esquema del cliente existente. Si coinciden los dos
-        # tipos de recordatorio, no podemos deduplicar aquí por cardinalidad
-        # agregada: usar max evita la suma ficticia de una misma anotación.
-        state = row["renewal__status"]
-        record["reminder"][state] = max(record["reminder"][state], row["total"])
+    # Unión exacta por anotación/día; no equivale a entrega.
+    unique_due = set()
+    for row in candidates.values(
+        "scheduled_for", "renewal__status", "renewal_id"
+    ).distinct():
+        unique_due.add((row["scheduled_for"], row["renewal__status"], row["renewal_id"]))
+    for row in OperationalReminder.objects.filter(
+        renewal_id__in=visible.values("pk"),
+        state__in=["planned", "pending", "snoozed"],
+        scheduled_for__gte=first, scheduled_for__lt=following,
+    ).values("scheduled_for", "renewal__status", "renewal_id").distinct():
+        unique_due.add((row["scheduled_for"], row["renewal__status"], row["renewal_id"]))
+    totals = {}
+    for day, state, _ in unique_due:
+        totals[(day, state)] = totals.get((day, state), 0) + 1
+    for (day, state), count in totals.items():
+        accumulate(day, "reminder", state, count)
 
     # Seguimientos manuales: nunca representan avisos automáticos ni entregados.
     # El conjunto de IDs ya está filtrado por membresía, asignación y filtros.
