@@ -126,7 +126,10 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
                     ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
-              Text(_strings.controlCutoffLabel + _date(value.cutoffOn)),
+              // Vida requires policy-specific human review: the general
+              // one-month cutoff cannot be presented as legally confirmed.
+              if (!value.reasons.contains('life_case_needs_review'))
+                Text(_strings.controlCutoffLabel + _date(value.cutoffOn)),
               if (value.controlDay != null) ...[
                 const SizedBox(height: 8),
                 Text(_strings.controlDayLabel +
@@ -135,7 +138,16 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
               for (final reason in value.reasons) ...[
                 const SizedBox(height: 12),
                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Icon(Icons.info_outline, size: 19),
+                  Icon(
+                    reason == 'no_notice_before_cutoff' ||
+                            reason == 'informational_cutoff_reached' ||
+                            reason == 'control_date_already_past_no_execution_evidence'
+                        ? Icons.warning_amber_rounded : Icons.info_outline,
+                    size: 19,
+                    color: reason == 'life_case_needs_review'
+                        ? Theme.of(context).colorScheme.onSurfaceVariant
+                        : Theme.of(context).colorScheme.error,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(child: Text(_reason(reason))),
                 ]),
