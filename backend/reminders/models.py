@@ -219,6 +219,45 @@ class LoginAttemptBucket(models.Model):
     blocked_until = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+class RenewalReminderDraft(models.Model):
+    """O8c: configuración de avisos por anotación, solo BORRADOR.
+
+    No crea ReminderCandidate ni activa ninguna política de organización.
+    La versión hace imposible sobrescribir un borrador sin verificar cambios.
+    """
+    renewal = models.OneToOneField(
+        Renewal, on_delete=models.CASCADE, primary_key=True,
+        related_name="reminder_draft",
+    )
+    days_before = models.JSONField(default=list)
+    state = models.CharField(
+        max_length=12, default="draft", choices=[("draft", "Borrador")],
+    )
+    revision = models.PositiveIntegerField(default=1)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL,
+        related_name="vencira_created_reminder_drafts",
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL,
+        related_name="vencira_updated_reminder_drafts",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(state="draft"),
+                name="renewal_reminder_draft_only",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(revision__gte=1),
+                name="renewal_reminder_revision_positive",
+            ),
+        ]
+
+
 class ReminderPolicy(models.Model):
     """Regla voluntaria por organización. Deshabilitada por defecto."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
