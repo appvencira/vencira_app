@@ -34,7 +34,7 @@ def plan_control_repeat(response_id, *, actor=None):
             existing.original_scheduled_for != response.repeat_on):
             raise ValueError("Conflicto en el control ya programado")
         return existing
-    if response.repeat_on > cutoff or response.repeat_on <= timezone.localdate():
+    if response.repeat_on >= cutoff or response.repeat_on <= timezone.localdate():
         raise ValueError("La repetición no es futura o supera el límite")
     reminder = OperationalReminder.objects.create(
         renewal=renewal,
