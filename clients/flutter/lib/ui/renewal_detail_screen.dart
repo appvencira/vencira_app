@@ -716,13 +716,49 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                   label: _status(renewal.status)),
               ]),
             ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                key: const ValueKey('detail-operational-history'),
-                onPressed: _openOperationalHistory,
-                icon: const Icon(Icons.history_outlined),
-                label: Text(_t.inboxHistoryIndexTitle),
+            Card.outlined(
+              key: const ValueKey('detail-operational-history'),
+              margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: _openOperationalHistory,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 76),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 14),
+                    child: Row(children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(Icons.history_outlined, size: 24,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_t.inboxHistoryIndexTitle,
+                            style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 4),
+                          Text(_t.inboxHistoryShortcutDescription,
+                            style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Theme.of(context)
+                                .colorScheme.onSurfaceVariant)),
+                        ],
+                      )),
+                      const SizedBox(width: 8),
+                      Icon(Icons.chevron_right_rounded,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    ]),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 12),
