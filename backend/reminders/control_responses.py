@@ -62,6 +62,6 @@ def validate_control_response(
         repeat_on = as_of + timedelta(days=days_later)
     except (OverflowError, ValueError):
         raise ValueError("Fecha de repetición fuera de rango") from None
-    if repeat_on > cutoff:
+    if repeat_on >= cutoff:
         raise ValueError("La repetición supera el mes civil de límite")
     return ControlResponsePlan("no", None, repeat_on, cutoff, True)
