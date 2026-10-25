@@ -285,3 +285,10 @@ Documento completo de alcance/evidencia: `docs/PHASE_WHITEPAPER_ALIGNMENT_2026-1
 - Un failure: agenda diaria anotaba `agenda_has_operational` pero omitía agregar evento en `events`. Arreglado `backend/reminders/views.py` commit `a93a1abe132aa3889668c175822564fc906bc34b`.
 - Dos failures por test incorrecto: (30,15) días para 15/03/2027 contiene 13/02/2027 (antes corte 15/02); se cambió caso sin preaviso a (25,15), commits `583010be231a05d2691d0abe2b93a0a39ced5362` y `0fa367d5c523923cf6d8e51c8af831dec0ab3506`.
 - Próximo paso: repetir gate tras pull --ff-only, revisar cualquier fallo nuevo de PostgreSQL temporal y Flutter. DEV sigue en 0016.
+
+## 25/10/2026 — MACROBLOQUE A: GATE INTEGRAL SUPERADO (confirmado por salida de Ubuntu)
+
+- Commit verificado `b8654ddaaf7f4e57322e564d566af0072ce8e9ee` en rama `integration/local-e2e-prep`.
+- Usuario ejecutó `bash scripts/validate_macro_a_readonly.sh`; salida: `MACRO_A_FUENTES=OK`, `CONFIG_COMPOSE=OK`, `I18N_ES_CA=OK`, `BUILD_BACKEND_AISLADO=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `PG17_TEMPORAL=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `LOCALCHECK_HEALTH_PRE=OK`, `LOCALCHECK_HEALTH_POST=OK`, `RESULTADO_GLOBAL=0`, `MACRO_A_PREFLIGHT_COMPLETO=OK`.
+- Log local de la ejecución: `/tmp/vencira-o7-o8-preflight.d3ItY9pt.log`. No hay migración persistente ni despliegue: `NO_SE_DESPLEGO_NI_MIGRO_DB_PERSISTENTE=1` y `MACRO_A_NO_DESPLEGADO=1`.
+- **Diferenciar**: gate de tests aislados SUPERADO; despliegue en DEV aún pendiente. DEV sigue en migración 0016; antes de 0017/0018 exigir gate O5 (copia cifrada reciente verificable, ensayo/recuperación, migración, salud y rollback imágenes con trazabilidad).
