@@ -1,6 +1,7 @@
 """Pruebas de cambios explícitos de estado de avisos en DB temporal."""
 import uuid
-from datetime import date
+from datetime import date, datetime
+from unittest.mock import patch
 from django.test import TestCase
 from reminders.models import OperationalReminder, OperationalReminderEvent, Renewal, Workspace
 from reminders.operational_transitions import transition_reminder, ReminderConflict
@@ -33,6 +34,27 @@ class OperationalTransitionTests(TestCase):
         self.act("complete", key=key)
         self.reminder.refresh_from_db()
         self.assertEqual(self.reminder.state, "completed")
+        self.assertEqual(OperationalReminderEvent.objects.count(), 1)
+
+    def test_tomorrow_replay_next_day_is_idempotent(self):
+        key = uuid.uuid4()
+        self.act("tomorrow", key=key)
+        with patch("reminders.operational_transitions.timezone.localtime",
+                   return_value=datetime(2027, 2, 8, 12, 0)):
+            self.act("tomorrow", key=key, now=date(2027, 2, 9))
+        self.assertEqual(OperationalReminderEvent.objects.count(), 1)
+        self.reminder.refresh_from_db()
+        self.assertEqual(self.reminder.scheduled_for, date(2027, 2, 9))
+
+    def test_replay_key_with_different_days_conflicts(self):
+        self.reminder.control_question = False
+        self.reminder.save(update_fields=["control_question"])
+        key = uuid.uuid4()
+        self.act("another_day", key=key, days_later=3)
+        with patch("reminders.operational_transitions.timezone.localtime",
+                   return_value=datetime(2027, 2, 8, 12, 0)):
+            with self.assertRaises(ReminderConflict):
+                self.act("another_day", key=key, days_later=4)
         self.assertEqual(OperationalReminderEvent.objects.count(), 1)
 
     def test_tomorrow_and_stale_cas(self):
