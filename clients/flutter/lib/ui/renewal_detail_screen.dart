@@ -9,6 +9,8 @@ import 'reminder_draft_card.dart';
 import 'control_assessment_card.dart';
 import 'control_response_card.dart';
 import 'operational_panel.dart';
+import 'operational_history_index_screen.dart';
+import 'vencira_pagination_bar.dart';
 import 'vencira_select.dart';
 
 /// Una anotación es una póliza externa, no una ficha CRM (whitepaper §6).
@@ -52,6 +54,15 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
   void dispose() {
     _generation++;
     super.dispose();
+  }
+
+  void _openOperationalHistory() {
+    Navigator.of(context).push<void>(MaterialPageRoute(
+      builder: (_) => VenciraOperationalHistoryIndexScreen(
+        api: widget.api,
+        workspaceId: widget.workspace.id,
+        renewalId: widget.renewalId),
+    ));
   }
 
   Future<void> _refresh() async {
@@ -618,15 +629,15 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
           _t.detailHistoryCreated : _t.detailHistoryUpdated),
         subtitle: Text(_auditSubtitle(event, locale)),
       )),
-      Wrap(spacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
-        OutlinedButton(onPressed: _page > 1 && !_historyLoading
-          ? () => _loadHistory(_page - 1) : null,
-            child: Text(_t.previous)),
-        Text(_t.page + ' ' + _page.toString()),
-        OutlinedButton(onPressed: result.hasNext && !_historyLoading
-          ? () => _loadHistory(_page + 1) : null,
-            child: Text(_t.next)),
-      ]),
+      VenciraPaginationBar(
+        pageLabel: '${_t.page} $_page',
+        previousLabel: _t.previous,
+        nextLabel: _t.next,
+        onPrevious: _page > 1 && !_historyLoading
+            ? () => _loadHistory(_page - 1) : null,
+        onNext: result.hasNext && !_historyLoading
+            ? () => _loadHistory(_page + 1) : null,
+      ),
     ]);
   }
 
@@ -705,6 +716,16 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                   label: _status(renewal.status)),
               ]),
             ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                key: const ValueKey('detail-operational-history'),
+                onPressed: _openOperationalHistory,
+                icon: const Icon(Icons.history_outlined),
+                label: Text(_t.inboxHistoryIndexTitle),
+              ),
+            ),
+            const SizedBox(height: 12),
             if (renewal.fullName.isNotEmpty ||
                 renewal.nickname.isNotEmpty ||
                 renewal.phone.isNotEmpty ||
