@@ -30,6 +30,16 @@ abstract class VenciraApi {
     String workspaceId, String renewalId, {List<int>? daysBefore}
   ) async => throw const VenciraApiException();
 
+  /// O8c: solo borrador por anotación. Nunca habilita mensajes.
+  Future<VenciraReminderDraft> fetchReminderDraft(
+      String workspaceId, String renewalId) async =>
+      throw const VenciraApiException();
+
+  Future<VenciraReminderDraft> saveReminderDraft(
+      String workspaceId, String renewalId,
+      {required int revision, required List<int> daysBefore}) async =>
+      throw const VenciraApiException();
+
   Future<VenciraRenewal> fetchRenewalDetail(
       String workspaceId, String renewalId);
 
@@ -122,6 +132,10 @@ abstract class VenciraApi {
   ) async => const [];
 
   Future<void> logout();
+}
+
+class VenciraConflictException implements Exception {
+  const VenciraConflictException();
 }
 
 class VenciraUnauthorized implements Exception {
@@ -355,6 +369,46 @@ class VenciraPreviewReminder {
   final DateTime scheduledFor;
   final bool controlQuestion;
   final bool alreadyElapsed;
+}
+
+class VenciraReminderDraft {
+  const VenciraReminderDraft({
+    required this.daysBefore, required this.revision,
+    required this.isPersisted, required this.noPreCutoffNotice,
+    required this.lifeRuleRequiresReview,
+  });
+
+  final List<int> daysBefore;
+  final int revision;
+  final bool isPersisted;
+  final bool noPreCutoffNotice;
+  final bool lifeRuleRequiresReview;
+
+  factory VenciraReminderDraft.fromJson(Map<String, dynamic> json) {
+    final days = json['days_before'];
+    final revision = json['revision'];
+    final persisted = json['is_persisted'];
+    if (json['state'] != 'draft' || days is! List ||
+        days.isEmpty || days.length > 12 ||
+        days.any((value) => value is! int || value < 0 || value > 365) ||
+        days.toSet().length != days.length ||
+        revision is! int || revision < 0 ||
+        persisted is! bool || (persisted && revision == 0) ||
+        (!persisted && revision != 0) ||
+        json['scheduling_enabled'] != false ||
+        json['delivered'] != false ||
+        json['no_pre_cutoff_notice'] is! bool ||
+        json['life_rule_requires_review'] is! bool) {
+      throw const FormatException('Invalid reminder draft');
+    }
+    return VenciraReminderDraft(
+      daysBefore: List<int>.unmodifiable(days.cast<int>()),
+      revision: revision,
+      isPersisted: persisted,
+      noPreCutoffNotice: json['no_pre_cutoff_notice'] as bool,
+      lifeRuleRequiresReview: json['life_rule_requires_review'] as bool,
+    );
+  }
 }
 
 class VenciraResultsSummary {
@@ -689,6 +743,69 @@ String _civilDayIso(DateTime day) {
 }
 
 class HttpVenciraApi implements VenciraApi {
+  String _draftPath(String workspaceId, String renewalId) {
+    if (!_validUuid(workspaceId) || !_validUuid(renewalId)) {
+      throw const VenciraApiException();
+    }
+    return '/api/v1/workspaces/$workspaceId/renewals/$renewalId/reminder-config/';
+  }
+
+  @override
+  Future<VenciraReminderDraft> fetchReminderDraft(
+      String workspaceId, String renewalId) async {
+    try {
+      final path = _draftPath(workspaceId, renewalId);
+      final payload = await _fetch(path);
+      return VenciraReminderDraft.fromJson(payload as Map<String, dynamic>);
+    } on VenciraUnauthorized {
+      rethrow;
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<VenciraReminderDraft> saveReminderDraft(
+      String workspaceId, String renewalId,
+      {required int revision, required List<int> daysBefore}) async {
+    final path = _draftPath(workspaceId, renewalId);
+    if (revision < 0 || daysBefore.isEmpty || daysBefore.length > 12 ||
+        daysBefore.any((n) => n < 0 || n > 365) ||
+        daysBefore.toSet().length != daysBefore.length) {
+      throw const VenciraApiException();
+    }
+    final csrf = await _csrf();
+    late http.Response response;
+    try {
+      response = await _client.put(_baseUri.resolve(path), headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrf,
+      }, body: jsonEncode({
+        'state': 'draft',
+        'revision': revision,
+        'days_before': daysBefore,
+      }));
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const VenciraUnauthorized();
+    }
+    if (response.statusCode == 409) {
+      throw const VenciraConflictException();
+    }
+    if (response.statusCode != 200) {
+      throw const VenciraApiException();
+    }
+    try {
+      return VenciraReminderDraft.fromJson(
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>);
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
   @override
   Future<VenciraReminderPreview> fetchReminderPreview(
       String workspaceId, String renewalId, {List<int>? daysBefore}) async {
