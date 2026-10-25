@@ -41,6 +41,11 @@ abstract class VenciraApi {
        Map<String, String>? reasonsByDay}) async =>
       throw const VenciraApiException();
 
+  /// Macrofase B: bandeja de avisos, solo lectura y fecha civil explícita.
+  Future<VenciraOperationalInbox> fetchOperationalInbox(String workspaceId,
+      DateTime day, {String scope = 'due', int page = 1}) async =>
+      throw const VenciraApiException();
+
   /// Avisos internos: no implican notificación externa.
   Future<List<VenciraOperationalReminder>> fetchOperationalReminders(
       String workspaceId, String renewalId) async =>
@@ -903,7 +908,88 @@ class VenciraOperationalReminder {
   }
 }
 
+class VenciraInboxItem {
+  const VenciraInboxItem({required this.renewalId,
+    required this.reference, required this.reminder, required this.overdue});
+  final String renewalId, reference;
+  final VenciraOperationalReminder reminder;
+  final bool overdue;
+
+  factory VenciraInboxItem.fromJson(Map<String, dynamic> raw) {
+    if (raw['renewal_id'] is! String || raw['reference'] is! String ||
+        raw['overdue'] is! bool) {
+      throw const FormatException('Invalid inbox item');
+    }
+    return VenciraInboxItem(
+      renewalId: raw['renewal_id'] as String,
+      reference: raw['reference'] as String,
+      reminder: VenciraOperationalReminder.fromJson(raw),
+      overdue: raw['overdue'] as bool,
+    );
+  }
+}
+
+class VenciraOperationalInbox {
+  const VenciraOperationalInbox({required this.day, required this.scope,
+    required this.overdue, required this.today, required this.upcoming,
+    required this.items, required this.hasNext});
+  final DateTime day;
+  final String scope;
+  final int overdue, today, upcoming;
+  final List<VenciraInboxItem> items;
+  final bool hasNext;
+
+  factory VenciraOperationalInbox.fromJson(Map<String, dynamic> raw) {
+    final dateText = raw['day'];
+    final counts = raw['counts'];
+    if (dateText is! String || counts is! Map<String, dynamic> ||
+        raw['scope'] is! String || raw['results'] is! List) {
+      throw const FormatException('Invalid inbox');
+    }
+    final date = DateTime.parse(dateText);
+    if (dateText != _civilDayIso(date)) {
+      throw const FormatException('Invalid inbox day');
+    }
+    final overdue = counts['overdue'], today = counts['today'],
+      upcoming = counts['upcoming'];
+    if (overdue is! int || today is! int || upcoming is! int ||
+        overdue < 0 || today < 0 || upcoming < 0) {
+      throw const FormatException('Invalid inbox counters');
+    }
+    return VenciraOperationalInbox(
+      day: date, scope: raw['scope'] as String,
+      overdue: overdue, today: today, upcoming: upcoming,
+      hasNext: raw['next'] != null,
+      items: (raw['results'] as List).map((value) =>
+          VenciraInboxItem.fromJson(value as Map<String, dynamic>))
+          .toList(growable: false),
+    );
+  }
+}
+
 class HttpVenciraApi implements VenciraApi {
+  @override
+  Future<VenciraOperationalInbox> fetchOperationalInbox(String workspaceId,
+      DateTime day, {String scope = 'due', int page = 1}) async {
+    if (!_validUuid(workspaceId) || day.year < 2000 || day.year > 2100 ||
+        !const ['due','today','overdue','upcoming'].contains(scope) || page < 1) {
+      throw const VenciraApiException();
+    }
+    final path = Uri(path: '/api/v1/workspaces/$workspaceId/operational-inbox/',
+      queryParameters: {'day': _civilDayIso(day), 'scope': scope, 'page': '$page'})
+      .toString();
+    try {
+      final result = VenciraOperationalInbox.fromJson(
+          await _fetch(path) as Map<String, dynamic>);
+      if (_civilDayIso(result.day) != _civilDayIso(day) ||
+          result.scope != scope) {
+        throw const VenciraApiException();
+      }
+      return result;
+    } on VenciraUnauthorized { rethrow; }
+    catch (_) { throw const VenciraApiException(); }
+  }
+
   String _operationalPath(String ws, String renewal) {
     if (!_validUuid(ws) || !_validUuid(renewal)) {
       throw const VenciraApiException();
