@@ -231,5 +231,9 @@
   "detailText39": "Triar desenllaç",
   "detailText40": "Seguiment manual",
   "detailText41": "Arxivat",
-  "detailText42": "Resultat d’arxiu"
+  "detailText42": "Resultat d’arxiu",
+  "editorIdentification": "Identificació",
+  "editorPolicySection": "Pòlissa i classificació",
+  "editorDateSection": "Dates i seguiment",
+  "editorNotes": "Notes"
 }
