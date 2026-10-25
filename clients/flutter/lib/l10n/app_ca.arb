@@ -278,7 +278,7 @@
   "monthColorLegend": "Llegenda de colors",
   "workspaceCatalogHeading": "Catàlegs de l’organització",
   "controlResponseTitle": "Control de no renovació · registre manual",
-  "controlResponseManualWarning": "Declaració manual de l'usuari. No verifica que la pregunta s'haja enviat, no programa recordatoris ni acredita la comunicació a l'asseguradora.",
+  "controlResponseManualWarning": "Declaració manual: en respondre No es programa una revisió interna. Això no implica que s'haja enviat cap notificació ni que s'haja comunicat res a l'asseguradora.",
   "controlResponseQuestion": "S'ha notificat a l'asseguradora la no renovació?",
   "controlResponseYes": "Sí",
   "controlResponseNo": "No",
