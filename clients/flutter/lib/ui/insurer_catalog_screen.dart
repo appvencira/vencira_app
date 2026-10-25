@@ -168,13 +168,17 @@ class _InsurersState extends State<VenciraInsurerCatalogScreen> {
               counterText: '',
             ),
           ),
-          if (_loading) const Center(child: CircularProgressIndicator())
-          else if (_failed) Column(children: [
+          SizedBox(height: 3, child: _loading && _rows.isNotEmpty
+            ? const LinearProgressIndicator() : null),
+          if (_loading && _rows.isEmpty)
+            const Center(child: CircularProgressIndicator()),
+          if (_failed) Column(children: [
             Text(_t.insurerLoadError),
             TextButton(onPressed: _load, child: Text(_t.retry)),
-          ])
-          else if (_rows.isEmpty) Text(_t.insurerEmpty)
-          else for (final item in _rows)
+          ]),
+          if (!_loading && !_failed && _rows.isEmpty)
+            Text(_t.insurerEmpty),
+          for (final item in _rows)
             Card(child: ListTile(
               key: ValueKey('insurer-' + item.id),
               title: Text(item.name),
