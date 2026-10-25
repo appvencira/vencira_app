@@ -138,7 +138,19 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
               ? null : PopupMenuButton<String>(
                 onSelected: (value) {
                   if (value == 'another_day') {
-                    _act(reminder, value, days: 7);
+                    final now = DateTime.now();
+                    final today = DateTime(now.year, now.month, now.day);
+                    showDatePicker(
+                      context: context,
+                      firstDate: today.add(const Duration(days: 2)),
+                      lastDate: today.add(const Duration(days: 365)),
+                      initialDate: today.add(const Duration(days: 7)),
+                    ).then((selected) {
+                      if (selected == null || !mounted) return;
+                      final days = DateTime.utc(selected.year, selected.month, selected.day)
+                        .difference(DateTime.utc(today.year, today.month, today.day)).inDays;
+                      _act(reminder, value, days: days);
+                    });
                   } else {
                     _act(reminder, value);
                   }
@@ -146,7 +158,7 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
                 itemBuilder: (_) => const [
                   PopupMenuItem(value: 'complete', child: Text('Completada')),
                   PopupMenuItem(value: 'tomorrow', child: Text('Mañana')),
-                  PopupMenuItem(value: 'another_day', child: Text('En 7 días')),
+                  PopupMenuItem(value: 'another_day', child: Text('Elegir fecha')),
                 ],
               ),
           ),
