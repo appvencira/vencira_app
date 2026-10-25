@@ -41,6 +41,20 @@ abstract class VenciraApi {
        Map<String, String>? reasonsByDay}) async =>
       throw const VenciraApiException();
 
+  /// Avisos internos: no implican notificación externa.
+  Future<List<VenciraOperationalReminder>> fetchOperationalReminders(
+      String workspaceId, String renewalId) async =>
+      throw const VenciraApiException();
+
+  Future<int> activateOperationalReminders(
+      String workspaceId, String renewalId, int expectedRevision) async =>
+      throw const VenciraApiException();
+
+  Future<VenciraOperationalReminder> updateOperationalReminder(
+      String workspaceId, String renewalId, VenciraOperationalReminder reminder,
+      String action, String idempotencyKey, {int? daysLater}) async =>
+      throw const VenciraApiException();
+
   /// O9a: evaluación de la pregunta de control, sin registrar respuesta.
   Future<VenciraControlAssessment> fetchControlAssessment(
       String workspaceId, String renewalId) async =>
@@ -865,7 +879,109 @@ class VenciraControlResponse {
   }
 }
 
+class VenciraOperationalReminder {
+  const VenciraOperationalReminder({
+    required this.id, required this.state, required this.day,
+    required this.reason, required this.controlQuestion});
+  final String id, state, reason;
+  final DateTime day;
+  final bool controlQuestion;
+
+  factory VenciraOperationalReminder.fromJson(Map<String, dynamic> raw) {
+    if (raw['id'] is! String || raw['state'] is! String ||
+        raw['scheduled_for'] is! String || raw['reason'] is! String ||
+        raw['control_question'] is! bool ||
+        raw['delivery_status'] != 'not_implemented') {
+      throw const FormatException('Invalid internal reminder');
+    }
+    return VenciraOperationalReminder(
+      id: raw['id'] as String, state: raw['state'] as String,
+      day: DateTime.parse(raw['scheduled_for'] as String),
+      reason: raw['reason'] as String,
+      controlQuestion: raw['control_question'] as bool,
+    );
+  }
+}
+
 class HttpVenciraApi implements VenciraApi {
+  String _operationalPath(String ws, String renewal) {
+    if (!_validUuid(ws) || !_validUuid(renewal)) {
+      throw const VenciraApiException();
+    }
+    return '/api/v1/workspaces/$ws/renewals/$renewal/';
+  }
+
+  @override
+  Future<List<VenciraOperationalReminder>> fetchOperationalReminders(
+      String workspaceId, String renewalId) async {
+    try {
+      final json = await _fetch(
+          '${_operationalPath(workspaceId, renewalId)}operational-reminders/')
+          as Map<String, dynamic>;
+      return (json['results'] as List<dynamic>).map((item) =>
+          VenciraOperationalReminder.fromJson(
+              item as Map<String, dynamic>)).toList();
+    } on VenciraUnauthorized { rethrow; }
+    catch (_) { throw const VenciraApiException(); }
+  }
+
+  @override
+  Future<int> activateOperationalReminders(
+      String workspaceId, String renewalId, int expectedRevision) async {
+    final path = '${_operationalPath(workspaceId, renewalId)}reminder-activate/';
+    final csrf = await _csrf();
+    late http.Response response;
+    try {
+      response = await _client.post(_baseUri.resolve(path), headers: {
+        'Accept':'application/json', 'Content-Type':'application/json',
+        'X-CSRFToken':csrf,
+      }, body:jsonEncode({'expected_revision':expectedRevision}));
+    } catch (_) { throw const VenciraApiException(); }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const VenciraUnauthorized();
+    }
+    if (response.statusCode == 409) throw const VenciraConflictException();
+    if (response.statusCode != 200) throw const VenciraApiException();
+    try {
+      return (jsonDecode(utf8.decode(response.bodyBytes))
+          as Map<String, dynamic>)['planned_count'] as int;
+    } catch (_) { throw const VenciraApiException(); }
+  }
+
+  @override
+  Future<VenciraOperationalReminder> updateOperationalReminder(
+      String workspaceId, String renewalId, VenciraOperationalReminder reminder,
+      String action, String idempotencyKey, {int? daysLater}) async {
+    if (!_validUuid(reminder.id)) throw const VenciraApiException();
+    final path = '${_operationalPath(workspaceId, renewalId)}operational-reminders/${reminder.id}/action/';
+    final csrf = await _csrf();
+    late http.Response response;
+    try {
+      response = await _client.post(_baseUri.resolve(path), headers: {
+        'Accept':'application/json', 'Content-Type':'application/json',
+        'X-CSRFToken':csrf,
+      }, body:jsonEncode({
+        'action':action, 'expected_state':reminder.state,
+        'expected_day':_civilDayIso(reminder.day),
+        'days_later':daysLater, 'idempotency_key':idempotencyKey,
+      }));
+    } catch (_) { throw const VenciraApiException(); }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const VenciraUnauthorized();
+    }
+    if (response.statusCode == 409) throw const VenciraConflictException();
+    if (response.statusCode != 200) throw const VenciraApiException();
+    try {
+      final raw = jsonDecode(utf8.decode(response.bodyBytes))
+          as Map<String, dynamic>;
+      return VenciraOperationalReminder(
+        id: raw['id'] as String, state: raw['state'] as String,
+        day: DateTime.parse(raw['scheduled_for'] as String),
+        reason: reminder.reason, controlQuestion:reminder.controlQuestion);
+    } catch (_) { throw const VenciraApiException(); }
+  }
+
+
   String _controlPath(String ws, String id) {
     if (!_validUuid(ws) || !_validUuid(id)) {
       throw const VenciraApiException();
