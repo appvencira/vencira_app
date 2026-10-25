@@ -160,3 +160,38 @@ step CHECK_MIGRACIONES_POST0015 "${COMPOSE[@]}" run --rm --no-deps api python ma
 test "$DB_ID" = "$(docker inspect vencira_localcheck-db-1 --format '{{.Id}}')"
 MIGRATION_CONFIRMED=1
 printf 'LIVE_SCHEMA_0015_VERIFIED=OK\n' >> "$RECEIPT"
+# Schema is now 0015. No automatic rollback of applied migration.
+PHASE=DESPLEGAR_API
+API_RECREATED=1
+step DESPLEGAR_API "${COMPOSE[@]}" up -d --no-deps --no-build --force-recreate api
+PHASE=ESPERAR_API
+api_health=starting
+for attempt in $(seq 1 40); do
+  api_health="$(docker inspect vencira_localcheck-api-1 --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}')"
+  if [ "$api_health" = healthy ] || [ "$api_health" = unhealthy ]; then break; fi
+  sleep 5
+done
+echo "HEALTH_api=$api_health"
+test "$api_health" = healthy
+echo "API_O8C_DESPLEGADA=OK"
+
+PHASE=DESPLEGAR_WEB
+WEB_RECREATED=1
+step DESPLEGAR_WEB "${COMPOSE[@]}" up -d --no-deps --no-build --force-recreate web_preview
+PHASE=ESPERAR_WEB
+web_health=starting
+for attempt in $(seq 1 40); do
+  web_health="$(docker inspect vencira_localcheck-web_preview-1 --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}')"
+  if [ "$web_health" = healthy ] || [ "$web_health" = unhealthy ]; then break; fi
+  sleep 5
+done
+echo "HEALTH_web_preview=$web_health"
+test "$web_health" = healthy
+echo "FLUTTER_WEB_O8C_DESPLEGADA=OK"
+
+PHASE=DB_POSTCHECK
+test "$DB_ID" = "$(docker inspect vencira_localcheck-db-1 --format '{{.Id}}')"
+test "$(sql_read "$LAST_SQL")" = 0015_renewal_reminder_drafts
+test "$(sql_read 'SELECT COUNT(*) FROM django_migrations;')" = "$((MIG_COUNT+1))"
+test "$(sql_read 'SELECT COUNT(*) FROM reminders_renewalreminderdraft;')" = 0
+echo "POSTGRES_0015_SIN_REINICIO=OK"
