@@ -88,7 +88,17 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         final preserved = loaded.where((w) => w.id == previouslySelected);
         _selected = preserved.isNotEmpty
             ? preserved.first : (loaded.isEmpty ? null : loaded.first);
-        if (_selected?.id != previouslySelected) _renewals = null;
+        if (_selected?.id != previouslySelected) {
+          _renewals = null;
+          _searchController.clear();
+          _appliedSearch = '';
+          _statusFilter = '';
+          _entryFilter = '';
+          _modalityFilter = '';
+          _insurerFilter = '';
+          _modalities = VenciraModalityOption.defaults;
+          _insurers = [];
+        }
         _loadingWorkspaces = false;
       });
       if (loaded.isNotEmpty) {
