@@ -45,7 +45,9 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
     final generation = ++_generation;
     setState(() {
       _loading = true; _failed = false; _unauthorized = false;
-      _inbox = null; _page = page;
+      // Mantener la lista durante recargas para evitar saltos de scroll.
+      // El estado de carga bloquea sus acciones hasta recibir el nuevo filtro.
+      _page = page;
     });
     try {
       final now = DateTime.now();
@@ -57,7 +59,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
       setState(() { _inbox = data; _loading = false; });
     } on VenciraUnauthorized {
       if (mounted && generation == _generation) setState(() {
-        _unauthorized = true; _loading = false;
+        _unauthorized = true; _loading = false; _inbox = null;
       });
     } catch (_) {
       if (mounted && generation == _generation) setState(() {
@@ -413,13 +415,14 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
             ]);
           }),
           const SizedBox(height: 10),
-          if (_loading) const Padding(
-            padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
+          // Mismo espacio ocupado en reposo y durante una consulta.
+          SizedBox(height: 3, child: _loading
+            ? const LinearProgressIndicator() : null),
           if (_unauthorized) Text(t.loginRequired),
           if (_failed) TextButton.icon(
             onPressed: () => _load(),
             icon: const Icon(Icons.refresh), label: Text(t.retry)),
-          if (inbox != null) ...[
+          if (inbox != null && !_unauthorized) ...[
             if (inbox.items.isEmpty) Padding(
               padding: const EdgeInsets.symmetric(vertical: 28),
               child: Text(t.inboxEmpty)),
