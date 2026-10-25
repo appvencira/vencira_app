@@ -15,8 +15,9 @@ from rest_framework.response import Response
 
 from .models import (
     ReminderCandidate, ReminderPolicy, Renewal, RenewalAuditEvent,
-    RenewalFollowUp, RenewalOutcome,
+    RenewalFollowUp, RenewalOutcome, RenewalReminderDraft,
 )
+from .default_reminders import DEFAULT_DAYS_BEFORE
 from .views import _membership, _visible_renewals
 
 
@@ -46,6 +47,30 @@ def _cancel_plans(renewal, user):
     ReminderCandidate.objects.filter(
         renewal=renewal, state=ReminderCandidate.State.PLANNED,
     ).update(state=ReminderCandidate.State.CANCELLED, updated_at=timezone.now())
+
+
+def _reset_reminder_template(renewal, actor):
+    """Tras 'No aceptó', restablecer 60/45/35 sin activar avisos.
+
+    El default implícito (sin draft) ya está alineado; si existe
+    un draft personalizado, se actualiza con nueva revisión CAS.
+    """
+    draft = RenewalReminderDraft.objects.select_for_update().filter(
+        renewal=renewal,
+    ).first()
+    if draft is None or list(draft.days_before) == list(DEFAULT_DAYS_BEFORE):
+        return
+    draft.days_before = list(DEFAULT_DAYS_BEFORE)
+    draft.revision += 1
+    draft.updated_by = actor
+    draft.save(update_fields=["days_before", "revision", "updated_by", "updated_at"])
+    RenewalAuditEvent.objects.create(
+        workspace=renewal.workspace, renewal=renewal, actor=actor,
+        action=RenewalAuditEvent.Action.UPDATED,
+        changed_fields=["reminder_draft"],
+        metadata={"reminder_draft": {"action": "reset_on_declined",
+                                     "revision": draft.revision}},
+    )
 
 
 def _rebuild_candidates(renewal):
@@ -199,6 +224,7 @@ def renewal_outcomes(request, workspace_id, renewal_id):
                 renewal.save(update_fields=[
                     "expires_on", "notice_deadline_on", "status", "updated_at",
                 ])
+                _reset_reminder_template(renewal, request.user)
                 _rebuild_candidates(renewal)
                 event = _publish(renewal, request.user, kind,
                                  previous=old, current=next_expiry)
