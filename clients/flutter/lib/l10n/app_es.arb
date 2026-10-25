@@ -294,5 +294,20 @@
   "controlResponseConflict": "Otra sesión registró una respuesta. Actualiza el historial antes de continuar.",
   "controlResponseHistory": "Historial de respuestas manuales",
   "controlResponseEmpty": "No hay respuestas manuales registradas.",
-  "controlResponseRepeatOn": "Revisión solicitada para"
+  "controlResponseRepeatOn": "Revisión solicitada para",
+  "opTitle": "Avisos internos",
+  "opDescription": "Se guardan en la agenda. Todavía no se envían notificaciones.",
+  "opReason": "Motivo",
+  "opBefore": "días antes",
+  "opSave": "Guardar motivos",
+  "opActivate": "Programar avisos internos",
+  "opLoad": "Cargar avisos",
+  "opDone": "Completada",
+  "opTomorrow": "Mañana",
+  "opChoose": "Elegir fecha",
+  "opFetchError": "No se han podido consultar los avisos.",
+  "opSaveError": "No se han podido guardar los motivos.",
+  "opConflict": "Los datos han cambiado. Actualiza antes de guardar.",
+  "opActivateError": "No se han podido programar los avisos internos. Comprueba las fechas.",
+  "opActionError": "No se ha podido actualizar. Revisa los datos."
 }
