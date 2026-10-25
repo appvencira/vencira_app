@@ -27,6 +27,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
   VenciraRenewal? _renewal;
   VenciraFollowUp? _manualFollowUp;
   bool _followUpLoading = false;
+  bool _followUpLoaded = false;
   bool _followUpError = false;
   List<VenciraInsurer> _insurers = [];
   VenciraHistoryPage? _history;
@@ -87,7 +88,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       final value = await widget.api.fetchManualFollowUp(
         widget.workspace.id, widget.renewalId);
       if (!mounted || token != _generation) return;
-      setState(() { _manualFollowUp = value; _followUpLoading = false; });
+      setState(() { _manualFollowUp = value; _followUpLoaded = true; _followUpLoading = false; });
     } on VenciraUnauthorized {
       if (!mounted || token != _generation) return;
       setState(() { _unauthorized = true; _followUpLoading = false; });
@@ -215,7 +216,9 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                 ?.copyWith(fontWeight: FontWeight.w700))),
         ]),
         const SizedBox(height: 8),
-        if (_followUpLoading)
+        SizedBox(height: 3, child: _followUpLoading && _followUpLoaded
+          ? const LinearProgressIndicator() : null),
+        if (_followUpLoading && !_followUpLoaded)
           const LinearProgressIndicator()
         else if (_followUpError)
           OutlinedButton(onPressed: () => _loadManualFollowUp(_generation),
@@ -263,7 +266,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
 
   Future<void> _loadHistory(int page) async {
     if (!_historyAvailable) return;
-    setState(() { _page = page; _history = null; _historyLoading = true; _historyError = false; });
+    setState(() { _page = page; _historyLoading = true; _historyError = false; });
     try {
       final value = await widget.api.fetchRenewalHistory(
           widget.workspace.id, widget.renewalId, page: page);
@@ -271,7 +274,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       setState(() { _history = value; _historyLoading = false; });
     } catch (_) {
       if (!mounted) return;
-      setState(() { _history = null; _historyLoading = false; _historyError = true; });
+      setState(() { _historyLoading = false; _historyError = true; });
     }
   }
 
@@ -593,7 +596,9 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
   }
 
   Widget _historySection(String locale) {
-    if (_historyLoading) return const Center(child: CircularProgressIndicator());
+    if (_historyLoading && _history == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
     if (_historyError) return Column(children: [
       Text(_t.detailHistoryError),
       TextButton(onPressed: () => _loadHistory(_page), child: Text(_t.retry)),
@@ -605,6 +610,8 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
     );
     if (result.events.isEmpty) return Text(_t.detailHistoryEmpty);
     return Column(children: [
+      SizedBox(height: 3, child: _historyLoading
+        ? const LinearProgressIndicator() : null),
       ...result.events.map((event) => ListTile(
         leading: const Icon(Icons.history),
         title: Text(event.action == 'created' ?
@@ -612,10 +619,12 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
         subtitle: Text(_auditSubtitle(event, locale)),
       )),
       Wrap(spacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
-        OutlinedButton(onPressed: _page > 1 ? () => _loadHistory(_page - 1) : null,
+        OutlinedButton(onPressed: _page > 1 && !_historyLoading
+          ? () => _loadHistory(_page - 1) : null,
             child: Text(_t.previous)),
         Text(_t.page + ' ' + _page.toString()),
-        OutlinedButton(onPressed: result.hasNext ? () => _loadHistory(_page + 1) : null,
+        OutlinedButton(onPressed: result.hasNext && !_historyLoading
+          ? () => _loadHistory(_page + 1) : null,
             child: Text(_t.next)),
       ]),
     ]);
