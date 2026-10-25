@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
+import 'operational_history_screen.dart';
 
 /// Control de avisos internos. No representa una notificación enviada.
 class VenciraOperationalPanel extends StatefulWidget {
@@ -150,6 +151,15 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
     );
   }
 
+  void _openHistory(VenciraOperationalReminder reminder) {
+    Navigator.of(context).push<void>(MaterialPageRoute(
+      builder: (_) => VenciraOperationalHistoryScreen(
+        api: widget.api, workspaceId: widget.workspaceId,
+        renewalId: widget.renewalId, reminderId: reminder.id,
+        reason: reminder.reason),
+    ));
+  }
+
   Future<void> _showActions(VenciraOperationalReminder reminder) async {
     if (_busy) return;
     final t = AppLocalizations.of(context)!;
@@ -179,11 +189,19 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
               icon: Icons.event_outlined,
               selected: _lastActions[reminder.id] == 'another_day',
               onTap: () => Navigator.pop(sheetContext, 'another_day')),
+            _sheetOption(sheetContext, title: t.inboxHistoryOpen,
+              icon: Icons.history_outlined,
+              selected: false,
+              onTap: () => Navigator.pop(sheetContext, 'history')),
           ],
         ),
       ),
     );
     if (!mounted || chosen == null) return;
+    if (chosen == 'history') {
+      _openHistory(reminder);
+      return;
+    }
     if (chosen == 'another_day') {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
@@ -300,11 +318,17 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
             title: Text(reminder.reason),
             subtitle: Text('${reminder.day.day}/${reminder.day.month}/${reminder.day.year} · ${_localizedState(reminder.state, AppLocalizations.of(context)!)}'),
             trailing: reminder.state == 'completed' || reminder.state == 'cancelled'
-              ? null : IconButton(
-                tooltip: AppLocalizations.of(context)!.opActions,
-                icon: const Icon(Icons.more_vert),
-                onPressed: _busy ? null : () => _showActions(reminder),
-              ),
+              ? IconButton(
+                  key: ValueKey('op-history-' + reminder.id),
+                  tooltip: AppLocalizations.of(context)!.inboxHistoryOpen,
+                  icon: const Icon(Icons.history_outlined),
+                  onPressed: () => _openHistory(reminder),
+                )
+              : IconButton(
+                  tooltip: AppLocalizations.of(context)!.opActions,
+                  icon: const Icon(Icons.more_vert),
+                  onPressed: _busy ? null : () => _showActions(reminder),
+                ),
           )),
       ]),
     ));
