@@ -325,5 +325,13 @@
   "opStateSnoozed": "Ajornat",
   "opStateCompleted": "Completat",
   "opStateCancelled": "Cancel·lat",
-  "opStateUnknown": "Estat desconegut"
+  "opStateUnknown": "Estat desconegut",
+  "inboxTitle": "Safata d'avisos",
+  "inboxDescription": "Avisos interns pendents d'atendre. No s'han enviat notificacions.",
+  "inboxOverdue": "Endarrerits",
+  "inboxToday": "Avui",
+  "inboxUpcoming": "Pròxims",
+  "inboxDue": "Per atendre",
+  "inboxEmpty": "No hi ha avisos interns en aquest apartat.",
+  "inboxOpenDetail": "Veure anotació"
 }
