@@ -335,15 +335,17 @@ void main() {
     await tester.ensureVisible(search);
     await tester.pumpAndSettle();
     final originalScroll = scroll.pixels;
+    final originalExtent = scroll.maxScrollExtent;
+    expect(originalExtent, greaterThan(400));
     api.renewalFetchGate = Completer<void>();
     await tester.tap(search);
     await tester.pump();
-    // Antes el setState retiraba toda la lista y reajustaba el scroll.
-    expect(find.text('DEMO-SCROLL-0', skipOffstage: false), findsOneWidget);
-    expect(find.text('DEMO-SCROLL-6', skipOffstage: false), findsOneWidget);
+    // La lista debe seguir ocupando su altura: antes caía a casi cero.
+    expect(scroll.maxScrollExtent, closeTo(originalExtent, 10));
     expect(scroll.pixels, closeTo(originalScroll, 1));
     api.renewalFetchGate!.complete();
     await tester.pumpAndSettle();
+    expect(scroll.maxScrollExtent, closeTo(originalExtent, 10));
     expect(scroll.pixels, closeTo(originalScroll, 1));
     expect(tester.takeException(), isNull);
   });
