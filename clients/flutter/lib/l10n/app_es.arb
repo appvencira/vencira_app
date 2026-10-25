@@ -231,5 +231,9 @@
   "detailText39": "Elegir desenlace",
   "detailText40": "Seguimiento manual",
   "detailText41": "Archivado",
-  "detailText42": "Resultado de archivo"
+  "detailText42": "Resultado de archivo",
+  "editorIdentification": "Identificación",
+  "editorPolicySection": "Póliza y clasificación",
+  "editorDateSection": "Fechas y seguimiento",
+  "editorNotes": "Notas"
 }
