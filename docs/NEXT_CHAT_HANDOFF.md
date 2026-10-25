@@ -227,3 +227,9 @@ Detalle y decisiones O9: `docs/OPERATION_O9_CONTROL_2026-10-25.md`. **Próximo p
 
 **Siguiente foco: O9b especificación de respuestas reales y auditoría, sin decisiones legales/comerciales tácitas.** §8 del roadmap exige «Sí» (3 opciones), «No» y selector/repetición que nunca supere fecha límite; §18 deja por confirmar opciones/efectos, casos tardíos, Vida y cómo manejar preguntas sin envío. Documento `docs/OPERATION_O9B_RESPONSE_CONTRACT.md` define contrato propuesto. No implementar migración de respuesta real ni job de repetición hasta decisiones del promotor.
 
+## 25/10/2026 — O9b contrato preparado; cambios reales bloqueados hasta confirmar contenido §8/§18
+
+Se añadió `docs/OPERATION_O9B_RESPONSE_CONTRACT.md`: especificación de respuestas «Sí» (tres subopciones textuales aún NO conocidas) y «No» con posible repetición, auditoría con actor/fecha, límites de un mes civil, concurrencia, permisos, casos Vida/tardíos/sin aviso y NO falsas entregas. **Solo diseño, sin tablas ni migración 0016, sin respuesta guardada ni notificaciones, sin despliegue.** La documentación del roadmap da cardinalidad 3+1 y necesidad de repetición, pero NO proporciona los textos y efectos exactos de cada opción. El PDF original `White_paper_agenda_vencimientos.pdf` no está disponible en el repositorio ni en la búsqueda de archivos de este turno; no inferir textos como hechos.
+
+**Progreso actual verificable**: O9a puesta en DEV `30a2f20d66836b222c446398d33578f5efd4c222`, terminal `O9A_DESPLIEGUE_SIN_MIGRACION=OK`, `RESULTADO_GLOBAL=0`, tres servicios sanos, PostgreSQL `0015` sin cambios, UAT Android de caso borrador 20/15 con revisión manual y referencia 21/10/2026. Estado de notificación real siempre desactivado. Próximo desarrollo O9b-1: acordar respuesta exacta, motivos y políticas de repetición sobre la fuente original; después motor puro, tests y futuro modelo de auditoría aditivo bajo O4.
+
