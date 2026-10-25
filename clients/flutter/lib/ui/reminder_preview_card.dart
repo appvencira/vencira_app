@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../api/vencira_api.dart';
+import '../l10n/app_localizations.dart';
 
 /// Whitepaper §7–8: simulador de avisos por anotación. Solo lectura:
 /// nunca agenda, envía ni da por respondido un aviso.
@@ -26,8 +27,7 @@ class _ReminderPreviewCardState extends State<VenciraReminderPreviewCard> {
   bool _error = false;
   bool _badInput = false;
 
-  bool get _ca => Localizations.localeOf(context).languageCode == 'ca';
-  String _language(String es, String ca) => _ca ? ca : es;
+  AppLocalizations get _strings => AppLocalizations.of(context)!;
 
   @override
   void initState() {
@@ -113,18 +113,13 @@ class _ReminderPreviewCardState extends State<VenciraReminderPreviewCard> {
             Icon(Icons.notifications_active_outlined, color: colors.primary),
             const SizedBox(width: 10),
             Expanded(child: Text(
-              _language('Simulador de avisos', 'Simulador d’avisos'),
+              _strings.previewText01,
               style: Theme.of(context).textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.bold),
             )),
           ]),
           const SizedBox(height: 8),
-          Text(_language(
-            'Prueba las anticipaciones en días naturales. Solo calcula fechas: '
-            'no guarda configuraciones ni envía notificaciones.',
-            'Prova les anticipacions en dies naturals. Només calcula dates: '
-            'no desa configuracions ni envia notificacions.',
-          ), style: Theme.of(context).textTheme.bodySmall),
+          Text(_strings.previewText02, style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 14),
           TextField(
             key: const ValueKey('reminder-preview-days'),
@@ -132,15 +127,10 @@ class _ReminderPreviewCardState extends State<VenciraReminderPreviewCard> {
             enabled: !_loading,
             keyboardType: TextInputType.text,
             decoration: InputDecoration(
-              labelText: _language(
-                'Días antes del vencimiento', 'Dies abans del venciment'),
+              labelText: _strings.previewText03,
               hintText: '60,45,35',
-              helperText: _language(
-                'De 1 a 12 avisos, entre 0 y 365 días; sin repetidos.',
-                'D’1 a 12 avisos, entre 0 i 365 dies; sense repetits.'),
-              errorText: _badInput ? _language(
-                'Revisa los días: usa valores separados por comas.',
-                'Revisa els dies: usa valors separats per comes.') : null,
+              helperText: _strings.previewText04,
+              errorText: _badInput ? _strings.previewText05 : null,
             ),
             onSubmitted: (_) => _calculate(),
           ),
@@ -149,7 +139,7 @@ class _ReminderPreviewCardState extends State<VenciraReminderPreviewCard> {
             key: const ValueKey('reminder-preview-calculate'),
             onPressed: _loading ? null : _calculate,
             icon: const Icon(Icons.calculate_outlined),
-            label: Text(_language('Calcular fechas', 'Calcular dates')),
+            label: Text(_strings.previewText06),
           ),
           if (_loading)
             const Padding(
@@ -158,36 +148,24 @@ class _ReminderPreviewCardState extends State<VenciraReminderPreviewCard> {
             ),
           if (_error) ...[
             const SizedBox(height: 10),
-            Text(_language(
-              'No se ha podido consultar la vista previa.',
-              'No s’ha pogut consultar la vista prèvia.')),
+            Text(_strings.previewText07),
             TextButton(
               onPressed: _loading ? null : _calculate,
-              child: Text(_language('Reintentar', 'Torna-ho a provar')),
+              child: Text(_strings.previewText08),
             ),
           ],
           if (!_loading && result != null) ...[
             const SizedBox(height: 14),
-            Text(_language(
-              'Referencia de un mes civil: ',
-              'Referència d’un mes civil: ') + _date(result.cutoffOn),
+            Text(_strings.previewText09 + _date(result.cutoffOn),
               style: Theme.of(context).textTheme.bodyMedium),
             if (result.lifeRuleRequiresReview)
-              _warning(_language(
-                'Póliza de Vida: revisa su régimen específico antes de actuar.',
-                'Pòlissa de Vida: revisa el seu règim específic abans d’actuar.')),
+              _warning(_strings.previewText10),
             if (result.noPreCutoffNotice)
-              _warning(_language(
-                'No hay aviso anterior a la fecha de referencia. Se requiere decisión.',
-                'No hi ha cap avís anterior a la data de referència. Cal decidir.')),
+              _warning(_strings.previewText11),
             if (result.lateControlNeedsDecision)
-              _warning(_language(
-                'La pregunta de control prevista ya habría pasado.',
-                'La pregunta de control prevista ja hauria passat.')),
+              _warning(_strings.previewText12),
             if (result.cutoffAlreadyElapsed)
-              _warning(_language(
-                'La fecha de referencia ya ha llegado o pasado.',
-                'La data de referència ja ha arribat o ha passat.')),
+              _warning(_strings.previewText13),
             const SizedBox(height: 8),
             for (final notice in result.reminders)
               ListTile(
@@ -196,19 +174,15 @@ class _ReminderPreviewCardState extends State<VenciraReminderPreviewCard> {
                 leading: Icon(
                   notice.alreadyElapsed ? Icons.history : Icons.event_outlined),
                 title: Text('${notice.daysBefore} ' +
-                    _language('días antes · ', 'dies abans · ') +
+                    _strings.previewText14 +
                     _date(notice.scheduledFor)),
                 subtitle: notice.controlQuestion
-                    ? Text(_language(
-                        'Pregunta de control prevista (no enviada)',
-                        'Pregunta de control prevista (no enviada)'))
+                    ? Text(_strings.previewText15)
                     : notice.alreadyElapsed
-                        ? Text(_language('Fecha pasada', 'Data passada'))
+                        ? Text(_strings.previewText16)
                         : null,
               ),
-            Text(_language(
-              'Simulación, no aviso enviado ni tarea guardada.',
-              'Simulació, no avís enviat ni tasca desada.'),
+            Text(_strings.previewText17,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: colors.onSurfaceVariant)),
           ],
