@@ -1,6 +1,6 @@
 # VENCIRA
 
-> **Continuidad entre chats:** abrir [NEXT_CHAT_HANDOFF.md](docs/NEXT_CHAT_HANDOFF.md) para el estado y el siguiente paso, y [CONTINUITY_RUNBOOK.md](docs/CONTINUITY_RUNBOOK.md) para el histórico completo. Actualizar el handoff al cerrar cada hito; no reconstruir el proyecto desde cero.
+> **Continuidad entre chats:** abrir [NEXT_CHAT_HANDOFF_SHORT.md](docs/NEXT_CHAT_HANDOFF_SHORT.md) y [NEXT_CHAT_HANDOFF.md](docs/NEXT_CHAT_HANDOFF.md) para el estado y el siguiente paso, y [CONTINUITY_RUNBOOK.md](docs/CONTINUITY_RUNBOOK.md) para el histórico completo. Actualizar el handoff al cerrar cada hito; no reconstruir el proyecto desde cero.
 
 > **Plan whitepaper 24/10/2026:** revisión completa de las 23 páginas y fases O7–O16 documentadas en [plan de ejecución](docs/WHITEPAPER_EXECUTION_ROADMAP_2026-10-24.md). **O7 resultados agregados solo escritorio** y **O8a cálculo civil del límite legal y fechas 60/45/35** están versionados con tests, pero **aún sin preflight verde ni despliegue**. Ejecutar primero `scripts/validate_o7_o8_preflight.sh`; no aplicar migraciones ni comunicaciones. Ver [O7](docs/OPERATION_O7_RESULTS.md) y [O8a](docs/OPERATION_O8_DATE_ENGINE.md). La instalación de DEV y los backups O5 existentes continúan sin cambios.
 
