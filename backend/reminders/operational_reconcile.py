@@ -93,6 +93,7 @@ def reconcile_expiry_reminders(renewal_id, *, as_of: date,
         result.append(current)
 
     for item in history:
-        if item.state in ACTIVE and item.source_key not in desired:
+        if item.state in ACTIVE and (item.source_key not in desired or
+                item not in result):
             _cancel(item, actor)
     return tuple(result)
