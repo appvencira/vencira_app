@@ -49,7 +49,7 @@ test "$(git branch --show-current)" = integration/local-e2e-prep
 test -z "$(git diff --name-only)"
 test -z "$(git diff --cached --name-only)"
 test -z "$(git ls-files --others --exclude-standard | grep -vx 'clients/flutter/pubspec.lock' || true)"
-VALIDATED=0e6f621d834e882d437acbbf8ca15c89075224c7
+VALIDATED=ca69dba2370b8c9de552caea81ea5be1a0720061
 git cat-file -e "$VALIDATED^{commit}"
 git diff --quiet "$VALIDATED" HEAD -- backend clients/flutter compose.yaml compose.preview.yaml deploy
 echo "FUENTES_IDENTICAS_GATE_VALIDADO=OK"
