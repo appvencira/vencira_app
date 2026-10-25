@@ -39,3 +39,8 @@ Usuario mostró en Android el acceso antiguo de ancho automático dejando gran v
 Test de regresión `clients/flutter/test/history_entry_pagination_test.dart`: a 320/375/768 px, en tema real `VenciraTheme.dark()`, compara geometría horizontal de la tarjeta con Contacto, ancho y altura, y comprueba el subtítulo. El test de navegación a historial de completados/cancelados se mantiene.
 
 Script de despliegue **solo Flutter Web** `scripts/deploy_macro_b_premium_ui_web_guarded.sh` actualizado con `VALIDATED=d891c2df6e742698c99d4cf84cbc3573025feefd`. **Aún no desplegado ni validado con gate para este cambio**. Usuario debe ejecutar `git pull --ff-only origin integration/local-e2e-prep`; primero `bash scripts/validate_macro_b_readonly.sh` y exigir `FLUTTER_WEB_DOCKERFILE_PIN=OK`, `MACRO_B_GATE_RESULTADO=0`; solo entonces `sudo env MACRO_B_PREMIUM_UI_CONFIRM=DEPLOY_PREMIUM_WEB_DEV bash scripts/deploy_macro_b_premium_ui_web_guarded.sh`. Revisar visualmente Android 320/375 px y modos claro/oscuro; solo recrea `web_preview`, API/DB/O5 y esquema 0018 intactos.
+
+
+## Estado actualizado tras aceptación del usuario — 25/10/2026
+
+El promotor comunicó «Done, todo ok» después de la validación/despliegue del último ajuste premium. Por tanto esta entrega se considera **aceptada por el promotor**. Los encabezados anteriores que decían «pendiente de gate/despliegue» eran válidos en su corte de escritura, pero no representan ya el estado comunicado. No se transcribió en este turno un nuevo recibo técnico de despliegue: no inventarlo. El historial sigue siendo de **actuaciones internas**, no evidencias de notificaciones externas entregadas. Ver `docs/HANDOFF_MACROFASE_C_2026-10-25.md` para próxima fase.
