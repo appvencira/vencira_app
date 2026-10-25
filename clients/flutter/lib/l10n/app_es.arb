@@ -334,5 +334,18 @@
   "inboxDue": "Por atender",
   "inboxEmpty": "No hay avisos internos en este apartado.",
   "inboxOpenDetail": "Ver anotación",
-  "inboxShortcut": "Avisos"
+  "inboxShortcut": "Avisos",
+  "inboxHistoryTitle": "Historial del aviso",
+  "inboxHistoryOpen": "Ver historial",
+  "inboxHistoryPlanned": "Aviso programado",
+  "inboxHistoryCancelled": "Aviso cancelado",
+  "inboxHistoryCompleted": "Marcado como completado",
+  "inboxHistoryTomorrow": "Aplazado a mañana",
+  "inboxHistoryAnotherDay": "Reprogramado",
+  "inboxHistoryScheduled": "Fecha programada",
+  "inboxHistoryActor": "Realizado por",
+  "inboxHistoryUnknownActor": "Usuario no disponible",
+  "inboxHistoryError": "No se ha podido consultar el historial.",
+  "inboxHistoryEmpty": "Este aviso todavía no tiene actuaciones registradas.",
+  "inboxHistoryMore": "Mostrar más actuaciones"
 }
