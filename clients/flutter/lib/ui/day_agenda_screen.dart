@@ -121,7 +121,15 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
     final sequence = ++_generation;
     final requestedDay = _selectedDay;
     setState(() {
-      _agenda = null; // No revelar anotaciones del día anterior al navegar.
+      // Solo descartar tarjetas si se ha cambiado realmente de día.
+      // Refrescar/filtrar un mismo día no debe contraer la página.
+      final shownDay = _agenda?.day;
+      if (shownDay != null &&
+          (shownDay.year != requestedDay.year ||
+           shownDay.month != requestedDay.month ||
+           shownDay.day != requestedDay.day)) {
+        _agenda = null;
+      }
       _page = page;
       _loading = true;
       _failed = false;
@@ -171,8 +179,9 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
     final requestId = ++_weekGeneration;
     final sunday = DateTime(monday.year, monday.month, monday.day + 6);
     setState(() {
+      // Descartar solo al navegar a otra semana.
+      if (_weekMonday != monday) _weekActivity = null;
       _weekMonday = monday;
-      _weekActivity = null; // No mostrar marcadores obsoletos.
       _weekError = false;
     });
     final monthStarts = <DateTime>[
@@ -535,7 +544,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
   }
 
   Widget _dayContents(String locale) {
-    if (_loading) {
+    if (_loading && _agenda == null) {
       return const Center(child: Padding(
         padding: EdgeInsets.all(24),
         child: CircularProgressIndicator(),
@@ -559,6 +568,8 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        SizedBox(height: 3, child: _loading
+          ? const LinearProgressIndicator() : null),
         Text(
           '${_t.agendaDayEntries}: ${agenda.total}',
           style: Theme.of(context).textTheme.titleMedium,
