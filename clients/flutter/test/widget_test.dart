@@ -308,7 +308,8 @@ void main() {
     await tester.tap(find.text('Añadir vencimiento'));
     await tester.pumpAndSettle();
     expect(find.text('Nuevo vencimiento'), findsOneWidget);
-    expect(find.text('Referencia'), findsOneWidget);
+    // §6: la referencia no se solicita al crear una anotación.
+    expect(find.text('Referencia'), findsNothing);
     await tester.tap(find.text('Cancelar'));
     await tester.pumpAndSettle();
     expect(find.text('Nuevo vencimiento'), findsNothing);
