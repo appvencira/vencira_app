@@ -1169,3 +1169,10 @@ Documento completo de alcance/evidencia: `docs/PHASE_WHITEPAPER_ALIGNMENT_2026-1
 
 **Próximo paso en Ubuntu (un bloque):** subshell `( cd /home/vencira/vencira-localcheck || exit 1; git fetch origin integration/local-e2e-prep || exit 1; git merge --ff-only FETCH_HEAD || exit 1; echo COMMIT=$(git rev-parse HEAD); bash -n scripts/validate_and_deploy_whitepaper_alignment.sh || exit 1; bash scripts/validate_and_deploy_whitepaper_alignment.sh ); echo RESULTADO_EJECUCION=$?; echo CONSOLA_ABIERTA`. Si falla en STATIC o PREFLIGHT, NO despliega. Si falla en DEPLOY tras cambios, **NO repetir a ciegas**; revisar `FASE_FALLIDA` y recibo. Solo resultado `WP_ALIGNMENT_PHASE_COMPLETE=OK`, `RESULTADO_ORQUESTACION=0`, `RESULTADO_EJECUCION=0` permite afirmar despliegue técnico. Después UAT datos ficticios: creación sin referencia, abre HOY, copiar Cliente, No aceptó con 60/45/35 y traducción CA. No seguir O9b hasta cerrar esta fase.
 
+
+
+## Cierre macrofase B y paso a C — 25/10/2026
+
+El usuario confirmó «Done, todo ok» tras gate y publicación de la tarjeta premium `Historial de avisos` de ancho completo y paginación uniforme. Macrofase B **aceptada según comunicación del usuario**; no consta aquí un recibo `RESULTADO_GLOBAL=0` transcrito del último despliegue y no se debe inventar. Script web-only actual: `scripts/deploy_macro_b_premium_ui_web_guarded.sh`, fuente pin `d891c2df6e742698c99d4cf84cbc3573025feefd`. No repetir despliegues B.
+
+Handoff autoritativo al abrir otro chat: `docs/HANDOFF_MACROFASE_C_2026-10-25.md`. Macrofase C propuesta: auditar primero código O9b **ya existente** (Sí/No manual, repetición como aviso interno), contrastar con whitepaper §§7–10/18 y cerrar solo decisiones pendientes antes de nuevos automatismos. Mantener PostgreSQL 0018, O5, OAuth, Caddy y timers hasta nuevo gate/aprobación. Sin emails/push ni entrega real por ahora.
