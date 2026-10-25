@@ -347,5 +347,8 @@
   "inboxHistoryUnknownActor": "Usuari no disponible",
   "inboxHistoryError": "No s'ha pogut consultar l'historial.",
   "inboxHistoryEmpty": "Aquest avís encara no té actuacions registrades.",
-  "inboxHistoryMore": "Mostrar més actuacions"
+  "inboxHistoryMore": "Mostrar més actuacions",
+  "inboxHistoryIndexTitle": "Historial d'avisos",
+  "inboxHistoryIndexDescription": "Actuacions registrades en els avisos interns d'aquesta anotació. No representen notificacions enviades.",
+  "inboxHistoryIndexEmpty": "Aquesta anotació no té avisos interns registrats."
 }
