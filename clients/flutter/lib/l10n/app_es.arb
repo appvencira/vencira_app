@@ -269,5 +269,6 @@
   "previewText14": "días antes · ",
   "previewText15": "Pregunta de control prevista (no enviada)",
   "previewText16": "Fecha pasada",
-  "previewText17": "Simulación, no aviso enviado ni tarea guardada."
+  "previewText17": "Simulación, no aviso enviado ni tarea guardada.",
+  "agendaShort": "Agenda"
 }
