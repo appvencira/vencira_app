@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .control_assessment import assess_control
+from .c2_control_policy import evaluate_c2_control_policy
 from .default_reminders import DEFAULT_DAYS_BEFORE
 from .models import Renewal, RenewalReminderDraft
 from .views import _membership, _visible_renewals
@@ -42,7 +43,25 @@ def control_assessment(request, workspace_id, renewal_id):
         renewal.expires_on, days, as_of=timezone.localdate(),
         requires_life_review=(renewal.modality == "vida"),
     )
+    policy = evaluate_c2_control_policy(
+        renewal.expires_on, days, as_of=assessment.reference_day,
+        is_life=(renewal.modality == "vida"),
+    )
     return _result({
+        "c2_policy": {
+            "allow_save": policy.allow_save,
+            "manual_review_required": policy.manual_review_required,
+            "warning_code": policy.warning_code,
+            "warning_severity": policy.warning_severity,
+            "cutoff_on": policy.cutoff_on.isoformat() if policy.cutoff_on else None,
+            "offer_explicit_control": policy.offer_explicit_control,
+            "latest_explicit_control_day": (
+                policy.latest_explicit_control_day.isoformat()
+                if policy.latest_explicit_control_day else None),
+            "future_notice_days": list(policy.future_notice_days),
+            "is_life": policy.is_life,
+            "delivery_status": policy.delivery_status,
+        },
         "assessment_only": True,
         "answer_recorded": False,
         "scheduled": False,
