@@ -16,6 +16,8 @@ finish(){
     echo "FASE_FALLIDA=$PHASE"
     echo "=== PRIMERAS EXCEPCIONES ==="
     grep -m 12 -E 'error •|Exception|FAIL|ERROR|Error:|error:|Failed' "$LOG" || true
+    echo "=== PRIMER BLOQUE FLUTTER (HASTA 120 LINEAS) ==="
+    awk '/EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK|EXCEPTION CAUGHT BY RENDERING LIBRARY|══╡/ && !seen {seen=1; n=120} n>0 {print; n--; if(n==0) exit}' "$LOG" || true
     echo "=== ULTIMAS 60 LINEAS ==="
     tail -n 60 "$LOG" || true
   fi
@@ -90,7 +92,7 @@ step DJANGO_POSTGRES17_SUITE_COMPLETA sudo docker run --rm --network "$NETWORK" 
 step FLUTTER_ANALYZE_TEST_BUILD sudo docker run --rm \
   -v "$PWD/clients/flutter:/work" -w /work \
   ghcr.io/cirruslabs/flutter:stable \
-  sh -ec 'flutter pub get && flutter analyze && flutter test && flutter build web --release --pwa-strategy=none'
+  sh -ec 'flutter pub get && flutter analyze && flutter test test/reminder_preview_test.dart test/contact_followup_test.dart test/manual_follow_up_test.dart && flutter test && flutter build web --release --pwa-strategy=none'
 
 PHASE=LOCALCHECK_FINAL
 for service in api db web_preview; do
