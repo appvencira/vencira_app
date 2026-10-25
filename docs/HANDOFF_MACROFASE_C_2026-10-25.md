@@ -1,4 +1,7 @@
 # VENCIRA — Handoff de cierre de macrofase B y entrada a macrofase C
+
+> **ACTUALIZACIÓN DOCUMENTAL 25/10/2026:** auditoría C0 terminada como revisión estática de código y registrada en [MACROFASE_C_C0_AUDITORIA_2026-10-25.md](MACROFASE_C_C0_AUDITORIA_2026-10-25.md). Se han sincronizado plan maestro y continuidad con este estado, sin cambiar el whitepaper original, sin ejecutar suites, migrar ni desplegar. **Próximo paso C1:** obtener decisiones explícitas del promotor solo para puntos pendientes §18; no asumir aprobadas las propuestas. Después C2 y C3 con gates. No reiniciar macrofases A/B.
+
 **Fecha del cierre comunicado:** 25 de octubre de 2026.
 **Repositorio:** `appvencira/vencira_app` (privado).
 **Rama de desarrollo y DEV:** `integration/local-e2e-prep`.
