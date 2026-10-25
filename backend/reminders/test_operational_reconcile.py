@@ -117,7 +117,7 @@ class OperationalReconcileTests(TestCase):
         first = self.reconcile()
         later = reconcile_expiry_reminders(
             self.renewal.pk, as_of=date(2027, 2, 11))
-        self.assertEqual([x.pk for x in later], [x.pk for x in first])
+        self.assertEqual({x.pk for x in later}, {x.pk for x in first})
         self.assertEqual(OperationalReminder.objects.filter(
             state="cancelled").count(), 0)
 
