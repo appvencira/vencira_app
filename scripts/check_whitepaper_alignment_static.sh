@@ -11,7 +11,7 @@ from pathlib import Path
 root=Path(".")
 deploy=(root/"scripts/deploy_whitepaper_alignment_no_migrations.sh").read_text()
 checks=[
-  "VALIDATED=c4886728f3a9c53c592911d19096056bc56a0949",
+  "VALIDATED=ed85fdbb17f89bbb8623a5f8a8282c2f975a6642",
   "BACKUP_O5_RECIENTE_Y_CIFRADO=OK",
   "POSTGRES_0015_INTACTO_PRE=OK",
   "IMAGENES_ANTERIORES_RECUPERABLES=OK",
