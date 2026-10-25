@@ -89,11 +89,33 @@ for file in "$RESTIC_PASSWORD_FILE" "$RCLONE_CONFIG"; do
  test -f "$file" && test ! -L "$file" && test "$(stat -c %u:%a "$file")" = 0:600
 done
 export RESTIC_REPOSITORY RESTIC_PASSWORD_FILE RCLONE_CONFIG
-step COPIA_NUEVA_CIFRADA_DRIVE bash scripts/o5_backup_to_drive.sh
-grep -Fxq "GOOGLE_DRIVE_BACKUP_CIFRADO=OK" "$LOG"
-echo "O5_BACKUP_PRE0015=OK"
-exec 8>/run/lock/vencira-o5-backup.lock
-flock -n 8 || { echo "ERROR=O5_OCUPADO"; exit 4; }
+# El usuario verifico la COPIA cifrada O5 real del intento previo:
+# snapshot inmutable 0b838739, etiquetado vencira-postgresql.
+# NO duplicar backup ni bloquear /run/lock/vencira-o5-backup.lock:
+# restic puede leer el snapshot fijado aun cuando corra el timer O5.
+# No seleccionar "latest" (evita una carrera o restaurar otra copia).
+SNAPSHOT_ID=0b838739
+verify_exact_snapshot(){
+  restic snapshots --json --tag vencira-postgresql | python3 -c '
+import datetime, json, sys, time
+prefix=sys.argv[1]
+rows=json.load(sys.stdin)
+matches=[s for s in rows if isinstance(s,dict)
+         and str(s.get("id","")).startswith(prefix)
+         and "vencira-postgresql" in s.get("tags",[])]
+if len(matches)!=1:
+    raise SystemExit("ERROR=SNAPSHOT_O5_NO_ENCONTRADO_O_AMBIGUO")
+raw=matches[0].get("time","")
+dt=datetime.datetime.fromisoformat(raw.replace("Z","+00:00"))
+age=time.time()-dt.timestamp()
+if not 0 <= age <= 86400:
+    raise SystemExit("ERROR=SNAPSHOT_O5_SUPERA_24H")
+print("SNAPSHOT_O5_VERIFICADO="+prefix)
+print("SNAPSHOT_O5_ANTIGUEDAD_MENOS_24H=SI")
+' "$SNAPSHOT_ID"
+}
+step SNAPSHOT_O5_EXACTO_Y_RECIENTE verify_exact_snapshot
+echo "O5_BACKUP_PRE0015_REUTILIZADO=OK"
 
 NET="vencira_o8c_internal_$$"
 CLONE="vencira_o8c_clone_$$"
@@ -110,7 +132,7 @@ test "$ready" = 1
 echo "PG17_TEMPORAL_AISLADO=OK"
 PHASE=RESTIC_DUMP_PIPE
 echo "=== RESTAURACION_O5_DRIVE_AL_CLON ==="
-restic dump --tag vencira-postgresql latest vencira-postgres.dump 2>>"$LOG" |
+restic dump "$SNAPSHOT_ID" vencira-postgres.dump 2>>"$LOG" |
   docker exec -i "$CLONE" pg_restore --clean --if-exists \
    --no-owner --no-privileges --exit-on-error -U o8c_clone -d o8c_clone \
    >>"$LOG" 2>&1
@@ -175,6 +197,6 @@ echo "POSTGRES_0014_API_WEB_SIN_CAMBIOS=OK"
 PHASE=RECEIPT
 RECEIPT="$(mktemp /tmp/vencira-o8c-rehearsal.XXXXXXXX.receipt)"
 chmod 600 "$RECEIPT"
-printf 'VALIDATED_SHA=%s\nMIGRATION=reminders.0015_renewal_reminder_drafts\nRESTIC_RESTORE=OK\nCLONE_MIGRATION=OK\nLIVE_SCHEMA=0014_UNCHANGED\n' \
- "$VALIDATED" > "$RECEIPT"
+printf 'VALIDATED_SHA=%s\nSNAPSHOT_O5=%s\nMIGRATION=reminders.0015_renewal_reminder_drafts\nRESTIC_RESTORE=OK\nCLONE_MIGRATION=OK\nLIVE_SCHEMA=0014_UNCHANGED\n' \
+ "$VALIDATED" "$SNAPSHOT_ID" > "$RECEIPT"
 echo "RECIBO_ENSAYO_O8C=OK"
