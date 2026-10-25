@@ -17,9 +17,11 @@ import 'day_agenda_screen.dart';
 import 'vencira_select.dart';
 
 class VenciraDashboardScreen extends StatefulWidget {
-  const VenciraDashboardScreen({super.key, this.api});
+  const VenciraDashboardScreen({super.key, this.api, this.openTodayOnLoad = false});
 
   final VenciraApi? api;
+  /// En la aplicación real, tras autenticarse se abre HOY (§5).
+  final bool openTodayOnLoad;
 
   @override
   State<VenciraDashboardScreen> createState() => _VenciraDashboardScreenState();
@@ -46,6 +48,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
   bool _saving = false;
   int _page = 1;
   int _sequence = 0;
+  bool _initialTodayOpened = false;
 
   @override
   void initState() {
@@ -88,6 +91,15 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         await _loadRenewals(1);
         _loadModalities();
         _loadInsurers();
+        // Abrir HOY una sola vez al autenticar, sin forzar una cuenta
+        // arbitraria si el usuario pertenece a varias organizaciones.
+        if (mounted && widget.openTodayOnLoad && !_initialTodayOpened &&
+            loaded.length == 1 && !_unauthorized && !_failed) {
+          _initialTodayOpened = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _selected?.id == loaded.first.id) _openAgenda();
+          });
+        }
       }
     } on VenciraUnauthorized {
       if (!mounted || sequence != _sequence) return;
@@ -122,6 +134,13 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     await _loadRenewals(1);
     _loadModalities();
     _loadInsurers();
+    if (mounted && widget.openTodayOnLoad && !_initialTodayOpened &&
+        !_failed && !_unauthorized) {
+      _initialTodayOpened = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _selected?.id == workspace.id) _openAgenda();
+      });
+    }
   }
 
   Future<void> _loadRenewals(int page) async {
