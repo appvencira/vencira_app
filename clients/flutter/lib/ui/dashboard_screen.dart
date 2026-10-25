@@ -70,13 +70,13 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
 
   Future<void> _loadWorkspaces() async {
     final sequence = ++_sequence;
+    // En una recarga manual conservar la organización y sus resultados.
+    // Sólo se descartan si el servidor confirma cambio de pertenencia.
     setState(() {
       _loadingWorkspaces = true;
       _loadingRenewals = false;
       _unauthorized = false;
       _failed = false;
-      _selected = null;
-      _renewals = null;
     });
 
     try {
@@ -84,7 +84,11 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       if (!mounted || sequence != _sequence) return;
       setState(() {
         _workspaces = loaded;
-        _selected = loaded.isEmpty ? null : loaded.first;
+        final previouslySelected = _selected?.id;
+        final preserved = loaded.where((w) => w.id == previouslySelected);
+        _selected = preserved.isNotEmpty
+            ? preserved.first : (loaded.isEmpty ? null : loaded.first);
+        if (_selected?.id != previouslySelected) _renewals = null;
         _loadingWorkspaces = false;
       });
       if (loaded.isNotEmpty) {
@@ -107,6 +111,9 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       setState(() {
         _loadingWorkspaces = false;
         _unauthorized = true;
+        _selected = null;
+        _renewals = null;
+        _workspaces = [];
       });
     } catch (_) {
       if (!mounted || sequence != _sequence) return;
@@ -502,7 +509,8 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                     )),
                   const SizedBox(height: 22),
                   if (_saving) const LinearProgressIndicator(),
-                  if (_loadingWorkspaces || (_loadingRenewals && _renewals == null))
+                  if ((_loadingWorkspaces && _selected == null) ||
+                       (_loadingRenewals && _renewals == null))
                     const Center(
                       child: Padding(
                         padding: EdgeInsets.all(32),
@@ -528,7 +536,8 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                         ),
                       ),
                     ),
-                  if (!_loadingWorkspaces && !_unauthorized && (!_failed || _renewals != null))
+                  if ((_selected != null || !_loadingWorkspaces) &&
+                       !_unauthorized && (!_failed || _renewals != null))
                     ..._workspaceContent(colors),
                   const SizedBox(height: 20),
                   Text(
