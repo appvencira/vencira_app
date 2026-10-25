@@ -44,7 +44,7 @@ class _ResultsState extends State<VenciraResultsScreen> {
   Future<void> _load() async {
     final sequence = ++_sequence;
     setState(() {
-      _loading = true; _summary = null; _error = false; _unauthorized = false;
+      _loading = true; _error = false; _unauthorized = false;
     });
     try {
       final result = await widget.api.fetchResults(
@@ -56,7 +56,7 @@ class _ResultsState extends State<VenciraResultsScreen> {
       setState(() { _summary = result; _loading = false; });
     } on VenciraUnauthorized {
       if (!mounted || sequence != _sequence) return;
-      setState(() { _loading = false; _unauthorized = true; });
+      setState(() { _loading = false; _unauthorized = true; _summary = null; });
     } catch (_) {
       if (!mounted || sequence != _sequence) return;
       setState(() { _loading = false; _error = true; });
@@ -163,7 +163,9 @@ class _ResultsState extends State<VenciraResultsScreen> {
             ),
           ]),
           const SizedBox(height: 18),
-          if (_loading)
+          SizedBox(height: 3, child: _loading && summary != null
+            ? const LinearProgressIndicator() : null),
+          if (_loading && summary == null)
             const Center(child: Padding(
               padding: EdgeInsets.all(28),
               child: CircularProgressIndicator(),
@@ -173,7 +175,7 @@ class _ResultsState extends State<VenciraResultsScreen> {
             Text(_t.loadError),
             TextButton(onPressed: _load, child: Text(_t.retry)),
           ],
-          if (!_loading && summary != null)
+          if (summary != null && !_unauthorized)
             LayoutBuilder(builder: (context, dimensions) {
               final wide = dimensions.maxWidth >= 520;
               final width = wide ? (dimensions.maxWidth - 12) / 2
