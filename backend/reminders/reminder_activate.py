@@ -38,7 +38,8 @@ def activate_reminder_draft(request, workspace_id, renewal_id):
         try:
             occurrences = reconcile_expiry_reminders(
                 renewal.pk, as_of=timezone.localdate(),
-                days_before=draft.days_before, actor=request.user)
+                days_before=draft.days_before, actor=request.user,
+                reasons_by_day=draft.reasons_by_day)
         except (ValueError, OverflowError) as exc:
             return Response({"detail": str(exc)}, status=409)
         response = Response({
