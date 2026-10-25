@@ -1,25 +1,27 @@
-# VENCIRA — ficha rápida para continuar en otro chat
+# VENCIRA — continuidad rápida (estado 25/10/2026)
 
-**Fecha:** 25/10/2026. **Estado verificable:** O8b está desplegada y aceptada; O8c probada y con migración 0015 ensayada en clon, **pero NO desplegada en DEV**.
+**Estado comprobado en terminal: O8c DESPLEGADA TÉCNICAMENTE EN DEV.** Pendiente aceptación funcional MANUAL del guardado de borradores en navegador. No ejecutar otra vez la migración ni el despliegue.
 
 ## Fuente de verdad
 
-GitHub privado `appvencira/vencira_app`, rama `integration/local-e2e-prep`. Checkout Ubuntu `/home/vencira/vencira-localcheck`; stack exclusivo `vencira_localcheck`: Django/DRF, PostgreSQL 17 y Flutter Web ES/CA, `https://dev.vencira.es/`. Whitepaper `White_paper_agenda_vencimientos.pdf` (23 págs). Docs fundamentales: `docs/NEXT_CHAT_HANDOFF.md`, `docs/CONTINUITY_RUNBOOK.md`, `docs/WHITEPAPER_EXECUTION_ROADMAP_2026-10-24.md`, `docs/OPERATION_O8C_PERSISTED_RULES_PLAN.md`.
+- GitHub privado `appvencira/vencira_app`, rama `integration/local-e2e-prep`; checkout Ubuntu `/home/vencira/vencira-localcheck`; stack Docker `vencira_localcheck`, NO interferir con otros stacks, Caddy ni O5.
+- API Django/DRF, PostgreSQL 17, Flutter Web ES/CA. Web `https://dev.vencira.es/`.
+- Consulta `docs/NEXT_CHAT_HANDOFF.md`, `docs/CONTINUITY_RUNBOOK.md`, `docs/WHITEPAPER_EXECUTION_ROADMAP_2026-10-24.md` y `docs/OPERATION_O8C_PERSISTED_RULES_PLAN.md`. Whitepaper original 23 páginas.
+- El usuario prefiere cambios directamente en GitHub y un solo bloque Bash seguro para verificación en Ubuntu. Registrar hitos en el documento de continuidad y actualizar esta ficha antes de cambiar de chat.
 
-## Hitos y pruebas
+## Hitos
 
-- O1–O3, O6 operativa/archivo; O7 resultados mes/trimestre/año validada manualmente; O8a fechas puras; O8b simulador con 60/45/35 y 20/15 en detalle validado manualmente. **O8b NO guarda ni envía.**
-- O4 backend `migrate --check --noinput` al iniciar: migraciones siempre explícitas. Estado DB persistente `reminders.0014_renewal_outcomes` antes de O8c.
-- O5 cifrado Restic vía Rclone Google Drive a las 03:00 Europe/Madrid, salud 08:00; copia cifrada y restauración PG17 temporal confirmadas, timers sin tocar. **No imprimir claves/secretos ni incluir datos reales en DEV**.
-- O8c nueva tabla `RenewalReminderDraft` 1:1, solo estado `draft`, JSON anticipaciones, revisión CAS, actores; GET/PUT autenticado con scope owner/assigned, sin activar avisos. Flutter ES/CA muestra `Guardar solo borrador`. Tests Django SQLite/PG17 y Flutter **TODOS VERDES** en commit fuente `80a5ac618f476a2d3b256499047dfdd1ada01c12`.
-- Ensayo O8c restaurando snapshot cifrado Restic `0b838739` en PG17 aislado, migración `0015_renewal_reminder_drafts` SOLO en clon y checks de constraints/conteos todos verdes. Terminal `ENSAYO_O8C_0015_AISLADO=OK`, `RESULTADO_GLOBAL=0`. Recibo root `600`: `/tmp/vencira-o8c-rehearsal.1tRiHwUA.receipt`. LIVE 0014 intacta.
+- O1–O3 y O6: anotaciones, desenlaces/archivo y modalidades. O7: resultados por mes, trimestre, año con cambio visual aceptado (no extrapolar a exactitud contable).
+- O4: API arranca con `migrate --check --noinput`, nunca aplicar migraciones al reinicio.
+- O5: copias cifradas Restic en Drive, 03:00 y salud 08:00 Europe/Madrid. No tocar credenciales ni temporizadores.
+- O8a fechas civiles; O8b vista previa con 60/45/35 y 20/15 **desplegada y aceptada manualmente**. No guarda ni envía avisos.
+- **O8c: guardado por anotación SOLO en estado `draft`**, 1..12 anticipaciones únicas 0..365, revision/CAS 409, owner o miembro asignado, CSRF y aislamiento tenant; Flutter ES/CA `Guardar solo borrador`. No se crean avisos ni notificaciones. Pruebas Django SQLite/PG17 efímero y Flutter verdes en fuente `80a5ac618f476a2d3b256499047dfdd1ada01c12`.
+- Ensayo pre-migración: snapshot cifrado O5 `0b838739` restaurado en PG17 aislado; `0015_renewal_reminder_drafts` migrada únicamente en clon, tablas antiguas y conteos preservados: `ENSAYO_O8C_0015_AISLADO=OK`. Recibo root 600: `/tmp/vencira-o8c-rehearsal.1tRiHwUA.receipt`.
+- **Despliegue O8c confirmado por el usuario:** fuente Web `9c404380e5801d8f9fd2d4dfe260d51df78264d6`, script `scripts/deploy_o8c_0015_guarded.sh` ejecutado con `MIGRACION_0015_VERIFICADA=OK`, `POSTGRES_0015_SIN_REINICIO=OK`, `API_O8C_DESPLEGADA=OK`, `FLUTTER_WEB_O8C_DESPLEGADA=OK`, `ENDPOINTS_PRIVADOS_PROTEGIDOS=OK`, salud API/DB/Web healthy, proxy y HTTPS HTTP 200, `O8C_DESPLIEGUE_0015_LOCALCHECK=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`. DB persistente en **`reminders.0015_renewal_reminder_drafts`**, sin reinicio. Backup fresco O5 previo OK.
+- Etiquetas rollback (conservar): `vencira-o8c-before-api:20261025T061256Z_2623430`, `vencira-o8c-before-web:20261025T061256Z_2623430`. Recibo de despliegue `/tmp/vencira-o8c-deploy.gst32W6O.receipt` y log `/tmp/vencira-o8c-deploy.6ggUPoJg.log`. **No restaurar BD automáticamente ni ejecutar rollout por segunda vez.**
 
-## Próximo paso exacto
+## Acción siguiente
 
-Nuevo script controlado GitHub `scripts/deploy_o8c_0015_guarded.sh`; chequeo estático `scripts/check_o8c_deploy_static.sh`. **Los scripts están preparados en repo pero el usuario aún no los ha ejecutado ni aprobado el resultado del gate**. Gate de receta reciente de ensayo + fuentes SHA congeladas + O5 sana + esquema live 0014; etiqueta imágenes anteriores, compila API/Web, `migrate --plan`, crea respaldo O5 cifrado nuevo y luego migra explícitamente `0015`, comprueba DB/API/Web/HTTP y rutas privadas 401/403; NO migración automática, NO despliegue de DB, NO rollback automático. Si falla tras migrar, verificar estado y NO repetir ciegamente. No usar script O8b.
+**UAT manual O8c en datos DEMO, desde navegador:** abrir anotación activa > desplegar `Simular avisos` > sección `Guardar borrador de avisos` > introducir `20,15` > `Guardar solo borrador`. Salir y volver: debe mantener `20,15` y mostrar borrador guardado. Otra anotación debe seguir con default `60,45,35`. Revisar mensajes ES/CA, que nunca aparezcan avisos entregados, y no confundir simulador O8b sin persistencia con borrador O8c. Si hay fallo, diagnosticar en GitHub y ejecutar sólo pruebas apropiadas, no repetir migración.
 
-Comando desde cuenta Ubuntu `vencira`: entrar checkout, `git fetch origin integration/local-e2e-prep`, `git merge --ff-only FETCH_HEAD`, ejecutar `bash scripts/check_o8c_deploy_static.sh`, después `sudo bash scripts/deploy_o8c_0015_guarded.sh`; recoger `RESULTADO_GLOBAL` y salida terminal. **Hasta que aparezca `O8C_DESPLIEGUE_0015_LOCALCHECK=OK` no afirmar implantación O8c.**
-
-Tras éxito: UAT con datos DEMO: abrir una anotación activa, expandir simulador, guardar borrador `20,15`, salir y volver; comprobar persistencia solo en esa anotación, aislamiento de otras y ausencia de avisos enviados. Seguientes O9 preguntas de control, O10 notificaciones internas, O11 agenda HOY. Las decisiones de motivos, Vida, tardíos y canales siguen pendientes de aprobación.
-
-**Regla de trabajo:** cambiar código y documentos directamente en GitHub mediante conexión; al usuario un único bloque Bash para puertas de control. Registrar cada resultado en `docs/NEXT_CHAT_HANDOFF.md` y mantener esta ficha breve al día. No repetir O5 ni O8b. Nunca solicitar ni exponer contraseñas/Restic/OAuth en el chat.
+Después de aceptar O8c: continuar O9 (pregunta de control/repetición), O10 (notificaciones) y O11 (agenda HOY), pendientes las decisiones §18 del whitepaper sobre motivos, Vida, altas tardías, reintentos y canales. No activar envíos sin resolverlas. 
