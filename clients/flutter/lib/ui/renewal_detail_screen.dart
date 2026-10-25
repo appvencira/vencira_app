@@ -699,18 +699,18 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
               _sectionCard(Icons.person_outline_rounded,
                 _t.detailCaption08, [
                   if (renewal.fullName.isNotEmpty)
-                    _info('Nombre o razón social', renewal.fullName),
+                    _info(_t.detailInfoName, renewal.fullName),
                   if (renewal.nickname.isNotEmpty)
-                    _info('Apodo', renewal.nickname),
+                    _info(_t.detailInfoNickname, renewal.nickname),
                   if (renewal.phone.isNotEmpty)
-                    _info('Teléfono', renewal.phone),
+                    _info(_t.personPhoneLabel, renewal.phone),
                   if (renewal.email.isNotEmpty)
-                    _info('Correo electrónico', renewal.email),
+                    _info(_t.personEmailLabel, renewal.email),
               ]),
             _sectionCard(Icons.description_outlined,
               _t.detailCaption09, [
                 if (renewal.policyNumber.isNotEmpty)
-                  _info('Número de póliza', renewal.policyNumber),
+                  _info(_t.personPolicyLabel, renewal.policyNumber),
                 _info(_t.entryLabel, _entryLabel(renewal.entry)),
                 _info(_t.modalityLabel, _modalityLabel(renewal.modality)),
                 _info(_t.insurerLabel, renewal.insurerId == null
