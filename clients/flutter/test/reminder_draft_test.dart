@@ -27,7 +27,8 @@ class FakeDraftApi extends VenciraApi {
   @override
   Future<VenciraReminderDraft> saveReminderDraft(
       String workspaceId, String renewalId,
-      {required int revision, required List<int> daysBefore}) async {
+      {required int revision, required List<int> daysBefore,
+       Map<String, String>? reasonsByDay}) async {
     writes++;
     if (conflict || revision != this.revision) {
       throw const VenciraConflictException();
