@@ -333,5 +333,6 @@
   "inboxUpcoming": "Pròxims",
   "inboxDue": "Per atendre",
   "inboxEmpty": "No hi ha avisos interns en aquest apartat.",
-  "inboxOpenDetail": "Veure anotació"
+  "inboxOpenDetail": "Veure anotació",
+  "inboxShortcut": "Avisos"
 }
