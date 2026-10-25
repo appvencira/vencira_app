@@ -48,6 +48,7 @@ class RenewalAuditTests(TestCase):
     def test_creation_creates_one_event_with_actor_tenant_and_no_reference_value(self):
         response = self.client.post(self._create_url(), {
             "customer_reference": "REFERENCIA-PRIVADA-12345",
+            "full_name": "Entidad sintética", "entry": "clients",
             "expires_on": "2027-02-27",
             "status": "pending",
         }, format="json")
