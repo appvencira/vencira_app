@@ -92,7 +92,11 @@ def agenda_day(request, workspace_id):
     )
     # Exists evita duplicados y mantiene paginación por anotación.
     has_reminder_today = due_candidates.filter(renewal_id=OuterRef("pk"))
-    operational_today = OperationalReminder.objects.filter(\n        renewal_id=OuterRef("pk"), scheduled_for=day,\n        state__in=["planned", "pending", "snoozed"],\n    )\n    has_manual_today = RenewalFollowUp.objects.filter(
+    operational_today = OperationalReminder.objects.filter(
+        renewal_id=OuterRef("pk"), scheduled_for=day,
+        state__in=["planned", "pending", "snoozed"],
+    )
+    has_manual_today = RenewalFollowUp.objects.filter(
         renewal_id=OuterRef("pk"), scheduled_for=day,
         state=RenewalFollowUp.State.PLANNED,
     )
@@ -102,9 +106,11 @@ def agenda_day(request, workspace_id):
         )
         .exclude(status=Renewal.Status.CLOSED)
         .annotate(agenda_has_reminder=Exists(has_reminder_today),
-                  agenda_has_manual=Exists(has_manual_today),\n                  agenda_has_operational=Exists(operational_today))
+                  agenda_has_manual=Exists(has_manual_today),
+                  agenda_has_operational=Exists(operational_today))
         .filter(Q(expires_on=day) | Q(notice_deadline_on=day) |
-                Q(agenda_has_reminder=True) | Q(agenda_has_manual=True) |\n                Q(agenda_has_operational=True))
+                Q(agenda_has_reminder=True) | Q(agenda_has_manual=True) |
+                Q(agenda_has_operational=True))
         .order_by("expires_on", "id")
     )
     paginator = RenewalPagination()
