@@ -328,19 +328,11 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(isContact
-            ? _designLabel('Registrar contacto', 'Registrar contacte')
-            : _designLabel('Volver a pendiente', 'Tornar a pendent')),
+            ? _t.detailCaption01
+            : _t.detailCaption02),
         content: Text(isContact
-            ? _designLabel(
-                'Confirma que el contacto ya se ha realizado fuera de VENCIRA. '
-                'Solo se actualizará el estado; no se enviará ningún mensaje.',
-                'Confirma que el contacte ja s’ha fet fora de VENCIRA. '
-                'Només s’actualitzarà l’estat; no s’enviarà cap missatge.')
-            : _designLabel(
-                'La anotación volverá a pendiente. No se borrarán sus notas '
-                'ni el historial de cambios.',
-                'L’anotació tornarà a pendent. No s’esborraran les notes '
-                'ni l’historial de canvis.')),
+            ? _t.detailCaption03
+            : _t.detailCaption04),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -348,7 +340,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(_designLabel('Confirmar', 'Confirmar')),
+            child: Text(_t.detailCaption05),
           ),
         ],
       ),
@@ -364,9 +356,8 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       setState(() => _renewal = updated);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(isContact
-            ? _designLabel('Contacto registrado', 'Contacte registrat')
-            : _designLabel('Estado pendiente restaurado',
-                'Estat pendent restaurat')),
+            ? _t.detailCaption06
+            : _t.detailCaption07),
       ));
       await _refresh();
       if (mounted && _history != null) await _loadHistory(1);
@@ -628,8 +619,6 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
     ]);
   }
 
-  String _designLabel(String es, String ca) =>
-      Localizations.localeOf(context).languageCode == 'ca' ? ca : es;
 
   Widget _sectionCard(IconData icon, String title, List<Widget> fields) {
     final colors = Theme.of(context).colorScheme;
@@ -708,7 +697,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                 renewal.phone.isNotEmpty ||
                 renewal.email.isNotEmpty)
               _sectionCard(Icons.person_outline_rounded,
-                _designLabel('Contacto', 'Contacte'), [
+                _t.detailCaption08, [
                   if (renewal.fullName.isNotEmpty)
                     _info('Nombre o razón social', renewal.fullName),
                   if (renewal.nickname.isNotEmpty)
@@ -719,7 +708,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                     _info('Correo electrónico', renewal.email),
               ]),
             _sectionCard(Icons.description_outlined,
-              _designLabel('Póliza', 'Pòlissa'), [
+              _t.detailCaption09, [
                 if (renewal.policyNumber.isNotEmpty)
                   _info('Número de póliza', renewal.policyNumber),
                 _info(_t.entryLabel, _entryLabel(renewal.entry)),
@@ -731,7 +720,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                       .firstOrNull ?? _t.insurerLegacy),
             ]),
             _sectionCard(Icons.event_note_outlined,
-              _designLabel('Fechas', 'Dates'), [
+              _t.detailCaption10, [
                 _info(_t.expiryDate,
                   DateFormat.yMd(locale).format(renewal.expiresOn)),
                 if (renewal.noticeDeadlineOn != null)
@@ -740,8 +729,8 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
             ]),
             if (renewal.notes.isNotEmpty)
               _sectionCard(Icons.notes_outlined,
-                _designLabel('Notas', 'Notes'), [
-                  _info(_designLabel('Observaciones', 'Observacions'),
+                _t.detailCaption11, [
+                  _info(_t.detailCaption12,
                     renewal.notes),
               ]),
             if (renewal.status == 'pending' ||
@@ -758,19 +747,14 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                           size: 20, color: Theme.of(context).colorScheme.primary),
                         const SizedBox(width: 10),
                         Expanded(child: Text(
-                          _designLabel('Seguimiento', 'Seguiment'),
+                          _t.detailCaption13,
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.w700),
                         )),
                       ]),
                       const SizedBox(height: 8),
                       Text(
-                        _designLabel(
-                          'Registra un contacto realizado fuera de VENCIRA. '
-                          'Esta acción no envía mensajes ni programa avisos.',
-                          'Registra un contacte fet fora de VENCIRA. '
-                          'Aquesta acció no envia missatges ni programa avisos.',
-                        ),
+                        _t.detailCaption14,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       const SizedBox(height: 12),
@@ -779,16 +763,14 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                           key: const ValueKey('mark-contacted'),
                           onPressed: _saving ? null : _changeContactStatus,
                           icon: const Icon(Icons.forum_outlined),
-                          label: Text(_designLabel(
-                              'Marcar como contactado', 'Marcar com a contactat')),
+                          label: Text(_t.detailCaption15),
                         )
                       else
                         OutlinedButton.icon(
                           key: const ValueKey('restore-pending'),
                           onPressed: _saving ? null : _changeContactStatus,
                           icon: const Icon(Icons.undo_rounded),
-                          label: Text(_designLabel(
-                              'Volver a pendiente', 'Tornar a pendent')),
+                          label: Text(_t.detailCaption02),
                         ),
                     ],
                   ),
@@ -817,14 +799,8 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                 child: ExpansionTile(
                   key: ValueKey('reminder-preview-expand-' + renewal.id),
                   leading: const Icon(Icons.notifications_active_outlined),
-                  title: Text(_designLabel(
-                    'Simular avisos de vencimiento',
-                    'Simular avisos de venciment',
-                  )),
-                  subtitle: Text(_designLabel(
-                    'Vista previa. No guarda ni envía avisos.',
-                    'Vista prèvia. No desa ni envia avisos.',
-                  )),
+                  title: Text(_t.detailCaption16),
+                  subtitle: Text(_t.detailCaption17),
                   // La vista previa solo consulta la API después de abrirla.
                   // No alterar la posición ni el comportamiento de los
                   // controles de seguimiento/manuales ya existentes.
