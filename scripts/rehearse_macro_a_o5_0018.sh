@@ -43,6 +43,11 @@ test "$(live_sql "SELECT name FROM django_migrations WHERE app='reminders' ORDER
 LIVE_COUNT="$(live_sql 'SELECT COUNT(*) FROM django_migrations;')"
 echo "DEV_0016_PRE=OK"
 PHASE=O5_CONFIG
+SNAPSHOT_ID="${1:-}"
+if [[ ! "$SNAPSHOT_ID" =~ ^[0-9a-f]{8,64}$ ]]; then
+  echo "ERROR=SNAPSHOT_ID_REQUERIDO"
+  exit 3
+fi
 DIR=/etc/vencira-backup
 test -d "$DIR" && test ! -L "$DIR" && test "$(stat -c %u:%a "$DIR")" = 0:700
 for file in config.env restic-password rclone.conf; do
@@ -54,6 +59,12 @@ test "$RESTIC_PASSWORD_FILE" = "$DIR/restic-password"
 test "$RCLONE_CONFIG" = "$DIR/rclone.conf"
 export RESTIC_REPOSITORY RESTIC_PASSWORD_FILE RCLONE_CONFIG
 restic snapshots --quiet --tag vencira-postgresql >>"$LOG" 2>&1
+restic snapshots --json --tag vencira-postgresql | python3 -c '
+import json,sys
+matches=[s for s in json.load(sys.stdin) if s.get("id","").startswith(sys.argv[1]) and "vencira-postgresql" in s.get("tags",[])]
+if len(matches)!=1: sys.exit(1)
+print("SNAPSHOT_SELECCIONADO="+matches[0]["id"])
+' "$SNAPSHOT_ID"
 echo "O5_SNAPSHOTS_ACCESSIBLE=OK"
 PHASE=IMAGE
 docker build -t "$IMAGE" ./backend >>"$LOG" 2>&1
@@ -73,7 +84,7 @@ done
 test "$ready" = 1
 echo "PG17_AISLADO=OK"
 PHASE=RESTORE
-restic dump --tag vencira-postgresql latest vencira-postgres.dump 2>>"$LOG" |
+restic dump "$SNAPSHOT_ID" vencira-postgres.dump 2>>"$LOG" |
   docker exec -i "$DB" pg_restore --clean --if-exists --no-owner --no-privileges --exit-on-error \
     -U rehearsal -d rehearsal >>"$LOG" 2>&1
 before="$(docker exec "$DB" psql -X -v ON_ERROR_STOP=1 -U rehearsal -d rehearsal -Atqc \
@@ -81,6 +92,7 @@ before="$(docker exec "$DB" psql -X -v ON_ERROR_STOP=1 -U rehearsal -d rehearsal
 echo "CLON_SCHEMA_RESTORED=$before"
 test "$before" = 0016_renewal_control_responses
 echo "O5_RESTORE_0016=OK"
+echo "SNAPSHOT_RESTAURADO=$SNAPSHOT_ID"
 PHASE=CLONE_MIGRATION
 docker run --rm --network "$NET" \
   -e VENCIRA_ENV=development -e DJANGO_DEBUG=0 \
