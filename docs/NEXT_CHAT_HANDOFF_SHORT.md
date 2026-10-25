@@ -156,3 +156,9 @@ Documento completo de alcance/evidencia: `docs/PHASE_WHITEPAPER_ALIGNMENT_2026-1
 - Capturas reales Android de `https://dev.vencira.es/` muestran pregunta manual, opciones Sí/No y tres opciones Sí, historial con «Sí · Avisada por el cliente» a las 11:35 del 25/10/2026. Evidencia de flujo manual Sí guardado y mostrado (no prueba automáticamente respuestas de No ni notificación real).
 - Defecto visual: en No aparece doble etiqueta «Avísame dentro de (días)» encima y dentro del campo. Corregido en GitHub commit `96bde67999eb0cfaca71d1204d73e216d9b7fe4a` eliminando etiqueta externa. **Esta corrección posterior todavía NO ha pasado preflight ni está desplegada; no repetir despliegue hasta validación.**
 - Próximas tareas: validar opción No guardando con datos ficticios y revisar límites/corrección de errores; preflight de corrección Flutter, y despliegue web-only posterior con imagen rollback conservada.
+
+## 25/10/2026 — O9b-3 preflight OK, web deploy de retoque visual bloqueado antes de recreación
+
+- Usuario confirmó `scripts/validate_o7_o8_preflight.sh` resultado 0 log `/tmp/vencira-o7-o8-preflight.dhr1EL7b.log` tras corrección visual `96bde679`.
+- Intento de `scripts/deploy_o9b3_web_guarded.sh` falló `FASE_FALLIDA=PRECONDITIONS`, `WEB_PUDO_HABERSE_RECREADO=0`, `RESULTADO_GLOBAL=1`, sin migraciones ni reinicio API/DB. Causa muy probable: gate comparaba `clients/flutter` con commit previo `3d42c045` y rechazaba el nuevo cambio visual.
+- Script corregido en commit `b9d490fddadee5527cc42d67c131107f44ccc263` para fijar fuentes Flutter a `96bde67999eb0cfaca71d1204d73e216d9b7fe4a` (validado). Reintentar solo despliegue web después de `git fetch/merge`, `bash -n`; no hace falta repetir preflight ni migración. Si vuelve a fallar, no repetir sin diagnóstico. UI DEV previa sigue activa con etiqueta duplicada hasta éxito del nuevo despliegue.
