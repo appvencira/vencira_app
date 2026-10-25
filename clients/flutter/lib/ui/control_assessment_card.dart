@@ -126,6 +126,31 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
                     ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
+              if (value.c2Policy?.manualReviewRequired == true) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.assignment_late_outlined,
+                          color: Theme.of(context).colorScheme.onErrorContainer),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(
+                        _strings.controlManualPending,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               // Vida requires policy-specific human review: the general
               // one-month cutoff cannot be presented as legally confirmed.
               if (!value.reasons.contains('life_case_needs_review'))
