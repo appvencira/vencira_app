@@ -48,3 +48,10 @@ Primero tests de reglas y seguridad; después SQLite+PostgreSQL17 efímero, Flut
 ## Evidencia y próxima acción
 
 C0 es revisión estática de estos archivos de GitHub: `control_responses.py`, `control_response_api.py`, `control_repeat_schedule.py`, `reminder_activate.py`, `operational_reconcile.py`, `control_assessment.py`, `models.py`, `control_response_card.dart`. **No hay un nuevo resultado de suites** ni despliegue ni migración. Próxima acción: cerrar decisiones C1 con el promotor y transformar el contrato acordado en cambios testables sobre la rama de desarrollo, sin repetir B.
+
+
+## C1 — Primera decisión aprobada (25/10/2026)
+
+El promotor respondió «Ok, mantenemos actualizados durante los trabajos, seguimos» a la propuesta de motivos. Se registra **aprobación conversacional** de los motivos predeterminados editables: **60 días** «Revisar vencimiento y contactar con el cliente»; **45 días** «Enviar notificación de no renovación»; **35 días** «Comprobar comunicación de no renovación y responder a la pregunta de control». Ello no supone envío real. La pregunta aparece en el último aviso elegible estrictamente anterior al límite del mes civil, que puede no ser el de 35 días. La configuración por cuenta/anotación sigue el §7 y no se alteran borradores existentes sin acción expresa. Esta actualización documental no ejecuta cambios funcionales, gates ni migraciones.
+
+**C1 abierto:** avisos pendientes HOY, alta tardía, ausencia de aviso anterior al corte, Vida, autorización/evidencia de «Notificado por mí», canales y reintentos. Las propuestas §18 no equivalen a decisiones. Antes de C2 cotejar código existente y preparar pruebas; no repetir fases A/B.
