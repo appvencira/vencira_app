@@ -309,5 +309,21 @@
   "opSaveError": "No s'han pogut guardar els motius.",
   "opConflict": "Les dades han canviat. Actualitza abans de guardar.",
   "opActivateError": "No s'han pogut programar els avisos interns. Revisa les dates.",
-  "opActionError": "No s'ha pogut actualitzar. Revisa les dades."
+  "opActionError": "No s'ha pogut actualitzar. Revisa les dades.",
+  "opPresetHint": "Selecciona un motiu habitual o escriu-ne un de personalitzat.",
+  "opPresetLabel": "Motius habituals",
+  "opPresetChoose": "Seleccionar motiu",
+  "opCustomReason": "Motiu personalitzat",
+  "opPresetReview": "Revisar el pròxim venciment",
+  "opPresetContact": "Contactar amb el client",
+  "opPresetRenewal": "Confirmar la renovació de la pòlissa",
+  "opPresetNonRenewal": "Comprovar la comunicació de no renovació",
+  "opPresetDocuments": "Sol·licitar documentació pendent",
+  "opActions": "Accions de l'avís",
+  "opStatePlanned": "Programat",
+  "opStatePending": "Pendent",
+  "opStateSnoozed": "Ajornat",
+  "opStateCompleted": "Completat",
+  "opStateCancelled": "Cancel·lat",
+  "opStateUnknown": "Estat desconegut"
 }
