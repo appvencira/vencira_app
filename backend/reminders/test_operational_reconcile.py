@@ -113,6 +113,20 @@ class OperationalReconcileTests(TestCase):
         self.assertEqual(original.pk, retried.pk)
         self.assertEqual(OperationalReminder.objects.count(), 1)
 
+    def test_reactivation_preserves_overdue_existing_reminder(self):
+        first = self.reconcile()
+        later = reconcile_expiry_reminders(
+            self.renewal.pk, as_of=date(2027, 2, 11))
+        self.assertEqual([x.pk for x in later], [x.pk for x in first])
+        self.assertEqual(OperationalReminder.objects.filter(
+            state="cancelled").count(), 0)
+
+    def test_unrecorded_late_control_is_still_rejected(self):
+        with self.assertRaises(ValueError):
+            reconcile_expiry_reminders(
+                self.renewal.pk, as_of=date(2027, 2, 11))
+        self.assertFalse(OperationalReminder.objects.exists())
+
     def test_yes_never_generates_a_repeat(self):
         response = RenewalControlResponse.objects.create(
             renewal=self.renewal, answer="yes",
