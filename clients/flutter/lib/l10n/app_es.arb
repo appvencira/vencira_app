@@ -325,5 +325,13 @@
   "opStateSnoozed": "Aplazado",
   "opStateCompleted": "Completado",
   "opStateCancelled": "Cancelado",
-  "opStateUnknown": "Estado desconocido"
+  "opStateUnknown": "Estado desconocido",
+  "inboxTitle": "Bandeja de avisos",
+  "inboxDescription": "Avisos internos pendientes de atender. No se han enviado notificaciones.",
+  "inboxOverdue": "Atrasados",
+  "inboxToday": "Hoy",
+  "inboxUpcoming": "Próximos",
+  "inboxDue": "Por atender",
+  "inboxEmpty": "No hay avisos internos en este apartado.",
+  "inboxOpenDetail": "Ver anotación"
 }
