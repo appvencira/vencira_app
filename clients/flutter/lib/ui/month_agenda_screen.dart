@@ -48,7 +48,12 @@ class _VenciraMonthAgendaScreenState extends State<VenciraMonthAgendaScreen> {
     final sequence = ++_generation;
     final requested = _month;
     setState(() {
-      _summary = null;
+      // Recarga mensual: solo cambiar contenido si cambia mes civil.
+      if (_summary != null &&
+          (_summary!.month.year != requested.year ||
+           _summary!.month.month != requested.month)) {
+        _summary = null;
+      }
       _loading = true;
       _failed = false;
       _unauthorized = false;
@@ -68,6 +73,7 @@ class _VenciraMonthAgendaScreenState extends State<VenciraMonthAgendaScreen> {
       setState(() {
         _loading = false;
         _unauthorized = true;
+        _summary = null;
       });
     } catch (_) {
       if (!mounted || sequence != _generation) return;
@@ -289,15 +295,19 @@ class _VenciraMonthAgendaScreenState extends State<VenciraMonthAgendaScreen> {
           Center(child: TextButton.icon(onPressed: _goToday,
             icon: const Icon(Icons.today), label: Text(_t.agendaToday))),
           const SizedBox(height: 10),
-          if (_loading)
-            const Center(child: CircularProgressIndicator())
-          else if (_unauthorized)
+          SizedBox(height: 3, child: _loading && _summary != null
+            ? const LinearProgressIndicator() : null),
+          if (_unauthorized)
             Text(_t.loginRequired)
           else if (_failed)
             Column(children: [
               Text(_t.agendaMonthLoadError),
               TextButton(onPressed: _load, child: Text(_t.retry)),
             ])
+          else if (_loading && _summary == null)
+            const SizedBox(
+              height: 350,
+              child: Center(child: CircularProgressIndicator()))
           else if (_summary != null) ...[
             _calendar(locale, colors),
             const SizedBox(height: 12),
