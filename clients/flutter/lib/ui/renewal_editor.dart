@@ -140,7 +140,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
     if (!_formKey.currentState!.validate()) return;
     if (widget.existing == null && _fullName.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('El nombre o razón social es obligatorio.')),
+        SnackBar(content: Text(_t.personFullNameRequired)),
       );
       return;
     }
@@ -221,26 +221,27 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                     color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 _formSection(Icons.badge_outlined,
                   _designLabel('Identificación', 'Identificació')),
-                TextFormField(
-                  controller: _reference,
-                  maxLength: 160,
-                  autofocus: !compact,
-                  decoration: InputDecoration(
-                    labelText: _t.reference,
-                    helperText: _t.referenceHelper,
-                    helperMaxLines: 2,
-                    border: const OutlineInputBorder(),
+                // La referencia es solo metadato legado, nunca un requisito
+                // para crear anotaciones. En nuevas, la API genera ID opaco.
+                if (widget.existing != null) ...[
+                  TextFormField(
+                    controller: _reference,
+                    maxLength: 160,
+                    decoration: InputDecoration(
+                      labelText: _t.reference,
+                      border: const OutlineInputBorder(),
+                    ),
                   ),
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? _t.referenceRequired : null,
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
+                ],
                 TextFormField(
                   key: const ValueKey('full-name'),
                   controller: _fullName,
                   textCapitalization: TextCapitalization.words,
                   maxLength: 160,
-                  decoration: const InputDecoration(labelText: 'Nombre y apellidos o razón social', border: OutlineInputBorder()),
+                  decoration: InputDecoration(labelText: _t.personFullName, border: const OutlineInputBorder()),
+                  validator: (value) => widget.existing == null && (value == null || value.trim().isEmpty)
+                      ? _t.personFullNameRequired : null,
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
