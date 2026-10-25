@@ -63,3 +63,17 @@ class ReminderActivationTests(TestCase):
         self.assertEqual(second.json()["planned_count"], 3)
         self.assertEqual(OperationalReminder.objects.count(), 3)
         self.assertEqual(first.json()["notification_delivery"], "not_implemented")
+
+    def test_configured_reason_is_used_by_activation(self):
+        RenewalReminderDraft.objects.create(
+            renewal=self.renewal, days_before=[60, 45, 35],
+            reasons_by_day={"45": "Revisar propuesta"}, revision=1)
+        self.client.force_login(self.owner)
+        with patch("reminders.reminder_activate.timezone.localdate",
+                   return_value=date(2027, 1, 1)):
+            response = self.post(1)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(OperationalReminder.objects.get(
+            renewal=self.renewal, source_key="expiry:45").reason, "Revisar propuesta")
+        self.assertEqual(OperationalReminder.objects.get(
+            renewal=self.renewal, source_key="expiry:60").reason, "Aviso de vencimiento")
