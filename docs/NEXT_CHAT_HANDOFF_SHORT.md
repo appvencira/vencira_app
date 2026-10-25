@@ -162,3 +162,9 @@ Documento completo de alcance/evidencia: `docs/PHASE_WHITEPAPER_ALIGNMENT_2026-1
 - Usuario confirmó `scripts/validate_o7_o8_preflight.sh` resultado 0 log `/tmp/vencira-o7-o8-preflight.dhr1EL7b.log` tras corrección visual `96bde679`.
 - Intento de `scripts/deploy_o9b3_web_guarded.sh` falló `FASE_FALLIDA=PRECONDITIONS`, `WEB_PUDO_HABERSE_RECREADO=0`, `RESULTADO_GLOBAL=1`, sin migraciones ni reinicio API/DB. Causa muy probable: gate comparaba `clients/flutter` con commit previo `3d42c045` y rechazaba el nuevo cambio visual.
 - Script corregido en commit `b9d490fddadee5527cc42d67c131107f44ccc263` para fijar fuentes Flutter a `96bde67999eb0cfaca71d1204d73e216d9b7fe4a` (validado). Reintentar solo despliegue web después de `git fetch/merge`, `bash -n`; no hace falta repetir preflight ni migración. Si vuelve a fallar, no repetir sin diagnóstico. UI DEV previa sigue activa con etiqueta duplicada hasta éxito del nuevo despliegue.
+
+## 25/10/2026 — O9b-3 CORRECCIÓN WEB DEV DESPLEGADA Y PRUEBA NO VALIDADA
+
+- Usuario presentó captura Android y consola de despliegue web corregido: `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`, `SIN_MIGRACIONES=1`, `SIN_REINICIO_API_DB=1`, `SIN_CAMBIOS_CADDY_OAUTH_TIMERS=1`. La UI ahora muestra una sola etiqueta «Avísame dentro de (días)».
+- UAT web autenticada con datos ficticios: **NO** registrado el 25/10/2026 a las 11:56 con revisión solicitada para 26/10/2026 en historial. Anteriormente **SÍ · Avisada por el cliente** registrado y visible en historial. Confirmados flujos manuales Sí/No. No constituye notificación entregada ni programación de tarea: no activar notificaciones sin fase específica.
+- Estado O9b-3: desplegada y aceptada en DEV por evidencia del usuario. Persistencia PostgreSQL en 0016; no ejecutar migración ni repetir despliegue O9b. Pendiente funcional real: automatización futura separada de preguntas y recordatorios conforme whitepaper; no confundir respuesta manual con ejecución automática.
