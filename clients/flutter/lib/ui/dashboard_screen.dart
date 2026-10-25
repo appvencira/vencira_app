@@ -14,6 +14,7 @@ import 'modality_catalog_screen.dart';
 import 'insurer_catalog_screen.dart';
 import 'modality_labels.dart';
 import 'day_agenda_screen.dart';
+import 'operational_inbox_screen.dart';
 import 'vencira_select.dart';
 
 class VenciraDashboardScreen extends StatefulWidget {
@@ -596,6 +597,15 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     });
   }
 
+  void _openOperationalInbox() {
+    final workspace = _selected;
+    if (workspace == null || _saving || _loadingRenewals) return;
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => VenciraOperationalInboxScreen(
+        api: _api, workspace: workspace),
+    ));
+  }
+
   void _openAgenda() {
     final workspace = _selected;
     if (workspace == null) return;
@@ -691,6 +701,17 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                   ? null : _openArchive,
               icon: const Icon(Icons.inventory_2_outlined),
               label: Text(_t.archiveOpen),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              key: const ValueKey('open-operational-inbox'),
+              onPressed: _loadingRenewals || _saving || _selected == null
+                ? null : _openOperationalInbox,
+              icon: const Icon(Icons.notifications_active_outlined),
+              label: Text(_t.inboxTitle),
             ),
           ),
           if (kIsWeb && MediaQuery.sizeOf(context).width >= 800 &&
