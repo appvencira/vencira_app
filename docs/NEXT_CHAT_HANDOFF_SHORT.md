@@ -238,3 +238,9 @@ Documento completo de alcance/evidencia: `docs/PHASE_WHITEPAPER_ALIGNMENT_2026-1
 - Nuevo `backend/reminders/reminder_activate.py` commit `d2cc94cf019374664ae915f10ded1107cc9a4840` y ruta `POST /api/v1/workspaces/<ws>/renewals/<renewal>/reminder-activate/` commit `e8ed7f4e9094b7403e0003f53639ef6d1273cd82`: el usuario autorizado activa deliberadamente la programación **interna** del borrador existente, CAS `expected_revision`, transacción y conciliación, rechazo de cuenta ajena/archivadas/fechas excepcionales; no activa canales, cron ni entrega. NO modifica `RenewalReminderDraft.state=draft` pues es configuración editable; respuesta `state=internally_planned`.
 - Pruebas `backend/reminders/test_reminder_activate.py` commits `7eb7c1e1b4c383567f4b611f456ff4b6bc713494`, `4c65d008f15799312cebd50b6fabed994fc06705`: borrador exigido, tenant, CAS, formato, idempotencia y 60/45/35 con reloj congelado. **PENDIENTES ejecutar**.
 - Riesgos pendientes: motivos aún fijos, no hay botón Flutter de activación ni UI de acciones operativas; faltan pruebas integrales SQLite/PG17 temporal, chequear django makemigrations --check; migración 0017 no aplicada. **No desplegar DEV** (0016).
+
+## 25/10/2026 — Macro A: motivos por aviso, esquema preparado NO integrado
+
+- Campo `RenewalReminderDraft.reasons_by_day` JSON diccionario opcional añadido a modelos en commit `9147845db3862b2faf2c7c68e8fd94046ab23864`.
+- Migración aditiva `0018_draft_reasons.py` dependiente de `0017_operational_reminders` creada en commit `bdf847aad9a6790a511aa0c795719cdc69efab7c`. **No ejecutar en DEV**: sigue en `0016` y 0017/0018 requieren gates O5 y ensayo en clon.
+- Integración pendiente: validar motivos en API PUT/GET de borrador, pasar mapa a reconciliador de avisos y persistir en ocurrencia, tests con valores por defecto y permisos, Flutter ES/CA y circuito de activación. Intentos de modificar esos archivos bloqueados por herramienta; no declarar funcionalidad completada.
