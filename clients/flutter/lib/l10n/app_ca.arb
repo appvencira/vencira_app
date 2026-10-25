@@ -272,5 +272,9 @@
   "previewText17": "Simulació, no avís enviat ni tasca desada.",
   "agendaShort": "Agenda",
   "detailInfoName": "Nom o raó social",
-  "detailInfoNickname": "Àlies"
+  "detailInfoNickname": "Àlies",
+  "manualFollowUpShort": "Seguiment manual",
+  "agendaFiltersShort": "Filtres",
+  "monthColorLegend": "Llegenda de colors",
+  "workspaceCatalogHeading": "Catàlegs de l’organització"
 }
