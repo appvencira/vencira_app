@@ -118,7 +118,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
     } catch (_) {
       if (!mounted || generation != _suggestionGeneration) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudieron consultar las sugerencias.')));
+        SnackBar(content: Text(_t.personSearchFailed)));
     } finally {
       if (mounted && generation == _suggestionGeneration) {
         setState(() => _suggesting = false);
@@ -254,7 +254,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                   key: const ValueKey('nickname'),
                   controller: _nickname,
                   maxLength: 80,
-                  decoration: const InputDecoration(labelText: 'Apodo o nick', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: _t.personNicknameLabel, border: OutlineInputBorder()),
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
@@ -262,7 +262,7 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                   controller: _phone,
                   keyboardType: TextInputType.phone,
                   maxLength: 32,
-                  decoration: const InputDecoration(labelText: 'Teléfono', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: _t.personPhoneLabel, border: OutlineInputBorder()),
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
@@ -270,14 +270,14 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                   controller: _email,
                   keyboardType: TextInputType.emailAddress,
                   maxLength: 254,
-                  decoration: const InputDecoration(labelText: 'Correo electrónico', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: _t.personEmailLabel, border: OutlineInputBorder()),
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
                   key: const ValueKey('policy-number'),
                   controller: _policyNumber,
                   maxLength: 100,
-                  decoration: const InputDecoration(labelText: 'Número de póliza', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: _t.personPolicyLabel, border: OutlineInputBorder()),
                 ),
                 _formSection(Icons.policy_outlined,
                   _designLabel('Póliza y clasificación',
@@ -287,14 +287,14 @@ class _VenciraRenewalEditorState extends State<VenciraRenewalEditor> {
                     key: const ValueKey('lookup-person'),
                     onPressed: _suggesting ? null : _lookupPerson,
                     icon: const Icon(Icons.person_search),
-                    label: const Text('Buscar datos en otras anotaciones'),
+                    label: Text(_t.personSearchLabel),
                   ),
                   if (_suggesting) const LinearProgressIndicator(),
                   for (final candidate in _suggestions)
                     ListTile(
                       title: Text(candidate.fullName),
                       subtitle: Text(candidate.nickname.isEmpty
-                          ? 'Copiar datos de contacto'
+                          ? _t.personCopyLabel
                           : candidate.nickname),
                       trailing: const Icon(Icons.content_copy),
                       onTap: () => _copySuggestion(candidate),
