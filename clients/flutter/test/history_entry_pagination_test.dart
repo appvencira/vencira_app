@@ -5,6 +5,7 @@ import 'package:vencira/l10n/app_localizations.dart';
 import 'package:vencira/ui/renewal_detail_screen.dart';
 import 'package:vencira/ui/operational_history_index_screen.dart';
 import 'package:vencira/ui/vencira_pagination_bar.dart';
+import 'package:vencira/ui/vencira_theme.dart';
 
 class _HistoryIndexApi extends VenciraApi {
   _HistoryIndexApi(this.rows);
@@ -62,7 +63,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(useMaterial3: true, brightness: Brightness.dark),
+        theme: VenciraTheme.dark(),
         locale: const Locale('es'),
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
