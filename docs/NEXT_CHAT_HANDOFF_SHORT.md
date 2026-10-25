@@ -1,5 +1,8 @@
 > **NUEVO CHAT — CIERRE DE MACROFASE B (25/10/2026):** leer primero [`HANDOFF_MACROFASE_C_2026-10-25.md`](HANDOFF_MACROFASE_C_2026-10-25.md). El promotor confirma «Done, todo ok» tras las pruebas y publicación de la tarjeta premium de historial. Macrofase B aceptada por comunicación del usuario; los apuntes antiguos inferiores pueden indicar estados anteriores al cierre. La próxima macrofase C empieza con auditoría del código real O9b (Sí/No manual y repetición interna ya existen) frente al whitepaper §§7–10/18; decisiones §18 no aprobadas siguen abiertas. No repetir despliegues ni tocar O5/Caddy/OAuth ni PostgreSQL sin gates.
 
+> **ESTADO ACTUAL / LECTURA PRIMERO — 25/10/2026.** La información histórica inferior es acumulativa y puede decir «pendiente» de funcionalidades ya completadas. **A y B aceptadas; B incluye historial premium móvil y paginación.** La macrofase **C0 quedó auditada estáticamente** en [MACROFASE_C_C0_AUDITORIA_2026-10-25.md](MACROFASE_C_C0_AUDITORIA_2026-10-25.md); **C1** debe cerrar las propuestas no aprobadas del §18 (motivos por defecto 60/45/35, atrasados HOY, altas tardías, cero avisos anteriores a corte, Vida y entrega/reintentos). **C2–C3 no iniciadas**. No duplicar O9b (Sí/No manual, tres alternativas, No con programación interna y auditoría) ni declarar notificaciones entregadas. Último esquema DEV documentado: **0018**, confirmar antes de actuar; no hay nuevo gate/despliegue con C0. Fuentes de verdad: [whitepaper original](source/WHITEPAPER_ORIGINAL_2026-10-18_TRANSCRIPCION.md) → [plan maestro](WHITEPAPER_EXECUTION_ROADMAP_2026-10-24.md) → [handoff C](HANDOFF_MACROFASE_C_2026-10-25.md). No solicitar credenciales ni tocar infraestructura.
+
+
 # VENCIRA — resumen de continuidad (25/10/2026)
 
 ## Estado de DEV confirmado
