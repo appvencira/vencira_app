@@ -90,9 +90,12 @@ void main() {
       ));
       await tester.pumpAndSettle();
       final schedule = find.byKey(const ValueKey('schedule-follow-up'));
-      // The ListView eagerly builds its children: scrollUntilVisible can
-      // return before scrolling because the widget already exists off-screen.
-      await tester.ensureVisible(schedule);
+      // El CTA de historial desplaza la sección O2 fuera del área construida.
+      // ListView solo materializa hijos cercanos: ensureVisible no encuentra
+      // widgets que todavía no forman parte del árbol.
+      await tester.scrollUntilVisible(
+        schedule, 160, scrollable: find.byType(Scrollable).first);
+      expect(schedule, findsOneWidget);
       await tester.pumpAndSettle();
       await tester.tap(schedule);
       await tester.pumpAndSettle();
@@ -104,7 +107,9 @@ void main() {
       expect(tester.takeException(), isNull);
 
       final complete = find.byKey(const ValueKey('complete-follow-up'));
-      await tester.ensureVisible(complete);
+      await tester.scrollUntilVisible(
+        complete, 140, scrollable: find.byType(Scrollable).first);
+      expect(complete, findsOneWidget);
       await tester.pumpAndSettle();
       await tester.tap(complete);
       await tester.pumpAndSettle();
