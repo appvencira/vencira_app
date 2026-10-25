@@ -65,13 +65,13 @@ void main() {
     }), throwsFormatException);
     expect(() => VenciraOperationalHistory.fromJson({
       ...example, 'results': [{
-        ...(example['results'] as List).single as Map<String, dynamic>,
+        ...((example['results'] as List).single as Map<String, dynamic>),
         'action': 'email_delivered'
       }]
     }), throwsFormatException);
     expect(() => VenciraOperationalHistory.fromJson({
       ...example, 'results': [{
-        ...(example['results'] as List).single as Map<String, dynamic>,
+        ...((example['results'] as List).single as Map<String, dynamic>),
         'scheduled_for': '2027-02-30'
       }]
     }), throwsFormatException);
