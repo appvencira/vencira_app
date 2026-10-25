@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../api/vencira_api.dart';
+import '../l10n/app_localizations.dart';
 
 /// O9a: lectura de la situación de control. No registra respuestas ni envíos.
 class VenciraControlAssessmentCard extends StatefulWidget {
@@ -25,8 +26,7 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
   bool _loading = true;
   bool _error = false;
 
-  String _t(String es, String ca) =>
-      Localizations.localeOf(context).languageCode == 'ca' ? ca : es;
+  AppLocalizations get _strings => AppLocalizations.of(context)!;
 
   @override
   void initState() {
@@ -75,23 +75,15 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
   String _reason(String reason) {
     switch (reason) {
       case 'life_case_needs_review':
-        return _t(
-          'Vida: revisar el régimen aplicable antes de actuar.',
-          'Vida: cal revisar el règim aplicable abans d’actuar.');
+        return _strings.controlLifeReview;
       case 'no_notice_before_cutoff':
-        return _t(
-          'No existe un aviso anterior a la fecha de referencia.',
-          'No hi ha cap avís anterior a la data de referència.');
+        return _strings.controlNoEligible;
       case 'informational_cutoff_reached':
-        return _t(
-          'La fecha de referencia ya ha llegado o pasado.',
-          'La data de referència ja ha arribat o ha passat.');
+        return _strings.controlCutoffPassed;
       case 'control_date_already_past_no_execution_evidence':
-        return _t(
-          'La fecha de control ha pasado; no hay evidencia de aviso enviado.',
-          'La data de control ha passat; no hi ha evidència d’avís enviat.');
+        return _strings.controlPastNotSent;
       default:
-        return _t('Requiere revisión.', 'Cal revisar-ho.');
+        return _strings.controlRequiresReview;
     }
   }
 
@@ -108,19 +100,13 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
               const Icon(Icons.fact_check_outlined),
               const SizedBox(width: 10),
               Expanded(child: Text(
-                _t('Pregunta de control: evaluación',
-                    'Pregunta de control: avaluació'),
+                _strings.controlTitle,
                 style: Theme.of(context).textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold),
               )),
             ]),
             const SizedBox(height: 10),
-            Text(_t(
-              'Vista informativa. No pregunta, no registra respuestas '
-              'ni envía notificaciones.',
-              'Vista informativa. No fa preguntes, no registra respostes '
-              'ni envia notificacions.',
-            ), style: Theme.of(context).textTheme.bodySmall),
+            Text(_strings.controlReadOnlyInfo, style: Theme.of(context).textTheme.bodySmall),
             if (_loading) ...[
               const SizedBox(height: 16),
               const Center(child: CircularProgressIndicator()),
@@ -129,21 +115,18 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
               const SizedBox(height: 14),
               Text(
                 value.status == 'manual_review_required'
-                  ? _t('Revisión manual pendiente', 'Revisió manual pendent')
+                  ? _strings.controlManualPending
                   : value.status == 'control_day_today_preview'
-                    ? _t('Control previsto para hoy (no enviado)',
-                         'Control previst per a hui (no enviat)')
-                    : _t('Control futuro previsto (no programado)',
-                         'Control futur previst (no programat)'),
+                    ? _strings.controlTodayPreview
+                    : _strings.controlFuturePreview,
                 style: Theme.of(context).textTheme.bodyMedium
                     ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
-              Text(_t('Referencia de un mes civil: ',
-                      'Referència d’un mes civil: ') + _date(value.cutoffOn)),
+              Text(_strings.controlCutoffLabel + _date(value.cutoffOn)),
               if (value.controlDay != null) ...[
                 const SizedBox(height: 8),
-                Text(_t('Control calculado: ', 'Control calculat: ') +
+                Text(_strings.controlDayLabel +
                      _date(value.controlDay!)),
               ],
               for (final reason in value.reasons) ...[
@@ -155,25 +138,18 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
                 ]),
               ],
               const SizedBox(height: 14),
-              Text(_t(
-                'Tras guardar otros días en el borrador, actualiza '
-                'esta evaluación para recalcular.',
-                'Després de desar altres dies en l’esborrany, '
-                'actualitza aquesta avaluació per recalcular.',
-              ), style: Theme.of(context).textTheme.bodySmall),
+              Text(_strings.controlRefreshHelp, style: Theme.of(context).textTheme.bodySmall),
             ],
             if (_error) ...[
               const SizedBox(height: 12),
-              Text(_t('No se pudo consultar el control.',
-                      'No s’ha pogut consultar el control.')),
+              Text(_strings.controlLoadError),
             ],
             const SizedBox(height: 10),
             TextButton.icon(
               key: const ValueKey('control-assessment-refresh'),
               onPressed: _loading ? null : _load,
               icon: const Icon(Icons.refresh),
-              label: Text(_t('Actualizar evaluación',
-                             'Actualitzar avaluació')),
+              label: Text(_strings.controlRefresh),
             ),
           ],
         ),
