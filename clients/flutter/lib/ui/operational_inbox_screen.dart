@@ -201,12 +201,16 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
     switch (chosen) {
       case 'detail':
         await _openDetail(item);
+        return;
       case 'complete':
         await _action(item, 'complete');
+        return;
       case 'tomorrow':
         await _action(item, 'tomorrow');
+        return;
       case 'another_day':
         await _otherDay(item);
+        return;
     }
   }
 
@@ -216,7 +220,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
     return Expanded(child: Padding(
       padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 3),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text('$' + '{count}', style: theme.textTheme.headlineSmall?.copyWith(
+        Text(count.toString(), style: theme.textTheme.headlineSmall?.copyWith(
           fontWeight: FontWeight.w700, color: color ?? colors.onSurface)),
         const SizedBox(height: 2),
         Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
