@@ -43,7 +43,7 @@ class _CatalogState extends State<VenciraModalityCatalogScreen> {
       setState(() { _items = options; _loading = false; });
     } catch (_) {
       if (!mounted || token != _seq) return;
-      setState(() { _items = null; _loading = false; _failed = true; });
+      setState(() { _loading = false; _failed = true; });
     }
   }
 
@@ -154,12 +154,17 @@ class _CatalogState extends State<VenciraModalityCatalogScreen> {
         child: ListView(padding: const EdgeInsets.all(12), children: [
           Text(_t.modalityCatalogHint),
           const SizedBox(height: 12),
-          if (_loading) const Center(child: CircularProgressIndicator())
-          else if (_failed) Column(children: [
+          SizedBox(height: 3, child: _loading && _items != null
+            ? const LinearProgressIndicator() : null),
+          if (_loading && _items == null)
+            const Center(child: CircularProgressIndicator()),
+          if (_failed) Column(children: [
             Text(_t.modalityChangeFailed),
             TextButton(onPressed: _load, child: Text(_t.retry)),
-          ])
-          else for (final option in _items ?? <VenciraModalityOption>[])
+          ]),
+          if (_items != null)
+            for (final option in _items!)
+
             Card(child: ListTile(
               key: ValueKey('catalog-' + option.code),
               title: Text(modalityCaption(context, option)),
