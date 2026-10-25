@@ -79,7 +79,7 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
         widget.workspaceId, widget.renewalId,
         revision: draft.revision, daysBefore: draft.daysBefore,
         reasonsByDay: reasons);
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() => _draft = result);
       return true;
     } on VenciraConflictException {
