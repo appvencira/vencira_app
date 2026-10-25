@@ -85,7 +85,9 @@ def reconcile_expiry_reminders(renewal_id, *, as_of: date,
                     item.control_question, True)
     result = []
     for key, occurrence in desired.items():
-        reason = reasons_by_day.get(str(occurrence.days_before), 'Aviso de vencimiento')
+        prior = active_by_key.get(key)
+        reason = (prior.reason if occurrence.day < as_of and prior is not None else
+                  reasons_by_day.get(str(occurrence.days_before), 'Aviso de vencimiento'))
         if type(reason) is not str or not 1 <= len(reason.strip()) <= 160:
             raise ValueError('Motivo inválido')
         reason = reason.strip()
