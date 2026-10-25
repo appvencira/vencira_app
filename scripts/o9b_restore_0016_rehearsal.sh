@@ -60,6 +60,7 @@ test "$RCLONE_CONFIG" = "$DIR/rclone.conf"
 export RESTIC_REPOSITORY RESTIC_PASSWORD_FILE RCLONE_CONFIG
 restic snapshots --quiet --tag vencira-postgresql >>"$LOG" 2>&1
 echo "RESTIC_SNAPSHOT_READABLE=OK"
+echo "RESTIC_SNAPSHOT_READABLE=OK" >> "$LOG"
 PHASE=BUILD_IMAGE
 docker build -t "$IMAGE" ./backend >>"$LOG" 2>&1
 echo "O9B_IMAGE_BUILT=OK"
@@ -78,12 +79,18 @@ for n in $(seq 1 40); do
 done
 test "$ready" -eq 1
 echo "PG17_CLONE_ISOLATED=OK"
+echo "PG17_CLONE_ISOLATED=OK" >> "$LOG"
 PHASE=RESTORE
 restic dump --tag vencira-postgresql latest vencira-postgres.dump 2>>"$LOG" |
  docker exec -i "$DB" pg_restore --clean --if-exists --no-owner --no-privileges --exit-on-error \
  -U o9b_clone -d o9b_clone >>"$LOG" 2>&1
 CLONE_BEFORE="$(docker exec "$DB" psql -X -v ON_ERROR_STOP=1 -U o9b_clone -d o9b_clone -Atqc "SELECT name FROM django_migrations WHERE app='reminders' ORDER BY name DESC LIMIT 1;")"
-test "$CLONE_BEFORE" = 0015_renewal_reminder_drafts
+echo "CLONE_SCHEMA_RESTORED=$CLONE_BEFORE"
+if [ "$CLONE_BEFORE" != 0015_renewal_reminder_drafts ]; then
+  echo "ERROR=SNAPSHOT_NO_CONTIENE_0015"
+  echo "ACCION=REVISAR_COPIA_O5_RECIENTE_ANTES_DE_REPETIR"
+  exit 6
+fi
 echo "RESTIC_RESTORE_0015=OK"
 PHASE=CLONE_MIGRATION
 docker run --rm --network "$NET" \
