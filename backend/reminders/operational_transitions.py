@@ -4,7 +4,7 @@ Invocar solo desde API autenticada con verificación de pertenencia/visibilidad.
 Las acciones se serializan con bloqueo de la anotación y CAS sobre estado/fecha.
 """
 import uuid
-from datetime import timedelta
+from datetime import date, timedelta
 from django.db import transaction
 from django.utils import timezone
 from .models import OperationalReminder, OperationalReminderEvent, Renewal
@@ -25,7 +25,7 @@ def transition_reminder(*, renewal_id, reminder_id, action, expected_state,
         raise ValueError("Acción inválida")
     if type(expected_state) is not str or expected_state not in ACTIVE:
         raise ValueError("Estado previo inválido")
-    if type(expected_day) is not type(timezone.localdate()):
+    if type(expected_day) is not date:
         raise ValueError("Fecha civil previa inválida")
     if action == "complete" and days_later is not None:
         raise ValueError("Completada no requiere días")
@@ -36,7 +36,7 @@ def transition_reminder(*, renewal_id, reminder_id, action, expected_state,
     ):
         raise ValueError("Otro día exige entre 2 y 365 días")
     today = timezone.localdate() if as_of is None else as_of
-    if type(today) is not type(expected_day):
+    if type(today) is not date:
         raise ValueError("Fecha de ejecución inválida")
     renewal = Renewal.objects.select_for_update().get(pk=renewal_id)
     reminder = OperationalReminder.objects.select_for_update().get(
@@ -44,8 +44,12 @@ def transition_reminder(*, renewal_id, reminder_id, action, expected_state,
     previous = OperationalReminderEvent.objects.filter(
         reminder=reminder, idempotency_key=idempotency_key).first()
     if previous is not None:
-        requested_day = (expected_day if action == "complete" else
-                         today + timedelta(days=1 if action == "tomorrow" else days_later))
+        original_today = timezone.localtime(previous.occurred_at).date()
+        try:
+            requested_day = (expected_day if action == "complete" else
+                             original_today + timedelta(days=1 if action == "tomorrow" else days_later))
+        except OverflowError:
+            raise ValueError("Fecha fuera de rango") from None
         if (previous.action != action or
             previous.previous_state != expected_state or
             previous.scheduled_for != requested_day or
@@ -61,7 +65,10 @@ def transition_reminder(*, renewal_id, reminder_id, action, expected_state,
         new_day = reminder.scheduled_for
     else:
         offset = 1 if action == "tomorrow" else days_later
-        new_day = today + timedelta(days=offset)
+        try:
+            new_day = today + timedelta(days=offset)
+        except OverflowError:
+            raise ValueError("Fecha fuera de rango") from None
         if reminder.control_question:
             from .legal_deadlines import one_month_before
             if renewal.modality == "vida" or new_day > one_month_before(renewal.expires_on):
