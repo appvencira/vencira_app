@@ -15,6 +15,7 @@ class _HistoryIndexApi extends VenciraApi {
       String workspaceId, String renewalId) async => VenciraRenewal(
     id: renewalId,
     reference: 'DEMO-CERRADO',
+    fullName: 'Cliente de prueba',
     expiresOn: DateTime(2027, 6, 20),
     status: 'closed',
     archiveOutcome: 'won',
@@ -51,6 +52,40 @@ void main() {
         api: api, workspace: workspace, renewalId: renewalId),
     ));
     await tester.pumpAndSettle();
+  }
+
+  for (final width in <double>[320, 375, 768]) {
+    testWidgets('CTA premium historial llena el ancho de las tarjetas a ${width.toInt()} px',
+        (tester) async {
+      tester.view.physicalSize = Size(width, 850);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(MaterialApp(
+        theme: ThemeData(useMaterial3: true, brightness: Brightness.dark),
+        locale: const Locale('es'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: VenciraRenewalDetailScreen(
+          api: _HistoryIndexApi([]),
+          workspace: workspace,
+          renewalId: renewalId),
+      ));
+      await tester.pumpAndSettle();
+      final shortcut = find.byKey(const ValueKey('detail-operational-history'));
+      final contact = find.ancestor(
+        of: find.text('Contacto'), matching: find.byType(Card)).first;
+      expect(shortcut, findsOneWidget);
+      expect(contact, findsOneWidget);
+      final actionRect = tester.getRect(shortcut);
+      final contactRect = tester.getRect(contact);
+      expect(actionRect.left, closeTo(contactRect.left, 1));
+      expect(actionRect.right, closeTo(contactRect.right, 1));
+      expect(actionRect.width, greaterThan(width * 0.8));
+      expect(actionRect.height, greaterThanOrEqualTo(76));
+      expect(find.text('Consultar actuaciones registradas'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   }
 
   for (final width in <double>[320, 375]) {
