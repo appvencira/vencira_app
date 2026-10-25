@@ -195,3 +195,36 @@ test "$(sql_read "$LAST_SQL")" = 0015_renewal_reminder_drafts
 test "$(sql_read 'SELECT COUNT(*) FROM django_migrations;')" = "$((MIG_COUNT+1))"
 test "$(sql_read 'SELECT COUNT(*) FROM reminders_renewalreminderdraft;')" = 0
 echo "POSTGRES_0015_SIN_REINICIO=OK"
+PHASE=HTTP_COMPROBACIONES
+for endpoint in / /api/health/ /api/ready/ /accounts/login/; do
+  code="$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' "http://127.0.0.1:28732$endpoint")"
+  echo "PROXY_ENDPOINT=$endpoint STATUS=$code"
+  test "$code" = 200
+done
+echo "HTTP_PUBLICO_LOCAL=OK"
+WS=11111111-1111-4111-8111-111111111111
+RN=b2222222-2222-4222-8222-222222222222
+for spec in \
+ 'RESULTADOS:/api/v1/workspaces/'"$WS"'/results/?period=month&year=2027&month=3' \
+ 'SIMULADOR:/api/v1/workspaces/'"$WS"'/renewals/'"$RN"'/reminder-preview/?days=60,45,35' \
+ 'BORRADOR:/api/v1/workspaces/'"$WS"'/renewals/'"$RN"'/reminder-config/' \
+ 'DESENLACES:/api/v1/workspaces/'"$WS"'/renewals/'"$RN"'/outcomes/'; do
+  label="${spec%%:*}"
+  endpoint="${spec#*:}"
+  code="$(curl -sS --max-time 15 -o /dev/null -w '%{http_code}' "http://127.0.0.1:28732$endpoint")"
+  echo "RUTA_${label}_ANONIMA_HTTP=$code"
+  test "$code" = 401 || test "$code" = 403
+done
+echo "ENDPOINTS_PRIVADOS_PROTEGIDOS=OK"
+for svc in api db web_preview; do
+  health="$(docker inspect "vencira_localcheck-$svc-1" --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}')"
+  echo "HEALTH_$svc=$health"
+  test "$health" = healthy
+done
+echo "API_DB_WEB_HEALTHY=OK"
+ext="$(curl -L -sS --max-time 12 -o /dev/null -w '%{http_code}' https://dev.vencira.es/ 2>/dev/null || true)"
+echo "DEV_VENCIRA_HTTPS_HTTP=${ext:-no_disponible}"
+PHASE=RECIBO_FINAL
+printf 'API_DEPLOY=OK\nWEB_DEPLOY=OK\nSCHEMA_0015=VERIFIED\nAUTH_CHECKS=OK\nDRAFT_ONLY=YES\n' >> "$RECEIPT"
+echo "O8C_GUARDADO_SOLO_BORRADOR=OK"
+echo "VERSION_WEB=$(git rev-parse HEAD)"
