@@ -277,3 +277,11 @@ Documento completo de alcance/evidencia: `docs/PHASE_WHITEPAPER_ALIGNMENT_2026-1
 
 - Nuevo `scripts/validate_macro_a_readonly.sh` commit `5ceae2485d0f8dcef930ae8d46ca39e9d99f29a2`; valida identidad de checkout, rama, limpieza, fuentes de 0017/0018 y pruebas macro A, y reutiliza `scripts/validate_o7_o8_preflight.sh` para Django makemigrations --check --dry-run, test SQLite y PG17 efímero, Flutter analyze/test/build, l10n y salud localcheck. El preflight sí crea recursos Docker efímeros de prueba y compila imágenes; no despliega ni migra DB persistente. Debe ejecutarlo el usuario en Ubuntu tras `git pull --ff-only`, sin pegar secretos. No implica éxito hasta ver `RESULTADO_GLOBAL=0` y `MACRO_A_PREFLIGHT_COMPLETO=OK`.
 - Macrobloque A continúa NO VALIDADO. DEV PostgreSQL 0016 intacto. No aplicar migraciones 0017/0018 ni desplegar antes de gates de respaldo O5.
+
+## Gate macro A: primera ejecución 216 tests, 3 failures y 2 errors (25/10/2026)
+
+- Usuario ejecutó `scripts/validate_macro_a_readonly.sh`; Django SQLite llegó a 216 tests y falló antes de PG17/Flutter; `RESULTADO_GLOBAL=1`, sin despliegue ni migración persistente.
+- Dos errors: los tests parchean `reminders.control_repeat_schedule.timezone.localdate` pero timezone se importaba dentro de función. Arreglado import global `backend/reminders/control_repeat_schedule.py` commit `7bc0009364573daf411243fee4d9dee7afd1d1cc`.
+- Un failure: agenda diaria anotaba `agenda_has_operational` pero omitía agregar evento en `events`. Arreglado `backend/reminders/views.py` commit `a93a1abe132aa3889668c175822564fc906bc34b`.
+- Dos failures por test incorrecto: (30,15) días para 15/03/2027 contiene 13/02/2027 (antes corte 15/02); se cambió caso sin preaviso a (25,15), commits `583010be231a05d2691d0abe2b93a0a39ced5362` y `0fa367d5c523923cf6d8e51c8af831dec0ab3506`.
+- Próximo paso: repetir gate tras pull --ff-only, revisar cualquier fallo nuevo de PostgreSQL temporal y Flutter. DEV sigue en 0016.
