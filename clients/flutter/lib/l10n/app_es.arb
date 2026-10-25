@@ -347,5 +347,8 @@
   "inboxHistoryUnknownActor": "Usuario no disponible",
   "inboxHistoryError": "No se ha podido consultar el historial.",
   "inboxHistoryEmpty": "Este aviso todavía no tiene actuaciones registradas.",
-  "inboxHistoryMore": "Mostrar más actuaciones"
+  "inboxHistoryMore": "Mostrar más actuaciones",
+  "inboxHistoryIndexTitle": "Historial de avisos",
+  "inboxHistoryIndexDescription": "Actuaciones registradas en los avisos internos de esta anotación. No representan notificaciones enviadas.",
+  "inboxHistoryIndexEmpty": "Esta anotación no tiene avisos internos registrados."
 }
