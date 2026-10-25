@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,6 +16,7 @@ class FakeVenciraApi extends VenciraApi {
   final bool auth;
   String lastSearch = '';
   String lastStatus = '';
+  Completer<void>? renewalFetchGate;
 
   @override
   Future<List<VenciraWorkspace>> fetchWorkspaces() async {
@@ -27,6 +29,7 @@ class FakeVenciraApi extends VenciraApi {
       String workspaceId, {int page = 1, String search = '', String status = ''}) async {
     lastSearch = search;
     lastStatus = status;
+    if (renewalFetchGate case final gate?) await gate.future;
     return pages[workspaceId]!;
   }
 
@@ -301,6 +304,45 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('UX: buscar y limpiar conservan el scroll mientras consulta API',
+      (tester) async {
+    tester.view.physicalSize = const Size(400, 850);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final page = VenciraRenewalPage(
+      total: 7, hasNext: false,
+      items: List.generate(7, (index) => VenciraRenewal(
+        id: '11111111-1111-4111-8111-${(index + 1).toString().padLeft(12, '0')}',
+        reference: 'DEMO-SCROLL-$index',
+        expiresOn: DateTime(2027, 12, index + 1),
+        noticeDeadlineOn: DateTime(2027, 11, index + 1),
+        status: 'pending',
+      )),
+    );
+    final api = FakeVenciraApi(workspaces: [workspaceA],
+      pages: {workspaceA.id: page});
+    await tester.pumpWidget(VenciraApp(api: api));
+    await tester.pumpAndSettle();
+    final scroll = tester.state<ScrollableState>(find.byType(Scrollable).first)
+      .position;
+    final search = find.text('Buscar');
+    await tester.ensureVisible(search);
+    await tester.pumpAndSettle();
+    final originalScroll = scroll.pixels;
+    api.renewalFetchGate = Completer<void>();
+    await tester.tap(search);
+    await tester.pump();
+    // Antes el setState retiraba toda la lista y reajustaba el scroll.
+    expect(find.text('DEMO-SCROLL-0', skipOffstage: false), findsOneWidget);
+    expect(find.text('DEMO-SCROLL-6', skipOffstage: false), findsOneWidget);
+    expect(scroll.pixels, closeTo(originalScroll, 1));
+    api.renewalFetchGate!.complete();
+    await tester.pumpAndSettle();
+    expect(scroll.pixels, closeTo(originalScroll, 1));
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('envía filtros al backend y puede limpiarlos', (tester) async {
     // La bandeja B añade navegación encima de los filtros. Esta prueba
