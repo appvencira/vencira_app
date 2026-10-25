@@ -319,8 +319,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
         (_t.agendaExpiryEvent, info.expiry),
         (_t.noticeLabel, info.notice),
         (_t.agendaMonthReminder, info.reminder),
-        (Localizations.localeOf(context).languageCode == 'ca'
-            ? 'Seguiment manual' : 'Seguimiento manual', info.followUp),
+        (_t.manualFollowUpShort, info.followUp),
       ]) {
         if (group.$2.total > 0) {
           label.write(' · ' + group.$1 + ': ' +
@@ -511,8 +510,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
                       }
                       if (event.kind == 'follow_up') {
                         return _activityChip(
-                          Localizations.localeOf(context).languageCode == 'ca'
-                              ? 'Seguiment manual' : 'Seguimiento manual',
+                          _t.manualFollowUpShort,
                           Icons.bookmark_added_outlined,
                           const Color(0xFF956DC0),
                         );
@@ -729,7 +727,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
                           key: const ValueKey('agenda-filters'),
                           tilePadding: EdgeInsets.zero,
                           leading: const Icon(Icons.tune_outlined),
-                          title: Text(locale == 'ca' ? 'Filtres' : 'Filtros'),
+                          title: Text(_t.agendaFiltersShort),
                           childrenPadding: const EdgeInsets.only(bottom: 12),
                           children: [_agendaFilters()],
                         )
