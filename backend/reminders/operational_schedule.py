@@ -82,6 +82,6 @@ def repeat_control_day(*, today: date, expiry: date, days_later: int,
         day = today + timedelta(days=days_later)
     except OverflowError:
         raise ValueError("Fecha no representable") from None
-    if day > cutoff:
+    if day >= cutoff:
         raise ValueError("Fecha posterior al límite civil")
     return day
