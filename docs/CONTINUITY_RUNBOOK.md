@@ -1193,3 +1193,8 @@ El promotor respondió «Ok, mantenemos actualizados durante los trabajos, segui
 El promotor respondió explícitamente «Sí, adelante» a la propuesta: en agenda HOY mostrar arriba los avisos internos vencidos no atendidos como **Pendientes**, por fecha original ascendente (más antiguo primero), sin desaparecer al cambiar de día; conservar acciones **Completada, Mañana, Otro día**; no duplicar al abrir HOY ni inferir una notificación entregada. Prioridad y persistencia son **regla de producto aprobada**, no certificación de que el código ya las satisfaga.
 
 **Inspección estática inicial**: `backend/reminders/operational_api.py` conserva estados internos, CAS y `delivery_status=not_implemented`. `backend/reminders/reminder_planning.py` calcula los días transcurridos y marca altas tardías/no control, pero se abstiene correctamente de decidir §18 automáticamente. Falta verificar implementación concreta de filtrado/orden de HOY con tests; no reimplementar motor A/B. C1 siguientes decisiones abiertas: altas tardías y sin avisos anteriores al mes civil límite, modalidad Vida, evidencia y proveedores. No se ha ejecutado gate ni despliegue con esta aprobación.
+
+
+## C1 — Altas tardías aprobadas, 25/10/2026
+
+Promotor aprueba: no generar avisos retroactivos ficticios; conservar avisos futuros válidos; si pasó el control, advertir al guardar con acceso a pregunta; si venció el límite civil, advertencia roja y revisión manual; permitir guardar registrando necesidad de revisión. **Sin avisos elegibles antes del límite** es otra decisión §18 aún pendiente. Solo actualización documental, sin gate ni deploy.
