@@ -26,13 +26,16 @@ def plan_control_repeat(response_id, *, actor=None):
     from .legal_deadlines import one_month_before
     from django.utils import timezone
     cutoff = one_month_before(renewal.expires_on)
-    if response.repeat_on > cutoff or response.repeat_on <= timezone.localdate():
-        raise ValueError("La repetición no es futura o supera el límite")
     key = f"control:{response.pk}"
     existing = OperationalReminder.objects.filter(
         renewal=renewal, source_key=key, generation=1).first()
     if existing is not None:
+        if (existing.created_by_response_id != response.pk or
+            existing.original_scheduled_for != response.repeat_on):
+            raise ValueError("Conflicto en el control ya programado")
         return existing
+    if response.repeat_on > cutoff or response.repeat_on <= timezone.localdate():
+        raise ValueError("La repetición no es futura o supera el límite")
     reminder = OperationalReminder.objects.create(
         renewal=renewal,
         kind=OperationalReminder.Kind.CONTROL_REPEAT,
