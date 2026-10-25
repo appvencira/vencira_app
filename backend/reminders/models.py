@@ -387,3 +387,77 @@ class RenewalControlResponse(models.Model):
             ),
         ]
         ordering = ["answered_at", "id"]
+
+
+class OperationalReminder(models.Model):
+    """Macrobloque A: ocurrencia interna, NO equivale a envío ni entrega.
+
+    Las ocurrencias originales conservan su historia al cancelar/recalcular.
+    El canal de envío queda expresamente fuera de este modelo.
+    """
+    class State(models.TextChoices):
+        PLANNED = "planned", "Planificado"
+        PENDING = "pending", "Pendiente"
+        SNOOZED = "snoozed", "Aplazado"
+        COMPLETED = "completed", "Atendido"
+        CANCELLED = "cancelled", "Cancelado"
+
+    class Kind(models.TextChoices):
+        EXPIRY = "expiry", "Vencimiento"
+        CONTROL_REPEAT = "control_repeat", "Repetir pregunta de control"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    renewal = models.ForeignKey(
+        Renewal, on_delete=models.PROTECT, related_name="operational_reminders")
+    kind = models.CharField(max_length=16, choices=Kind.choices)
+    scheduled_for = models.DateField()
+    original_scheduled_for = models.DateField()
+    days_before = models.PositiveSmallIntegerField(null=True, blank=True)
+    reason = models.CharField(max_length=160)
+    control_question = models.BooleanField(default=False)
+    state = models.CharField(max_length=16, choices=State.choices, default=State.PLANNED)
+    # Stable identity for reconciliation, not an opaque delivery id.
+    source_key = models.CharField(max_length=96)
+    generation = models.PositiveIntegerField(default=1)
+    created_by_response = models.ForeignKey(
+        RenewalControlResponse, on_delete=models.PROTECT, null=True, blank=True,
+        related_name="scheduled_operational_reminders")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["renewal", "source_key", "generation"],
+                                    name="uniq_op_reminder_generation"),
+            models.CheckConstraint(
+                condition=models.Q(generation__gte=1),
+                name="operational_generation_positive"),
+        ]
+        indexes = [
+            models.Index(fields=["scheduled_for", "state"],
+                         name="operational_due_idx"),
+            models.Index(fields=["renewal", "state"],
+                         name="operational_renewal_state_idx"),
+        ]
+
+
+class OperationalReminderEvent(models.Model):
+    """Auditoría append-only lógica de cambios de estado sin prueba de envío."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    reminder = models.ForeignKey(
+        OperationalReminder, on_delete=models.PROTECT, related_name="events")
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="vencira_reminder_events")
+    action = models.CharField(max_length=24)
+    previous_state = models.CharField(max_length=16)
+    next_state = models.CharField(max_length=16)
+    occurred_at = models.DateTimeField(auto_now_add=True)
+    scheduled_for = models.DateField()
+    idempotency_key = models.UUIDField()
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["reminder", "idempotency_key"],
+                                    name="uniq_op_reminder_event_retry"),
+        ]
+        ordering = ["occurred_at", "id"]
