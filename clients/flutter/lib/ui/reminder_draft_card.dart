@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../api/vencira_api.dart';
+import '../l10n/app_localizations.dart';
 
 /// O8c: ajustes por anotación, exclusivamente en estado borrador.
 /// No crea tareas, envíos, recordatorios entregados ni políticas globales.
@@ -27,8 +28,7 @@ class _ReminderDraftCardState extends State<VenciraReminderDraftCard> {
   bool _badInput = false;
   bool _conflict = false;
 
-  String _tr(String es, String ca) =>
-      Localizations.localeOf(context).languageCode == 'ca' ? ca : es;
+  AppLocalizations get _strings => AppLocalizations.of(context)!;
 
   @override
   void initState() {
@@ -129,33 +129,20 @@ class _ReminderDraftCardState extends State<VenciraReminderDraftCard> {
             const Icon(Icons.edit_calendar_outlined),
             const SizedBox(width: 10),
             Expanded(child: Text(
-              _tr('Guardar borrador de avisos',
-                  'Desar esborrany d’avisos'),
+              _strings.draftTitle,
               style: Theme.of(context).textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.bold),
             )),
           ]),
           const SizedBox(height: 8),
-          Text(_tr(
-            'Guarda los días solo para esta anotación. No activa '
-            'avisos ni envía notificaciones.',
-            'Desa els dies només per a aquesta anotació. No activa '
-            'avisos ni envia notificacions.',
-          ), style: Theme.of(context).textTheme.bodySmall),
+          Text(_strings.draftIntro, style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 12),
           if (_loading) const Center(child: CircularProgressIndicator()),
           if (!_loading && draft != null) ...[
             Padding(
               padding: const EdgeInsets.only(bottom: 20),
               child: Text(
-                _tr(
-                  draft.isPersisted
-                      ? 'Borrador guardado'
-                      : 'Valores sugeridos, aún no guardados',
-                  draft.isPersisted
-                      ? 'Esborrany desat'
-                      : 'Valors suggerits, encara no desats',
-                ),
+                draft.isPersisted ? _strings.draftPersisted : _strings.draftSuggested,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
@@ -164,60 +151,44 @@ class _ReminderDraftCardState extends State<VenciraReminderDraftCard> {
               controller: _days,
               enabled: !_saving && !_conflict,
               decoration: InputDecoration(
-                labelText: _tr('Días antes', 'Dies abans'),
+                labelText: _strings.draftDays,
                 hintText: '60,45,35',
-                helperText: _tr(
-                  '1 a 12 valores únicos, entre 0 y 365.',
-                  'D’1 a 12 valors únics, entre 0 i 365.'),
-                errorText: _badInput ? _tr(
-                  'Introduce días válidos separados por comas.',
-                  'Introdueix dies vàlids separats per comes.') : null,
+                helperText: _strings.draftDaysHelp,
+                errorText: _badInput ? _strings.draftDaysInvalid : null,
               ),
             ),
             const SizedBox(height: 16),
             if (draft.noPreCutoffNotice)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Text(_tr(
-                  'Sin aviso anterior al límite informativo.',
-                  'Sense avís anterior al límit informatiu.',
-                )),
+                child: Text(_strings.draftNoEligible),
               ),
             if (draft.lifeRuleRequiresReview)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Text(_tr(
-                  'Vida: pendiente de revisión del régimen específico.',
-                  'Vida: pendent de revisió del règim específic.',
-                )),
+                child: Text(_strings.draftLifeReview),
               ),
             FilledButton.icon(
               key: const ValueKey('save-draft'),
               onPressed: _saving || _conflict ? null : _save,
               icon: const Icon(Icons.save_outlined),
-              label: Text(_tr('Guardar solo borrador', 'Desar només esborrany')),
+              label: Text(_strings.draftSaveOnly),
             ),
           ],
           if (_conflict) ...[
-            Text(_tr(
-              'Otra sesión ha modificado la configuración. Recarga '
-              'antes de guardar; no se ha sobrescrito nada.',
-              'Una altra sessió ha modificat la configuració. Recarrega '
-              'abans de desar; no s’ha sobreescrit res.')),
+            Text(_strings.draftConflict),
             TextButton(
               key: const ValueKey('draft-reload'),
               onPressed: _load,
-              child: Text(_tr('Recargar borrador', 'Recarregar esborrany')),
+              child: Text(_strings.draftReload),
             ),
           ],
           if (_error) ...[
-            Text(_tr(
-              'No se ha podido consultar o guardar el borrador.',
-              'No s’ha pogut consultar o desar l’esborrany.')),
+            Text(_strings.draftError),
             TextButton(
               key: const ValueKey('draft-retry'),
               onPressed: _load,
-              child: Text(_tr('Reintentar', 'Torna-ho a provar')),
+              child: Text(_strings.draftRetry),
             ),
           ],
           if (_saving) const LinearProgressIndicator(),
