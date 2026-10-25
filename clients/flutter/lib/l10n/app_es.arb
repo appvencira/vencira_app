@@ -350,5 +350,6 @@
   "inboxHistoryMore": "Mostrar más actuaciones",
   "inboxHistoryIndexTitle": "Historial de avisos",
   "inboxHistoryIndexDescription": "Actuaciones registradas en los avisos internos de esta anotación. No representan notificaciones enviadas.",
-  "inboxHistoryIndexEmpty": "Esta anotación no tiene avisos internos registrados."
+  "inboxHistoryIndexEmpty": "Esta anotación no tiene avisos internos registrados.",
+  "inboxHistoryShortcutDescription": "Consultar actuaciones registradas"
 }
