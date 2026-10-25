@@ -142,6 +142,9 @@ def agenda_day(request, workspace_id):
             })
         if renewal.agenda_has_manual:
             events.append({"kind": "follow_up"})
+        if renewal.agenda_has_operational:
+            events.append({"kind": "operational_reminder",
+                           "delivery_status": "not_implemented"})
         results.append({
             "renewal": RenewalSerializer(renewal).data,
             "events": events,
