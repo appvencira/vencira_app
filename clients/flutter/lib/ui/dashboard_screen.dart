@@ -692,28 +692,26 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                     maxLines: 1, overflow: TextOverflow.ellipsis),
                 )),
           ]),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(child: OutlinedButton.icon(
               key: const ValueKey('open-archive'),
               onPressed: _loadingRenewals || _saving || _selected == null
                   ? null : _openArchive,
-              icon: const Icon(Icons.inventory_2_outlined),
-              label: Text(_t.archiveOpen),
-            ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
+              icon: const Icon(Icons.inventory_2_outlined, size: 19),
+              label: Text(_t.archiveOpen, maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+            )),
+            const SizedBox(width: 10),
+            Expanded(child: OutlinedButton.icon(
               key: const ValueKey('open-operational-inbox'),
               onPressed: _loadingRenewals || _saving || _selected == null
-                ? null : _openOperationalInbox,
-              icon: const Icon(Icons.notifications_active_outlined),
-              label: Text(_t.inboxTitle),
-            ),
-          ),
+                  ? null : _openOperationalInbox,
+              icon: const Icon(Icons.notifications_active_outlined, size: 19),
+              label: Text(_t.inboxShortcut, maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+            )),
+          ]),
           if (kIsWeb && MediaQuery.sizeOf(context).width >= 800 &&
               _selected?.role == 'owner') ...[
             const SizedBox(height: 8),
