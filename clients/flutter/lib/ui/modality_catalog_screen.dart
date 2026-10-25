@@ -41,6 +41,9 @@ class _CatalogState extends State<VenciraModalityCatalogScreen> {
       final options = await widget.api.fetchModalities(widget.workspace.id);
       if (!mounted || token != _seq) return;
       setState(() { _items = options; _loading = false; });
+    } on VenciraUnauthorized {
+      if (!mounted || token != _seq) return;
+      setState(() { _items = null; _loading = false; _failed = true; });
     } catch (_) {
       if (!mounted || token != _seq) return;
       setState(() { _loading = false; _failed = true; });
