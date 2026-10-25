@@ -320,3 +320,11 @@ Documento completo de alcance/evidencia: `docs/PHASE_WHITEPAPER_ALIGNMENT_2026-1
 - Implementado `scripts/deploy_macro_b_api_web_guarded.sh` (commit `8004df13`): comprueba fuentes iguales al gate `f893329cb3372cea491e3c06fa1b2c1fda3d3c65`, O5 leído sin alterar, esquema vivo 0018, imágenes antiguas etiquetadas y recibo privado, build de API+Flutter, `migrate --check` (NO MIGRA), despliegue secuencial de api/web, health, validación de ruta inbox anónima denegada, identidad DB y conteo migraciones constantes.
 - **NO DESPLEGADO**. Operador: pull, `bash -n scripts/deploy_macro_b_api_web_guarded.sh`; luego `sudo env MACRO_B_DEV_CONFIRM=DEPLOY_API_WEB_NO_MIGRATIONS bash scripts/deploy_macro_b_api_web_guarded.sh`. No repetir a ciegas si falla, revisar FASE_FALLIDA y logs saneados. Scripts anteriores de macro A NO válidos para B.
 - Restan E2E autenticado (bandeja hoy/atrasados/próximos, acciones, permisos usuario) e historial visible, decisión explícita del usuario sobre política de atrasados.
+
+
+## 25/10/2026 — Macrofase B: despliegue API + web DEV CONFIRMADO
+
+- El operador ejecutó `scripts/deploy_macro_b_api_web_guarded.sh` y aportó la salida final: `DEPLOY_WEB=OK`, `HEALTH_WEB=healthy`, `BANDEJA_PROXY_ANON_DENIED_HTTP=403`, `POSTGRES_0018_INTACTO=OK`, `DEV_0018_FINAL=OK`, `MACRO_B_DEV_DESPLIEGUE=OK`, `RESULTADO_GLOBAL=0`.
+- Sin migraciones ni reinicio PostgreSQL, sin cambios Caddy/OAuth/O5. Imágenes antiguas etiquetadas `vencira-macro-b-pre-api:20261025T165744Z_3030839`, `vencira-macro-b-pre-web:20261025T165744Z_3030839`; log `/tmp/vencira-macro-b-deploy.t5mEG38S.log`, recibo `/tmp/vencira-macro-b-deploy.CkNfZBXA.receipt`.
+- **Siguiente paso:** validar desde sesión autenticada y móvil: bandeja «Por atender», «Hoy», «Atrasados», «Próximos», contador por clase, entrada a ficha, acciones completar/mañana/elegir fecha, recarga de contadores y ES/CA. No declarar macrofase B aceptada hasta prueba del usuario.
+- Sigue pendiente presentación de historial por evento y aprobación de la política §18 para avisos sin atender. No confundir avisos internos con notificaciones entregadas.
