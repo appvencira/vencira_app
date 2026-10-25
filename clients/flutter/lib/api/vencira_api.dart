@@ -414,11 +414,58 @@ class VenciraPreviewReminder {
   final bool alreadyElapsed;
 }
 
+class VenciraC2Policy {
+  const VenciraC2Policy({
+    required this.allowSave,
+    required this.manualReviewRequired,
+    required this.warningCode,
+    required this.offerExplicitControl,
+    required this.latestExplicitControlDay,
+    required this.isLife,
+  });
+
+  final bool allowSave;
+  final bool manualReviewRequired;
+  final String? warningCode;
+  final bool offerExplicitControl;
+  final DateTime? latestExplicitControlDay;
+  final bool isLife;
+
+  factory VenciraC2Policy.fromJson(Map<String, dynamic> json) {
+    const validWarnings = {
+      'life_terms_review', 'civil_cutoff_reached',
+      'no_pre_cutoff_notice', 'control_day_elapsed',
+    };
+    final rawWarning = json['warning_code'];
+    final rawLast = json['latest_explicit_control_day'];
+    if (json['allow_save'] is! bool ||
+        json['manual_review_required'] is! bool ||
+        json['offer_explicit_control'] is! bool ||
+        json['is_life'] is! bool ||
+        json['delivery_status'] != 'not_implemented' ||
+        (rawWarning != null && !validWarnings.contains(rawWarning)) ||
+        (rawLast != null && rawLast is! String) ||
+        ((rawLast != null) != (json['offer_explicit_control'] == true))) {
+      throw const FormatException('Invalid C2 control policy');
+    }
+    return VenciraC2Policy(
+      allowSave: json['allow_save'] as bool,
+      manualReviewRequired: json['manual_review_required'] as bool,
+      warningCode: rawWarning as String?,
+      offerExplicitControl: json['offer_explicit_control'] as bool,
+      latestExplicitControlDay:
+          rawLast == null ? null : VenciraControlAssessment._day(rawLast),
+      isLife: json['is_life'] as bool,
+    );
+  }
+}
+
 class VenciraControlAssessment {
   const VenciraControlAssessment({
     required this.status, required this.reasons,
     required this.controlDay, required this.cutoffOn,
     required this.controlDaysBefore, required this.draftPersisted,
+    this.c2Policy,
   });
 
   final String status;
@@ -427,6 +474,7 @@ class VenciraControlAssessment {
   final DateTime cutoffOn;
   final int? controlDaysBefore;
   final bool draftPersisted;
+  final VenciraC2Policy? c2Policy;
 
   static DateTime _day(dynamic raw) {
     if (raw is! String ||
@@ -474,6 +522,9 @@ class VenciraControlAssessment {
       cutoffOn: _day(json['informational_cutoff_on']),
       controlDaysBefore: days as int?,
       draftPersisted: json['draft_persisted'] as bool,
+      c2Policy: json['c2_policy'] is Map<String, dynamic>
+          ? VenciraC2Policy.fromJson(json['c2_policy'] as Map<String, dynamic>)
+          : null,
     );
   }
 }
