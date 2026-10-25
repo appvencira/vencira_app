@@ -270,5 +270,7 @@
   "previewText15": "Pregunta de control prevista (no enviada)",
   "previewText16": "Data passada",
   "previewText17": "Simulació, no avís enviat ni tasca desada.",
-  "agendaShort": "Agenda"
+  "agendaShort": "Agenda",
+  "detailInfoName": "Nom o raó social",
+  "detailInfoNickname": "Àlies"
 }
