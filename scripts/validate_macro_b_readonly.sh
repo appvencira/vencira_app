@@ -27,5 +27,13 @@ PHASE=FULL_ISOLATED_GATE
 # El gate existente ejecuta todas las pruebas reminders, flutter test/build, l10n
 # y salud DEV sin alterar ninguna base persistente.
 bash scripts/validate_o7_o8_preflight.sh
+# Confirmar también el mismo SDK que compila dentro de Dockerfile.web.
+# El gate anterior usa :stable y puede tener una versión distinta.
+PHASE=FLUTTER_WEB_DOCKERFILE_PIN
+grep -Fxq 'FROM ghcr.io/cirruslabs/flutter:3.44.0 AS web_build' deploy/preview/Dockerfile.web
+sudo docker run --rm -v "$PWD/clients/flutter:/work" -w /work \
+  ghcr.io/cirruslabs/flutter:3.44.0 \
+  sh -ec 'flutter pub get && flutter gen-l10n && flutter analyze && flutter build web --release --pwa-strategy=none'
+echo "FLUTTER_WEB_DOCKERFILE_PIN=OK"
 PHASE=COMPLETE
 echo "MACRO_B_GATE_INTEGRAL=OK"
