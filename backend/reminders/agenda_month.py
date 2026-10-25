@@ -8,7 +8,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import ReminderCandidate, ReminderPolicy, Renewal, RenewalFollowUp, WorkspaceMember
+from .models import ReminderCandidate, ReminderPolicy, Renewal, RenewalFollowUp, WorkspaceMember, OperationalReminder
 from .views import _membership, _visible_renewals
 from .filtering import filtered_renewals
 
@@ -77,6 +77,31 @@ def agenda_month(request, workspace_id):
         .order_by()
     ):
         accumulate(row["scheduled_for"], "reminder", row["renewal__status"], row["total"])
+
+    # Ocurrencias operativas: se agregan separadamente de los candidatos
+    # previos y NUNCA se interpretan como notificaciones entregadas.
+    operational = (
+        OperationalReminder.objects.filter(
+            renewal_id__in=visible.values("pk"),
+            state__in=["planned", "pending", "snoozed"],
+            scheduled_for__gte=first, scheduled_for__lt=following,
+        ).values("scheduled_for", "renewal__status")
+        .annotate(total=Count("renewal_id", distinct=True)).order_by()
+    )
+    for row in operational:
+        day_key = row["scheduled_for"].isoformat()
+        record = days.setdefault(day_key, {
+            "day": day_key,
+            "expiry": {"pending": 0, "contacted": 0},
+            "notice_deadline": {"pending": 0, "contacted": 0},
+            "reminder": {"pending": 0, "contacted": 0},
+            "follow_up": {"pending": 0, "contacted": 0},
+        })
+        # Conservamos el esquema del cliente existente. Si coinciden los dos
+        # tipos de recordatorio, no podemos deduplicar aquí por cardinalidad
+        # agregada: usar max evita la suma ficticia de una misma anotación.
+        state = row["renewal__status"]
+        record["reminder"][state] = max(record["reminder"][state], row["total"])
 
     # Seguimientos manuales: nunca representan avisos automáticos ni entregados.
     # El conjunto de IDs ya está filtrado por membresía, asignación y filtros.
