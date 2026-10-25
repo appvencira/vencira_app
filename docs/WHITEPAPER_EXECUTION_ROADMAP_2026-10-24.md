@@ -103,3 +103,10 @@ El promotor aprueba **permitir guardar la anotación** aunque no exista ningún 
 ## C1 — Modalidad Vida (aprobada por promotor, 25/10/2026)
 
 Al seleccionar **Vida** mostrar advertencia específica: pueden existir reglas particulares de oposición; no calificar automáticamente el corte general de un mes como plazo legal confirmado para esta modalidad. Mantener avisos configurables y guardado permitido; exigir revisión humana de las condiciones de la póliza, con estado informativo explícito. Permitir el registro manual de respuestas Sí/No conforme al contrato del whitepaper, sin presentarlas como prueba de notificación, autorización o entrega. La implementación C2 deberá revisar el bloqueo conservador actual de `control_response_api.py` y `control_repeat_schedule.py` para ofrecer registro auditado sin automatizar ni certificar un plazo, sujeto a pruebas y revisión jurídica. Decisión documentada; **sin cambios de código ni despliegue** en este registro.
+
+
+## C1 — «Notificado por mí»: declaración auditada (aprobada 25/10/2026)
+
+El promotor aprueba que, al seleccionar «Sí → Notificado por mí», la interfaz exija **confirmación expresa** del mediador de que dispone de autorización del cliente y de que ha realizado la comunicación. Registrar actor, fecha/hora y alternativa seleccionada, manteniendo la anotación abierta. Es una **declaración del usuario**, no prueba de autorización documental, envío, recepción ni cumplimiento legal. No inventar adjuntos ni certificados; la conservación privada de justificantes queda para la fase de seguridad de archivos, permisos y retención. Debe reutilizarse el modelo/API de respuestas manuales O9b, con pruebas de confirmación, CAS, idempotencia y aislamiento. Esta decisión todavía no está implementada ni probada; no activar entrega ni tocar esquema/DEV con esta actualización.
+
+**C1 restante en la macrofase:** selección, consentimiento, fallos, idempotencia y reintentos de canales reales email/push/local/offline. La entrega requiere diseño y validación independiente; mantener `delivery_status=not_implemented` hasta que exista evidencia fiable.
