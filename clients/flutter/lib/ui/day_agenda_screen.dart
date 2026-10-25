@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
+import 'vencira_pagination_bar.dart';
 import 'month_agenda_screen.dart';
 import 'renewal_detail_screen.dart';
 import 'modality_labels.dart';
@@ -585,23 +586,14 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
         else
           ...agenda.entries.map((entry) => _eventCard(entry, locale)),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            OutlinedButton.icon(
-              onPressed: _page > 1 ? () => _loadDay(_page - 1) : null,
-              icon: const Icon(Icons.chevron_left),
-              label: Text(_t.previous),
-            ),
-            Text('${_t.page} $_page'),
-            OutlinedButton.icon(
-              onPressed: agenda.hasNext ? () => _loadDay(_page + 1) : null,
-              icon: const Icon(Icons.chevron_right),
-              label: Text(_t.next),
-            ),
-          ],
+        VenciraPaginationBar(
+          pageLabel: '${_t.page} $_page',
+          previousLabel: _t.previous,
+          nextLabel: _t.next,
+          onPrevious: _page > 1 && !_loading
+              ? () => _loadDay(_page - 1) : null,
+          onNext: agenda.hasNext && !_loading
+              ? () => _loadDay(_page + 1) : null,
         ),
       ],
     );
