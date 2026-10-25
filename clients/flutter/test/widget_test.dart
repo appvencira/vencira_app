@@ -3,6 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vencira/api/vencira_api.dart';
 import 'package:vencira/main.dart';
+import 'package:vencira/l10n/app_localizations.dart';
+import 'package:vencira/ui/dashboard_screen.dart';
+import 'package:vencira/ui/day_agenda_screen.dart';
 
 class FakeVenciraApi extends VenciraApi {
   FakeVenciraApi({required this.workspaces, required this.pages, this.auth = false});
@@ -90,6 +93,45 @@ void main() {
     name: 'Correduría de prueba B',
     role: 'member',
   );
+
+  testWidgets('§5 apertura HOY tras cargar una sola organización',
+      (tester) async {
+    final api = FakeVenciraApi(
+      workspaces: [workspaceA],
+      pages: {workspaceA.id: const VenciraRenewalPage(
+          total: 0, items: [], hasNext: false)},
+    );
+    await tester.pumpWidget(MaterialApp(
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      home: VenciraDashboardScreen(api: api, openTodayOnLoad: true),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byType(VenciraDayAgendaScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('§5 no elegir por el usuario cuando hay varias organizaciones',
+      (tester) async {
+    final api = FakeVenciraApi(
+      workspaces: [workspaceA, workspaceB],
+      pages: {
+        workspaceA.id: const VenciraRenewalPage(
+            total: 0, items: [], hasNext: false),
+        workspaceB.id: const VenciraRenewalPage(
+            total: 0, items: [], hasNext: false),
+      },
+    );
+    await tester.pumpWidget(MaterialApp(
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      home: VenciraDashboardScreen(api: api, openTodayOnLoad: true),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byType(VenciraDayAgendaScreen), findsNothing);
+    expect(find.byKey(const ValueKey('workspace-select')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('respeta el tema claro y oscuro del sistema', (tester) async {
     final api = FakeVenciraApi(
