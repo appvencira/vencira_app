@@ -7,7 +7,7 @@ from rest_framework.test import APITestCase, APIClient
 
 from .models import (
     Workspace, WorkspaceMember, Renewal, RenewalOutcome, RenewalAuditEvent,
-    RenewalFollowUp, ReminderPolicy, ReminderCandidate,
+    RenewalFollowUp, ReminderPolicy, ReminderCandidate, RenewalReminderDraft,
 )
 
 
@@ -194,3 +194,33 @@ class OutcomeTests(APITestCase):
         self.assertIsNotNone(event)
         self.assertNotIn("O3-SYNTHETIC", str(event.metadata))
         self.assertNotIn("Anotación ficticia privada", str(event.metadata))
+
+    def test_declined_resets_personalized_draft_to_defaults_without_delivery(self):
+        self.client.force_authenticate(user=self.member)
+        prior = RenewalReminderDraft.objects.create(
+            renewal=self.item, days_before=[20, 15],
+            state="draft", revision=4,
+            created_by=self.member, updated_by=self.member,
+        )
+        count = RenewalAuditEvent.objects.filter(renewal=self.item).count()
+        res = self.client.post(self.url(), {"kind": "declined"}, format="json")
+        self.assertEqual(res.status_code, 201, res.data)
+        prior.refresh_from_db()
+        self.assertEqual(prior.days_before, [60, 45, 35])
+        self.assertEqual(prior.revision, 5)
+        self.assertEqual(prior.state, "draft")
+        self.assertEqual(prior.updated_by_id, self.member.pk)
+        self.assertEqual(
+            RenewalAuditEvent.objects.filter(
+                renewal=self.item,
+                changed_fields=["reminder_draft"],
+            ).count(), 1,
+        )
+        self.assertGreater(RenewalAuditEvent.objects.filter(
+            renewal=self.item).count(), count)
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.expires_on, date(2029, 2, 28))
+        # El reset es solo preferencias; ninguna entrega o tarea se inventa.
+        self.assertFalse(ReminderCandidate.objects.filter(
+            renewal=self.item, policy__days_before__in=[60, 45, 35],
+        ).exists())
