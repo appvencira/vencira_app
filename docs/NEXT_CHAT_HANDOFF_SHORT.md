@@ -204,3 +204,10 @@ Documento completo de alcance/evidencia: `docs/PHASE_WHITEPAPER_ALIGNMENT_2026-1
 - Registro ruta `/api/v1/workspaces/<workspace_id>/renewals/<renewal_id>/operational-reminders/` en `backend/reminders/urls.py`, commit `59aa6a305dc13f9b3121ef1503ad88af2604949c`.
 - Pruebas API de aislamiento de cuenta, denegación de escrituras, lectura autenticada y consultas inválidas `backend/reminders/test_operational_api.py`, commit `b950d3794f3e6d3604fc12fa54fb8d184ea06cf0`. No ejecutadas aún: seguir sin despliegue hasta gate agregado.
 - Pendiente: endpoint mutaciones con permisos + sincronización atómica respuesta No→aviso interno, estados, reconciliación y agenda visual, listas motivos, localizaciones, Flutter. Migración DEV permanece en 0016.
+
+## 25/10/2026 — Macrobloque A: endpoint POST de acciones CAS, pendiente validación local
+
+- `backend/reminders/operational_transitions.py` endurecido para comparar fecha de destino en reintentos e impedir reutilización de clave con un aplazamiento diferente: commit `58acb617ed6e93cd0ee3564837720f05f7ab8e9e`.
+- `backend/reminders/operational_api.py`: endpoint POST aislado por workspace y anotación visible para completar/aplazar una ocurrencia interna; JSON exacto (`action`, `expected_state`, `expected_day`, `idempotency_key`, `days_later`), conflictos CAS 409 y sin mensajes reales; commit `46188095e9349454fd301648b10558acf0cebee8`.
+- Ruta `.../operational-reminders/<uuid:reminder_id>/action/` en `urls.py`, commit `27d887357dd89e1058e06ab7574c78330ee11f9f`. Tests de permisos cross-tenant, reintento, conflicto y contrato inválido añadidos a `test_operational_api.py`, commit `a4c68935f4dbd7dda50d6e15d41cdff5d020b647`.
+- **Todo NO PROBADO aún en Ubuntu/PG17**; DEV sigue 0016 y no debe desplegarse. Pendientes motor A: contrato `No` de respuesta → recordatorio en misma transacción, activación reconciliación controlada, motivos, agenda Flutter, pruebas end-to-end, seguridad y gate migración 0017 con O5 y clon. Revisar semántica de reintentos `tomorrow/another_day` al cruzar día local antes de declarar listo.
