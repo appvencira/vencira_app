@@ -298,3 +298,10 @@ Documento completo de alcance/evidencia: `docs/PHASE_WHITEPAPER_ALIGNMENT_2026-1
 - Ensayo O5 usuario OK en segundo intento: snapshot `4341e05e`, clon PostgreSQL 17 restaurado en `0016`, migrado a `0018`, DEV conservado en `0016`. Preflight integral Django SQLite/PostgreSQL temporal/Flutter OK SHA `b8654dda`.
 - Se añadió `scripts/deploy_macro_a_0018_guarded.sh` commits `a8d5157f` y `42ba3132`: sólo ejecutable con `MACRO_A_DEPLOY_CONFIRM=DEPLOY_0017_0018_DEV` y `MACRO_A_O5_VERIFIED_SNAPSHOT=4341e05e`; verifica identidad, fuentes y salud, audita O5, etiqueta imágenes anteriores, construye API/web, inspecciona plan, hace nueva copia cifrada, aplica 0017/0018 explícitamente, recrea API y web, comprueba health y autorización. Recibo y log locales. Sin recuperación automática de BD; si falla tras migrar, NO reejecutar a ciegas.
 - Aún NO ejecutado sobre DEV. Antes, `git pull --ff-only`, `bash -n scripts/deploy_macro_a_0018_guarded.sh`; usuario debe ejecutar con sudo y variables explícitas cuando proceda. No afectar Caddy/OAuth/timers/otros stacks.
+
+## 25/10/2026 — MACRO A DESPLEGADO EN DEV (confirmado por consola)
+
+- Usuario ejecutó `scripts/deploy_macro_a_0018_guarded.sh` sobre `vencira_localcheck` y obtuvo `RESULTADO_GLOBAL=0` y `MACRO_A_DEV_DESPLIEGUE=OK`.
+- Gates: COMPOSE_CONFIG, MIGRATE_CHECK_ONLY, DEV_0016_PRE, O5_AUDIT, TAG_OLD_API, TAG_OLD_WEB, BUILD_API, BUILD_WEB, MIGRATION_PLAN 0017/0018, FRESH_BACKUP_O5, APPLY_0017_0018, DEV_0018_VERIFICADO, POST_MIGRATE_CHECK, DEPLOY_API/WEB, HEALTH_API/WEB healthy, ANON_DENIED_HTTP=403, DEV_0018_FINAL=OK. PostgreSQL no reiniciado; Caddy/OAuth/timers sin cambios.
+- Recibo local `/tmp/vencira-macro-a-deploy.eXQ0fJzh.receipt`, log local `/tmp/vencira-macro-a-deploy.UqWTKaIi.log`. No representan sandbox links.
+- PENDIENTE: pruebas E2E funcionales en sesión autenticada sobre recordatorios operativos (60/45/35, control 1 mes, acciones/no/snooze, motivos, agenda ES/CA). No confundir smoke y health con validación manual.
