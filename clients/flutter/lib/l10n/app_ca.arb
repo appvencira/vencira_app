@@ -287,7 +287,7 @@
   "controlResponseInsurer": "L'asseguradora no renova",
   "controlResponseMediator": "Notificat per mi",
   "controlResponseDays": "Avisa'm d'ací a (dies)",
-  "controlResponseDaysHint": "La data sol·licitada no es programa automàticament. Ha de respectar el límit d'un mes civil; el servidor rebutjarà dates fora de termini.",
+  "controlResponseDaysHint": "La resposta No programa una revisió interna a l'agenda. No envia notificacions i respecta el límit civil.",
   "controlResponseSave": "Registrar resposta manual",
   "controlResponseSaved": "Resposta manual registrada",
   "controlResponseError": "No s'ha pogut consultar o desar la resposta.",
