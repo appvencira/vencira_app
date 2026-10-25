@@ -135,3 +135,10 @@ Commit `059fac89a1235f5538c9d09ae55302b9a11c81fe`: `control_assessment_api.py` i
 ## C2 — Validación comunicada por usuario (25/10/2026)
 
 Tras ejecutar el bloque de preflight, el operador compartió solamente `RESULTADO_EJECUCION=0` y `CONSOLA_ABIERTA`, **sin marcadores individuales** de SQLite, PostgreSQL17, Flutter ni `RESULTADO_GLOBAL`. El código de `scripts/validate_o7_o8_preflight.sh` sí ejecuta estas suites y devuelve error ante fallos, pero sin recibo completo no se inventan marcadores. Tratar como ejecución comunicada con salida 0, pendiente evidencia de gate desglosada antes de autorizar deploy. No se reportó migración/despliegue. Siguiente paso: comprobar marcadores seguros desde el log existente del preflight (no volcar secretos) y conectar UI después del gate confirmado.
+
+
+## C2 — Gate integral aceptado y refinamiento visual pendiente de gate (25/10/2026)
+
+El operador aportó marcadores completos del script `validate_o7_o8_preflight.sh`: salud PRE/POST OK, configuración Docker OK, i18n ES/CA OK, build backend aislado OK, comprobación seca de migraciones OK, suite Django SQLite OK, PostgreSQL17 efímero OK, suite Django PG17 OK, Flutter analyze/test/build OK, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`. `NO_SE_DESPLEGO_NI_MIGRO_DB_PERSISTENTE=1` y `SIN_CAMBIOS_OAUTH_RESTIC_CADDY=1`; log privado `/tmp/vencira-o7-o8-preflight.ibm3OwLT.log`. El gate acredita el código **anterior** al siguiente cambio UI, no valida futuros commits.
+
+Refinamiento visual posterior en commit `1756a54f2e9378db6e2ea51ec48da97839bc1fb2` de `control_assessment_card.dart`: avisos de control caducado/ausente más visibles con icono de advertencia del tema; en Vida se oculta la fecha límite general para no presentarla como plazo legal confirmado. **Pendiente nuevo gate completo y aceptación Flutter** antes de desplegar. El contrato `c2_policy` ya está publicado en código de API read-only, pero aún no se consume en el cliente tipado. Sin envío, migración ni deploy nuevos.
