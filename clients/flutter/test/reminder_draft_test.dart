@@ -71,7 +71,8 @@ class FakeDraftApi extends VenciraApi {
   Future<void> logout() async {}
 }
 
-Widget shell(FakeDraftApi api, String language) => MaterialApp(
+Widget shell(FakeDraftApi api, String language, {ThemeData? theme}) => MaterialApp(
+  theme: theme,
   locale: Locale(language),
   supportedLocales: AppLocalizations.supportedLocales,
   localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -145,12 +146,13 @@ void main() {
         final api = FakeDraftApi()
           ..revision = 1
           ..days = [20, 15];
-        await tester.pumpWidget(Theme(
-          data: ThemeData(
+        await tester.pumpWidget(shell(
+          api,
+          lang,
+          theme: ThemeData(
             brightness: dark ? Brightness.dark : Brightness.light,
             useMaterial3: true,
           ),
-          child: shell(api, lang),
         ));
         await tester.pumpAndSettle();
 
