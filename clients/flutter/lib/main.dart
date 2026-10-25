@@ -111,7 +111,10 @@ class _VenciraAppState extends State<VenciraApp> {
           GlobalCupertinoLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
         ],
-        home: VenciraDashboardScreen(api: widget.api),
+        home: VenciraDashboardScreen(
+          api: widget.api,
+          openTodayOnLoad: widget.api == null,
+        ),
       ),
     );
   }
