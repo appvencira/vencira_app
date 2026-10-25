@@ -718,7 +718,8 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
             ),
             Card.outlined(
               key: const ValueKey('detail-operational-history'),
-              margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              // Misma alineación y margen que los demás paneles de la ficha.
+              margin: const EdgeInsets.symmetric(vertical: 5),
               clipBehavior: Clip.antiAlias,
               child: InkWell(
                 onTap: _openOperationalHistory,
