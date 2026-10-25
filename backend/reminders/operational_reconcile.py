@@ -4,7 +4,7 @@ Debe invocarse únicamente por una operación explícita y autorizada; no desde
 GET, señales automáticas, startup ni cron. La transacción bloquea la anotación.
 """
 import uuid
-from datetime import date
+from datetime import date, timedelta
 from django.db import transaction
 from .models import OperationalReminder, OperationalReminderEvent, Renewal
 from .operational_schedule import build_renewal_plan
@@ -66,6 +66,19 @@ def reconcile_expiry_reminders(renewal_id, *, as_of: date,
         if item.state in ACTIVE:
             active_by_key[item.source_key] = item
 
+    # Mantener el historial pendiente cuando el calendario ha avanzado.
+    # No crear retrospectivamente nuevas ocurrencias: nunca equivale a enviar.
+    if history and desired:
+        for item in history:
+            if (item.state in ACTIVE and item.source_key not in desired and
+                item.original_scheduled_for < as_of and
+                item.days_before in days_before and
+                item.original_scheduled_for == renewal.expires_on - timedelta(days=item.days_before)):
+                desired[item.source_key] = type('PriorOccurrence', (), {
+                    'days_before': item.days_before,
+                    'day': item.original_scheduled_for,
+                    'control_question': item.control_question,
+                })()
     result = []
     for key, occurrence in desired.items():
         reason = reasons_by_day.get(str(occurrence.days_before), 'Aviso de vencimiento')
