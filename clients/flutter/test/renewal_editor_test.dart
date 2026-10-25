@@ -6,6 +6,39 @@ import 'package:vencira/ui/renewal_editor.dart';
 
 void main() {
   for (final language in ['es', 'ca']) {
+    testWidgets('§6 alta sin referencia extra y con nombre obligatorio $language',
+        (tester) async {
+      tester.view.physicalSize = const Size(375, 860);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(MaterialApp(
+        locale: Locale(language),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: Scaffold(body: Builder(builder: (context) =>
+          ElevatedButton(
+            onPressed: () => showDialog<VenciraRenewalInput>(
+              context: context,
+              builder: (_) => const VenciraRenewalEditor(),
+            ),
+            child: const Text('Abrir nueva'),
+          ),
+        )),
+      ));
+      await tester.tap(find.text('Abrir nueva'));
+      await tester.pumpAndSettle();
+      expect(find.text(language == 'ca'
+          ? 'Nom i cognoms o raó social'
+          : 'Nombre y apellidos o razón social'), findsOneWidget);
+      expect(find.text(language == 'ca' ? 'Referència' : 'Referencia'),
+          findsNothing);
+      expect(find.byKey(const ValueKey('full-name')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final language in ['es', 'ca']) {
     testWidgets('Entrada obligatoria visible y Modalidad editable en $language',
         (tester) async {
       tester.view.physicalSize = const Size(375, 860);
