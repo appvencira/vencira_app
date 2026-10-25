@@ -34,9 +34,9 @@ test "$(git branch --show-current)" = integration/local-e2e-prep
 test -z "$(git diff --name-only)"
 test -z "$(git diff --cached --name-only)"
 test -z "$(git ls-files --others --exclude-standard | grep -vx 'clients/flutter/pubspec.lock' || true)"
-git cat-file -e '3d42c045aa7c01ee394d732708b25ee4154a5877^{commit}'
+git cat-file -e '96bde67999eb0cfaca71d1204d73e216d9b7fe4a^{commit}'
 git cat-file -e 'd7b3bfed5749c8cfe23deed1c6d65f907236d072^{commit}'
-git diff --quiet 3d42c045aa7c01ee394d732708b25ee4154a5877 HEAD -- clients/flutter
+git diff --quiet 96bde67999eb0cfaca71d1204d73e216d9b7fe4a HEAD -- clients/flutter
 git diff --quiet d7b3bfed5749c8cfe23deed1c6d65f907236d072 HEAD -- backend compose.yaml compose.preview.yaml deploy
 echo "FUENTES_WEB_PREFLIGHT_IDENTICAS=OK"
 echo "COMMIT=$(git rev-parse HEAD)"
