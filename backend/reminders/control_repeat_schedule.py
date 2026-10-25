@@ -10,12 +10,13 @@ from .operational_reconcile import _event
 
 @transaction.atomic
 def plan_control_repeat(response_id, *, actor=None):
-    response = RenewalControlResponse.objects.select_related(
-        "renewal").get(pk=response_id)
-    renewal = response.renewal
-    # Lock the parent first to serialize concurrent operations per annotation.
+    # Caller may already hold the parent lock (control response POST).
+    # Look up parent id without locking the child first, then lock parent.
     from .models import Renewal
-    renewal = Renewal.objects.select_for_update().get(pk=renewal.pk)
+    renewal_id = RenewalControlResponse.objects.values_list(
+        "renewal_id", flat=True).get(pk=response_id)
+    renewal = Renewal.objects.select_for_update().get(pk=renewal_id)
+    response = RenewalControlResponse.objects.get(pk=response_id, renewal=renewal)
     if response.answer != "no" or response.repeat_on is None:
         raise ValueError("La respuesta no solicita repetición")
     if renewal.status == Renewal.Status.CLOSED or renewal.archived_at is not None:
