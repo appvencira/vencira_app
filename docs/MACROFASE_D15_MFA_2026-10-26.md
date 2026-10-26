@@ -23,3 +23,8 @@ Estado: D1.5a implementada en rama de integración, **gate pendiente**. NO despl
 - Ejecutar tests aislados SQLite y PG17, incluyendo carreras de consumo y anti-replay.
 - Ninguna migración de PostgreSQL persistente ni habilitación MFA sin autorización específica.
 - No declarar sistema listo para datos reales hasta verificar privacidad y revisión de seguridad integral.
+
+
+## 26/10/2026 — Gate D1.5a superado
+
+Confirmado por el operador: `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5A=0`. Log `/tmp/vencira-o7-o8-preflight.5c3aWGs3.log`. Sin migración o despliegue. D1.5b pendiente: diseño y pruebas de cifrado de secretos y recuperación antes de cualquier enrolamiento.
