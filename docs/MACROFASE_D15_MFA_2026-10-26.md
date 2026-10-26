@@ -58,3 +58,10 @@ Se introdujeron campos de intentos y bloqueo de cuenta en `UserMfaState` y migra
 ## D1.5d — Gate integral APROBADO (26/10/2026)
 
 Confirmado por el operador: `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5D=0`. Log `/tmp/vencira-o7-o8-preflight.L17WSQrM.log`. La suite incluye prueba de carrera con dos conexiones PostgreSQL temporal y bloqueo de intentos mixtos. Las migraciones aditivas 0019 y 0020 se validaron en pruebas, pero no están aplicadas en la BD persistente (0018). Pendiente enrolamiento confirmable, recuperación completa y segundo factor en login, sin habilitación automática.
+
+
+## D1.5e — Enrolamiento interno, gate PENDIENTE
+
+Servicio interno en `backend/reminders/mfa_enrollment.py`: preparación crea secreto cifrado con `enabled=False` y URI `otpauth` para el titular; confirmación con TOTP en ventana de 10 minutos fijada en `prepared_at` (nuevo campo aditivo de migración **0021_mfa_prepared_at**) genera 10 códigos de recuperación hasheados y marca `enabled=True` en una transacción; verificación fallida no habilita MFA y sigue límite de intentos. Tests `backend/reminders/test_mfa_enrollment.py` con preparación, confirmación, expiración e invalidación de secreto anterior. Commits `d317d316`, `cd2021a3`, `a833f7e`, `84b9c81`, `e6400bd`.
+
+**CRÍTICO:** servicio interno NO conectado con HTTP/Flutter/login. No invocar `confirm_mfa` ni permitir habilitar `enabled=True` en despliegue alguno hasta que D1.5f garantice segundo factor antes de crear sesión completa; no hay custodia de claves MFA real ni procedimiento de recuperación completo. Claves suministradas en pruebas exclusivamente. 0019/0020/0021 **no aplicar en PostgreSQL persistente**. Pendiente gate aislado completo.
