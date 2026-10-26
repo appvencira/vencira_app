@@ -269,10 +269,11 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
     if (mounted && chosen != null) _chooseDay(chosen);
   }
 
-  Future<void> _openDetail(String renewalId) async {
+  Future<void> _openDetail(String renewalId, {bool edit = false}) async {
     await Navigator.of(context).push<void>(MaterialPageRoute(
       builder: (_) => VenciraRenewalDetailScreen(
         api: widget.api, workspace: widget.workspace, renewalId: renewalId,
+        openEditorOnLoad: edit,
       ),
     ));
     if (mounted) {
@@ -537,6 +538,13 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
                 ],
               ),
             ),
+            if (renewal.archiveOutcome.isEmpty)
+              IconButton(
+                key: ValueKey('agenda-edit-' + renewal.id),
+                tooltip: _t.editRenewal,
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: () => _openDetail(renewal.id, edit: true),
+              ),
           ],
         ),
         ),
