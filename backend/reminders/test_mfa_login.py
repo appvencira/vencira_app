@@ -46,7 +46,18 @@ class MfaLoginTests(TestCase):
             response = browser.post(reverse("mfa-challenge"), {"code": code})
             self.assertEqual(response.status_code, 302)
             self.assertEqual(browser.get(reverse("api-me")).status_code, 200)
-            self.assertNotEqual(browser.post(reverse("mfa-challenge"), {"code": code}).status_code, 302)
+            # El reto se consumió: una segunda petición sin estado pendiente
+            # puede redirigir al login (302), pero nunca autenticar de nuevo.
+            repeated = browser.post(reverse("mfa-challenge"), {"code": code})
+            self.assertEqual(repeated.status_code, 302)
+            self.assertEqual(repeated.url, reverse("login"))
+            # Otro navegador completa contraseña, pero el mismo TOTP ya
+            # consumido no permite obtener sesión autenticada.
+            second = Client()
+            self._password_step(second)
+            denied = second.post(reverse("mfa-challenge"), {"code": code})
+            self.assertEqual(denied.status_code, 403)
+            self.assertIn(second.get(reverse("api-me")).status_code, (401, 403))
 
     def test_recovery_one_time_and_no_password_only_access(self):
         recovery = "A" * 32
