@@ -69,3 +69,8 @@ Flutter: método `VenciraApi.logoutOtherSessions` con CSRF, JSON y verificación
 ## D1.4 · Gate integral aprobado, pendiente publicación DEV
 
 El operador confirmó `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `I18N_ES_CA=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_4=0`, log `/tmp/vencira-o7-o8-preflight.bpVykmo6.log`. UI/cliente integrados; no desplegados. No se migró BD persistente ni se modificaron OAuth/Caddy/Restic. **No usar el script C2 previo sin verificar que el pin apunta a la nueva fuente D1.4**. Siguiente: preparar gate de publicación DEV sin migraciones, asegurar fuente y rollback, verificar endpoint y UX móvil. MFA pendiente.
+
+
+## D1.4 — DEV desplegado y prueba funcional aceptada (26/10/2026)
+
+El operador entregó recibo: `COMMIT=43a165a8528071c280084ede8dd3666957fe9461`, `C2_DESPLIEGUE_SIN_MIGRACION=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_4_DEPLOY=0`, health API/DB/web OK, `/`, health, ready y login HTTPS 200; rutas protegidas sin sesión 403; esquema PG17 `0018_draft_reasons` sin cambios y sin migraciones; O5 reciente cifrado y anterior API/web recuperable. También confirmó «prueba funcional done». D1.4 aceptada en DEV. Log `/tmp/vencira-o9a-deploy.s4kAMoqy.log`, recibo privado `/tmp/vencira-o9a-20261026T210641Z_4031670.HWLUJAUE.receipt`. No se modificaron Caddy/Restic/timers. D1.5 siguiente: diseñar MFA TOTP opcional y recuperación, sin activar en cuentas actuales ni usar datos personales reales.
