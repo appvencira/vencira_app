@@ -59,6 +59,22 @@ class MfaLoginTests(TestCase):
             self.assertEqual(denied.status_code, 403)
             self.assertIn(second.get(reverse("api-me")).status_code, (401, 403))
 
+    def test_responsive_challenge_es_ca_and_no_store(self):
+        with patch.dict("os.environ", {"VENCIRA_MFA_FERNET_KEYS": self.key}):
+            browser = Client()
+            self._password_step(browser)
+            es = browser.get(reverse("mfa-challenge"))
+            self.assertEqual(es.status_code, 200)
+            self.assertContains(es, "Verifica tu identidad")
+            self.assertContains(es, "códigos de recuperación")
+            self.assertContains(es, "viewport")
+            self.assertIn("no-store", es["Cache-Control"])
+            ca = browser.get(reverse("mfa-challenge") + "?lang=ca")
+            self.assertEqual(ca.status_code, 200)
+            self.assertContains(ca, "Verifica la teua identitat")
+            self.assertContains(ca, "codis de recuperació")
+            self.assertNotIn("vencira_mfa_verified_v1", browser.session)
+
     def test_recovery_one_time_and_no_password_only_access(self):
         recovery = "A" * 32
         UserMfaRecoveryCode.objects.create(
