@@ -76,6 +76,23 @@ class ExplicitControlApiTests(TestCase):
             "2027-02-13"), format="json").status_code, 409)
 
     @patch("reminders.explicit_control_api.timezone.localdate",
+           return_value=date(2027, 2, 1))
+    def test_assessment_shows_completed_explicit_history(self, _):
+        created = self.client.post(self.url(), self.data(), format="json")
+        self.assertEqual(created.status_code, 201, created.data)
+        item = OperationalReminder.objects.get()
+        item.state = OperationalReminder.State.COMPLETED
+        item.save(update_fields=["state"])
+        response = self.client.get(reverse("api-control-assessment", kwargs={
+            "workspace_id": self.ws.pk, "renewal_id": self.renewal.pk}))
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertFalse(response.data["explicit_control_existing"])
+        self.assertEqual(response.data["explicit_control_latest"]["id"], str(item.pk))
+        self.assertEqual(response.data["explicit_control_latest"]["state"], "completed")
+        self.assertEqual(response.data["explicit_control_latest"]["delivery_status"],
+                         "not_implemented")
+
+    @patch("reminders.explicit_control_api.timezone.localdate",
            return_value=date(2027, 2, 15))
     def test_at_cutoff_cannot_create(self, _):
         self.assertEqual(self.client.post(self.url(), self.data(),
