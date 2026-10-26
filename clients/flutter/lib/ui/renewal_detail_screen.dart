@@ -870,8 +870,10 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                 child: ExpansionTile(
                   key: ValueKey('reminder-preview-expand-' + renewal.id),
                   leading: const Icon(Icons.notifications_active_outlined),
-                  title: Text(_t.detailCaption16),
-                  subtitle: Text(_t.detailCaption17),
+                  title: Text(locale == 'ca' ? 'Avisos i control' : 'Avisos y control'),
+                  subtitle: Text(locale == 'ca'
+                    ? 'Configuració, revisió i simulació'
+                    : 'Configuración, revisión y simulación'),
                   // La vista previa solo consulta la API después de abrirla.
                   // No alterar la posición ni el comportamiento de los
                   // controles de seguimiento/manuales ya existentes.
