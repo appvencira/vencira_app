@@ -59,3 +59,8 @@ Se añadió `POST /api/v1/me/logout-other-sessions/` en `backend/reminders/sessi
 ## D1.3 — Gate integral aprobado
 
 El operador confirmó tras incorporar `backend/reminders/session_security.py`, su ruta y tests: `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_3=0`; log `/tmp/vencira-o7-o8-preflight.rQbzywZf.log`. Implementación **solo backend**, no botón Flutter ni despliegue. Sigue pendiente un diseño indexado por usuario para escalabilidad comercial y revisión de interfaz/autenticación MFA. No migración persistente ni alteración Caddy/Restic.
+
+
+## D1.4 · UI cierre sesiones otras máquinas — GATE PENDIENTE
+
+Flutter: método `VenciraApi.logoutOtherSessions` con CSRF, JSON y verificación de respuesta (`clients/flutter/lib/api/vencira_api.dart`, commit `18b02b6a`); en hoja de Ajustes de Dashboard, opción «Cerrar sesiones en otros dispositivos» (ES/CA), diálogo de contraseña oculta y confirmación, barra con total revocado y mantenimiento de sesión actual (`clients/flutter/lib/ui/dashboard_screen.dart`, commit `17e9824e`). Sólo se muestra si hay organización seleccionada. No se ha ejecutado preflight después de cambios, no declarar final ni desplegar. Sin migraciones, sin activar MFA. Pendiente revisar experiencia real móvil, ejecutar tests y decidir si se requiere indexado de sesiones antes de escala comercial.
