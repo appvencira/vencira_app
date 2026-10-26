@@ -537,3 +537,8 @@ Nuevos commits Flutter: API `dabe64737eab9fb62b7bf42b1cfa3f5bd6f7d02e` añade `c
 El operador reportó gate integral `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`, suites Django SQLite/PG17, Flutter analyze/test/build e i18n ES/CA OK, salud pre/post OK; log `/tmp/vencira-o7-o8-preflight.Fn8LRLdg.log`. Sin despliegue ni migración persistente ni cambios OAuth/Restic/Caddy. Gate cubre API+Flutter hasta `1a34ca4b257953b7bbad69ec642e12b6aef986ff`.
 
 Nuevo commit **posterior al gate** `6fbb41e8d822739ff7e9f59bcd1b907df21994ce` añade test widget `control_assessment_test.dart` (320px ES/CA) para verificar que el selector de fecha de control explícito se abre y que cancelarlo no realiza escritura. **Gate nuevo pendiente antes de desplegar**. No confundir pasar test general con validación visual en dispositivo real. Pendientes pruebas de diálogo confirmado y reintentos UI, revisión premium móvil, entrega Resend deshabilitada.
+
+
+## C2 — Gate Flutter fallido por navegación del test; corrección 26/10/2026
+
+El operador informa `RESULTADO_GLOBAL=1` en `FLUTTER_ANALYZE_TEST_BUILD`: 2 tests ES/CA de cancelación fallaron porque `tester.pageBack()` exige `CupertinoNavigationBarBackButton`, ausente en el selector Material; no se observa escritura o fallo de servidor. Log `/tmp/vencira-o7-o8-preflight.xi9jfhku.log`. El test `clients/flutter/test/control_assessment_test.dart` se corrigió para cerrar la ruta Material mediante `Navigator.of(tester.element(find.byType(DatePickerDialog))).pop()` sin depender del idioma, commit final `d57b8b3d45a607a751d388eba3b58d86ec660d98` (supersede tentativa anterior `658955e44b29d5d3fe694b57f7b63c58e5e5947b`). **Pendiente nuevo gate real**. No despliegue, migración de DB persistente ni alteración OAuth/Restic/Caddy según salida.
