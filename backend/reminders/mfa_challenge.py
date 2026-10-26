@@ -10,6 +10,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods
 
 from .mfa_store import consume_recovery_code, consume_totp
+from .mfa_middleware import SESSION_VERIFIED
 from .models import UserMfaState
 
 PENDING_KEY = "vencira_mfa_pending_v1"
@@ -74,6 +75,7 @@ def mfa_challenge(request):
     next_url = pending.get("next", "/api/v1/me/")
     request.session.pop(PENDING_KEY, None)
     auth_login(request, user, backend=backend)
+    request.session[SESSION_VERIFIED] = user.get_session_auth_hash()
     response = redirect(next_url)
     response["Cache-Control"] = "no-store"
     return response
