@@ -2,6 +2,8 @@
 import os
 
 from django.contrib.auth import get_user_model, login as auth_login
+from django.middleware.csrf import get_token
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.utils import timezone
@@ -53,7 +55,7 @@ def mfa_challenge(request):
             '<h1>Segundo factor</h1><p>Introduce el código de tu autenticador '
             'o un código de recuperación.</p><form method="post">'
             '<input name="csrfmiddlewaretoken" type="hidden" value="' +
-            __import__("django.middleware.csrf", fromlist=["get_token"]).get_token(request) +
+            get_token(request) +
             '"><input name="code" autocomplete="one-time-code" required '
             'aria-label="Código" maxlength="32">'
             '<button type="submit">Verificar</button></form></body></html>',
@@ -63,7 +65,9 @@ def mfa_challenge(request):
     keys = _mfa_keys()
     accepted = False
     if not keys:
-        return HttpResponse("MFA no disponible.", status=503)
+        response = HttpResponse("MFA no disponible.", status=503)
+        response["Cache-Control"] = "no-store"
+        return response
     if len(code) == 6:
         accepted = consume_totp(user.pk, code, keys=keys)
     elif len(code) == 32:
@@ -74,6 +78,12 @@ def mfa_challenge(request):
         return response
     # La sesión estaba no autenticada; Django rota la clave al autenticar.
     next_url = pending.get("next", "/api/v1/me/")
+    if not isinstance(next_url, str) or not url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        next_url = "/api/v1/me/"
     request.session.pop(PENDING_KEY, None)
     auth_login(request, user, backend=backend)
     request.session[SESSION_VERIFIED] = user.get_session_auth_hash()
