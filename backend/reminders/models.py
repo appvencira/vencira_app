@@ -474,6 +474,9 @@ class UserMfaState(models.Model):
     encrypted_totp_secret = models.TextField()
     enabled = models.BooleanField(default=False)
     last_accepted_counter = models.BigIntegerField(default=-1)
+    failed_attempts = models.PositiveSmallIntegerField(default=0)
+    attempts_started_at = models.DateTimeField(null=True, blank=True)
+    locked_until = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
 
