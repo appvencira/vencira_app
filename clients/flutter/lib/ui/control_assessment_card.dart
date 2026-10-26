@@ -27,8 +27,6 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
   bool _loading = true;
   bool _error = false;
   bool _creating = false;
-  bool _createError = false;
-  bool _createConflict = false;
   DateTime? _retryDay;
   String? _retryKey;
 
@@ -130,7 +128,7 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
     if (_creating || picked == null || key == null) return;
     final ca = Localizations.localeOf(context).languageCode == 'ca';
     final current = _generation;
-    setState(() { _creating = true; _createError = false; _createConflict = false; });
+    setState(() { _creating = true; });
     try {
       await widget.api.createExplicitControl(
         widget.workspaceId, widget.renewalId,
@@ -145,9 +143,9 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
       )));
       await _load();
     } on VenciraConflictException {
-      if (mounted && current == _generation) setState(() => _createConflict = true);
+      // Se conserva la solicitud para reintentar.
     } catch (_) {
-      if (mounted && current == _generation) setState(() => _createError = true);
+      // Se conserva la solicitud para reintentar.
     } finally {
       if (mounted && current == _generation) setState(() => _creating = false);
     }
