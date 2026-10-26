@@ -50,6 +50,32 @@ class MfaStoreTests(TestCase):
         self.assertTrue(consume_recovery_code(self.user.pk, codes[1]))
         self.assertFalse(UserMfaRecoveryCode.objects.filter(state=self.state).exists())
 
+    def test_failed_attempts_shared_between_totp_and_recovery_and_lock(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        self.state.enabled = True
+        self.state.save(update_fields=["enabled"])
+        code = generate_recovery_codes()[0]
+        UserMfaRecoveryCode.objects.create(
+            state=self.state, code_hash=hash_recovery_code(code),
+        )
+        for _ in range(3):
+            self.assertFalse(consume_totp(self.user.pk, "nototp", keys=self.keys))
+        for _ in range(2):
+            self.assertFalse(consume_recovery_code(self.user.pk, "INVALID"))
+        self.state.refresh_from_db()
+        self.assertEqual(self.state.failed_attempts, 5)
+        self.assertGreater(self.state.locked_until, timezone.now())
+        self.assertFalse(consume_recovery_code(self.user.pk, code))
+        self.assertTrue(UserMfaRecoveryCode.objects.filter(state=self.state).exists())
+        self.state.locked_until = timezone.now() - timedelta(seconds=1)
+        self.state.attempts_started_at = timezone.now() - timedelta(minutes=16)
+        self.state.save(update_fields=["locked_until", "attempts_started_at"])
+        self.assertTrue(consume_recovery_code(self.user.pk, code))
+        self.state.refresh_from_db()
+        self.assertEqual(self.state.failed_attempts, 0)
+        self.assertIsNone(self.state.locked_until)
+
     def test_other_account_cannot_consume_codes(self):
         code = generate_recovery_codes()[0]
         UserMfaRecoveryCode.objects.create(
