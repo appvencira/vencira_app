@@ -89,3 +89,8 @@ Tras un fallo inicial de aserción (redirección 302 al login tras consumir reto
 ## D1.5g — Auditoría de primer bloque: gate PENDIENTE
 
 Se revisó el reto MFA y se corrigió la validación del destino después de verificar el segundo factor (`mfa_challenge.py`, commit `766f3763`); aunque el login ya validaba el destino, ahora se vuelve a comprobar en el punto de redirección. Se reemplazó importación dinámica del token CSRF por importación explícita y se añade no-store también a error 503 por ausencia de claves. Tests añadidos `test_mfa_login.py` para expiración de desafío, POST sin CSRF y rechazo de redirección a dominio ajeno (commits `8bc9dfc1`, `39ed7c4a`). **No gate ejecutado aún**, no desplegar ni aplicar migraciones. Pendiente verificar navegador real ES/CA, custodia de claves, recuperación accesible, expiración de cuenta, administración y hardening de lockout frente a abuso.
+
+
+## D1.5g — Primer gate de hardening APROBADO (26/10/2026)
+
+Tras reparar preparación de cliente CSRF en prueba (`fb7fa1911e2270cdc0549067f533b5960fe9b7c4`), el operador confirma `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5G=0`. Log `/tmp/vencira-o7-o8-preflight.YEywbose.log`. Se cubren expiración de desafío, CSRF y destino seguro. La auditoría final sigue pendiente: integración de UX ES/CA, gestión de claves Fernet, recuperación sin autenticador, rutas alternativas e inventario de sesiones y despliegue seguro. **Sin despliegue ni migraciones persistentes 0019–0021; no habilitar MFA todavía.**
