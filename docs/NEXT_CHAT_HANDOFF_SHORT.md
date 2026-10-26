@@ -513,3 +513,8 @@ Gate real informado: `RESULTADO_GLOBAL=1`, `RESULTADO_EJECUCION=1`; suite Django
 ## C2 — Segundo fallo gate: reloj simulado incoherente (26/10/2026)
 
 Gate informado `RESULTADO_GLOBAL=1`, fallo 1/235 SQLite en `test_no_on_cutoff_rejected_then_prior_day_accepted`: primer POST 201 y repetición igual 409. Diagnóstico: el test parcha fecha civil a 2027-02-25, pero `answered_at` (auto_now_add) queda con el reloj real del host 2026; la comparación idempotente reconstructiva utiliza día de `answered_at`, por eso el reintento artificial falla. Se corrigió el **test** añadiendo mock coherente de `django.utils.timezone.now` a 2027-02-25T12:00 UTC además del mock localdate: commit `505cdfa5bf6897c60a895392cb276202bf039cc0`. Sin cambio de lógica en producción ni migración. **Gate nuevo todavía pendiente**, no desplegar. Registro de fallo `/tmp/vencira-o7-o8-preflight.V6k3p5Z9.log` y ninguna alteración de DB persistente / OAuth / Restic / Caddy.
+
+
+## C2 — Gate recuperado (26/10/2026)
+
+Operador comunica validación integral de la corrección del reloj simulado (`505cdfa5bf6897c60a895392cb276202bf039cc0`): `LOCALCHECK_HEALTH_PRE/POST=OK`, `CONFIG_COMPOSE=OK`, `I18N_ES_CA=OK`, `BUILD_BACKEND_AISLADO=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `PG17_TEMPORAL=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `O7_O8_PREFLIGHT_SIN_DESPLIEGUE=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`. Log local `/tmp/vencira-o7-o8-preflight.c6g2NgJO.log`. No despliegue, migración DB persistente ni cambios OAuth/Restic/Caddy. **Este gate valida el código anterior a nuevos cambios C2**. Próxima tarea: acción expresa e idempotente de control con visibilidad de equipo, confirmación, auditoría y sin transporte real.
