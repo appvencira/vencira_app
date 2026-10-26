@@ -18,3 +18,19 @@ No son vulnerabilidades confirmadas: son puntos de verificación. Las proteccion
 
 ## Gate siguiente
 Inventariar rutas y permisos Django, tests de negación cruzada por tenant/usuario, MFA y settings de producción sin imprimir tokens, contraseñas o contenidos de datos. Priorizar pruebas negativas en SQLite y PostgreSQL17 efímero, sin tocar BD persistente.
+
+
+## D0 revisión adicional de pruebas existentes (26/10)
+
+El operador obtuvo inventario de **26 rutas** y archivos de tests. Revisión directa en la rama `integration/local-e2e-prep`:
+
+- `test_api.py`: `test_anonymous_denied_all_business_routes`, `test_removing_membership_revokes_access_immediately`, `test_member_cannot_read_or_patch_teammate_or_unassigned_record`, `test_owner_cannot_assign_to_nonmember_or_foreign_tenant`, `test_cannot_see_or_mutate_other_workspace`, `test_session_authentication_rejects_missing_csrf_on_write`, entre otras. Son pruebas de cobertura de acceso al API, no acreditan invalidación completa de sesión.
+- `test_operational_api.py`: acceso ajeno denegado y pertenencia de recordatorios a otro workspace.
+- `test_history_read.py`: historia por asignación y acceso cruzado.
+- `test_control_assessment.py`: no autorizado, cross-workspace y no asignado.
+- `test_operational_inbox.py` y `test_operational_history.py`: controles por tenant y asignación.
+- `test_reminder_activate.py`: `test_cross_tenant_denied`.
+
+**Pendientes:** comprobar cobertura completa de 26 rutas con matriz de autorización, ejecución íntegra de los tests sobre PG17 temporal, MFA, protección frente a fuerza bruta y caducidad/revocación de sesiones. No elevar ningún pendiente a vulnerabilidad confirmada sin reproducción.
+
+**HTTPS efectivo comprobado por el operador:** HTTP 308 a HTTPS, HTTPS 200, `referrer-policy: same-origin`, `x-content-type-options: nosniff`, `x-frame-options: DENY`. No se vio `Strict-Transport-Security`, proponer endurecimiento de Caddy con cautela, sin subdominios/preload, gate independiente. Django efectivo: `DEBUG=False`, `SESSION_COOKIE_SECURE=True`, `SESSION_COOKIE_HTTPONLY=True`, `CSRF_COOKIE_SECURE=True`, `SECURE_SSL_REDIRECT=False`, `SECURE_HSTS_SECONDS=0`, y `SECURE_PROXY_SSL_HEADER` configurado. No alterar DEV ahora.
