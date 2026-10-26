@@ -177,6 +177,10 @@ abstract class VenciraApi {
     String workspaceId, String query, {String by = 'name', String? excludeId}
   ) async => const [];
 
+  /// Revoca otras sesiones de la misma cuenta; requiere contraseña actual.
+  Future<int> logoutOtherSessions(String password) async =>
+      throw const VenciraApiException();
+
   Future<void> logout();
 }
 
@@ -2175,6 +2179,37 @@ class HttpVenciraApi implements VenciraApi {
       final json = jsonDecode(utf8.decode(response.bodyBytes))
           as Map<String, dynamic>;
       if (json['active'] != null) throw const VenciraApiException();
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<int> logoutOtherSessions(String password) async {
+    final csrf = await _csrf();
+    late http.Response response;
+    try {
+      response = await _client.post(
+        _baseUri.resolve('/api/v1/me/logout-other-sessions/'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrf,
+        },
+        body: jsonEncode({'password': password}),
+      );
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+    if (response.statusCode != 200) {
+      throw const VenciraApiException();
+    }
+    try {
+      final data = jsonDecode(utf8.decode(response.bodyBytes))
+          as Map<String, dynamic>;
+      final revoked = data['revoked'];
+      if (revoked is! int || revoked < 0) throw const VenciraApiException();
+      return revoked;
     } catch (_) {
       throw const VenciraApiException();
     }
