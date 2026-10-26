@@ -38,3 +38,8 @@ Se añadió dependencia `cryptography>=44,<47` a `backend/requirements.txt`; mó
 ## 26/10/2026 — Gate D1.5b APROBADO
 
 El operador confirmó `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5B=0`, log local `/tmp/vencira-o7-o8-preflight.4UXX7YJr.log`. Valida las primitivas cifrado/rotación/códigos sin persistencia. Pendiente consumo atómico con bloqueo transaccional, límites de intentos, enrolamiento y recuperación. Sin deploy, migración persistente ni habilitación MFA.
+
+
+## D1.5c — Persistencia aditiva y consumo, PENDIENTE DE GATE
+
+Se añadieron `UserMfaState` (OneToOne usuario, secreto cifrado, `enabled=False`, contador anti-replay) y `UserMfaRecoveryCode` (hashes) al modelo, migración aditiva **0019_user_mfa_state** y `mfa_store.py` para consumo transaccional de TOTP y recuperación con `select_for_update()`; tests sintéticos `test_mfa_store.py`. Commits de modelo `4eb0130d`, migración `457693ed`, operaciones `ec5614f0`, tests `a56d32ff`. Ningún endpoint invoca estos consumos, ni se activa MFA. **Falta ejecutar gate integral y comprobar migrations check --dry-run y PG17 temporal.** También faltan tests concurrentes PG17 y limitación de intentos para consumo de recuperación antes de habilitar endpoints. No aplicar la migración a la BD persistente ni usar scripts de despliegue C2 anteriores.
