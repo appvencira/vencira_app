@@ -443,6 +443,27 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                   Navigator.of(sheetContext).pop();
                   preferences.setLocale(const Locale('ca'));
                 }),
+                if (_selected != null) ...[
+                  const SizedBox(height: 17),
+                  Text(preferences.locale.languageCode == 'ca'
+                    ? 'Seguretat' : 'Seguridad',
+                    style: Theme.of(context).textTheme.labelLarge
+                      ?.copyWith(color: colors.primary)),
+                  const SizedBox(height: 6),
+                  ListTile(
+                    key: const ValueKey('settings-close-other-sessions'),
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.phonelink_lock_outlined),
+                    title: Text(preferences.locale.languageCode == 'ca'
+                      ? 'Tancar sessions en altres dispositius'
+                      : 'Cerrar sesiones en otros dispositivos'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      _closeOtherSessions();
+                    },
+                  ),
+                ],
                 const SizedBox(height: 17),
                 Text(t.appearance, style: Theme.of(context).textTheme.labelLarge
                     ?.copyWith(color: colors.primary)),
@@ -468,6 +489,67 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _closeOtherSessions() async {
+    final locale = VenciraPreferences.of(context).locale.languageCode;
+    final ca = locale == 'ca';
+    final controller = TextEditingController();
+    final password = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(ca ? 'Tancar altres sessions' : 'Cerrar otras sesiones'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(ca
+              ? 'Tancarem les sessions dels altres dispositius. Aquesta sessió continuarà oberta.'
+              : 'Cerraremos las sesiones de otros dispositivos. Esta sesión seguirá abierta.'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              obscureText: true,
+              enableSuggestions: false,
+              autocorrect: false,
+              decoration: InputDecoration(
+                labelText: ca ? 'Contrasenya actual' : 'Contraseña actual',
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(ca ? 'Cancel·lar' : 'Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(controller.text),
+            child: Text(ca ? 'Tancar sessions' : 'Cerrar sesiones'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (!mounted || password == null || password.isEmpty) return;
+    try {
+      final count = await _api.logoutOtherSessions(password);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(ca
+          ? 'Sessions tancades: $count. Aquesta sessió continua oberta.'
+          : 'Sesiones cerradas: $count. Esta sesión sigue abierta.'),
+      ));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(ca
+          ? 'No s’han pogut tancar les sessions. Comprova la contrasenya.'
+          : 'No se han podido cerrar las sesiones. Comprueba la contraseña.'),
+      ));
+    }
   }
 
   @override
