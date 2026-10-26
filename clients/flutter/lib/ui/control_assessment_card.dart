@@ -29,6 +29,8 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
   bool _creating = false;
   bool _createError = false;
   bool _createConflict = false;
+  DateTime? _retryDay;
+  String? _retryKey;
 
   AppLocalizations get _strings => AppLocalizations.of(context)!;
 
@@ -45,6 +47,8 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
         oldWidget.renewalId != widget.renewalId ||
         oldWidget.workspaceId != widget.workspaceId) {
       _value = null; // Cambio de identidad: no mostrar control de otra ficha.
+      _retryDay = null;
+      _retryKey = null;
       _load();
     }
   }
@@ -86,7 +90,7 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
 
   Future<void> _createExplicitControl() async {
     final policy = _value?.c2Policy;
-    if (_creating || policy?.offerExplicitControl != true ||
+    if (_creating || _retryKey != null || policy?.offerExplicitControl != true ||
         policy?.latestExplicitControlDay == null) return;
     final last = policy!.latestExplicitControlDay!;
     final today = DateUtils.dateOnly(DateTime.now());
@@ -115,14 +119,26 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
       ),
     );
     if (!mounted || confirmed != true) return;
+    _retryDay = picked;
+    _retryKey = _uuid();
+    await _submitExplicitControl();
+  }
+
+  Future<void> _submitExplicitControl() async {
+    final picked = _retryDay;
+    final key = _retryKey;
+    if (_creating || picked == null || key == null) return;
+    final ca = Localizations.localeOf(context).languageCode == 'ca';
     final current = _generation;
     setState(() { _creating = true; _createError = false; _createConflict = false; });
     try {
       await widget.api.createExplicitControl(
         widget.workspaceId, widget.renewalId,
-        day: picked, idempotencyKey: _uuid(),
+        day: picked, idempotencyKey: key,
       );
       if (!mounted || current != _generation) return;
+      _retryDay = null;
+      _retryKey = null;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
         ca ? 'Avís intern creat. No s’ha enviat cap notificació.'
            : 'Aviso interno creado. No se ha enviado ninguna notificación.',
@@ -248,15 +264,24 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
                 const SizedBox(height: 14),
                 FilledButton.icon(
                   key: const ValueKey('explicit-control-create'),
-                  onPressed: _loading || _creating ? null : _createExplicitControl,
+                  onPressed: _loading || _creating || _retryKey != null ? null : _createExplicitControl,
                   icon: const Icon(Icons.add_alert_outlined),
                   label: Text(Localizations.localeOf(context).languageCode == 'ca'
                       ? 'Crear avís de control' : 'Crear aviso de control'),
                 ),
                 if (_creating) const LinearProgressIndicator(),
-                if (_createError || _createConflict)
-                  Text(_createConflict
-                    ? _strings.controlLoadError : _strings.controlLoadError),
+                if (_retryKey != null && !_creating) ...[
+                  Text(Localizations.localeOf(context).languageCode == 'ca'
+                    ? 'No s’ha pogut confirmar el resultat. Reintenta la mateixa operació.'
+                    : 'No se ha podido confirmar el resultado. Reintenta la misma operación.'),
+                  TextButton.icon(
+                    key: const ValueKey('explicit-control-retry'),
+                    onPressed: _submitExplicitControl,
+                    icon: const Icon(Icons.refresh),
+                    label: Text(Localizations.localeOf(context).languageCode == 'ca'
+                      ? 'Reintentar' : 'Reintentar'),
+                  ),
+                ],
               ],
               const SizedBox(height: 14),
               Text(_strings.controlRefreshHelp, style: Theme.of(context).textTheme.bodySmall),
