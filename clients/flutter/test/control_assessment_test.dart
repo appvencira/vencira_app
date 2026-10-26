@@ -9,6 +9,7 @@ class FakeO9Api extends VenciraApi {
   bool manualReview = false;
   bool allowExplicit = false;
   bool existingExplicit = false;
+  bool historicExplicit = false;
   int explicitCreates = 0;
   bool failFirstExplicit = false;
   final List<String> explicitKeys = [];
@@ -35,6 +36,8 @@ class FakeO9Api extends VenciraApi {
       controlDaysBefore: manualReview ? null : 35,
       draftPersisted: manualReview,
       explicitControlExisting: existingExplicit,
+      latestExplicitControlState: historicExplicit ? 'completed' : null,
+      latestExplicitControlDay: historicExplicit ? DateTime(2027, 2, 10) : null,
       c2Policy: allowExplicit ? VenciraC2Policy(
         allowSave: true, manualReviewRequired: true,
         warningCode: 'no_pre_cutoff_notice', offerExplicitControl: true,
@@ -222,6 +225,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('explicit-control-create')), findsNothing);
     expect(find.textContaining('Ya existe un aviso interno'), findsOneWidget);
+    expect(api.explicitCreates, 0);
+  });
+
+  testWidgets('C2 completed historical explicit control shown after reload',
+      (tester) async {
+    final api = FakeO9Api()
+      ..manualReview = true
+      ..allowExplicit = true
+      ..historicExplicit = true;
+    await tester.pumpWidget(screen(api, 'es', false));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Último aviso interno'), findsOneWidget);
+    expect(find.byKey(const ValueKey('explicit-control-create')), findsNothing);
     expect(api.explicitCreates, 0);
   });
 
