@@ -164,6 +164,20 @@ class MfaLoginTests(TestCase):
             self.assertEqual(response.status_code, 302)
             self.assertEqual(response.url, "/api/v1/me/")
 
+    def test_existing_session_invalidated_when_mfa_enabled(self):
+        self.state.enabled = False
+        self.state.save(update_fields=["enabled"])
+        browser = Client()
+        response = browser.post(reverse("login"), {
+            "username": "mfa_login_demo",
+            "password": "LocalOnlyPassword!2026",
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(browser.get(reverse("api-me")).status_code, 200)
+        self.state.enabled = True
+        self.state.save(update_fields=["enabled"])
+        self.assertEqual(browser.get(reverse("api-me")).status_code, 403)
+
     def test_unenrolled_users_keep_password_login(self):
         self.state.delete()
         browser = Client()
