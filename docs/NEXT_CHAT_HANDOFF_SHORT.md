@@ -549,3 +549,8 @@ El operador informa `RESULTADO_GLOBAL=1` en `FLUTTER_ANALYZE_TEST_BUILD`: 2 test
 El operador confirma `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`, con pre/post salud, Compose, i18n ES/CA, build backend, migraciones secas, suites completas Django SQLite y PostgreSQL17 temporal, Flutter analyze/test/build OK. Log `/tmp/vencira-o7-o8-preflight.lbfaSxgo.log`; `NO_SE_DESPLEGO_NI_MIGRO_DB_PERSISTENTE=1`, `SIN_CAMBIOS_OAUTH_RESTIC_CADDY=1`. Este gate valida el código **antes** del test nuevo.
 
 Commit `509c34d333dcd01e9f91c689f8db08fdbece6847` añade test widget Flutter (320px, ES/CA) de flujo positivo de aviso expreso: selección de fecha, confirmación secundaria, cancelar sin llamada, confirmar con una sola llamada a fake API. **Pendiente gate nuevo**; sin cambios de backend/BD ni envío. Después revisar riesgo de duplicación de intentos reales y visualización móvil antes de permitir despliegue.
+
+
+## C2 — Timeout en test de confirmación Flutter (26/10/2026)
+
+El gate comunicado falló (`RESULTADO_GLOBAL=1`) en dos tests widget ES/CA de `control_assessment_test.dart` por `pumpAndSettle timed out` en línea 170, tras confirmar la creación; no consta fallo de Django ni evidencia de entrega. Log `/tmp/vencira-o7-o8-preflight.HoAWE8qd.log`. Se reemplazó **solo** la espera global del test de confirmación positiva por `pump()` y avance acotado de 250 ms, manteniendo la aserción de exactamente una llamada fake API; commit `fc9eb5f2fafa6b44634b0b043c1b05589189bc84`. Hipótesis: frame continuado por indicador de progreso. **Gate nuevo pendiente; no afirmar éxito**, ni desplegar o tocar base persistente, Resend, OAuth/Restic/Caddy.
