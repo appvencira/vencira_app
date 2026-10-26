@@ -85,6 +85,50 @@ class MfaLoginTests(TestCase):
         self.assertEqual(browser.get(reverse("api-me")).status_code, 403)
         self.assertIn(browser.get(reverse("api-me")).status_code, (401, 403))
 
+    def test_challenge_expiry_denies_access_and_clears_pending(self):
+        from django.utils import timezone
+        from .mfa_challenge import PENDING_KEY, CHALLENGE_SECONDS
+        with patch.dict("os.environ", {"VENCIRA_MFA_FERNET_KEYS": self.key}):
+            browser = Client()
+            self._password_step(browser)
+            session = browser.session
+            pending = session[PENDING_KEY]
+            pending["issued"] = int(timezone.now().timestamp()) - CHALLENGE_SECONDS - 1
+            session[PENDING_KEY] = pending
+            session.save()
+            response = browser.post(reverse("mfa-challenge"), {"code": "000000"})
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(response.url, reverse("login"))
+            self.assertIn(browser.get(reverse("api-me")).status_code, (401, 403))
+
+    def test_challenge_requires_csrf_on_real_browser(self):
+        browser = Client(enforce_csrf_checks=True)
+        with patch.dict("os.environ", {"VENCIRA_MFA_FERNET_KEYS": self.key}):
+            self._password_step(browser)
+            self.assertEqual(browser.get(reverse("mfa-challenge")).status_code, 200)
+            from django.utils import timezone
+            code = totp_at(self.secret, int(timezone.now().timestamp()))
+            response = browser.post(reverse("mfa-challenge"), {"code": code})
+            self.assertEqual(response.status_code, 403)
+            self.assertIn(browser.get(reverse("api-me")).status_code, (401, 403))
+
+    def test_challenge_never_redirects_to_foreign_origin(self):
+        from django.utils import timezone
+        from .mfa_challenge import PENDING_KEY
+        with patch.dict("os.environ", {"VENCIRA_MFA_FERNET_KEYS": self.key}):
+            browser = Client()
+            self._password_step(browser)
+            session = browser.session
+            pending = session[PENDING_KEY]
+            pending["next"] = "https://attacker.example.test/"
+            session[PENDING_KEY] = pending
+            session.save()
+            response = browser.post(reverse("mfa-challenge"), {
+                "code": totp_at(self.secret, int(timezone.now().timestamp())),
+            })
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(response.url, "/api/v1/me/")
+
     def test_unenrolled_users_keep_password_login(self):
         self.state.delete()
         browser = Client()
