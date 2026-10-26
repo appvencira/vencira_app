@@ -470,7 +470,7 @@ class VenciraControlAssessment {
     required this.status, required this.reasons,
     required this.controlDay, required this.cutoffOn,
     required this.controlDaysBefore, required this.draftPersisted,
-    this.c2Policy,
+    this.c2Policy, this.explicitControlExisting = false,
   });
 
   final String status;
@@ -480,6 +480,7 @@ class VenciraControlAssessment {
   final int? controlDaysBefore;
   final bool draftPersisted;
   final VenciraC2Policy? c2Policy;
+  final bool explicitControlExisting;
 
   static DateTime _day(dynamic raw) {
     if (raw is! String ||
@@ -527,6 +528,7 @@ class VenciraControlAssessment {
       cutoffOn: _day(json['informational_cutoff_on']),
       controlDaysBefore: days as int?,
       draftPersisted: json['draft_persisted'] as bool,
+      explicitControlExisting: json['explicit_control_existing'] == true,
       c2Policy: json['c2_policy'] is Map<String, dynamic>
           ? VenciraC2Policy.fromJson(json['c2_policy'] as Map<String, dynamic>)
           : null,
