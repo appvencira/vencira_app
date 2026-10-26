@@ -51,7 +51,7 @@ test "$(git branch --show-current)" = integration/local-e2e-prep
 test -z "$(git diff --name-only)" && test -z "$(git diff --cached --name-only)"
 extra="$(git ls-files --others --exclude-standard | grep -vx 'clients/flutter/pubspec.lock' || true)"
 test -z "$extra" || { echo "ERROR=UNTRACKED_AJENOS"; exit 2; }
-VALIDATED=a90563b803e7221563f370940545887aeab2822a
+VALIDATED=112a575edb02468be51668cdc2d231d80e3ce8df
 git cat-file -e "$VALIDATED^{commit}"
 git diff --quiet "$VALIDATED" HEAD -- backend clients compose.yaml compose.preview.yaml deploy || {
   echo "ERROR=FUENTES_CAMBIARON_DESDE_GATE_VALIDADO"
