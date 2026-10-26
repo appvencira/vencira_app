@@ -70,3 +70,12 @@ Servicio interno en `backend/reminders/mfa_enrollment.py`: preparación crea sec
 ## D1.5e — Gate integral APROBADO
 
 El operador confirma `COMMIT=401afd20a899d577f11f6c303d866e5c8bcb35b4`, `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5E=0`. Log `/tmp/vencira-o7-o8-preflight.yoDMNaeQ.log`. Sin despliegues ni migraciones en PostgreSQL persistente (0018). D1.5f siguiente: reto MFA **antes** de `login()`/creación de sesión autenticada, controles de expiración/CSRF/limitación y recuperación de un solo uso. No exponer enrolamiento hasta completar D1.5f y custodia de claves independiente.
+
+
+## D1.5f — Reto de login previo a sesión: gate PENDIENTE
+
+- `backend/reminders/login_security.py`: tras contraseña correcta, si MFA `enabled=True`, NO llama a `LoginView.form_valid()` ni crea sesión autenticada; crea estado temporal no autenticado de 5 minutos y redirige al reto; usuarios sin MFA mantienen el login clásico.
+- `backend/reminders/mfa_challenge.py`: verificación TOTP o código de recuperación bajo protección CSRF, sin cache, con cuenta activa, expiración, límite transaccional de intentos ya existente en D1.5d, invalidación de challenge y login únicamente tras éxito; exige clave independiente `VENCIRA_MFA_FERNET_KEYS` y falla cerrado si falta. **No copiar claves en chat ni commit; todavía no aprovisionadas en DEV.**
+- `backend/reminders/mfa_middleware.py` y `backend/config/settings.py`: una sesión Django, incluido `/admin/`, no autoriza peticiones de cuenta MFA activa si carece de marca de verificación de segundo factor. Si se activa MFA sobre una cuenta, las sesiones previas ya no deben eludirla.
+- `backend/config/urls.py`: ruta `/accounts/mfa/`; `backend/reminders/test_mfa_login.py`: login por contraseña sin sesión completa, TOTP, código de recuperación de un solo uso, fallo de clave ausente, login sin MFA, denegación de sesión alternativa.
+- **Pendientes críticos antes de producción:** gate integral Django SQLite/PostgreSQL 17 + Flutter, pruebas de expiración y concurrencia del reto, revisión del HTML/UX ES/CA y del formulario de accesibilidad, restricciones de MFA para superusuarios/admin, almacén seguro/rotación de claves MFA, recuperación sin dispositivo, monitorización y operación de migraciones 0019–0021, validación contra bypass de rutas extra. **No desplegar** mientras 0019–0021 no estén en BD persistente; tampoco aplicar migraciones por ahora. No habilitar enrolamiento público.
