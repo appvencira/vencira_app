@@ -136,6 +136,44 @@ void main() {
   }
 
   for (final lang in ['es', 'ca']) {
+    testWidgets('C2 confirmation before single internal creation $lang',
+        (tester) async {
+      tester.view.physicalSize = const Size(320, 950);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final api = FakeO9Api()..manualReview = true..allowExplicit = true;
+      await tester.pumpWidget(screen(api, lang, false));
+      await tester.pumpAndSettle();
+      final create = find.byKey(const ValueKey('explicit-control-create'));
+      await tester.ensureVisible(create);
+      await tester.tap(create);
+      await tester.pumpAndSettle();
+      expect(find.byType(DatePickerDialog), findsOneWidget);
+      final date = DateUtils.dateOnly(DateTime.now());
+      Navigator.of(tester.element(find.byType(DatePickerDialog))).pop(date);
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(api.explicitCreates, 0);
+      await tester.tap(find.descendant(
+        of: find.byType(AlertDialog), matching: find.byType(TextButton)));
+      await tester.pumpAndSettle();
+      expect(api.explicitCreates, 0);
+      await tester.ensureVisible(create);
+      await tester.tap(create);
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(find.byType(DatePickerDialog))).pop(date);
+      await tester.pumpAndSettle();
+      expect(api.explicitCreates, 0);
+      await tester.tap(find.descendant(
+        of: find.byType(AlertDialog), matching: find.byType(FilledButton)));
+      await tester.pumpAndSettle();
+      expect(api.explicitCreates, 1);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final lang in ['es', 'ca']) {
     for (final dark in [false, true]) {
       testWidgets('O9a 320px no overflow ES/CA con recarga: $lang $dark',
           (tester) async {
