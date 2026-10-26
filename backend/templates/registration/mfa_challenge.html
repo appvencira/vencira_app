@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>VENCIRA · {% if lang == 'ca' %}Verificació{% else %}Verificación{% endif %}</title>
+<style>
+:root{font-family:system-ui,-apple-system,sans-serif;color-scheme:light;background:#eef5f7;color:#173448}*{box-sizing:border-box}
+body{margin:0;min-height:100svh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 80% 10%,#d2e8e8,transparent 55%),#eef5f7}
+main{width:min(100%,450px);padding:clamp(24px,6vw,42px);background:#fff;border:1px solid #dce9ed;border-radius:22px;box-shadow:0 22px 60px #254e6119}
+.brand{color:#145c75;letter-spacing:.12em;font-size:24px;font-weight:850}h1{font-size:clamp(23px,5vw,28px);margin:25px 0 8px;letter-spacing:-.02em}
+p{color:#566e7b;line-height:1.6;font-size:14px}.eyebrow{margin-top:18px;font-size:12px;font-weight:750;letter-spacing:.08em;color:#45717f}
+label{display:block;font-size:14px;font-weight:700;margin:21px 0 9px}
+input{width:100%;padding:15px;border:1px solid #b6cdd6;border-radius:12px;background:#fff;color:#173448;font:inherit;letter-spacing:.1em;min-height:52px}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid #6ba9c0;outline-offset:3px}
+button{width:100%;border:0;border-radius:12px;background:#145c75;color:white;min-height:52px;margin-top:18px;font:inherit;font-weight:750;cursor:pointer}
+.details{margin-top:22px;padding-top:15px;border-top:1px solid #e0eaee}.details summary{cursor:pointer;color:#145c75;font-size:14px;font-weight:700}
+.details p{margin-bottom:0}.foot{margin-top:22px;font-size:12px;color:#68808b}
+a{color:#145c75;font-weight:650}.lang{float:right;font-size:12px} .muted{font-size:12px;color:#597583}
+</style></head>
+<body><main>
+<div class="brand">VENCIRA</div>
+<div class="lang"><a href="?lang={% if lang == 'ca' %}es{% else %}ca{% endif %}" hreflang="{% if lang == 'ca' %}es{% else %}ca{% endif %}">{% if lang == 'ca' %}Español{% else %}Català{% endif %}</a></div>
+<div class="eyebrow">{% if lang == 'ca' %}SEGURETAT DEL COMPTE{% else %}SEGURIDAD DE LA CUENTA{% endif %}</div>
+<h1>{% if lang == 'ca' %}Verifica la teua identitat{% else %}Verifica tu identidad{% endif %}</h1>
+<p>{% if lang == 'ca' %}Introduïx el codi de sis dígits de l'aplicació d'autenticació per continuar.{% else %}Introduce el código de seis dígitos de tu aplicación de autenticación para continuar.{% endif %}</p>
+<form method="post" autocomplete="off">
+{% csrf_token %}
+<input type="hidden" name="lang" value="{{ lang }}">
+<label for="mfa-code">{% if lang == 'ca' %}Codi d'autenticació o recuperació{% else %}Código de autenticación o recuperación{% endif %}</label>
+<input id="mfa-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="32" required autofocus autocapitalize="characters" spellcheck="false" aria-describedby="code-help">
+<p class="muted" id="code-help">{% if lang == 'ca' %}També pots introduir un codi de recuperació de 32 caràcters.{% else %}También puedes introducir un código de recuperación de 32 caracteres.{% endif %}</p>
+<button type="submit">{% if lang == 'ca' %}Verificar i continuar{% else %}Verificar y continuar{% endif %}</button>
+</form>
+<details class="details"><summary>{% if lang == 'ca' %}No tens accés a l'autenticador?{% else %}¿No tienes acceso al autenticador?{% endif %}</summary>
+<p>{% if lang == 'ca' %}Utilitza un dels codis de recuperació que vas guardar en activar la verificació. Cada codi només es pot utilitzar una vegada.{% else %}Utiliza uno de los códigos de recuperación que guardaste al activar la verificación. Cada código solo puede utilizarse una vez.{% endif %}</p></details>
+<p class="foot"><a href="{% url 'login' %}">{% if lang == 'ca' %}Tornar a l'inici de sessió{% else %}Volver al inicio de sesión{% endif %}</a></p>
+</main></body></html>
