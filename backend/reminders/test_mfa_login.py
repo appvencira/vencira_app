@@ -79,6 +79,14 @@ class MfaLoginTests(TestCase):
             self.assertEqual(browser.post(reverse("mfa-challenge"), {"code": "A" * 32}).status_code, 503)
             self.assertIn(browser.get(reverse("api-me")).status_code, (401, 403))
 
+    def test_malformed_key_fails_closed_without_authentication(self):
+        with patch.dict("os.environ", {"VENCIRA_MFA_FERNET_KEYS": "invalid"}):
+            browser = Client()
+            self._password_step(browser)
+            response = browser.post(reverse("mfa-challenge"), {"code": "000000"})
+            self.assertEqual(response.status_code, 503)
+            self.assertIn(browser.get(reverse("api-me")).status_code, (401, 403))
+
     def test_alternate_authenticated_session_cannot_bypass_mfa(self):
         browser = Client()
         browser.force_login(self.user)
