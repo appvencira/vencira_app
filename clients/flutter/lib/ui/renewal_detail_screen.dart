@@ -876,6 +876,15 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                   // No alterar la posición ni el comportamiento de los
                   // controles de seguimiento/manuales ya existentes.
                   children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                      child: Text(
+                        locale == 'ca'
+                          ? 'Avisos interns: sense enviaments externs. Obre només l’apartat necessari.'
+                          : 'Avisos internos: sin envíos externos. Abre solo el apartado necesario.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
                     ExpansionTile(
                       key: ValueKey('reminder-config-group-' + renewal.id),
                       initiallyExpanded: true,
@@ -899,7 +908,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                       key: ValueKey('reminder-control-group-' + renewal.id),
                       
                       leading: const Icon(Icons.fact_check_outlined),
-                      title: Text("2. Control de no renovación"),
+                      title: Text(locale == 'ca' ? '2. Control de no renovació' : '2. Control de no renovación'),
                       subtitle: Text(locale == 'ca' ? "Revisió i resposta manual" : "Evaluación y respuesta manual"),
                       children: [
                         VenciraControlAssessmentCard(
@@ -918,7 +927,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                       key: ValueKey('reminder-simulation-group-' + renewal.id),
                       
                       leading: const Icon(Icons.calculate_outlined),
-                      title: Text("Simulación de fechas"),
+                      title: Text(locale == 'ca' ? '3. Simulació de dates' : '3. Simulación de fechas'),
                       subtitle: Text(locale == 'ca' ? "Només previsualització, sense desar" : "Solo vista previa, sin guardar"),
                       children: [
                         VenciraReminderPreviewCard(
