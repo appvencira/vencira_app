@@ -47,7 +47,17 @@ def control_assessment(request, workspace_id, renewal_id):
         renewal.expires_on, days, as_of=assessment.reference_day,
         is_life=(renewal.modality == "vida"),
     )
+    latest_explicit = (OperationalReminder.objects.filter(
+        renewal=renewal, source_key__startswith="explicit-control:",
+        control_question=True,
+    ).order_by("-created_at", "-id").first())
     return _result({
+        "explicit_control_latest": ({
+            "id": str(latest_explicit.pk),
+            "state": latest_explicit.state,
+            "scheduled_for": latest_explicit.scheduled_for.isoformat(),
+            "delivery_status": "not_implemented",
+        } if latest_explicit is not None else None),
         "explicit_control_existing": OperationalReminder.objects.filter(
             renewal=renewal, source_key__startswith="explicit-control:",
             control_question=True,
