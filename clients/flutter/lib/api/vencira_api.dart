@@ -66,6 +66,11 @@ abstract class VenciraApi {
       throw const VenciraApiException();
 
   /// O9a: evaluación de la pregunta de control, sin registrar respuesta.
+  Future<void> createExplicitControl(
+      String workspaceId, String renewalId, {
+      required DateTime day, required String idempotencyKey,
+  }) async => throw const VenciraApiException();
+
   Future<VenciraControlAssessment> fetchControlAssessment(
       String workspaceId, String renewalId) async =>
       throw const VenciraApiException();
@@ -1272,6 +1277,53 @@ class HttpVenciraApi implements VenciraApi {
     try {
       return VenciraControlResponse.fromJson(
           jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>);
+    } catch (_) { throw const VenciraApiException(); }
+  }
+
+  @override
+  Future<void> createExplicitControl(
+      String workspaceId, String renewalId, {
+      required DateTime day, required String idempotencyKey,
+  }) async {
+    if (!_validUuid(workspaceId) || !_validUuid(renewalId) ||
+        !_validUuid(idempotencyKey)) {
+      throw const VenciraApiException();
+    }
+    final dateText = day.toIso8601String().substring(0, 10);
+    final csrf = await _csrf();
+    late http.Response response;
+    try {
+      response = await _client.post(
+        _baseUri.resolve(
+          '/api/v1/workspaces/$workspaceId/renewals/$renewalId/explicit-control/'),
+        headers: {
+          'Accept': 'application/json', 'Content-Type': 'application/json',
+          'X-CSRFToken': csrf,
+        },
+        body: jsonEncode({
+          'confirmed': true, 'scheduled_for': dateText,
+          'idempotency_key': idempotencyKey,
+        }),
+      );
+    } catch (_) { throw const VenciraApiException(); }
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const VenciraUnauthorized();
+    }
+    if (response.statusCode == 409) {
+      throw const VenciraConflictException();
+    }
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw const VenciraApiException();
+    }
+    try {
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      if (data is! Map<String, dynamic> ||
+          data['control_question'] != true ||
+          data['delivery_status'] != 'not_implemented' ||
+          data['scheduled_for'] != dateText ||
+          data['id'] is! String) {
+        throw const FormatException('Invalid explicit control response');
+      }
     } catch (_) { throw const VenciraApiException(); }
   }
 
