@@ -33,6 +33,7 @@ def prepare_mfa(user, *, keys: list[str]) -> tuple[str, str]:
         raise ValueError("MFA ya está activo")
     secret = generate_secret()
     state.encrypted_totp_secret = encrypt_totp_secret(secret, user_id=user.pk, keys=keys)
+    state.prepared_at = timezone.now()
     state.last_accepted_counter = -1
     state.failed_attempts = 0
     state.attempts_started_at = None
@@ -55,7 +56,7 @@ def confirm_mfa(user_id: int, code: str, *, keys: list[str],
     if state is None or not state.encrypted_totp_secret:
         return None
     now = timezone.now()
-    if now - state.updated_at > PENDING_LIFETIME:
+    if state.prepared_at is None or now - state.prepared_at > PENDING_LIFETIME:
         return None
     if state.locked_until and state.locked_until > now:
         return None
