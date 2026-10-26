@@ -167,7 +167,9 @@ void main() {
       expect(api.explicitCreates, 0);
       await tester.tap(find.descendant(
         of: find.byType(AlertDialog), matching: find.byType(FilledButton)));
-      await tester.pumpAndSettle();
+      // Avoid waiting for all animations/indeterminate indicators to settle.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       expect(api.explicitCreates, 1);
       expect(tester.takeException(), isNull);
     });
