@@ -68,6 +68,12 @@ class MfaLoginTests(TestCase):
             self.assertEqual(browser.post(reverse("mfa-challenge"), {"code": "A" * 32}).status_code, 503)
             self.assertIn(browser.get(reverse("api-me")).status_code, (401, 403))
 
+    def test_alternate_authenticated_session_cannot_bypass_mfa(self):
+        browser = Client()
+        browser.force_login(self.user)
+        self.assertEqual(browser.get(reverse("api-me")).status_code, 403)
+        self.assertIn(browser.get(reverse("api-me")).status_code, (401, 403))
+
     def test_unenrolled_users_keep_password_login(self):
         self.state.delete()
         browser = Client()
