@@ -54,3 +54,8 @@ El operador ejecutó `scripts/validate_o7_o8_preflight.sh` con test `backend/rem
 ## D1.3 — Revocar otras sesiones: IMPLEMENTADO EN RAMA, SIN GATE
 
 Se añadió `POST /api/v1/me/logout-other-sessions/` en `backend/reminders/session_security.py` y `backend/reminders/urls.py`, protegido por autenticación Django/DRF de sesión y comprobación CSRF, exigencia de contraseña actual, respuesta sin datos de sesión, conservación de la sesión invocante, cierre de las otras sesiones de la misma cuenta solamente, sin tocar las de otros usuarios. Sólo acepta almacenamiento de sesión DB e impone límite de exploración de 5000 sesiones activas: solución provisional con coste O(sesiones), destinada a reemplazarse por un índice de sesiones por usuario antes de escala comercial. Pruebas en `backend/reminders/test_session_security.py`: autenticación, CSRF, contraseña, aislamiento, sesión actual y cierre remoto. Commits `b4129874`, `d776d46c`, `eadb36b8`, `9ce211b4`. **Pendiente gate integral** antes de declarar válido o publicar. No se ha implementado botón Flutter ni MFA. No desplegar / no migrar DB persistente.
+
+
+## D1.3 — Gate integral aprobado
+
+El operador confirmó tras incorporar `backend/reminders/session_security.py`, su ruta y tests: `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_3=0`; log `/tmp/vencira-o7-o8-preflight.rQbzywZf.log`. Implementación **solo backend**, no botón Flutter ni despliegue. Sigue pendiente un diseño indexado por usuario para escalabilidad comercial y revisión de interfaz/autenticación MFA. No migración persistente ni alteración Caddy/Restic.
