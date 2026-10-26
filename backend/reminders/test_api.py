@@ -115,6 +115,33 @@ class ScopedRenewalApiTests(APITestCase):
         item.refresh_from_db()
         self.assertEqual(item.assigned_to_id, self.member_a_2.pk)
 
+    def test_real_browser_session_loses_workspace_access_after_membership_removal(self):
+        """La cookie sigue autenticando, pero el tenant revocado debe quedar inaccesible."""
+        browser = Client()
+        self.assertTrue(browser.login(
+            username="miembro_a", password="LocalOnlyPasswordB!2026",
+        ))
+        own_list = self.list_url(self.workspace_a)
+        own_detail = self.detail_url(self.workspace_a, self.renewal_a)
+        foreign_list = self.list_url(self.workspace_b)
+        self.assertEqual(browser.get(own_list).status_code, 200)
+        self.assertEqual(browser.get(own_detail).status_code, 200)
+        self.assertEqual(browser.get(foreign_list).status_code, 404)
+
+        WorkspaceMember.objects.filter(
+            workspace=self.workspace_a, user=self.member_a,
+        ).delete()
+
+        self.assertEqual(browser.get(own_list).status_code, 404)
+        self.assertEqual(browser.get(own_detail).status_code, 404)
+        self.assertEqual(browser.get(foreign_list).status_code, 404)
+        response = browser.get(reverse("api-workspaces"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), [])
+        # La sesión global de Django permanece activa. No confundir
+        # revocación de autorización tenant con logout global.
+        self.assertEqual(browser.get(reverse("api-me")).status_code, 200)
+
     def test_member_can_read_and_update_own_workspace(self):
         self.client.force_authenticate(user=self.member_a)
         list_response = self.client.get(self.list_url(self.workspace_a))
