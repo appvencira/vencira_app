@@ -48,3 +48,8 @@ Se añadieron `UserMfaState` (OneToOne usuario, secreto cifrado, `enabled=False`
 ## D1.5c — Gate integral APROBADO (26/10/2026)
 
 Confirmación operador: `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5C=0`. Log local `/tmp/vencira-o7-o8-preflight.htuRUzm2.log`. La migración 0019 fue probada en entornos efímeros, **no aplicada en PostgreSQL persistente (0018)**. Pendientes obligatorios: concurrencia real de códigos sobre PG17, límite de intentos, enrolamiento MFA con confirmación y recuperación verificada; aún sin endpoints MFA ni activación.
+
+
+## D1.5d — Limitación compartida y carrera PG17; gate PENDIENTE
+
+Se introdujeron campos de intentos y bloqueo de cuenta en `UserMfaState` y migración aditiva **0020_mfa_attempt_limits** (`62ba2764`, `04ba395f`). En `mfa_store.py` (`6a7f1152`), verificación TOTP y recuperación comparten contador máximo de 5 fallos en 15 minutos y bloqueo durante 15 minutos; serialización mediante bloqueo de `UserMfaState` en transacción, reseteo tras éxito; códigos no consumidos si la cuenta está bloqueada. Prueba de bloqueo mixto (`8442783c`). Test PostgreSQL con dos conexiones y barrera para demostrar que sólo una petición simultánea puede consumir el código (`d2c2689d`); SQLite lo omite expresamente. **NO gate todavía.** MFA no conectado al login ni a endpoints. Esquema persistente permanece en 0018 y no se desplegarán migraciones 0019/0020 sin gate y aprobación posteriores. Antes de lanzar comercialmente: revisar coste del hash PBKDF2 en intentos inválidos, posibles DoS de lockout, latencia de bloqueo de fila, métricas y alertas; probar el flujo integral de recuperación.
