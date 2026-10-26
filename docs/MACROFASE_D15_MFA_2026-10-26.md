@@ -94,3 +94,12 @@ Se revisó el reto MFA y se corrigió la validación del destino después de ver
 ## D1.5g — Primer gate de hardening APROBADO (26/10/2026)
 
 Tras reparar preparación de cliente CSRF en prueba (`fb7fa1911e2270cdc0549067f533b5960fe9b7c4`), el operador confirma `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5G=0`. Log `/tmp/vencira-o7-o8-preflight.YEywbose.log`. Se cubren expiración de desafío, CSRF y destino seguro. La auditoría final sigue pendiente: integración de UX ES/CA, gestión de claves Fernet, recuperación sin autenticador, rutas alternativas e inventario de sesiones y despliegue seguro. **Sin despliegue ni migraciones persistentes 0019–0021; no habilitar MFA todavía.**
+
+
+## D1.5h — Custodia y rotación de claves: primer bloque, GATE PENDIENTE
+
+Se añade `backend/reminders/mfa_key_config.py` (`f692a941`) para validar configuración independiente `VENCIRA_MFA_FERNET_KEYS` de 1 a 5 claves Fernet, separadas por comas, sin valores vacíos ni duplicados, rechazando claves incorrectas sin incluir material sensible en errores. `mfa_challenge.py` (`982461c1`) responde HTTP 503 sin autenticar ante ausencia o corrupción de clave. Pruebas `test_mfa_key_config.py` (`752a9d35`) cubren ausencia, formato, duplicación y rotación; `test_mfa_login.py` (`bd40902e`) prueba fallo cerrado con clave incorrecta.
+
+**Procedimiento futuro de rotación, NO EJECUTAR aún:** 1) asegurar custodia externa, independiente del servidor y respaldos de DB, y procedimiento ensayado de recuperación; 2) con respaldo cifrado y restauración verificada, insertar clave nueva al principio del anillo `[nueva,antigua]`, conservar antigua; 3) reecriptar todos los secretos existentes por lote auditable, idempotente, con claves activas; 4) comprobar que no quedan registros bajo clave antigua en un clon efímero; 5) solo entonces retirar la clave antigua, con reversión operativa definida. Ni claves ni códigos deben almacenarse en Git, logs, capturas o chat. No introducir claves reales ni ejecutar rotaciones en esta fase.
+
+**PENDIENTE:** validación integral O7/O8, política de recuperación por pérdida total de autenticador y códigos, implementación de enrolamiento HTTP seguro, UI premium ES/CA, auditoría de rutas alternativas, custodia de secretos en VPS, plan de migración/rollback. Sin deploy y sin aplicar migraciones 0019-0021 en BD persistente.
