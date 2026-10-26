@@ -28,3 +28,8 @@ Rama: `integration/local-e2e-prep`. Validación automatizada exigida: O7/O8 comp
 ## Evidencia de D1.5j
 
 Test añadido para demostrar que una sesión abierta antes de habilitar MFA deja de autorizar acceso al activarse. **Gate pendiente**. Se prohíbe despliegue en DEV/producción durante esta fase.
+
+
+## Resultado gate D1.5j — APROBADO (27/10/2026)
+
+Operador confirma: `LOCALCHECK_HEALTH_PRE=OK`, `CONFIG_COMPOSE=OK`, `I18N_ES_CA=OK`, `BUILD_BACKEND_AISLADO=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `PG17_TEMPORAL=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `LOCALCHECK_HEALTH_POST=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5J=0`. Log `/tmp/vencira-o7-o8-preflight.5PQWNqRU.log`. No despliegue ni migración persistente. Quedan bloqueantes: interfaz segura de enrolamiento con reautenticación, entrega de códigos, custodia real de clave y política de recuperación, gates y rollback.
