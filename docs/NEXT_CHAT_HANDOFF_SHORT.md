@@ -530,3 +530,10 @@ Nuevo `backend/reminders/explicit_control_api.py` commit `d2767c9187f51695d175f4
 El operador comunicó gate `LOCALCHECK_HEALTH_PRE/POST=OK`, `CONFIG_COMPOSE=OK`, `I18N_ES_CA=OK`, `BUILD_BACKEND_AISLADO=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `PG17_TEMPORAL=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `O7_O8_PREFLIGHT_SIN_DESPLIEGUE=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`, log `/tmp/vencira-o7-o8-preflight.GorM69zX.log`; no despliegue, migración DB persistente ni alteraciones OAuth/Restic/Caddy. Gate valida API explícita, no los nuevos commits.
 
 Nuevos commits Flutter: API `dabe64737eab9fb62b7bf42b1cfa3f5bd6f7d02e` añade `createExplicitControl` al contrato e implementación same-origin, CSRF, control de estados y respuesta sin delivery; UI `1a34ca4b257953b7bbad69ec642e12b6aef986ff` muestra crear control solo si la política lo ofrece, selector de fechas en intervalo permitido, diálogo confirmación ES/CA, confirmación de aviso interno sin entrega y recarga. **PENDIENTE gate real completo de estos commits, pruebas UI específicas y aceptación móvil**. No habilitar canales ni desplegar todavía.
+
+
+## C2 — Gate integración Flutter OK y test móvil posterior (26/10/2026)
+
+El operador reportó gate integral `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`, suites Django SQLite/PG17, Flutter analyze/test/build e i18n ES/CA OK, salud pre/post OK; log `/tmp/vencira-o7-o8-preflight.Fn8LRLdg.log`. Sin despliegue ni migración persistente ni cambios OAuth/Restic/Caddy. Gate cubre API+Flutter hasta `1a34ca4b257953b7bbad69ec642e12b6aef986ff`.
+
+Nuevo commit **posterior al gate** `6fbb41e8d822739ff7e9f59bcd1b907df21994ce` añade test widget `control_assessment_test.dart` (320px ES/CA) para verificar que el selector de fecha de control explícito se abre y que cancelarlo no realiza escritura. **Gate nuevo pendiente antes de desplegar**. No confundir pasar test general con validación visual en dispositivo real. Pendientes pruebas de diálogo confirmado y reintentos UI, revisión premium móvil, entrega Resend deshabilitada.
