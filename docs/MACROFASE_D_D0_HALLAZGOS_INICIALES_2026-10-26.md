@@ -44,3 +44,8 @@ Commit de prueba `086cb0e73df468d9ca52e8cc316eaa2ff0d2ba72` (`backend/reminders/
 ## D1.2 · Pruebas de sesiones multidispositivo (pendientes de gate)
 
 Commit `5adc51b4eb6c96e6d5a6ca8c36defe17fb3dced9`: `backend/reminders/test_session_revocation.py` comprueba con dos clientes Django autenticados que (a) retirar una membresía preserva acceso a una segunda organización y la sesión global; (b) desactivar `is_active` del usuario deniega acceso autenticado a ambos clientes; (c) rotar contraseña invalida sesiones previas y permite un nuevo inicio con la contraseña nueva. Emplea usuarios y organizaciones sintéticos y DB temporal de pruebas. **No se ha ejecutado todavía gate con estas pruebas**, no presentar resultados como aprobados. Esto comprueba mecanismos existentes, no implementa todavía una interfaz de cierre remoto ni MFA. Ningún deploy ni migración persistente.
+
+
+## D1.2 · Gate multidispositivo APROBADO (26/10/2026)
+
+El operador ejecutó `scripts/validate_o7_o8_preflight.sh` con test `backend/reminders/test_session_revocation.py` incluido: `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_2=0`, log `/tmp/vencira-o7-o8-preflight.qBjXq49y.log`. Confirma comportamiento bajo tests: revocar una membresía preserva el acceso a otras; desactivar cuenta deja sin autenticación a dos sesiones; cambiar contraseña invalida ambas sesiones previas. No se implementó control de cierre remoto selectivo ni MFA. Sin despliegue ni cambios de base persistente.
