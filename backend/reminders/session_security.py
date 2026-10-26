@@ -19,7 +19,7 @@ MAX_ACTIVE_SESSIONS_SCAN = 5000
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def logout_other_sessions(request):
-    if settings.SESSION_ENGINE != "django.contrib.sessions.backends.db":
+    if getattr(settings, "SESSION_ENGINE", "django.contrib.sessions.backends.db") != "django.contrib.sessions.backends.db":
         return Response({"detail": "Motor de sesión no compatible."},
                         status=status.HTTP_503_SERVICE_UNAVAILABLE)
     if set(request.data) != {"password"} or not isinstance(request.data["password"], str):
