@@ -149,3 +149,10 @@ Nuevo commit **posterior al gate** `6fbb41e8d822739ff7e9f59bcd1b907df21994ce` a�
 ## C2 — Gate Flutter fallido por navegación del test; corrección 26/10/2026
 
 El operador informa `RESULTADO_GLOBAL=1` en `FLUTTER_ANALYZE_TEST_BUILD`: 2 tests ES/CA de cancelación fallaron porque `tester.pageBack()` exige `CupertinoNavigationBarBackButton`, ausente en el selector Material; no se observa escritura o fallo de servidor. Log `/tmp/vencira-o7-o8-preflight.xi9jfhku.log`. El test `clients/flutter/test/control_assessment_test.dart` se corrigió para cerrar la ruta Material mediante `Navigator.of(tester.element(find.byType(DatePickerDialog))).pop()` sin depender del idioma, commit final `d57b8b3d45a607a751d388eba3b58d86ec660d98` (supersede tentativa anterior `658955e44b29d5d3fe694b57f7b63c58e5e5947b`). **Pendiente nuevo gate real**. No despliegue, migración de DB persistente ni alteración OAuth/Restic/Caddy según salida.
+
+
+## C2 — Gate de cancelación aprobado y test de confirmación positiva (26/10/2026)
+
+El operador confirma `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`, con pre/post salud, Compose, i18n ES/CA, build backend, migraciones secas, suites completas Django SQLite y PostgreSQL17 temporal, Flutter analyze/test/build OK. Log `/tmp/vencira-o7-o8-preflight.lbfaSxgo.log`; `NO_SE_DESPLEGO_NI_MIGRO_DB_PERSISTENTE=1`, `SIN_CAMBIOS_OAUTH_RESTIC_CADDY=1`. Este gate valida el código **antes** del test nuevo.
+
+Commit `509c34d333dcd01e9f91c689f8db08fdbece6847` añade test widget Flutter (320px, ES/CA) de flujo positivo de aviso expreso: selección de fecha, confirmación secundaria, cancelar sin llamada, confirmar con una sola llamada a fake API. **Pendiente gate nuevo**; sin cambios de backend/BD ni envío. Después revisar riesgo de duplicación de intentos reales y visualización móvil antes de permitir despliegue.
