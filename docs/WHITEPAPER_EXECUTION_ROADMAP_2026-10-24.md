@@ -227,3 +227,8 @@ Gate anterior confirmado por operador: SQLite, PG17 efímero, Flutter, ES/CA, ch
 ## C2 — Gate 26/10/2026: Flutter analyzer warnings y corrección
 
 Operador reporta gate `RESULTADO_GLOBAL=1`, `FASE_FALLIDA=FLUTTER_ANALYZE_TEST_BUILD`. Django SQLite: 239 tests OK; Django PG17 temporal: 239 tests OK; Compose, migraciones secas, i18n ES/CA, backend y salud PRE OK. Flutter `analyze` abortó por dos warnings `unused_field` en `control_assessment_card.dart`: `_createError` y `_createConflict` ya no se leen tras refactor de reintentos. Commit corrector `9e3298a25f6c6610479dc928e91cefd39bf95b05` elimina campos/asignaciones obsoletas manteniendo clave UUID y fecha para reintento. **Pendiente nuevo gate**; no desplegar. Log `/tmp/vencira-o7-o8-preflight.GJ2C0SSo.log`, sin migración DB persistente ni cambios OAuth/Restic/Caddy.
+
+
+## C2 — Gate de reintentos validado (26/10/2026)
+
+Operador confirma `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`, con Compose, i18n ES/CA, build backend, comprobación de migraciones secas, suite Django SQLite, PostgreSQL 17 temporal, Flutter analyze/test/build, salud pre/post OK. Log `/tmp/vencira-o7-o8-preflight.uU9vPtFl.log`; `NO_SE_DESPLEGO_NI_MIGRO_DB_PERSISTENTE=1`, `SIN_CAMBIOS_OAUTH_RESTIC_CADDY=1`. El archivo Flutter de flags obsoletos fue corregido y commit/push desde Ubuntu (`COMMIT_RESULT=0`, `PUSH_RESULT=0`) porque el intento previo de actualización remota no quedó reflejado; consultar `git log` para SHA real si se necesita. **Estado: gate superado, sin despliegue.** Sigue pendiente reconciliación tras recarga total del navegador, inspección UX en dispositivo real y autorización para cualquier despliegue DEV. Resend deshabilitado.
