@@ -1,6 +1,5 @@
 """D1.5f: reto MFA previo a la autenticación. Sin enrolamiento público."""
 import os
-from datetime import timedelta
 
 from django.contrib.auth import get_user_model, login as auth_login
 from django.http import HttpResponse
@@ -61,7 +60,9 @@ def mfa_challenge(request):
     code = request.POST.get("code", "")
     keys = _mfa_keys()
     accepted = False
-    if len(code) == 6 and keys:
+    if not keys:
+        return HttpResponse("MFA no disponible.", status=503)
+    if len(code) == 6:
         accepted = consume_totp(user.pk, code, keys=keys)
     elif len(code) == 32:
         accepted = consume_recovery_code(user.pk, code)
