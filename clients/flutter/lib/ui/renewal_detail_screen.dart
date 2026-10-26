@@ -16,10 +16,12 @@ import 'vencira_select.dart';
 /// Una anotación es una póliza externa, no una ficha CRM (whitepaper §6).
 class VenciraRenewalDetailScreen extends StatefulWidget {
   const VenciraRenewalDetailScreen({super.key, required this.api,
-      required this.workspace, required this.renewalId});
+      required this.workspace, required this.renewalId,
+      this.openEditorOnLoad = false});
   final VenciraApi api;
   final VenciraWorkspace workspace;
   final String renewalId;
+  final bool openEditorOnLoad;
 
   @override
   State<VenciraRenewalDetailScreen> createState() => _DetailState();
@@ -40,6 +42,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
   bool _historyLoading = false;
   bool _historyError = false;
   bool _saving = false;
+  bool _initialEditTriggered = false;
   int _generation = 0;
   AppLocalizations get _t => AppLocalizations.of(context)!;
   bool get _historyAvailable => kIsWeb && MediaQuery.sizeOf(context).width >= 800;
@@ -73,6 +76,13 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       final value = await widget.api.fetchRenewalDetail(widget.workspace.id, widget.renewalId);
       if (!mounted || token != _generation) return;
       setState(() { _renewal = value; _loading = false; });
+      if (widget.openEditorOnLoad && !_initialEditTriggered &&
+          value.archiveOutcome.isEmpty) {
+        _initialEditTriggered = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _edit();
+        });
+      }
       await _loadManualFollowUp(token);
       try {
         final insurers = await widget.api.fetchInsurers(widget.workspace.id);
@@ -887,7 +897,12 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ),
-                    ExpansionTile(
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      child: Card.outlined(
+                        margin: EdgeInsets.zero,
+                        clipBehavior: Clip.antiAlias,
+                        child: ExpansionTile(
                       key: ValueKey('reminder-config-group-' + renewal.id),
                       initiallyExpanded: true,
                       leading: const Icon(Icons.tune_rounded),
@@ -905,8 +920,15 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                           renewalId: renewal.id,
                         ),
                       ],
+                        ),
+                      ),
                     ),
-                    ExpansionTile(
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      child: Card.outlined(
+                        margin: EdgeInsets.zero,
+                        clipBehavior: Clip.antiAlias,
+                        child: ExpansionTile(
                       key: ValueKey('reminder-control-group-' + renewal.id),
                       
                       leading: const Icon(Icons.fact_check_outlined),
@@ -924,8 +946,15 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                           renewalId: renewal.id,
                         ),
                       ],
+                        ),
+                      ),
                     ),
-                    ExpansionTile(
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      child: Card.outlined(
+                        margin: EdgeInsets.zero,
+                        clipBehavior: Clip.antiAlias,
+                        child: ExpansionTile(
                       key: ValueKey('reminder-simulation-group-' + renewal.id),
                       
                       leading: const Icon(Icons.calculate_outlined),
@@ -938,6 +967,8 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                           renewalId: renewal.id,
                         ),
                       ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
