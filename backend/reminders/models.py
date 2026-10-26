@@ -472,6 +472,7 @@ class UserMfaState(models.Model):
         primary_key=True, related_name="vencira_mfa",
     )
     encrypted_totp_secret = models.TextField()
+    prepared_at = models.DateTimeField(null=True, blank=True)
     enabled = models.BooleanField(default=False)
     last_accepted_counter = models.BigIntegerField(default=-1)
     failed_attempts = models.PositiveSmallIntegerField(default=0)
