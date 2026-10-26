@@ -72,6 +72,8 @@ class ExplicitControlApiTests(TestCase):
         self.assertEqual(self.client.post(self.url(), self.data(
             "2027-02-14"), format="json").status_code, 409)
         self.assertEqual(OperationalReminder.objects.count(), 1)
+        self.assertEqual(self.client.post(self.url(), self.data(
+            "2027-02-13"), format="json").status_code, 409)
 
     @patch("reminders.explicit_control_api.timezone.localdate",
            return_value=date(2027, 2, 15))
