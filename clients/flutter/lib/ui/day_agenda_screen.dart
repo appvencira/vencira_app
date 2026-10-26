@@ -7,6 +7,7 @@ import '../l10n/app_localizations.dart';
 import 'vencira_pagination_bar.dart';
 import 'month_agenda_screen.dart';
 import 'renewal_detail_screen.dart';
+import 'renewal_editor.dart';
 import 'modality_labels.dart';
 import 'vencira_select.dart';
 
@@ -269,16 +270,50 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
     if (mounted && chosen != null) _chooseDay(chosen);
   }
 
-  Future<void> _openDetail(String renewalId, {bool edit = false}) async {
+  Future<void> _openDetail(String renewalId) async {
     await Navigator.of(context).push<void>(MaterialPageRoute(
       builder: (_) => VenciraRenewalDetailScreen(
         api: widget.api, workspace: widget.workspace, renewalId: renewalId,
-        openEditorOnLoad: edit,
       ),
     ));
     if (mounted) {
       _loadDay(1);
       _loadWeek(force: true);
+    }
+  }
+
+  /// Editar sin navegar a la ficha: Cancelar y Guardar regresan a Agenda.
+  Future<void> _editAgendaRenewal(String renewalId) async {
+    try {
+      final detail = await widget.api.fetchRenewalDetail(
+        widget.workspace.id, renewalId,
+      );
+      if (detail.archiveOutcome.isNotEmpty) return;
+      final modalities = await widget.api.fetchModalities(widget.workspace.id);
+      final insurers = await widget.api.fetchInsurers(widget.workspace.id);
+      if (!mounted) return;
+      final input = await showDialog<VenciraRenewalInput>(
+        context: context,
+        builder: (_) => VenciraRenewalEditor(
+          existing: detail,
+          modalities: modalities,
+          insurers: insurers,
+          api: widget.api,
+          workspaceId: widget.workspace.id,
+        ),
+      );
+      if (!mounted || input == null) return;
+      await widget.api.updateRenewal(widget.workspace.id, renewalId, input);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t.saved)),
+      );
+      _refreshAll();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_t.saveError)),
+      );
     }
   }
 
@@ -543,7 +578,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
                 key: ValueKey('agenda-edit-' + renewal.id),
                 tooltip: _t.editRenewal,
                 icon: const Icon(Icons.edit_outlined),
-                onPressed: () => _openDetail(renewal.id, edit: true),
+                onPressed: () => _editAgendaRenewal(renewal.id),
               ),
           ],
         ),
