@@ -1,6 +1,6 @@
 """O9b API tests: no delivery, isolated, audit response intent."""
 import uuid
-from datetime import date
+from datetime import date, datetime, timezone
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
@@ -63,9 +63,11 @@ class ManualControlApiTests(TestCase):
         self.assertEqual(RenewalControlResponse.objects.count(), 1)
         self.assertEqual(self.client.get(self.url()).data["results"][0]["origin"], "manual")
 
+    @patch("django.utils.timezone.now",
+           return_value=datetime(2027, 2, 25, 12, 0, tzinfo=timezone.utc))
     @patch("reminders.control_response_api.timezone.localdate",
            return_value=date(2027, 2, 25))
-    def test_no_on_cutoff_rejected_then_prior_day_accepted(self, _):
+    def test_no_on_cutoff_rejected_then_prior_day_accepted(self, _localdate, _now):
         data = self.payload(answer="no", yes_option=None, days_later=3)
         response = self.client.post(self.url(), data, format="json")
         self.assertEqual(response.status_code, 400, response.data)
