@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from .control_assessment import assess_control
 from .c2_control_policy import evaluate_c2_control_policy
 from .default_reminders import DEFAULT_DAYS_BEFORE
-from .models import Renewal, RenewalReminderDraft
+from .models import Renewal, RenewalReminderDraft, OperationalReminder
 from .views import _membership, _visible_renewals
 
 
@@ -48,6 +48,11 @@ def control_assessment(request, workspace_id, renewal_id):
         is_life=(renewal.modality == "vida"),
     )
     return _result({
+        "explicit_control_existing": OperationalReminder.objects.filter(
+            renewal=renewal, source_key__startswith="explicit-control:",
+            control_question=True,
+            state__in=("planned", "pending", "snoozed"),
+        ).exists(),
         "c2_policy": {
             "allow_save": policy.allow_save,
             "manual_review_required": policy.manual_review_required,
