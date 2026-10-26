@@ -7,6 +7,11 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth.views import LoginView
+from django.contrib.auth import login as auth_login
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
+from .models import UserMfaState
 from django.db import transaction
 from django.http import HttpResponse
 from django.utils import timezone
@@ -71,6 +76,26 @@ class ProtectedLoginView(LoginView):
         return super().form_invalid(form)
 
     def form_valid(self, form):
-        # El reset solo se produce tras autenticación correcta.
+        user = form.get_user()
+        if UserMfaState.objects.filter(user=user, enabled=True).exists():
+            # Contraseña válida, pero NO crear sesión autenticada hasta MFA.
+            from django.utils import timezone
+            from .mfa_challenge import PENDING_KEY
+            self.request.session.flush()
+            next_url = self.get_success_url()
+            if not url_has_allowed_host_and_scheme(
+                next_url, allowed_hosts={self.request.get_host()},
+                require_https=self.request.is_secure(),
+            ):
+                next_url = reverse("api-me")
+            self.request.session[PENDING_KEY] = {
+                "user_id": user.pk,
+                "backend": user.backend,
+                "issued": int(timezone.now().timestamp()),
+                "next": next_url,
+            }
+            response = redirect("mfa-challenge")
+            response["Cache-Control"] = "no-store"
+            return response
         clear_failures(self.request.POST.get("username", ""))
         return super().form_valid(form)
