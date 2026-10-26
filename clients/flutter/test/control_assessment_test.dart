@@ -7,6 +7,13 @@ import 'package:vencira/ui/control_assessment_card.dart';
 class FakeO9Api extends VenciraApi {
   int fetches = 0;
   bool manualReview = false;
+  bool allowExplicit = false;
+  int explicitCreates = 0;
+  @override
+  Future<void> createExplicitControl(String workspaceId, String renewalId,
+      {required DateTime day, required String idempotencyKey}) async {
+    explicitCreates++;
+  }
 
   @override
   Future<VenciraControlAssessment> fetchControlAssessment(
@@ -20,6 +27,11 @@ class FakeO9Api extends VenciraApi {
       cutoffOn: DateTime(2027, 2, 15),
       controlDaysBefore: manualReview ? null : 35,
       draftPersisted: manualReview,
+      c2Policy: allowExplicit ? VenciraC2Policy(
+        allowSave: true, manualReviewRequired: true,
+        warningCode: 'no_pre_cutoff_notice', offerExplicitControl: true,
+        latestExplicitControlDay: DateTime.now().add(const Duration(days: 10)),
+        isLife: false) : null,
     );
   }
 
@@ -98,6 +110,29 @@ void main() {
       ...data, 'reasons': ['not_a_real_reason'],
     }), throwsFormatException);
   });
+
+  for (final lang in ['es', 'ca']) {
+    testWidgets('C2 control explicito cancelar selector no crea nada $lang',
+        (tester) async {
+      tester.view.physicalSize = const Size(320, 950);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final api = FakeO9Api()..manualReview = true..allowExplicit = true;
+      await tester.pumpWidget(screen(api, lang, false));
+      await tester.pumpAndSettle();
+      final button = find.byKey(const ValueKey('explicit-control-create'));
+      await tester.ensureVisible(button);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      expect(find.byType(DatePickerDialog), findsOneWidget);
+      expect(api.explicitCreates, 0);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(api.explicitCreates, 0);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   for (final lang in ['es', 'ca']) {
     for (final dark in [false, true]) {
