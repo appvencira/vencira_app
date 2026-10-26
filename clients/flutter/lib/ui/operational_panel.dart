@@ -313,6 +313,7 @@ class _OperationalPanelState extends State<VenciraOperationalPanel> {
         ],
         if (_rows == null) TextButton(onPressed: _busy ? null : _load,
           child: Text(AppLocalizations.of(context)!.opLoad)),
+        if (_rows?.isNotEmpty == true) const SizedBox(height: 16),
         for (final reminder in _rows ?? <VenciraOperationalReminder>[])
           Card(margin: const EdgeInsets.symmetric(vertical: 5), child: ListTile(
             title: Text(reminder.reason),
