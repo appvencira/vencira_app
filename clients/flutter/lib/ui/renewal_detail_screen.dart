@@ -867,12 +867,6 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
               const SizedBox(height: 12),
               _outcomeCard(renewal),
             ],
-            if (renewal.archiveOutcome.isEmpty) ...[
-            const SizedBox(height: 12),
-            FilledButton.icon(onPressed: _saving ? null : _edit,
-              icon: const Icon(Icons.edit_outlined),
-              label: Text(_t.editRenewal)),
-            ],
             if (renewal.status != 'closed' &&
                 renewal.archiveOutcome.isEmpty) ...[
               const SizedBox(height: 12),
@@ -899,10 +893,10 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      child: Card.outlined(
-                        margin: EdgeInsets.zero,
-                        clipBehavior: Clip.antiAlias,
-                        child: ExpansionTile(
+                      child: Column(
+                        children: [
+                          const Divider(height: 1),
+                          ExpansionTile(
                       key: ValueKey('reminder-config-group-' + renewal.id),
                       initiallyExpanded: true,
                       leading: const Icon(Icons.tune_rounded),
@@ -920,15 +914,16 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                           renewalId: renewal.id,
                         ),
                       ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      child: Card.outlined(
-                        margin: EdgeInsets.zero,
-                        clipBehavior: Clip.antiAlias,
-                        child: ExpansionTile(
+                      child: Column(
+                        children: [
+                          const Divider(height: 1),
+                          ExpansionTile(
                       key: ValueKey('reminder-control-group-' + renewal.id),
                       
                       leading: const Icon(Icons.fact_check_outlined),
@@ -946,15 +941,16 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                           renewalId: renewal.id,
                         ),
                       ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      child: Card.outlined(
-                        margin: EdgeInsets.zero,
-                        clipBehavior: Clip.antiAlias,
-                        child: ExpansionTile(
+                      child: Column(
+                        children: [
+                          const Divider(height: 1),
+                          ExpansionTile(
                       key: ValueKey('reminder-simulation-group-' + renewal.id),
                       
                       leading: const Icon(Icons.calculate_outlined),
@@ -967,7 +963,8 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                           renewalId: renewal.id,
                         ),
                       ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
