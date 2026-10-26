@@ -102,10 +102,11 @@ class MfaLoginTests(TestCase):
             self.assertIn(browser.get(reverse("api-me")).status_code, (401, 403))
 
     def test_challenge_requires_csrf_on_real_browser(self):
-        browser = Client(enforce_csrf_checks=True)
+        browser = Client()
         with patch.dict("os.environ", {"VENCIRA_MFA_FERNET_KEYS": self.key}):
             self._password_step(browser)
             self.assertEqual(browser.get(reverse("mfa-challenge")).status_code, 200)
+            browser.enforce_csrf_checks = True
             from django.utils import timezone
             code = totp_at(self.secret, int(timezone.now().timestamp()))
             response = browser.post(reverse("mfa-challenge"), {"code": code})
