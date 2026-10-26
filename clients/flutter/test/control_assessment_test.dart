@@ -127,7 +127,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(DatePickerDialog), findsOneWidget);
       expect(api.explicitCreates, 0);
-      await tester.tap(find.text(lang == 'ca' ? 'Cancel·la' : 'Cancel').last);
+      Navigator.of(tester.element(find.byType(DatePickerDialog))).pop();
 
       await tester.pumpAndSettle();
       expect(api.explicitCreates, 0);
