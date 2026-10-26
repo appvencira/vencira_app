@@ -876,30 +876,57 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                   // No alterar la posición ni el comportamiento de los
                   // controles de seguimiento/manuales ya existentes.
                   children: [
-                    VenciraReminderPreviewCard(
-                      api: widget.api,
-                      workspaceId: widget.workspace.id,
-                      renewalId: renewal.id,
+                    ExpansionTile(
+                      key: ValueKey('reminder-config-group-' + renewal.id),
+                      initiallyExpanded: true,
+                      leading: const Icon(Icons.tune_rounded),
+                      title: Text("1. Configurar avisos"),
+                      subtitle: Text(locale == 'ca' ? "Dies, motius i activació interna" : "Días, motivos y activación interna"),
+                      children: [
+                        VenciraReminderDraftCard(
+                          api: widget.api,
+                          workspaceId: widget.workspace.id,
+                          renewalId: renewal.id,
+                        ),
+                        VenciraOperationalPanel(
+                          api: widget.api,
+                          workspaceId: widget.workspace.id,
+                          renewalId: renewal.id,
+                        ),
+                      ],
                     ),
-                    VenciraReminderDraftCard(
-                      api: widget.api,
-                      workspaceId: widget.workspace.id,
-                      renewalId: renewal.id,
+                    ExpansionTile(
+                      key: ValueKey('reminder-control-group-' + renewal.id),
+                      
+                      leading: const Icon(Icons.fact_check_outlined),
+                      title: Text("2. Control de no renovación"),
+                      subtitle: Text(locale == 'ca' ? "Revisió i resposta manual" : "Evaluación y respuesta manual"),
+                      children: [
+                        VenciraControlAssessmentCard(
+                          api: widget.api,
+                          workspaceId: widget.workspace.id,
+                          renewalId: renewal.id,
+                        ),
+                        VenciraControlResponseCard(
+                          api: widget.api,
+                          workspaceId: widget.workspace.id,
+                          renewalId: renewal.id,
+                        ),
+                      ],
                     ),
-                    VenciraControlAssessmentCard(
-                      api: widget.api,
-                      workspaceId: widget.workspace.id,
-                      renewalId: renewal.id,
-                    ),
-                    VenciraControlResponseCard(
-                      api: widget.api,
-                      workspaceId: widget.workspace.id,
-                      renewalId: renewal.id,
-                    ),
-                    VenciraOperationalPanel(
-                      api: widget.api,
-                      workspaceId: widget.workspace.id,
-                      renewalId: renewal.id,
+                    ExpansionTile(
+                      key: ValueKey('reminder-simulation-group-' + renewal.id),
+                      
+                      leading: const Icon(Icons.calculate_outlined),
+                      title: Text("Simulación de fechas"),
+                      subtitle: Text(locale == 'ca' ? "Només previsualització, sense desar" : "Solo vista previa, sin guardar"),
+                      children: [
+                        VenciraReminderPreviewCard(
+                          api: widget.api,
+                          workspaceId: widget.workspace.id,
+                          renewalId: renewal.id,
+                        ),
+                      ],
                     ),
                   ],
                 ),
