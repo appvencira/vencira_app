@@ -554,3 +554,8 @@ Commit `509c34d333dcd01e9f91c689f8db08fdbece6847` añade test widget Flutter (32
 ## C2 — Timeout en test de confirmación Flutter (26/10/2026)
 
 El gate comunicado falló (`RESULTADO_GLOBAL=1`) en dos tests widget ES/CA de `control_assessment_test.dart` por `pumpAndSettle timed out` en línea 170, tras confirmar la creación; no consta fallo de Django ni evidencia de entrega. Log `/tmp/vencira-o7-o8-preflight.HoAWE8qd.log`. Se reemplazó **solo** la espera global del test de confirmación positiva por `pump()` y avance acotado de 250 ms, manteniendo la aserción de exactamente una llamada fake API; commit `fc9eb5f2fafa6b44634b0b043c1b05589189bc84`. Hipótesis: frame continuado por indicador de progreso. **Gate nuevo pendiente; no afirmar éxito**, ni desplegar o tocar base persistente, Resend, OAuth/Restic/Caddy.
+
+
+## C2 — Gate de confirmación positiva aprobado (26/10/2026)
+
+El operador confirma gate completo tras commit `fc9eb5f2fafa6b44634b0b043c1b05589189bc84`: `LOCALCHECK_HEALTH_PRE/POST=OK`, `CONFIG_COMPOSE=OK`, `I18N_ES_CA=OK`, `BUILD_BACKEND_AISLADO=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `PG17_TEMPORAL=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `O7_O8_PREFLIGHT_SIN_DESPLIEGUE=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`. Log local `/tmp/vencira-o7-o8-preflight.CbSYTpyn.log`. No despliegue ni cambio en DB persistente, OAuth/Restic/Caddy. Queda validado el test ES/CA de confirmación de aviso interno, sin entrega real; pendiente aceptación visual móvil y revisión de reintentos ante respuestas ambiguas antes de desplegar.
