@@ -1,5 +1,4 @@
 """D1.5f: reto MFA previo a la autenticación. Sin enrolamiento público."""
-import os
 
 from django.contrib.auth import get_user_model, login as auth_login
 from django.middleware.csrf import get_token
@@ -12,19 +11,13 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods
 
 from .mfa_store import consume_recovery_code, consume_totp
+from .mfa_key_config import load_mfa_keys
 from .mfa_middleware import SESSION_VERIFIED
 from .login_security import clear_failures
 from .models import UserMfaState
 
 PENDING_KEY = "vencira_mfa_pending_v1"
 CHALLENGE_SECONDS = 300
-
-
-def _mfa_keys():
-    raw = os.getenv("VENCIRA_MFA_FERNET_KEYS", "")
-    keys = [item.strip() for item in raw.split(",") if item.strip()]
-    # No fallback to Django SECRET_KEY. Misconfiguration fails closed.
-    return keys
 
 
 @never_cache
@@ -62,12 +55,13 @@ def mfa_challenge(request):
             content_type="text/html; charset=utf-8",
         )
     code = request.POST.get("code", "")
-    keys = _mfa_keys()
-    accepted = False
-    if not keys:
+    try:
+        keys = load_mfa_keys()
+    except ValueError:
         response = HttpResponse("MFA no disponible.", status=503)
         response["Cache-Control"] = "no-store"
         return response
+    accepted = False
     if len(code) == 6:
         accepted = consume_totp(user.pk, code, keys=keys)
     elif len(code) == 32:
