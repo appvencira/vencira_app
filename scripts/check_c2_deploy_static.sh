@@ -7,7 +7,7 @@ python3 - <<'PY'
 from pathlib import Path
 s = Path("scripts/deploy_c2_no_migrations.sh").read_text()
 checks = [
- 'VALIDATED=fdfd74016b9513cfeffa1c5825685bcde2a9c531',
+ 'VALIDATED=a90563b803e7221563f370940545887aeab2822a',
  'FUENTES_IGUALES_GATE_VALIDADO=OK',
  'COMPOSE_IDENTIDAD_Y_MIGRATE_CHECK_ONLY=OK',
  'BACKUP_O5_RECIENTE_Y_CIFRADO=OK',
