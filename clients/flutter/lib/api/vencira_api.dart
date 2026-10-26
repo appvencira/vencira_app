@@ -471,6 +471,7 @@ class VenciraControlAssessment {
     required this.controlDay, required this.cutoffOn,
     required this.controlDaysBefore, required this.draftPersisted,
     this.c2Policy, this.explicitControlExisting = false,
+    this.latestExplicitControlState, this.latestExplicitControlDay,
   });
 
   final String status;
@@ -481,6 +482,8 @@ class VenciraControlAssessment {
   final bool draftPersisted;
   final VenciraC2Policy? c2Policy;
   final bool explicitControlExisting;
+  final String? latestExplicitControlState;
+  final DateTime? latestExplicitControlDay;
 
   static DateTime _day(dynamic raw) {
     if (raw is! String ||
@@ -521,6 +524,14 @@ class VenciraControlAssessment {
         json['draft_persisted'] is! bool) {
       throw const FormatException('Invalid control assessment');
     }
+    final latest = json['explicit_control_latest'];
+    if (latest != null && (latest is! Map<String, dynamic> ||
+        latest['id'] is! String ||
+        !const ['planned', 'pending', 'snoozed', 'completed', 'cancelled']
+            .contains(latest['state']) ||
+        latest['delivery_status'] != 'not_implemented')) {
+      throw const FormatException('Invalid explicit control history');
+    }
     return VenciraControlAssessment(
       status: json['status'] as String,
       reasons: List<String>.unmodifiable(rawReasons.cast<String>()),
@@ -529,6 +540,8 @@ class VenciraControlAssessment {
       controlDaysBefore: days as int?,
       draftPersisted: json['draft_persisted'] as bool,
       explicitControlExisting: json['explicit_control_existing'] == true,
+      latestExplicitControlState: latest == null ? null : latest['state'] as String,
+      latestExplicitControlDay: latest == null ? null : _day(latest['scheduled_for']),
       c2Policy: json['c2_policy'] is Map<String, dynamic>
           ? VenciraC2Policy.fromJson(json['c2_policy'] as Map<String, dynamic>)
           : null,
