@@ -1,10 +1,9 @@
 """D1.5f: reto MFA previo a la autenticación. Sin enrolamiento público."""
 
 from django.contrib.auth import get_user_model, login as auth_login
-from django.middleware.csrf import get_token
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.http import HttpResponse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
@@ -41,19 +40,10 @@ def mfa_challenge(request):
         request.session.flush()
         return redirect("login")
     if request.method == "GET":
-        return HttpResponse(
-            '<!doctype html><html lang="es"><meta charset="utf-8">'
-            '<meta name="viewport" content="width=device-width,initial-scale=1">'
-            '<title>VENCIRA · Verificación</title><body>'
-            '<h1>Segundo factor</h1><p>Introduce el código de tu autenticador '
-            'o un código de recuperación.</p><form method="post">'
-            '<input name="csrfmiddlewaretoken" type="hidden" value="' +
-            get_token(request) +
-            '"><input name="code" autocomplete="one-time-code" required '
-            'aria-label="Código" maxlength="32">'
-            '<button type="submit">Verificar</button></form></body></html>',
-            content_type="text/html; charset=utf-8",
-        )
+        lang = "ca" if request.GET.get("lang") == "ca" else "es"
+        response = render(request, "registration/mfa_challenge.html", {"lang": lang})
+        response["Cache-Control"] = "no-store"
+        return response
     code = request.POST.get("code", "")
     try:
         keys = load_mfa_keys()
