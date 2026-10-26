@@ -33,3 +33,8 @@ Confirmado por el operador: `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES1
 ## D1.5b, primera entrega — cifrado y recuperación (PENDIENTE GATE)
 
 Se añadió dependencia `cryptography>=44,<47` a `backend/requirements.txt`; módulo `backend/reminders/mfa_secrets.py` cifra secretos TOTP con Fernet y clave independiente proporcionada explícitamente, enlace del valor a `user_id`, claves antiguas sólo para descifrado, rotación recifrando con nueva clave; genera 10 códigos de recuperación de 160 bits cada uno y utiliza PBKDF2-SHA256 de Django para almacenar únicamente hashes. Pruebas `backend/reminders/test_mfa_secrets.py`: secreto no expuesto, alteración, vinculación a cuenta, rotación, claves erróneas, generación y comprobación de códigos. Commits `a8fc40c4`, `2b4fa620`, `32038191`. **No habilitado; faltan** modelo de persistencia y transacciones anti-replay/consumo único, control de concurrencia, mecanismo de custodia y rotación real de claves, protección frente a brute force, enrolamiento y login MFA. El helper de recuperación **no consume** códigos: nunca afirmar que es un sistema de recuperación de un solo uso completo antes de implementar persistencia transaccional. Gate integral aislado pendiente, sin migraciones ni despliegue DEV.
+
+
+## 26/10/2026 — Gate D1.5b APROBADO
+
+El operador confirmó `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5B=0`, log local `/tmp/vencira-o7-o8-preflight.4UXX7YJr.log`. Valida las primitivas cifrado/rotación/códigos sin persistencia. Pendiente consumo atómico con bloqueo transaccional, límites de intentos, enrolamiento y recuperación. Sin deploy, migración persistente ni habilitación MFA.
