@@ -9,10 +9,16 @@ class FakeO9Api extends VenciraApi {
   bool manualReview = false;
   bool allowExplicit = false;
   int explicitCreates = 0;
+  bool failFirstExplicit = false;
+  final List<String> explicitKeys = [];
   @override
   Future<void> createExplicitControl(String workspaceId, String renewalId,
       {required DateTime day, required String idempotencyKey}) async {
     explicitCreates++;
+    explicitKeys.add(idempotencyKey);
+    if (failFirstExplicit && explicitCreates == 1) {
+      throw const VenciraApiException();
+    }
   }
 
   @override
@@ -174,6 +180,36 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('C2 retry keeps original UUID after uncertain response',
+      (tester) async {
+    final api = FakeO9Api()
+      ..manualReview = true
+      ..allowExplicit = true
+      ..failFirstExplicit = true;
+    await tester.pumpWidget(screen(api, 'es', false));
+    await tester.pumpAndSettle();
+    final create = find.byKey(const ValueKey('explicit-control-create'));
+    await tester.ensureVisible(create);
+    await tester.tap(create);
+    await tester.pumpAndSettle();
+    Navigator.of(tester.element(find.byType(DatePickerDialog)))
+        .pop(DateUtils.dateOnly(DateTime.now()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.descendant(
+        of: find.byType(AlertDialog), matching: find.byType(FilledButton)));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(api.explicitCreates, 1);
+    expect(find.byKey(const ValueKey('explicit-control-retry')), findsOneWidget);
+    expect(tester.widget<FilledButton>(create).onPressed, isNull);
+    await tester.tap(find.byKey(const ValueKey('explicit-control-retry')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(api.explicitCreates, 2);
+    expect(api.explicitKeys[0], api.explicitKeys[1]);
+    expect(tester.takeException(), isNull);
+  });
 
   for (final lang in ['es', 'ca']) {
     for (final dark in [false, true]) {
