@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../api/vencira_api.dart';
@@ -25,6 +26,9 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
   int _generation = 0;
   bool _loading = true;
   bool _error = false;
+  bool _creating = false;
+  bool _createError = false;
+  bool _createConflict = false;
 
   AppLocalizations get _strings => AppLocalizations.of(context)!;
 
@@ -67,6 +71,69 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
     } catch (_) {
       if (!mounted || current != _generation) return;
       setState(() { _loading = false; _error = true; });
+    }
+  }
+
+  String _uuid() {
+    final bytes = List<int>.generate(16, (_) => Random.secure().nextInt(256));
+    bytes[6] = (bytes[6] & 15) | 64;
+    bytes[8] = (bytes[8] & 63) | 128;
+    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return '${hex.substring(0,8)}-${hex.substring(8,12)}-'
+        '${hex.substring(12,16)}-${hex.substring(16,20)}-'
+        '${hex.substring(20)}';
+  }
+
+  Future<void> _createExplicitControl() async {
+    final policy = _value?.c2Policy;
+    if (_creating || policy?.offerExplicitControl != true ||
+        policy?.latestExplicitControlDay == null) return;
+    final last = policy!.latestExplicitControlDay!;
+    final today = DateUtils.dateOnly(DateTime.now());
+    if (last.isBefore(today)) return;
+    final picked = await showDatePicker(
+      context: context, initialDate: today,
+      firstDate: today, lastDate: last,
+    );
+    if (!mounted || picked == null) return;
+    final ca = Localizations.localeOf(context).languageCode == 'ca';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(ca ? 'Crear avís de control' : 'Crear aviso de control'),
+        content: Text(ca
+            ? 'Es crearà un avís intern per al dia ${_date(picked)}. '
+              'No implica cap enviament ni notificació a l’asseguradora.'
+            : 'Se creará un aviso interno para el día ${_date(picked)}. '
+              'No implica envío ni notificación a la aseguradora.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(ca ? 'Cancel·lar' : 'Cancelar')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(ca ? 'Confirmar' : 'Confirmar')),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+    final current = _generation;
+    setState(() { _creating = true; _createError = false; _createConflict = false; });
+    try {
+      await widget.api.createExplicitControl(
+        widget.workspaceId, widget.renewalId,
+        day: picked, idempotencyKey: _uuid(),
+      );
+      if (!mounted || current != _generation) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+        ca ? 'Avís intern creat. No s’ha enviat cap notificació.'
+           : 'Aviso interno creado. No se ha enviado ninguna notificación.',
+      )));
+      await _load();
+    } on VenciraConflictException {
+      if (mounted && current == _generation) setState(() => _createConflict = true);
+    } catch (_) {
+      if (mounted && current == _generation) setState(() => _createError = true);
+    } finally {
+      if (mounted && current == _generation) setState(() => _creating = false);
     }
   }
 
@@ -176,6 +243,20 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
                   const SizedBox(width: 8),
                   Expanded(child: Text(_reason(reason))),
                 ]),
+              ],
+              if (value.c2Policy?.offerExplicitControl == true) ...[
+                const SizedBox(height: 14),
+                FilledButton.icon(
+                  key: const ValueKey('explicit-control-create'),
+                  onPressed: _loading || _creating ? null : _createExplicitControl,
+                  icon: const Icon(Icons.add_alert_outlined),
+                  label: Text(Localizations.localeOf(context).languageCode == 'ca'
+                      ? 'Crear avís de control' : 'Crear aviso de control'),
+                ),
+                if (_creating) const LinearProgressIndicator(),
+                if (_createError || _createConflict)
+                  Text(_createConflict
+                    ? _strings.controlLoadError : _strings.controlLoadError),
               ],
               const SizedBox(height: 14),
               Text(_strings.controlRefreshHelp, style: Theme.of(context).textTheme.bodySmall),
