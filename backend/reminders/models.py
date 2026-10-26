@@ -463,3 +463,24 @@ class OperationalReminderEvent(models.Model):
                                     name="uniq_op_reminder_event_retry"),
         ]
         ordering = ["occurred_at", "id"]
+
+
+class UserMfaState(models.Model):
+    """D1.5c: estado MFA preparado, nunca activo por defecto."""
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        primary_key=True, related_name="vencira_mfa",
+    )
+    encrypted_totp_secret = models.TextField()
+    enabled = models.BooleanField(default=False)
+    last_accepted_counter = models.BigIntegerField(default=-1)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class UserMfaRecoveryCode(models.Model):
+    """Hash de recuperación; el registro consumido se elimina en una transacción."""
+    state = models.ForeignKey(
+        UserMfaState, on_delete=models.CASCADE, related_name="recovery_codes",
+    )
+    code_hash = models.CharField(max_length=256)
+    created_at = models.DateTimeField(auto_now_add=True)
