@@ -69,9 +69,9 @@ def explicit_control_notice(request, workspace_id, renewal_id):
         if not today <= scheduled <= policy.latest_explicit_control_day:
             return Response({"detail": "Fecha fuera de margen civil."}, status=400)
         existing = OperationalReminder.objects.filter(
-            renewal=renewal, control_question=True,
+            renewal=renewal, source_key__startswith="explicit-control:",
+            control_question=True,
             state__in=("planned", "pending", "snoozed"),
-            scheduled_for=scheduled,
         ).exists()
         if existing:
             return Response({"detail": "Ya existe un control para esta fecha."}, status=409)
