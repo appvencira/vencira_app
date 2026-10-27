@@ -198,3 +198,20 @@ def open_recovery_case(*, subject_id, requester):
     state.save(update_fields=["session_epoch", "updated_at"])
     Event.objects.create(case=case, actor=requester, action="opened")
     return case.pk, "CASE_OPENED_RESTRICTED"
+
+
+def inspect_external_execution_evidence(*, case_id):
+    """Solo consulta: un veredicto interno nunca autoriza sustitución MFA."""
+    allowed, reason = inspect_recovery_preconditions(case_id=case_id)
+    if not allowed:
+        return False, reason
+    verifier = getattr(settings, "VENCIRA_MFA_RECOVERY_EXECUTION_VERIFIER", None)
+    if not callable(verifier):
+        return False, "EXTERNAL_EXECUTION_VERIFIER_REQUIRED"
+    try:
+        checked = verifier(case_id=case_id)
+    except Exception:
+        return False, "EXTERNAL_EXECUTION_VERIFIER_UNAVAILABLE"
+    if checked is not True:
+        return False, "EXTERNAL_EXECUTION_EVIDENCE_REJECTED"
+    return True, "PRECONDITIONS_ONLY"
