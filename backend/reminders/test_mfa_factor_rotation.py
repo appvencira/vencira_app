@@ -1,8 +1,9 @@
 """S1: factor rotation safety checks (synthetic accounts)."""
 from django.test import TestCase
 from django.utils import timezone
+from datetime import timedelta
 from cryptography.fernet import Fernet
-from .mfa_secrets import encrypt_totp_secret, decrypt_totp_secret
+from .mfa_secrets import encrypt_totp_secret, decrypt_totp_secret, hash_recovery_code
 from .mfa_totp import generate_secret, totp_at
 from .models import UserMfaRecoveryCode, UserMfaPendingRotationCode
 from django.contrib.auth import get_user_model
@@ -71,6 +72,42 @@ class RotationFailClosedTests(TestCase):
             user_id=user.pk, new_code=totp_at(prepared, instant),
             keys=keys, timestamp=instant,
         ))
+
+    def test_lost_delivery_and_expiration_preserve_original_recovery(self):
+        user = get_user_model().objects.create_user("rotation_lost_delivery")
+        keys = [Fernet.generate_key().decode("ascii")]
+        old_secret = generate_secret()
+        state = UserMfaState.objects.create(
+            user=user, enabled=True,
+            encrypted_totp_secret=encrypt_totp_secret(old_secret, user_id=user.pk, keys=keys),
+        )
+        UserMfaRecoveryCode.objects.create(state=state, code_hash=hash_recovery_code("A" * 32))
+        original = state.encrypted_totp_secret
+        instant = int(timezone.now().timestamp())
+        prepared = prepare_factor_rotation(
+            user_id=user.pk, old_code=totp_at(old_secret, instant),
+            keys=keys, timestamp=instant,
+        )
+        self.assertIsNotNone(prepared)
+        provisional = confirm_factor_rotation(
+            user_id=user.pk, new_code=totp_at(prepared, instant),
+            keys=keys, timestamp=instant,
+        )
+        self.assertEqual(len(provisional), 10)
+        state.refresh_from_db()
+        self.assertEqual(state.encrypted_totp_secret, original)
+        self.assertEqual(state.session_epoch, 0)
+        self.assertEqual(
+            list(UserMfaRecoveryCode.objects.filter(state=state).values_list("code_hash", flat=True)),
+            [hash_recovery_code("A" * 32)],
+        )
+        state.pending_rotation_expires_at = timezone.now() - timedelta(seconds=1)
+        state.save(update_fields=["pending_rotation_expires_at"])
+        self.assertFalse(finalize_factor_rotation(user_id=user.pk, proof_code=provisional[0], keys=keys))
+        state.refresh_from_db()
+        self.assertEqual(state.encrypted_totp_secret, original)
+        self.assertEqual(state.session_epoch, 0)
+        self.assertEqual(UserMfaRecoveryCode.objects.filter(state=state).count(), 1)
 
     def test_invalid_old_factor_attempts_are_rate_limited(self):
         from datetime import timedelta
