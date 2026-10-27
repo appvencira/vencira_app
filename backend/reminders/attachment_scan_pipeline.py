@@ -22,6 +22,10 @@ class QuarantineScanResult:
 def scan_encrypted_quarantine(*, store, attachment, socket_path, scanner=scan_with_clamd):
     """Only scans exact bytes matching the metadata; always fail closed."""
     try:
+        # A previously approved or rejected object must not silently re-enter
+        # the pipeline; a new scan cycle requires explicit lifecycle control.
+        if getattr(attachment, "state", None) != "quarantined":
+            return QuarantineScanResult("error", "INVALID_LIFECYCLE")
         content = store.read_quarantine_for_scanner_only(attachment.storage_key)
         digest = hashlib.sha256(content).hexdigest()
         if not hmac.compare_digest(digest, attachment.sha256):
@@ -38,5 +42,5 @@ def scan_encrypted_quarantine(*, store, attachment, socket_path, scanner=scan_wi
         if scanned.verdict not in ("clean", "infected"):
             return QuarantineScanResult("error", "SCANNER_ERROR")
         return QuarantineScanResult(scanned.verdict, "SCANNER_UNATTESTED")
-    except (PrivateStoreError, ValueError, TypeError, AttributeError, OSError):
+    except (PrivateStoreError, ValueError, TypeError, AttributeError, OSError, RuntimeError):
         return QuarantineScanResult("error", "QUARANTINE_UNAVAILABLE")
