@@ -5,6 +5,8 @@
 set -euo pipefail
 umask 077
 cd /home/vencira/vencira-localcheck
+# Shared MFA guard: fail closed before modifying services or schema.
+bash scripts/mfa_legacy_deploy_guard_readonly.sh schema
 LOG="$(mktemp /tmp/vencira-o2-deploy.XXXXXXXX.log)"
 PHASE=INICIO
 MIGRATION_TRIGGERED=0
