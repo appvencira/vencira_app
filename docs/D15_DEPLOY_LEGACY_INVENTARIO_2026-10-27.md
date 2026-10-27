@@ -19,14 +19,14 @@ Revisión textual en rama integration/local-e2e-prep. Los 16 scripts se inventar
 - deploy_o9a_no_migrations.sh
 - deploy_whitepaper_alignment_no_migrations.sh
 
-**API + web_preview y migración explícita de etapa histórica: 4**
+**API + web_preview y migración explícita de etapa histórica: 5**
 - deploy_macro_a_0018_guarded.sh (objetivo 0018)
 - deploy_o8c_0015_guarded.sh (objetivo 0015)
 - deploy_o9b_0016_guarded.sh (objetivo 0016)
 - deploy_operativa_o2.sh (histórica 0013)
 - deploy_operativa_o3.sh (histórica 0014)
 
-NOTA: este grupo contiene **5** scripts (total 4+7+5=16). Los scripts operativa_o2/o3 usan plan de migración y recrean API; nunca tratarlos como web-only.
+Los scripts operativa_o2/o3 usan plan de migración y recrean API; nunca tratarlos como web-only.
 
 ## Interpretación para MFA
 
