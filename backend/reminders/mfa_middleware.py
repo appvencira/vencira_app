@@ -5,6 +5,7 @@ from django.http import HttpResponseForbidden
 from .models import UserMfaState
 
 SESSION_VERIFIED = "vencira_mfa_verified_v1"
+SESSION_EPOCH = "vencira_mfa_session_epoch_v1"
 
 
 class RequireMfaSessionMiddleware:
@@ -12,9 +13,11 @@ class RequireMfaSessionMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        if (request.user.is_authenticated
-                and UserMfaState.objects.filter(user_id=request.user.pk, enabled=True).exists()
-                and request.session.get(SESSION_VERIFIED) != request.user.get_session_auth_hash()):
+        state = (UserMfaState.objects.filter(user_id=request.user.pk, enabled=True).first()
+                 if request.user.is_authenticated else None)
+        if (state is not None and (
+                request.session.get(SESSION_VERIFIED) != request.user.get_session_auth_hash()
+                or request.session.get(SESSION_EPOCH) != state.session_epoch)) :
             logout(request)
             response = HttpResponseForbidden("Se requiere verificación multifactor.")
             response["Cache-Control"] = "no-store"
