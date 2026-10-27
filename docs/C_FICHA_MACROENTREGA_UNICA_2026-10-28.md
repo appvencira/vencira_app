@@ -38,3 +38,9 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 
 ## Gate integral comunicado por operador — SUPERADO
 Candidato validado `09987ca6f3d8410c002a9e75a670dce4b61ce761`. Resultados: `C_FICHA_MIGRATIONS_MATCH_MODELS=OK`, `C_FICHA_PG17_EPHEMERAL=OK`, `C_FICHA_SCHEMA_0027_WITH_MFA_DEPENDENCY=OK`, `C_FICHA_PG17_INTEGRATED_TESTS=OK`, `C_FICHA_FLUTTER_ANALYZE_TEST_BUILD=OK`, `C_FICHA_PUBLIC_UPLOAD_DOWNLOAD=DISABLED`, `C_FICHA_LIVE_MIGRATION_0027=NOT_AUTHORIZED`, `CLEANUP=OK`, `C_FICHA_PG17_GATE_RESULT=0`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `RESULTADO_FINAL=0`. Log privado local `/tmp/vencira-c-ficha-pg17.3Bt4So9e.log`. Validación de componentes existentes: no equivale a completar el circuito operativo ni autoriza migraciones. No repetir este gate salvo modificaciones relevantes.
+
+## Revisión de seguridad posterior al gate anterior
+Se endureció la orquestación en cuarentena: requiere estado `quarantined` y trata excepciones del motor como fallo cerrado. Pruebas nuevas incorporadas y pruebas sintéticas anteriores ajustadas. **Pendiente nuevo gate; no afirmar probado este cambio.**
+
+### Dependencia de migraciones
+No modificar a ciegas la dependencia de `0027` (actualmente `0026`). Cambiarla directamente a `0018` crearía dos hojas del grafo `reminders` (rama MFA 0019–0026 y rama adjuntos 0027), y un merge mal diseñado podría volver a aplicar MFA indirectamente. Antes de desplegar, diseñar ramas de migración independientes con estrategia Django explícita y probar `showmigrations`, `migrate --plan`, estado 0018 y MFA desactivado en un clon restaurado. Ningún cambio al esquema persistente está autorizado.
