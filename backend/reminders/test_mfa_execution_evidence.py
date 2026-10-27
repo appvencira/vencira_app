@@ -76,3 +76,31 @@ class AdministrativeConfirmationDenialTests(TestCase):
         self.assertEqual(state.encrypted_totp_secret, "active-fixture")
         self.assertEqual(state.pending_rotation_secret, "pending-fixture")
         self.assertEqual(UserMfaPendingRotationCode.objects.filter(state=state).count(), 0)
+
+
+class AdministrativeFinalizationDenialTests(TestCase):
+    def test_denied_case_does_not_replace_factor(self):
+        import uuid
+        from .mfa_admin_recovery_service import finalize_administrative_factor
+        subject = get_user_model().objects.create_user("recovery_finalization_denied")
+        state = UserMfaState.objects.create(
+            user=subject, enabled=True, encrypted_totp_secret="active-fixture",
+            pending_administrative_case_id=uuid.uuid4(),
+            pending_rotation_secret="staged-fixture",
+            pending_rotation_expires_at=timezone.now() + timedelta(minutes=5),
+        )
+        now = timezone.now()
+        case = MfaAdministrativeRecoveryCase.objects.create(
+            subject=subject, requester=subject,
+            quarantine_until=now - timedelta(hours=1),
+            expires_at=now + timedelta(hours=1),
+        )
+        with override_settings(VENCIRA_MFA_RECOVERY_EXECUTION_VERIFIER=None):
+            self.assertFalse(finalize_administrative_factor(
+                case_id=case.pk, proof_code="A" * 32,
+            ))
+        state.refresh_from_db()
+        case.refresh_from_db()
+        self.assertEqual(state.encrypted_totp_secret, "active-fixture")
+        self.assertEqual(state.session_epoch, 0)
+        self.assertEqual(case.status, MfaAdministrativeRecoveryCase.Status.PENDING)
