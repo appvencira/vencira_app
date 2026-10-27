@@ -69,7 +69,7 @@ class _MfaSetupScreenState extends State<MfaSetupScreen> {
           if (_complete)
             Text(tr('Guarda tus códigos en un lugar seguro fuera de VENCIRA.',
                     'Guarda els codis en un lloc segur fora de VENCIRA.'))
-          else if (_secret == null) ...[
+          else if (_secret == null && _codes.isEmpty) ...[
             Text(tr('Confirma tu contraseña para configurar el autenticador.',
                     'Confirma la contrasenya per a configurar l’autenticador.')),
             const SizedBox(height: 16),
