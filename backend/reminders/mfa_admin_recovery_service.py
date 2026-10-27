@@ -215,3 +215,36 @@ def inspect_external_execution_evidence(*, case_id):
     if checked is not True:
         return False, "EXTERNAL_EXECUTION_EVIDENCE_REJECTED"
     return True, "PRECONDITIONS_ONLY"
+
+
+@transaction.atomic
+def prepare_administrative_factor(*, case_id, keys):
+    """Prepara un TOTP aislado; nunca toca el factor MFA activo.
+
+    Primitiva interna sin endpoint. Exige evidencia externa y doble revisión
+    en cada invocación; el nuevo secreto solo puede entregarse al titular por
+    un canal protegido todavía no implementado.
+    """
+    from .models import UserMfaState, UserMfaPendingRotationCode
+    from .mfa_secrets import encrypt_totp_secret
+    from .mfa_totp import generate_secret
+
+    case = Case.objects.select_for_update().get(pk=case_id)
+    state = UserMfaState.objects.select_for_update().get(user_id=case.subject_id)
+    allowed, _ = inspect_external_execution_evidence(case_id=case_id)
+    if not allowed or not state.enabled:
+        return None
+    now = timezone.now()
+    if state.locked_until and state.locked_until > now:
+        return None
+    if state.pending_rotation_secret and state.pending_rotation_expires_at and state.pending_rotation_expires_at > now:
+        return None
+    secret = generate_secret()
+    state.pending_rotation_secret = encrypt_totp_secret(
+        secret, user_id=case.subject_id, keys=keys,
+    )
+    state.pending_rotation_expires_at = min(now + timedelta(minutes=10), case.expires_at)
+    UserMfaPendingRotationCode.objects.filter(state=state).delete()
+    state.save(update_fields=["pending_rotation_secret", "pending_rotation_expires_at", "updated_at"])
+    Event.objects.create(case=case, actor_id=case.requester_id, action="factor_prepared")
+    return secret
