@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
 
-from .mfa_enrollment import confirm_mfa, prepare_mfa
+from .mfa_enrollment import confirm_mfa, prepare_mfa, finalize_mfa
 from .mfa_totp import totp_at
 from .models import UserMfaRecoveryCode, UserMfaState
 
@@ -29,11 +29,14 @@ class InternalMfaEnrollmentTests(TestCase):
         self.assertIsNotNone(codes)
         self.assertEqual(len(codes), 10)
         state.refresh_from_db()
-        self.assertTrue(state.enabled)
+        self.assertFalse(state.enabled)
         self.assertEqual(state.last_accepted_counter, 10000)
         self.assertEqual(UserMfaRecoveryCode.objects.filter(state=state).count(), 10)
         self.assertIsNone(confirm_mfa(self.user.pk, totp_at(secret, 300000),
                                        keys=self.keys, timestamp=300000))
+        self.assertFalse(finalize_mfa(self.user.pk, 'INVALID', issued_at=int(timezone.now().timestamp())))
+        self.assertTrue(finalize_mfa(self.user.pk, codes[0], issued_at=int(timezone.now().timestamp())))
+        self.assertTrue(UserMfaState.objects.get(user=self.user).enabled)
         with self.assertRaises(ValueError):
             prepare_mfa(self.user, keys=self.keys)
 
