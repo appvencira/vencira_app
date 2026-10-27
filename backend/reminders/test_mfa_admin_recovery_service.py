@@ -80,3 +80,23 @@ class RecoveryReviewServiceTests(TestCase):
             approve=True,
             now=self.case.created_at + timedelta(minutes=1)
         ), (False, "QUARANTINE_ACTIVE"))
+
+    def test_expired_approval_blocks_replay_and_new_approver(self):
+        from .models import MfaAdministrativeRecoveryApproval as Approval
+        self.assertEqual(self.review(reviewer=self.reviewer1, approve=True),
+                         (True, "APPROVAL_RECORDED"))
+        Approval.objects.filter(case=self.case, reviewer=self.reviewer1).update(
+            expires_at=self.now - timedelta(seconds=1))
+        self.assertEqual(self.review(reviewer=self.reviewer1, approve=True),
+                         (False, "APPROVAL_EXPIRED"))
+        self.assertEqual(self.review(reviewer=self.reviewer2, approve=True),
+                         (False, "EXPIRED_APPROVAL_IN_CASE"))
+        self.assertEqual(self.case.approvals.count(), 1)
+
+    def test_previous_approval_cannot_be_reinterpreted_as_rejection(self):
+        self.assertEqual(self.review(reviewer=self.reviewer1, approve=True),
+                         (True, "APPROVAL_RECORDED"))
+        self.assertEqual(self.review(reviewer=self.reviewer1, approve=False),
+                         (False, "REVIEW_ALREADY_RECORDED"))
+        self.case.refresh_from_db()
+        self.assertEqual(self.case.status, "pending")
