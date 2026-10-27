@@ -4,10 +4,10 @@ from django.utils import timezone
 from cryptography.fernet import Fernet
 from .mfa_secrets import encrypt_totp_secret, decrypt_totp_secret
 from .mfa_totp import generate_secret, totp_at
-from .models import UserMfaRecoveryCode
+from .models import UserMfaRecoveryCode, UserMfaPendingRotationCode
 from django.contrib.auth import get_user_model
 from .models import UserMfaState
-from .mfa_factor_rotation import prepare_factor_rotation, confirm_factor_rotation
+from .mfa_factor_rotation import prepare_factor_rotation, confirm_factor_rotation, finalize_factor_rotation
 
 
 class RotationFailClosedTests(TestCase):
@@ -50,6 +50,15 @@ class RotationFailClosedTests(TestCase):
             keys=keys, timestamp=instant,
         )
         self.assertEqual(len(codes), 10)
+        state.refresh_from_db()
+        self.assertEqual(state.session_epoch, 0)
+        self.assertEqual(state.encrypted_totp_secret, original)
+        self.assertEqual(UserMfaPendingRotationCode.objects.filter(state=state).count(), 10)
+        self.assertFalse(finalize_factor_rotation(user_id=user.pk, proof_code="invalid", keys=keys))
+        state.refresh_from_db()
+        self.assertEqual(state.session_epoch, 0)
+        self.assertEqual(state.encrypted_totp_secret, original)
+        self.assertTrue(finalize_factor_rotation(user_id=user.pk, proof_code=codes[0], keys=keys))
         state.refresh_from_db()
         self.assertEqual(state.session_epoch, 1)
         self.assertTrue(state.enabled)
