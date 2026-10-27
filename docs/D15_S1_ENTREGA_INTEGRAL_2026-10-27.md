@@ -43,3 +43,6 @@ No anunciar «MFA completado» sin evidencias de: ejecución técnica (Django y 
 
 ## Evidencia posterior de gate consolidado
 El operador confirmó el 27/10/2026: S1_SQLITE_SECURITY=OK, PG17_EPHEMERAL=OK, S1_POSTGRES_REVIEW_AND_RACE=OK, S1_STATIC_CANDIDATE_GUARD=OK, CLEANUP=OK, S1_PG17_GATE_RESULT=0, RESULTADO_FINAL=0, NO_DEPLOY_NO_LIVE_MIGRATION=1. Corresponde a la validación tras endurecer los bloqueos de rotación TOTP. Log privado conservado en servidor. MFA_RELEASE_AUTHORIZED=NO. La validación NO acredita custodia externa de Fernet, recuperación por pérdida total de factores ni puerta de despliegue obligatoria.
+
+## Gate de publicación fail-closed — 27/10/2026
+Operador confirmó `S1_SQLITE_SECURITY=OK`, `PG17_EPHEMERAL=OK`, `S1_POSTGRES_REVIEW_AND_RACE=OK`, `S1_STATIC_CANDIDATE_GUARD=OK`, `S1_RELEASE_FAIL_CLOSED=OK`, `CLEANUP=OK`, `S1_PG17_GATE_RESULT=0`, `RESULTADO_FINAL=0`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` y `MFA_RELEASE_AUTHORIZED=NO`. Log privado `/tmp/vencira-s1-pg17.RvNeKw1F.log`. La prueba demuestra denegación con estado no cero del preflight de publicación; no demuestra integración del control en despliegue real. Custodia externa y recuperación de pérdida total siguen pendientes.
