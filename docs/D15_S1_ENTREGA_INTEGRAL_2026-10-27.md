@@ -50,3 +50,6 @@ Operador confirmó `S1_SQLITE_SECURITY=OK`, `PG17_EPHEMERAL=OK`, `S1_POSTGRES_RE
 ## Hallazgo de integración de despliegue (auditoría de rutas)
 Se han localizado múltiples scripts históricos de despliegue en scripts/deploy_*.sh (Macro A, B, O8 y O9), con contratos y commits inmovilizados diferentes. El nuevo guard MFA estático NO es invocado obligatoriamente por esas rutas. Los hashes de validación que exigen varios de esos scripts ayudan a evitar despliegues de cambios nuevos, pero NO equivalen a protección MFA centralizada.
 **Decisión:** no alterar indiscriminadamente scripts históricos ya usados ni anunciar protección integrada. Antes de autorizar el primer despliegue con MFA se requiere un único entrypoint nuevo, sujeto a revisión, que valide candidato inmutable, migraciones/estado runtime y custodia, y que bloquee explícitamente cualquier ruta alternativa. Mientras no exista, MFA_RELEASE_AUTHORIZED=NO.
+
+## Validación del control de entrada MFA
+El ensayo aislado comunicó `S1_DEPLOY_ENTRY_FAIL_CLOSED=OK` y `S1_PG17_GATE_RESULT=0`. No se desplegó ni migró la base persistente. La autorización de activación continúa denegada. Pendientes: recuperación integral, custodia externa y conexión al despliegue operativo.
