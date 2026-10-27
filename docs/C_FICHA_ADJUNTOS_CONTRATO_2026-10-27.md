@@ -31,3 +31,6 @@ MFA_RELEASE_AUTHORIZED=NO
 - Pruebas sintéticas `test_attachment_metadata.py` para cuarentena por defecto, clave opaca única y bytes positivos. **No ejecutadas todavía**.
 - Ninguna ruta API de upload/download, almacenamiento de bytes, antivirus, cifrado real o interfaz Flutter creada en este avance. No considerar funcionalidad lista.
 - **Dependencia crítica:** la migración 0027 depende de 0026 MFA. La base persistente continúa en 0018; no aplicar 0027 al entorno vivo porque migraría también MFA 0019–0026. Antes de un futuro despliegue hay que acordar orden/estrategia de dependencias y los gates independientes.
+
+## Resultado de validación comunicado por operador
+El operador ejecutó en contenedor Docker aislado y SQLite temporal los tests `reminders.test_attachment_validation` y `reminders.test_attachment_metadata` tras integrar la migración 0027. Comunicó `OK`, destrucción de la base de pruebas y `RESULTADO_FINAL=0`. Se registra como validación de esas pruebas, no como revisión integral ni prueba PostgreSQL17. Sin publicación ni migración persistente. Pendiente gate PG17 temporal y validación del almacenamiento privado.
