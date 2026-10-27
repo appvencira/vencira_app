@@ -52,14 +52,24 @@ def mfa_challenge(request):
         response["Cache-Control"] = "no-store"
         return response
     accepted = False
+    used_recovery_code = False
     if len(code) == 6:
         accepted = consume_totp(user.pk, code, keys=keys)
     elif len(code) == 32:
         accepted = consume_recovery_code(user.pk, code)
+        used_recovery_code = accepted
     if not accepted:
         response = HttpResponse("Código incorrecto o temporalmente bloqueado.", status=403)
         response["Cache-Control"] = "no-store"
         return response
+    # Un acceso de emergencia revoca las sesiones MFA anteriores.
+    if used_recovery_code:
+        from .mfa_session_revocation import revoke_mfa_sessions
+        if not revoke_mfa_sessions(user_id=user.pk)[0]:
+            request.session.flush()
+            response = HttpResponse("No se pudo asegurar la sesión MFA.", status=503)
+            response["Cache-Control"] = "no-store"
+            return response
     # La sesión estaba no autenticada; Django rota la clave al autenticar.
     next_url = pending.get("next", "/api/v1/me/")
     if not isinstance(next_url, str) or not url_has_allowed_host_and_scheme(
