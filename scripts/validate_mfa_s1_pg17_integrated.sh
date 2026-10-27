@@ -9,9 +9,11 @@ NET="vencira_s1_pg_net_$$"
 DB="vencira_s1_pg_db_$$"
 NET_OK=0
 DB_OK=0
+PROBE_FILE=""
 cleanup() {
  local rc=$? clean=0
  trap - EXIT
+ if [ -n "$PROBE_FILE" ]; then rm -f -- "$PROBE_FILE" || clean=1; fi
  if [ "$DB_OK" = 1 ]; then
    sudo docker rm -f "$DB" >>"$LOG" 2>&1 || clean=1
  fi
@@ -95,7 +97,8 @@ grep -Fq "REASON=RELEASE_NOT_AUTHORIZED" "$LOG"
 echo "S1_DEPLOY_ENTRY_FAIL_CLOSED=OK"
 
 PHASE=UNTRACKED_NEGATIVE_TEST
-marker="scripts/.mfa_gate_untracked_probe_$$"
+marker="scripts/.mfa_gate_untracked_probe_$"
+PROBE_FILE="$marker"
 if [ -e "$marker" ]; then echo "UNTRACKED_TEST_COLLISION=1"; exit 1; fi
 printf 'isolated untracked preflight test\n' >"$marker"
 set +e
@@ -103,6 +106,7 @@ bash scripts/mfa_deploy_entry_readonly.sh "$(git rev-parse HEAD)" >>"$LOG" 2>&1
 untracked_rc=$?
 set -e
 rm -f "$marker"
+PROBE_FILE=""
 test "$untracked_rc" -eq 4
 grep -Fxq "REASON=UNTRACKED_FILES" "$LOG"
 echo "S1_UNTRACKED_FILES_REJECTED=OK"
