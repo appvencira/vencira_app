@@ -13,7 +13,7 @@ from .mfa_secrets import (
     hash_recovery_code,
 )
 from .mfa_totp import generate_secret, match_counter
-from .models import UserMfaState, UserMfaRecoveryCode
+from .models import UserMfaState, UserMfaRecoveryCode, UserMfaPendingRotationCode
 from .mfa_store import _failed, _succeeded
 
 ROTATION_TTL = timedelta(minutes=10)
@@ -37,6 +37,7 @@ def prepare_factor_rotation(*, user_id, old_code, keys, timestamp=None):
         _failed(state, now)
         return None
     _succeeded(state)
+    UserMfaPendingRotationCode.objects.filter(state=state).delete()
     new_secret = generate_secret()
     state.last_accepted_counter = counter
     state.pending_rotation_secret = encrypt_totp_secret(
@@ -71,21 +72,56 @@ def confirm_factor_rotation(*, user_id, new_code, keys, timestamp=None):
     if counter is None:
         _failed(state, now)
         return None
+    # Se emiten códigos provisionales; ni el factor ni los códigos activos
+    # cambian hasta acreditar posesión de uno de los nuevos.
+    if UserMfaPendingRotationCode.objects.filter(state=state).exists():
+        return None
     _succeeded(state)
     codes = generate_recovery_codes()
-    hashes = [hash_recovery_code(code) for code in codes]
+    UserMfaPendingRotationCode.objects.bulk_create([
+        UserMfaPendingRotationCode(state=state, code_hash=hash_recovery_code(value))
+        for value in codes
+    ])
+    return codes
+
+
+@transaction.atomic
+def finalize_factor_rotation(*, user_id, proof_code, keys, timestamp=None):
+    """Activa el factor pendiente solo después del acuse del código provisional.
+
+    Si la entrega anterior se pierde, TOTP y códigos anteriores siguen
+    operativos. Esta primitiva es interna y NO se expone como endpoint.
+    """
+    from .mfa_secrets import verify_recovery_code
+    state = UserMfaState.objects.select_for_update().get(user_id=user_id)
+    now = timezone.now()
+    if (not state.enabled or not state.pending_rotation_secret
+            or state.pending_rotation_expires_at is None
+            or now >= state.pending_rotation_expires_at
+            or (state.locked_until and state.locked_until > now)):
+        return False
+    pending = list(UserMfaPendingRotationCode.objects.filter(state=state))
+    if len(pending) != 10:
+        return False
+    if not isinstance(proof_code, str) or len(proof_code) != 32 or not any(
+        verify_recovery_code(proof_code, item.code_hash) for item in pending
+    ):
+        _failed(state, now)
+        return False
+    # TOTP pendiente fue acreditado en confirm_factor_rotation.
     UserMfaRecoveryCode.objects.filter(state=state).delete()
     UserMfaRecoveryCode.objects.bulk_create([
-        UserMfaRecoveryCode(state=state, code_hash=value) for value in hashes
+        UserMfaRecoveryCode(state=state, code_hash=item.code_hash) for item in pending
     ])
+    UserMfaPendingRotationCode.objects.filter(state=state).delete()
     state.encrypted_totp_secret = state.pending_rotation_secret
     state.pending_rotation_secret = ""
     state.pending_rotation_expires_at = None
-    state.last_accepted_counter = counter
+    state.last_accepted_counter = -1
     state.session_epoch += 1
     state.save(update_fields=[
         "encrypted_totp_secret", "pending_rotation_secret",
         "pending_rotation_expires_at", "last_accepted_counter",
         "session_epoch", "updated_at",
     ])
-    return codes
+    return True
