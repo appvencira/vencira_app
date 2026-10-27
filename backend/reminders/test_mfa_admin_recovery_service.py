@@ -20,6 +20,9 @@ class RecoveryReviewServiceTests(TestCase):
             quarantine_until=self.now + timedelta(hours=24),
             expires_at=self.now + timedelta(hours=72),
         )
+        # auto_now_add asigna created_at al guardar; el reloj de la petición
+        # debe capturarse después de que exista el caso.
+        self.now = timezone.now()
 
     def test_two_distinct_approvals_are_recorded_once_without_reset(self):
         UserMfaState.objects.create(user=self.subject, enabled=True, encrypted_totp_secret="synthetic")
