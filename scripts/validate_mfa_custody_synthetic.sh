@@ -15,6 +15,7 @@ docker build -q -t "vencira-mfa-custody-test:$(git rev-parse --short=12 HEAD)" .
 IMAGE="vencira-mfa-custody-test:$(git rev-parse --short=12 HEAD)"
 docker run --rm --network none \
  -e VENCIRA_ENV=test \
+ -e VENCIRA_DB_ENGINE=sqlite \
  -e DJANGO_DEBUG=0 \
  -e DJANGO_SECRET_KEY=synthetic-only-not-for-production-2026 \
  -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1 \
