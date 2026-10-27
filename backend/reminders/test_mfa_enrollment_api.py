@@ -55,18 +55,19 @@ class EnrollmentApiTests(TestCase):
             )
             self.assertEqual(valid.status_code, 200)
             self.assertEqual(len(valid.json()["recovery_codes"]), 10)
+            self.assertFalse(UserMfaState.objects.get(user=self.user).enabled)
             ack_url = reverse("api-mfa-recovery-ack")
             self.assertEqual(self.client.post(
                 ack_url, data={"saved": False}, content_type="application/json",
             ).status_code, 400)
             ack = self.client.post(
-                ack_url, data={"saved": True}, content_type="application/json",
+                ack_url, data={"saved": True, "proof_code": valid.json()["recovery_codes"][0]}, content_type="application/json",
             )
             self.assertEqual(ack.status_code, 200)
-            self.assertEqual(ack.json(), {"acknowledged": True})
+            self.assertEqual(ack.json(), {"acknowledged": True, "enabled": True})
             self.assertNotIn("recovery_codes", ack.json())
             self.assertEqual(self.client.post(
-                ack_url, data={"saved": True}, content_type="application/json",
+                ack_url, data={"saved": True, "proof_code": valid.json()["recovery_codes"][0]}, content_type="application/json",
             ).status_code, 409)
             self.assertEqual(UserMfaRecoveryCode.objects.filter(
                 state__user=self.user,
