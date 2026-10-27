@@ -8,7 +8,7 @@ from django.db import close_old_connections, connection
 from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 
-from .mfa_admin_recovery_service import record_review
+from .mfa_admin_recovery_service import record_review, cancel_recovery_case
 from .models import MfaAdministrativeRecoveryApproval, MfaAdministrativeRecoveryCase
 
 
@@ -93,3 +93,48 @@ class MfaReviewConcurrencyTests(TransactionTestCase):
         self.assertEqual(case.approvals.count(), case.events.filter(action="review_approved").count())
         self.assertLessEqual(case.approvals.count(), 1)
         self.assertTrue(any(result == (True, "REJECTED") for result in results))
+
+    def test_cancel_racing_approval_never_reopens_case(self):
+        if connection.vendor != "postgresql":
+            self.skipTest("Requires PostgreSQL row locking")
+        U = get_user_model()
+        owner = U.objects.create_user(username="s1race_cancel_subject")
+        reviewer = U.objects.create_user(username="s1race_cancel_reviewer", is_staff=True)
+        other = U.objects.create_user(username="s1race_cancel_second", is_staff=True)
+        case = MfaAdministrativeRecoveryCase.objects.create(
+            subject=owner, requester=owner,
+            quarantine_until=timezone.now() + timedelta(hours=24),
+            expires_at=timezone.now() + timedelta(hours=72),
+            channel_verified_at=timezone.now(),
+        )
+        case.quarantine_until = case.created_at + timedelta(hours=24)
+        case.expires_at = case.created_at + timedelta(hours=72)
+        case.save(update_fields=["quarantine_until", "expires_at"])
+        instant = case.quarantine_until + timedelta(seconds=1)
+        barrier = Barrier(2)
+
+        def worker(cancel):
+            close_old_connections()
+            try:
+                actor = U.objects.get(pk=owner.pk if cancel else reviewer.pk)
+                barrier.wait(timeout=10)
+                if cancel:
+                    return cancel_recovery_case(case_id=case.pk, actor=actor)
+                return record_review(
+                    case_id=case.pk, reviewer=actor, approve=True, now=instant
+                )
+            finally:
+                connection.close()
+
+        with override_settings(VENCIRA_MFA_RECOVERY_REVIEWER_IDS=(reviewer.pk, other.pk)):
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                first = executor.submit(worker, False)
+                second = executor.submit(worker, True)
+                results = [first.result(timeout=30), second.result(timeout=30)]
+        case.refresh_from_db()
+        self.assertEqual(case.status, MfaAdministrativeRecoveryCase.Status.CANCELLED)
+        self.assertEqual(case.events.filter(action="cancelled").count(), 1)
+        self.assertEqual(case.approvals.count(),
+                         case.events.filter(action="review_approved").count())
+        self.assertLessEqual(case.approvals.count(), 1)
+        self.assertIn((True, "CASE_CANCELLED"), results)
