@@ -67,3 +67,38 @@ def record_review(*, case_id, reviewer, approve: bool, now=None):
     )
     Event.objects.create(case=case, actor=reviewer, action="review_approved")
     return True, "APPROVAL_RECORDED"
+
+
+def inspect_recovery_preconditions(*, case_id, now=None):
+    """Evaluación sin efectos. No concede permisos ni permite desactivar MFA.
+
+    La verificación del canal externo y la identidad de custodios siguen
+    requiriendo evidencia fuera de esta primitiva.
+    """
+    from .mfa_admin_recovery_policy import (
+        RecoveryCase, RecoveryApproval, assess_recovery,
+    )
+
+    now = timezone.now() if now is None else now
+    # La política se aplica al estado almacenado, no al payload del solicitante.
+    case = Case.objects.prefetch_related("approvals").get(pk=case_id)
+    roster = getattr(settings, "VENCIRA_MFA_RECOVERY_REVIEWER_IDS", ())
+    if not isinstance(roster, (tuple, frozenset)) or len(set(roster)) < 2:
+        return False, "REVIEWER_AUTHORIZATION_REQUIRED"
+    approvals = tuple(case.approvals.all())
+    if any(item.reviewer_id not in roster for item in approvals):
+        return False, "REVIEWER_NOT_AUTHORIZED"
+    verdict = RecoveryCase(
+        case_id=str(case.pk),
+        subject_id=case.subject_id,
+        requester_id=case.requester_id,
+        created_at=case.created_at,
+        quarantine_until=case.quarantine_until,
+        channel_verified=case.channel_verified_at is not None and case.channel_verified_at <= now,
+        approvals=tuple(RecoveryApproval(
+            reviewer_id=item.reviewer_id, case_id=str(case.pk),
+            expires_at=item.expires_at,
+        ) for item in approvals),
+        status=case.status,
+    )
+    return assess_recovery(verdict, now=now)
