@@ -23,3 +23,8 @@ Secuencia prevista, nunca automática: 1) puerta A/B firmada 2) preflight aislad
 ## Gate de esta entrega
 
 Aún pendiente: `scripts/validate_o7_o8_preflight.sh` y control estático explícito del script sobre candidato de prueba. Sin cambios de OAuth, Restic, Caddy ni bases persistentes.
+
+
+## Gate ABC inicial — APROBADO (27/10/2026)
+
+Operador confirma `LOCALCHECK_HEALTH_PRE=OK`, `CONFIG_COMPOSE=OK`, `I18N_ES_CA=OK`, `BUILD_BACKEND_AISLADO=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `PG17_TEMPORAL=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `LOCALCHECK_HEALTH_POST=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_GATE_ABC=0`, `RESULTADO_GUARD_ABC=0`, `MFA_CANDIDATE_STATIC_CHECK=OK`, candidato SHA `242c5f2522e7d8731712528676e647e9139cb1f1`. Log local `/tmp/vencira-o7-o8-preflight.GVNsfN4W.log`. `MFA_RUNTIME_DB_GUARD=PENDING`, `MFA_RELEASE_AUTHORIZED=NO`. Sin despliegue ni migración persistente, OAuth/Restic/Caddy intactos. La anterior salida fallida en CONTAINERS fue corregida por el operador, no persiste en este gate.
