@@ -27,3 +27,6 @@ No usar esta acta como variable de entorno, bandera o autorización automática.
 Son autorizaciones distintas: (1) despliegue de esquema con MFA OFF,
 (2) activación/enrolamiento tras pruebas UAT y controles efectivos.
 Actualmente MFA_RELEASE_AUTHORIZED=NO.
+
+## Evidencia comunicada de recuperación individual (27-10-2026)
+El operador, administrador único, informa que creó Bitwarden con segundo factor, una exportación protegida por contraseña en medio USB independiente y verificó la recuperación del testigo Fernet desde ese respaldo local: RESTAURACION_FERNET=OK. No se ha recibido ni registrado ningún secreto. Esto acredita únicamente prueba local comunicada; no demuestra dos custodios humanos, restauración de PostgreSQL, configuración de claves en VPS ni verificación independiente de identidad. El modelo de custodio único requiere revisión y aceptación formal del riesgo antes de autorizar MFA. CUSTODIA_OPERATIVA_APROBADA=NO; MFA_RELEASE_AUTHORIZED=NO.
