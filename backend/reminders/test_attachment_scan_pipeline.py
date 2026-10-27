@@ -20,7 +20,7 @@ class QuarantinePipelineTests(SimpleTestCase):
         self.store = PrivateQuarantineStore(root, Fernet.generate_key())
         self.payload = b"%PDF-1.7\nstartxref\n1\n%%EOF"
         self.item = SimpleNamespace(
-            storage_key=uuid.uuid4(), display_name="synthetic.pdf",
+            storage_key=uuid.uuid4(), state="quarantined", display_name="synthetic.pdf",
             content_type="application/pdf", byte_size=len(self.payload),
             sha256=hashlib.sha256(self.payload).hexdigest(),
         )
