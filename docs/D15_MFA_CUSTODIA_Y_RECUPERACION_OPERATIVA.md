@@ -53,3 +53,18 @@ Lógica interna de tres etapas implementada y ensayada con evidencias sintética
 - Auditoría de rutas de autenticación y procedimiento de despliegue único autorizado.
 
 Ningún valor booleano de configuración ni test sintético sustituye estas evidencias. Este texto es un diseño operacional, NO una certificación ni autorización de activación.
+
+
+## Diseño de provisión Fernet para Docker Compose (pendiente de implementación)
+Revisión del compose actual: el contenedor API recibe configuraciones por environment; no tiene montado ningún secreto Fernet. No incorporar VENCIRA_MFA_FERNET_KEYS en .env, compose.yaml, comandos shell, logs, Dockerfile ni variables de entorno expuestas por docker inspect.
+
+Diseño elegido:
+- Guardar el material operativo fuera de la carpeta Git y de las imágenes, cifrado o protegido por controles del host; restringir acceso al administrador y al proceso destinado a ejecutarlo.
+- Montar archivo secreto de solo lectura en /run/secrets, con permisos mínimos para el UID efectivo del API. El mecanismo concreto debe probarse con el usuario no privilegiado de la imagen.
+- Extender el cargador de claves para leer exclusivamente desde archivo secreto cuando se autorice la integración; validar formato, denegar ausencia, clave malformada, archivo accesible a terceros o dos fuentes contradictorias. No imprimir material.
+- Evitar que scripts de soporte, informes docker inspect o volcados de contenedor revelen la clave; contemplar copia cifrada en repositorio externo y política de rotación con compatibilidad de claves antiguas.
+- Primero prueba en contenedor aislado con clave SINTÉTICA y sin conexión a la BD persistente; luego plan de restauración y evidencia de custodia, y solo tras autorización aparte provisión del material real.
+- En operador único: Bitwarden EU + exportación cifrada USB probada, sin equivalencia con doble custodia humana. Se registra aceptación formal del riesgo residual de concentración de control.
+- La provisión no habilita VENCIRA_MFA_ENROLLMENT_ENABLED ni cambia MFA_RELEASE_AUTHORIZED=NO. Migraciones y despliegue requieren autorización explícita distinta.
+
+Estado al documentar: NO existe todavía montaje de secreto, clave activa en VPS ni licencia para migrar o publicar.
