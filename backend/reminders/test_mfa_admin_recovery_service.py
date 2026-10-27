@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.utils import timezone
-from .mfa_admin_recovery_service import record_review
+from .mfa_admin_recovery_service import record_review, inspect_recovery_preconditions
 from .models import MfaAdministrativeRecoveryCase as Case, UserMfaState
 
 
@@ -100,3 +100,28 @@ class RecoveryReviewServiceTests(TestCase):
                          (False, "REVIEW_ALREADY_RECORDED"))
         self.case.refresh_from_db()
         self.assertEqual(self.case.status, "pending")
+
+    def test_inspection_uses_persisted_approvals_and_never_resets(self):
+        UserMfaState.objects.create(
+            user=self.subject, enabled=True, encrypted_totp_secret="synthetic"
+        )
+        self.assertEqual(inspect_recovery_preconditions(
+            case_id=self.case.pk, now=self.now
+        ), (False, "TWO_APPROVALS_REQUIRED"))
+        self.assertEqual(self.review(reviewer=self.reviewer1, approve=True)[0], True)
+        self.assertEqual(self.review(reviewer=self.reviewer2, approve=True)[0], True)
+        self.assertEqual(inspect_recovery_preconditions(
+            case_id=self.case.pk, now=self.now
+        ), (True, "POLICY_PRECONDITIONS_MET_ONLY"))
+        self.assertTrue(UserMfaState.objects.get(user=self.subject).enabled)
+
+    def test_inspection_rejects_expired_approval(self):
+        from .models import MfaAdministrativeRecoveryApproval as Approval
+        self.assertTrue(self.review(reviewer=self.reviewer1, approve=True)[0])
+        self.assertTrue(self.review(reviewer=self.reviewer2, approve=True)[0])
+        Approval.objects.filter(case=self.case, reviewer=self.reviewer1).update(
+            expires_at=self.now - timedelta(seconds=1)
+        )
+        self.assertEqual(inspect_recovery_preconditions(
+            case_id=self.case.pk, now=self.now
+        ), (False, "EXPIRED_APPROVAL"))
