@@ -80,3 +80,6 @@ Commit validado `502895890027eeca786b6a41a3c9615810237eca`. Pruebas sintéticas 
 
 ## Gate de indisponibilidad del verificador de identidad
 Commit validado `99d2c34615b360bb0b70501bf943eb6502da3824`. Gate aislado SQLite y PostgreSQL 17: OK. Protección ante fallo de verificador, control de publicación, prueba negativa de archivos no seguidos y limpieza: OK. `S1_PG17_GATE_RESULT=0`, `RESULTADO_FINAL=0`, `MFA_RELEASE_AUTHORIZED=NO`; sin despliegue ni migración persistente. La recuperación por pérdida total aún carece de integración de identidad externa real y sustitución de factores.
+
+## Regresión rotación durante recuperación administrativa (27-10-2026)
+El gate previo reveló que finalize_factor_rotation permitía finalizar una rotación pese a un expediente administrativo pendiente. Corregido en commit d86f1c17edd70ef57ec77317a826b51a109dc324. El operador volvió a ejecutar el gate integral: S1_SQLITE_SECURITY=OK, PG17_EPHEMERAL=OK, S1_POSTGRES_REVIEW_AND_RACE=OK, S1_RELEASE_FAIL_CLOSED=OK, S1_DEPLOY_ENTRY_FAIL_CLOSED=OK, S1_UNTRACKED_FILES_REJECTED=OK, CLEANUP=OK, S1_PG17_GATE_RESULT=0, RESULTADO_FINAL=0, NO_DEPLOY_NO_LIVE_MIGRATION=1. Log local privado: /tmp/vencira-s1-pg17.y6CyrAdS.log. MFA_RELEASE_AUTHORIZED=NO. Recuperación administrativa efectiva y custodia real siguen pendientes.
