@@ -13,16 +13,23 @@ class RequireMfaSessionMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        if request.user.is_authenticated and MfaAdministrativeRecoveryCase.objects.filter(
-            subject_id=request.user.pk, status=MfaAdministrativeRecoveryCase.Status.PENDING,
-        ).exists():
+        state = (UserMfaState.objects.filter(user_id=request.user.pk).first()
+                 if request.user.is_authenticated else None)
+        # Un expediente histórico no debe habilitar una cuenta con MFA desactivado.
+        # Las transiciones administrativas nunca constituyen autorización de
+        # acceso solo con contraseña; la reactivación MFA requiere su propio gate.
+        cases = (MfaAdministrativeRecoveryCase.objects.filter(subject_id=request.user.pk)
+                 if request.user.is_authenticated else MfaAdministrativeRecoveryCase.objects.none())
+        recovery_block = (request.user.is_authenticated and (
+            cases.filter(status=MfaAdministrativeRecoveryCase.Status.PENDING).exists()
+            or (state is not None and not state.enabled and cases.exists())
+        ))
+        if recovery_block:
             logout(request)
             response = HttpResponseForbidden("Cuenta protegida durante recuperación MFA.")
             response["Cache-Control"] = "no-store"
             return response
-        state = (UserMfaState.objects.filter(user_id=request.user.pk, enabled=True).first()
-                 if request.user.is_authenticated else None)
-        if (state is not None and (
+        if (state is not None and state.enabled and (
                 request.session.get(SESSION_VERIFIED) != request.user.get_session_auth_hash()
                 or request.session.get(SESSION_EPOCH) != state.session_epoch)) :
             logout(request)
