@@ -4,6 +4,8 @@
 set -Eeuo pipefail
 umask 077
 cd /home/vencira/vencira-localcheck
+# Historical deployment MFA fail-closed preflight (before any mutating action).
+bash scripts/mfa_legacy_deploy_guard_readonly.sh api
 PHASE=INICIO
 LOG="$(mktemp /tmp/vencira-o7-o8-deploy.XXXXXXXX.log)"
 RUN="$(date -u +%Y%m%dT%H%M%SZ)_$$"
