@@ -16,3 +16,8 @@ Archivos: `backend/reminders/mfa_enrollment.py`, `backend/reminders/mfa_enrollme
 ## Bloqueos para salida
 
 Pendiente gate SQLite, PG17 temporal, Flutter. La interfaz Flutter ES/CA con QR y descarga controlada NO está integrada todavía; tampoco protección específica anti fuerza bruta de contraseña de setup, custodia real de claves, recuperación sin factores y pruebas manuales. La prueba de posesión de un solo código NO equivale a garantía absoluta de que el usuario ha guardado todos. Mantener alta deshabilitada hasta completar estos requisitos.
+
+
+## Gate D1.5m — APROBADO (27/10/2026)
+
+Confirmación operador: `LOCALCHECK_HEALTH_PRE=OK`, `CONFIG_COMPOSE=OK`, `I18N_ES_CA=OK`, `BUILD_BACKEND_AISLADO=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `PG17_TEMPORAL=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `LOCALCHECK_HEALTH_POST=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5M=0`; log `/tmp/vencira-o7-o8-preflight.uEwZKcy8.log`. No se desplegó ni migró DB persistente. Alta MFA sigue desactivada por flag. Pendiente UX Flutter, custodia claves, limitación de reautenticación y procedimiento recuperación total antes de desplegar.
