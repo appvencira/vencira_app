@@ -25,3 +25,9 @@ ADJUNTOS_IMPLEMENTADOS=NO
 CARGAS_REALES_AUTORIZADAS=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 MFA_RELEASE_AUTHORIZED=NO
+
+## Primer avance de implementación (sin carga de archivos)
+- Modelo `RenewalAttachment` y migración `0027_renewal_attachment_metadata` añadidos en rama de desarrollo: metadata vinculada a Renewal, identificador opaco y estado inicial `quarantined`.
+- Pruebas sintéticas `test_attachment_metadata.py` para cuarentena por defecto, clave opaca única y bytes positivos. **No ejecutadas todavía**.
+- Ninguna ruta API de upload/download, almacenamiento de bytes, antivirus, cifrado real o interfaz Flutter creada en este avance. No considerar funcionalidad lista.
+- **Dependencia crítica:** la migración 0027 depende de 0026 MFA. La base persistente continúa en 0018; no aplicar 0027 al entorno vivo porque migraría también MFA 0019–0026. Antes de un futuro despliegue hay que acordar orden/estrategia de dependencias y los gates independientes.
