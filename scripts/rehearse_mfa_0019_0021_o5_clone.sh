@@ -9,11 +9,32 @@ NET="vencira_mfa_net_$$"; DB="vencira_mfa_db_$$"
 IMAGE="vencira-mfa-test:$(git rev-parse --short=12 HEAD)"
 NET_CREATED=0; DB_CREATED=0
 finish() {
- rc=$?; trap - EXIT
- if [ "$DB_CREATED" = 1 ]; then docker rm -f "$DB" >>"$LOG" 2>&1 || true; fi
- if [ "$NET_CREATED" = 1 ]; then docker network rm "$NET" >>"$LOG" 2>&1 || true; fi
+ local rc=$? cleanup_rc=0 live_state=DESCONOCIDA
+ trap - EXIT
+ # Comprobar el estado real incluso si el fallo ocurrió antes de LIVE_POST.
+ # No se interpreta la ausencia de evidencia como integridad confirmada.
+ if [ "${LIVE_BASELINE_CAPTURED:-0}" = 1 ]; then
+  if test "$LIVE_ID" = "$(docker inspect "$LIVE" --format '{{.Id}}' 2>>"$LOG")" \
+   && test "$LIVE_COUNT" = "$(live_sql 'SELECT COUNT(*) FROM django_migrations;' 2>>"$LOG")" \
+   && test "$(live_sql "SELECT name FROM django_migrations WHERE app='reminders' ORDER BY name DESC LIMIT 1;" 2>>"$LOG")" = 0018_draft_reasons; then
+   live_state=1
+  else
+   live_state=0
+  fi
+ fi
+ if [ "$DB_CREATED" = 1 ]; then
+  if docker rm -f "$DB" >>"$LOG" 2>&1; then echo "CLEANUP_DB=OK"; else echo "CLEANUP_DB=ERROR"; cleanup_rc=1; fi
+ fi
+ if [ "$NET_CREATED" = 1 ]; then
+  if docker network rm "$NET" >>"$LOG" 2>&1; then echo "CLEANUP_NET=OK"; else echo "CLEANUP_NET=ERROR"; cleanup_rc=1; fi
+ fi
+ if [ "$cleanup_rc" != 0 ] || [ "$live_state" = 0 ]; then rc=1; fi
  if [ "$rc" != 0 ]; then echo "FASE_FALLIDA=$PHASE"; fi
- echo "RESULTADO_CLON_MFA=$rc"; echo "BD_PERSISTENTE_INTACTA=1"; echo "LOG_PRIVADO=$LOG"; echo "CONSOLA_ABIERTA"; exit "$rc"
+ echo "RESULTADO_CLON_MFA=$rc"
+ echo "BD_PERSISTENTE_INTACTA=$live_state"
+ echo "LOG_PRIVADO=$LOG"
+ echo "CONSOLA_ABIERTA"
+ exit "$rc"
 }
 trap finish EXIT
 test "$(id -u)" -eq 0
@@ -29,6 +50,7 @@ test "$(docker inspect "$LIVE" --format "{{.State.Health.Status}}")" = healthy
 live_sql() { docker exec "$LIVE" sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "$1"' sh "$1"; }
 test "$(live_sql "SELECT name FROM django_migrations WHERE app='reminders' ORDER BY name DESC LIMIT 1;")" = 0018_draft_reasons
 LIVE_COUNT="$(live_sql "SELECT COUNT(*) FROM django_migrations;")"
+LIVE_BASELINE_CAPTURED=1
 echo "LIVE_0018_READONLY=OK"
 PHASE=O5
 DIR=/etc/vencira-backup
