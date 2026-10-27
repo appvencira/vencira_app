@@ -51,6 +51,8 @@ class AttachmentOrphanSnapshotTests(TestCase):
         self.assertEqual(RenewalAttachment.objects.count(), 2)
 
     def test_excessive_snapshot_aborts_before_filesystem_audit(self):
+        RenewalAttachment.objects.create(renewal=self.renewal, display_name="test.pdf",
+            content_type="application/pdf", byte_size=16, sha256="a" * 64)
         with patch("reminders.attachment_orphan_snapshot.MAX_AUDIT_OBJECTS", 0):
             with self.assertRaises(ValueError):
                 audit_quarantine_against_database(root=self.root)
