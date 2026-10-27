@@ -28,11 +28,11 @@ a{color:#145c75;font-weight:650}.lang{float:right;font-size:12px} .muted{font-si
 {% csrf_token %}
 <input type="hidden" name="lang" value="{{ lang }}">
 <label for="mfa-code">{% if lang == 'ca' %}Codi d'autenticació o recuperació{% else %}Código de autenticación o recuperación{% endif %}</label>
-<input id="mfa-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="32" required autofocus autocapitalize="characters" spellcheck="false" aria-describedby="code-help">
+<input id="mfa-code" name="code" type="text" inputmode="text" autocomplete="one-time-code" maxlength="32" required autofocus autocapitalize="characters" spellcheck="false" aria-describedby="code-help">
 <p class="muted" id="code-help">{% if lang == 'ca' %}També pots introduir un codi de recuperació de 32 caràcters.{% else %}También puedes introducir un código de recuperación de 32 caracteres.{% endif %}</p>
 <button type="submit">{% if lang == 'ca' %}Verificar i continuar{% else %}Verificar y continuar{% endif %}</button>
 </form>
 <details class="details"><summary>{% if lang == 'ca' %}No tens accés a l'autenticador?{% else %}¿No tienes acceso al autenticador?{% endif %}</summary>
-<p>{% if lang == 'ca' %}Utilitza un dels codis de recuperació que vas guardar en activar la verificació. Cada codi només es pot utilitzar una vegada.{% else %}Utiliza uno de los códigos de recuperación que guardaste al activar la verificación. Cada código solo puede utilizarse una vez.{% endif %}</p></details>
+<p>{% if lang == 'ca' %}Utilitza un dels codis de recuperació que vas guardar en activar la verificació. Cada codi només es pot utilitzar una vegada. En usar-lo es tancaran les altres sessions.{% else %}Utiliza uno de los códigos de recuperación que guardaste al activar la verificación. Cada código solo puede utilizarse una vez. Al utilizarlo se cerrarán las demás sesiones.{% endif %}</p></details>
 <p class="foot"><a href="{% url 'login' %}">{% if lang == 'ca' %}Tornar a l'inici de sessió{% else %}Volver al inicio de sesión{% endif %}</a></p>
 </main></body></html>
