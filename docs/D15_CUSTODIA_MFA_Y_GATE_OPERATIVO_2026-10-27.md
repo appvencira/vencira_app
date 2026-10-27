@@ -40,3 +40,6 @@ No tocar OAuth, Restic, Caddy, DB persistente ni flags MFA; usar datos sintétic
 
 ## Evidencia de ejecución — 27/10/2026
 Operador ejecutó `sudo bash scripts/validate_mfa_custody_synthetic.sh` en commit `6854f5aef7ef16169785671bae61c6e89a005980`. Cuatro tests Django sobre SQLite temporal: OK; `MFA_CUSTODIA_CRIPTOGRAFICA_SINTETICA=OK`; `RESULTADO_D15_S1=0`; `SIN_RESTAURACION_O5=1`; `SIN_MIGRACIONES_PERSISTENTES=1`. El primer intento sin sudo terminó en denegación de acceso al socket Docker; segundo intento con sudo correcto. No equivale a custodia operativa independiente ni a recuperación administrativa. MFA_RELEASE_AUTHORIZED=NO.
+
+## Evidencia D1.5-S1: política de recuperación (27/10/2026)
+Operador informa ejecución aislada Django SQLite de `reminders.test_mfa_admin_recovery_policy` y `reminders.test_mfa_rollback_guard`: **8 tests OK**, `RESULTADO_D15_RECOVERY=0`, commit `8f386e171eb1435cd52ad19c6d3563ce17ca04b4`, `NO_DEPLOY_NO_MIGRACION=1`. Pruebas de política de doble revisión y rollback sobre BD temporal. **No** acreditan caso persistente, auditoría, revocación de sesiones ni recuperación efectiva; MFA sigue desactivado, publicación NO autorizada.
