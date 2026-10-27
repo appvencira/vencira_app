@@ -19,9 +19,32 @@ class ExternalEvidenceTests(SimpleTestCase):
         self.assertEqual(inspect_external_execution_evidence(case_id="fixture"), (False, "DENIED"))
 
 
-class RecoveryPreparationDenyTests(SimpleTestCase):
-    @patch("reminders.mfa_admin_recovery_service.Case.objects")
-    def test_denied_preparation_never_reads_active_secret(self, cases):
-        # Verificación negativa de la barrera antes de cualquier transición:
-        # esta prueba no usa cuentas reales ni modifica tablas.
-        self.assertTrue(callable(inspect_external_execution_evidence))
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.utils import timezone
+from datetime import timedelta
+from cryptography.fernet import Fernet
+from .models import MfaAdministrativeRecoveryCase, UserMfaState
+from .mfa_admin_recovery_service import prepare_administrative_factor
+
+
+class RecoveryPreparationDenyTests(TestCase):
+    def test_without_external_evidence_active_credentials_unchanged(self):
+        subject = get_user_model().objects.create_user("recover_preparation")
+        state = UserMfaState.objects.create(
+            user=subject, enabled=True, encrypted_totp_secret="active-fixture",
+        )
+        now = timezone.now()
+        case = MfaAdministrativeRecoveryCase.objects.create(
+            subject=subject, requester=subject,
+            quarantine_until=now - timedelta(hours=1),
+            expires_at=now + timedelta(hours=1),
+        )
+        keys = [Fernet.generate_key().decode("ascii")]
+        with override_settings(VENCIRA_MFA_RECOVERY_EXECUTION_VERIFIER=None):
+            result = prepare_administrative_factor(case_id=case.pk, keys=keys)
+        self.assertIsNone(result)
+        state.refresh_from_db()
+        self.assertEqual(state.encrypted_totp_secret, "active-fixture")
+        self.assertEqual(state.pending_rotation_secret, "")
+        self.assertEqual(state.session_epoch, 0)
