@@ -2,7 +2,6 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase, RequestFactory
 from django.contrib.sessions.middleware import SessionMiddleware
-from django.contrib.auth.middleware import AuthenticationMiddleware
 
 from .mfa_middleware import RequireMfaSessionMiddleware, SESSION_VERIFIED, SESSION_EPOCH
 from .mfa_session_revocation import revoke_mfa_sessions
@@ -44,3 +43,18 @@ class MfaSessionRevocationTests(TestCase):
                          (False, "MFA_NOT_ENABLED"))
         self.state.refresh_from_db()
         self.assertEqual(self.state.session_epoch, 0)
+
+    def test_missing_epoch_is_denied_even_if_login_hash_matches(self):
+        req = RequestFactory().get("/admin/")
+        SessionMiddleware(lambda r: None).process_request(req)
+        req.session[SESSION_VERIFIED] = self.user.get_session_auth_hash()
+        req.user = self.user
+        denied = RequireMfaSessionMiddleware(lambda r: None)(req)
+        self.assertEqual(denied.status_code, 403)
+
+    def test_revocation_twice_increments_epoch_and_keeps_factor(self):
+        self.assertEqual(revoke_mfa_sessions(user_id=self.user.pk)[0], True)
+        self.assertEqual(revoke_mfa_sessions(user_id=self.user.pk)[0], True)
+        self.state.refresh_from_db()
+        self.assertEqual(self.state.session_epoch, 2)
+        self.assertTrue(self.state.enabled)
