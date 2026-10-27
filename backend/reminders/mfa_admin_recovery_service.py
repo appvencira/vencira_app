@@ -1,6 +1,7 @@
-"""D1.5-S1: aprobación interna auditada; NUNCA restablece MFA.
+"""D1.5-S1: recuperación administrativa interna, bloqueada sin evidencia externa.
 
-No expuesta por API ni comando. La custodia operacional externa sigue pendiente.
+Incluye primitivas que pueden sustituir factores solo tras cumplir sus controles.
+No expuesta por API ni comando; verificación y entrega externas no operativas.
 """
 from datetime import timedelta
 from django.conf import settings
