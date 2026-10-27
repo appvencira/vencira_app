@@ -568,3 +568,46 @@ class MfaAdministrativeRecoveryEvent(models.Model):
     )
     action = models.CharField(max_length=32)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class RenewalAttachment(models.Model):
+    """Metadatos de adjunto aislado: ninguna ruta de subida ni entrega habilitada.
+
+    Los bytes jamás se almacenan en la base ni se exponen mediante MEDIA_URL.
+    Un objeto en cuarentena no puede considerarse seguro por su mera existencia.
+    """
+    class State(models.TextChoices):
+        QUARANTINED = "quarantined", "En cuarentena"
+        CLEAN = "clean", "Revisado"
+        REJECTED = "rejected", "Rechazado"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    renewal = models.ForeignKey(
+        Renewal, on_delete=models.PROTECT, related_name="attachments",
+    )
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, related_name="vencira_uploaded_attachments",
+    )
+    display_name = models.CharField(max_length=120)
+    content_type = models.CharField(max_length=40)
+    byte_size = models.PositiveIntegerField()
+    sha256 = models.CharField(max_length=64)
+    # Identificador de objeto aleatorio, nunca derivado de nombre o datos personales.
+    storage_key = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    state = models.CharField(
+        max_length=16, choices=State.choices, default=State.QUARANTINED,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["renewal", "-created_at"], name="att_renewal_time_idx"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(byte_size__gt=0),
+                name="att_positive_bytes",
+            ),
+        ]
+        ordering = ["-created_at", "-id"]
