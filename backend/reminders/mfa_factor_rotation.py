@@ -30,7 +30,7 @@ def recovery_pending(user_id):
 def prepare_factor_rotation(*, user_id, old_code, keys, timestamp=None):
     """Requiere código del TOTP activo; devuelve secreto nuevo solo al servicio."""
     state = UserMfaState.objects.select_for_update().get(user_id=user_id)
-    if not state.enabled or recovery_pending(user_id):
+    if not state.enabled or recovery_pending(user_id) or state.pending_administrative_case_id:
         return None
     now = timezone.now()
     if state.locked_until and state.locked_until > now:
@@ -67,7 +67,7 @@ def confirm_factor_rotation(*, user_id, new_code, keys, timestamp=None):
     """
     state = UserMfaState.objects.select_for_update().get(user_id=user_id)
     now = timezone.now()
-    if (recovery_pending(user_id) or not state.enabled or not state.pending_rotation_secret
+    if (recovery_pending(user_id) or state.pending_administrative_case_id or not state.enabled or not state.pending_rotation_secret
             or state.pending_rotation_expires_at is None
             or now >= state.pending_rotation_expires_at
             or (state.locked_until and state.locked_until > now)):
@@ -102,7 +102,7 @@ def finalize_factor_rotation(*, user_id, proof_code, keys, timestamp=None):
     from .mfa_secrets import verify_recovery_code
     state = UserMfaState.objects.select_for_update().get(user_id=user_id)
     now = timezone.now()
-    if (recovery_pending(user_id) or not state.enabled or not state.pending_rotation_secret
+    if (recovery_pending(user_id) or state.pending_administrative_case_id or not state.enabled or not state.pending_rotation_secret
             or state.pending_rotation_expires_at is None
             or now >= state.pending_rotation_expires_at
             or (state.locked_until and state.locked_until > now)):
