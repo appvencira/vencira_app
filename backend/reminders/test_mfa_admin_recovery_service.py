@@ -1,7 +1,7 @@
 """S1C: pruebas sintéticas de la primitiva interna de revisión."""
 from datetime import timedelta
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from .mfa_admin_recovery_service import record_review
 from .models import MfaAdministrativeRecoveryCase as Case, UserMfaState
@@ -26,11 +26,14 @@ class RecoveryReviewServiceTests(TestCase):
         self.case.expires_at = self.case.created_at + timedelta(hours=72)
         self.case.save(update_fields=["quarantine_until", "expires_at"])
         self.now = self.case.quarantine_until + timedelta(seconds=1)
-        self.reviewers = frozenset({self.reviewer1.pk, self.reviewer2.pk})
+        self.reviewers = (self.reviewer1.pk, self.reviewer2.pk)
+        roster = override_settings(VENCIRA_MFA_RECOVERY_REVIEWER_IDS=self.reviewers)
+        roster.enable()
+        self.addCleanup(roster.disable)
 
     def review(self, *, reviewer, approve):
         return record_review(case_id=self.case.pk, reviewer=reviewer,
-                             approve=approve, reviewer_ids=self.reviewers, now=self.now)
+                             approve=approve, now=self.now)
 
     def test_two_distinct_approvals_are_recorded_once_without_reset(self):
         UserMfaState.objects.create(user=self.subject, enabled=True, encrypted_totp_secret="synthetic")
@@ -67,12 +70,13 @@ class RecoveryReviewServiceTests(TestCase):
         self.assertEqual(self.case.events.count(), 1)
 
     def test_missing_roster_and_active_quarantine_fail_closed(self):
+        with override_settings(VENCIRA_MFA_RECOVERY_REVIEWER_IDS=()):
+            self.assertEqual(record_review(
+                case_id=self.case.pk, reviewer=self.reviewer1,
+                approve=True, now=self.now
+            ), (False, "REVIEWER_AUTHORIZATION_REQUIRED"))
         self.assertEqual(record_review(
             case_id=self.case.pk, reviewer=self.reviewer1,
-            approve=True, now=self.now
-        ), (False, "REVIEWER_AUTHORIZATION_REQUIRED"))
-        self.assertEqual(record_review(
-            case_id=self.case.pk, reviewer=self.reviewer1,
-            approve=True, reviewer_ids=self.reviewers,
+            approve=True,
             now=self.case.created_at + timedelta(minutes=1)
         ), (False, "QUARANTINE_ACTIVE"))
