@@ -91,3 +91,18 @@ class MfaSessionRevocationTests(TestCase):
         req.user = self.user
         denied = RequireMfaSessionMiddleware(lambda r: None)(req)
         self.assertEqual(denied.status_code, 403)
+
+    def test_expired_but_pending_case_still_blocks_until_explicit_resolution(self):
+        now = timezone.now()
+        MfaAdministrativeRecoveryCase.objects.create(
+            subject=self.user, requester=self.user,
+            quarantine_until=now - timedelta(hours=40),
+            expires_at=now - timedelta(hours=1),
+        )
+        req = RequestFactory().get("/api/v1/me/")
+        SessionMiddleware(lambda r: None).process_request(req)
+        req.session[SESSION_VERIFIED] = self.user.get_session_auth_hash()
+        req.session[SESSION_EPOCH] = 0
+        req.user = self.user
+        denied = RequireMfaSessionMiddleware(lambda r: None)(req)
+        self.assertEqual(denied.status_code, 403)
