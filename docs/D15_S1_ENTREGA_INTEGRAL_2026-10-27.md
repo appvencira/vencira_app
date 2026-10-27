@@ -53,3 +53,6 @@ Se han localizado múltiples scripts históricos de despliegue en scripts/deploy
 
 ## Validación del control de entrada MFA
 El ensayo aislado comunicó `S1_DEPLOY_ENTRY_FAIL_CLOSED=OK` y `S1_PG17_GATE_RESULT=0`. No se desplegó ni migró la base persistente. La autorización de activación continúa denegada. Pendientes: recuperación integral, custodia externa y conexión al despliegue operativo.
+
+## Gate de rotación MFA 0025 — validación aislada
+Commit validado: `179d60af69cd70c728b110ce6fb4cf9af3c5bc14`. Resultado comunicado: `S1_SQLITE_SECURITY=OK`, `PG17_EPHEMERAL=OK`, `S1_POSTGRES_REVIEW_AND_RACE=OK`, `S1_STATIC_CANDIDATE_GUARD=OK`, `S1_RELEASE_FAIL_CLOSED=OK`, `S1_DEPLOY_ENTRY_FAIL_CLOSED=OK`, `CLEANUP=OK`, `S1_PG17_GATE_RESULT=0`, `RESULTADO_FINAL=0`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. La validación de 0025 no implica migración persistente. MFA_RELEASE_AUTHORIZED=NO.
