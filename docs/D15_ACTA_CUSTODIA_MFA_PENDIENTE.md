@@ -36,3 +36,6 @@ Administrador único confirma ejecución local sin VPS ni BD, recuperando materi
 
 ## Verificación Docker sintética comunicada
 El operador ejecutó en aislamiento el commit b34da22c57b41ba052270ea5e23357db5bd86bfa y confirmó MFA_DOCKER_SECRET_NONROOT=OK, MFA_FERNET_SYNTHETIC_ROUNDTRIP=OK, MFA_NO_CROSS_USER_DECRYPT=OK, FERNET_DOCKER_RESULT=0, RESULTADO_FINAL=0 y NO_DEPLOY_NO_LIVE_MIGRATION=1. Sin claves reales, servicios activos ni PostgreSQL persistente. Pendiente la provisión operativa autorizada y verificación de entrega/identidad; MFA_RELEASE_AUTHORIZED=NO.
+
+## Validación de override Compose opcional
+El operador comunica la validación estática del commit db5568ac7d96fdd6b58190f112822de82f294c4f: MFA_COMPOSE_OPTIONAL_MOUNT=OK, MFA_ENROLLMENT_DISABLED=OK, NO_DEPLOY_NO_MIGRATION=1 y RESULTADO_FINAL=0. No se han instalado secretos reales ni montado claves en contenedores activos. Persisten los requisitos de verificación externa de identidad, entrega segura y autorización independiente para activar MFA. MFA_RELEASE_AUTHORIZED=NO.
