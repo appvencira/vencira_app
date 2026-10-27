@@ -65,6 +65,20 @@ class QuarantinePipelineTests(SimpleTestCase):
         result = self.scan_encrypted_without_scanner()
         self.assertEqual(result.verdict, "error")
 
+    def test_other_lifecycle_state_is_rejected(self):
+        self.item.state = "clean"
+        result = self.scan_encrypted_without_scanner()
+        self.assertEqual(result.reason, "INVALID_LIFECYCLE")
+
+    def test_scanner_exception_is_rejected(self):
+        def fail(**kwargs):
+            raise RuntimeError("simulated failure")
+        result = scan_encrypted_quarantine(
+            store=self.store, attachment=self.item,
+            socket_path="/tmp/test", scanner=fail)
+        self.assertEqual(result.verdict, "error")
+        self.assertFalse(result.release_allowed)
+
     def scan_encrypted_without_scanner(self):
         return scan_encrypted_quarantine(
             store=self.store, attachment=self.item, socket_path="/tmp/demo",
