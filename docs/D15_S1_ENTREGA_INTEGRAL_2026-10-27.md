@@ -77,3 +77,6 @@ Validación del commit `5b06b3687ca096b545e55a2529e7bb429bbcc52c`: `S1_UNTRACKED
 
 ## Gate verificador de identidad de recuperación
 Commit validado `502895890027eeca786b6a41a3c9615810237eca`. Pruebas sintéticas SQLite y PostgreSQL 17, rechazo sin verificador, concurrencia, bloqueo de publicación, rechazo de archivos no seguidos y limpieza: OK. Resultado global 0. No acredita un proveedor de verificación externo real ni la recuperación administrativa completa. No se desplegó ni migró PostgreSQL persistente.
+
+## Gate de indisponibilidad del verificador de identidad
+Commit validado `99d2c34615b360bb0b70501bf943eb6502da3824`. Gate aislado SQLite y PostgreSQL 17: OK. Protección ante fallo de verificador, control de publicación, prueba negativa de archivos no seguidos y limpieza: OK. `S1_PG17_GATE_RESULT=0`, `RESULTADO_FINAL=0`, `MFA_RELEASE_AUTHORIZED=NO`; sin despliegue ni migración persistente. La recuperación por pérdida total aún carece de integración de identidad externa real y sustitución de factores.
