@@ -1,6 +1,6 @@
 """D1.5d: consumo MFA transaccional con límite de intentos por cuenta.
 
-No está conectado a login; nunca pasar secretos ni códigos a logs.
+Consumido por el reto de inicio MFA; nunca registrar secretos ni códigos.
 """
 from datetime import timedelta
 
