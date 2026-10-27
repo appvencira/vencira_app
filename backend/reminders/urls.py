@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from .session_security import logout_other_sessions
+from .mfa_enrollment_api import mfa_setup_start, mfa_setup_confirm
 from .modality_catalog import modalities, modality_detail
 from .insurer_catalog import insurers, insurer_detail
 from .agenda_month import agenda_month
@@ -20,6 +21,8 @@ from .operational_history import operational_reminder_history
 
 urlpatterns = [
     path("me/", views.me, name="api-me"),
+    path("me/mfa/setup/start/", mfa_setup_start, name="api-mfa-setup-start"),
+    path("me/mfa/setup/confirm/", mfa_setup_confirm, name="api-mfa-setup-confirm"),
     path("me/logout-other-sessions/", logout_other_sessions, name="api-logout-other-sessions"),
     path("workspaces/", views.workspaces, name="api-workspaces"),
     path("workspaces/<uuid:workspace_id>/members/", views.workspace_members, name="api-workspace-members"),
