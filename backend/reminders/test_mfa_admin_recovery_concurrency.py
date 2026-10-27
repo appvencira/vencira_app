@@ -1,0 +1,54 @@
+"""S1: prueba de carrera con conexiones PostgreSQL independientes, nunca LIVE."""
+from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
+from threading import Barrier
+
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.db import close_old_connections, connection
+from django.test import TransactionTestCase, override_settings
+from django.utils import timezone
+
+from .mfa_admin_recovery_service import record_review
+from .models import MfaAdministrativeRecoveryApproval, MfaAdministrativeRecoveryCase
+
+
+class MfaReviewConcurrencyTests(TransactionTestCase):
+    def test_same_reviewer_race_only_one_approval_and_event(self):
+        if connection.vendor != "postgresql":
+            self.skipTest("Requiere bloqueos reales SELECT FOR UPDATE de PostgreSQL")
+        U = get_user_model()
+        owner = U.objects.create_user(username="s1race_subject")
+        reviewer = U.objects.create_user(username="s1race_reviewer", is_staff=True)
+        alternate = U.objects.create_user(username="s1race_other", is_staff=True)
+        case = MfaAdministrativeRecoveryCase.objects.create(
+            subject=owner, requester=owner,
+            quarantine_until=timezone.now() + timedelta(hours=24),
+            expires_at=timezone.now() + timedelta(hours=72),
+            channel_verified_at=timezone.now(),
+        )
+        case.quarantine_until = case.created_at + timedelta(hours=24)
+        case.expires_at = case.created_at + timedelta(hours=72)
+        case.save(update_fields=["quarantine_until", "expires_at"])
+        instant = case.quarantine_until + timedelta(seconds=1)
+        barrier = Barrier(2)
+
+        def worker():
+            close_old_connections()
+            try:
+                actor = U.objects.get(pk=reviewer.pk)
+                barrier.wait(timeout=10)
+                return record_review(case_id=case.pk, reviewer=actor,
+                                     approve=True, now=instant)
+            finally:
+                connection.close()
+
+        with override_settings(VENCIRA_MFA_RECOVERY_REVIEWER_IDS=(reviewer.pk, alternate.pk)):
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                futures = [executor.submit(worker) for _ in range(2)]
+                results = [f.result(timeout=30) for f in futures]
+        self.assertEqual(sorted(results), sorted([
+            (True, "APPROVAL_RECORDED"), (True, "ALREADY_RECORDED")
+        ]))
+        self.assertEqual(MfaAdministrativeRecoveryApproval.objects.filter(case=case).count(), 1)
+        self.assertEqual(case.events.filter(action="review_approved").count(), 1)
