@@ -28,3 +28,30 @@ class MfaKeyConfigTests(SimpleTestCase):
                          "ABCDEFGHIJKLMNOP")
         with self.assertRaises(ValueError):
             decrypt_totp_secret(new_ciphertext, user_id=42, keys=[old])
+
+
+    def test_restricted_file_and_conflicting_sources(self):
+        import os
+        import tempfile
+        from pathlib import Path
+        key = Fernet.generate_key().decode("ascii")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "mfa-key"
+            path.write_text(key + "\n", encoding="ascii")
+            os.chmod(path, 0o600)
+            self.assertEqual(load_mfa_keys(environ={
+                "VENCIRA_MFA_FERNET_KEYS_FILE": str(path),
+            }), [key])
+            with self.assertRaises(ValueError):
+                load_mfa_keys(environ={
+                    "VENCIRA_MFA_FERNET_KEYS_FILE": str(path),
+                    "VENCIRA_MFA_FERNET_KEYS": key,
+                })
+            os.chmod(path, 0o644)
+            with self.assertRaises(ValueError):
+                load_mfa_keys(environ={"VENCIRA_MFA_FERNET_KEYS_FILE": str(path)})
+            os.chmod(path, 0o600)
+            link = Path(directory) / "alias"
+            link.symlink_to(path)
+            with self.assertRaises(ValueError):
+                load_mfa_keys(environ={"VENCIRA_MFA_FERNET_KEYS_FILE": str(link)})
