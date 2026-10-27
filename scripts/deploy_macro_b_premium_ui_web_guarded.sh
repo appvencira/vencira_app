@@ -3,6 +3,8 @@
 set -Eeuo pipefail
 umask 077
 cd /home/vencira/vencira-localcheck
+# Historical deployment MFA fail-closed preflight (before any mutating action).
+bash scripts/mfa_legacy_deploy_guard_readonly.sh web
 PHASE=START
 LOG="$(mktemp /tmp/vencira-macro-b-premium-ui-web.XXXXXXXX.log)"
 OLD_TAG=""
