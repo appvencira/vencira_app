@@ -59,3 +59,6 @@ Commit validado: `179d60af69cd70c728b110ce6fb4cf9af3c5bc14`. Resultado comunicad
 
 ## Gate de bloqueo de sesión durante recuperación
 Commit de código verificado: `37526f8481d82bbaec39c44448241791c439e61e`. El operador confirmó `S1_SQLITE_SECURITY=OK`, `PG17_EPHEMERAL=OK`, `S1_POSTGRES_REVIEW_AND_RACE=OK`, `S1_STATIC_CANDIDATE_GUARD=OK`, `S1_RELEASE_FAIL_CLOSED=OK`, `S1_DEPLOY_ENTRY_FAIL_CLOSED=OK`, `CLEANUP=OK`, `S1_PG17_GATE_RESULT=0` y `RESULTADO_FINAL=0`. Sin despliegue ni migración persistente; MFA permanece sin autorización. Esta prueba no equivale a recuperación administrativa completa.
+
+## Gate recuperación: casos cerrados y cancelados
+Validación aislada del commit `fc76b3b3e6ee86b1af865563da09f4641e0669f3`: SQLite OK, PG17 temporal OK, concurrencia OK, controles fail-closed OK, limpieza OK, resultado final 0. No hubo despliegue ni migración persistente. Sigue sin autorizarse la activación MFA.
