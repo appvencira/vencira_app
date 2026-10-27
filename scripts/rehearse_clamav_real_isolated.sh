@@ -10,7 +10,9 @@ cleanup() { rm -rf -- "$TMP"; }
 trap cleanup EXIT
 printf 'Synthetic clean test fixture only.\n' > "$TMP/clean.txt"
 # Official EICAR antivirus test pattern; no executable or actual malware.
-printf '%s' 'X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*' > "$TMP/eicar.txt"
+printf '%s' 'X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*' > "$TMP/eicar.txt"
+test "$(LC_ALL=C wc -c < "$TMP/eicar.txt" | tr -d "[:space:]")" = 68 || { echo "CLAMAV_EICAR_FIXTURE_INVALID=1"; exit 1; }
+echo "CLAMAV_EICAR_FIXTURE_BYTES=68"
 chmod 755 "$TMP"
 chmod 644 "$TMP"/*.txt
 echo "CLAMAV_NO_LIVE_DATA=1"
