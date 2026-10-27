@@ -493,6 +493,15 @@ class UserMfaRecoveryCode(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
+class UserMfaPendingRotationCode(models.Model):
+    """Hash provisional; nunca reemplaza códigos activos hasta acuse verificable."""
+    state = models.ForeignKey(
+        UserMfaState, on_delete=models.CASCADE, related_name="pending_rotation_codes",
+    )
+    code_hash = models.CharField(max_length=256)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
 class MfaAdministrativeRecoveryCase(models.Model):
     """Solicitud de recuperación MFA, sin facultad de cambiar factores.
 
