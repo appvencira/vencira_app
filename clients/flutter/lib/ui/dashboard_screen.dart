@@ -17,6 +17,7 @@ import 'modality_labels.dart';
 import 'day_agenda_screen.dart';
 import 'operational_inbox_screen.dart';
 import 'vencira_select.dart';
+import 'mfa_setup_screen.dart';
 
 class VenciraDashboardScreen extends StatefulWidget {
   const VenciraDashboardScreen({super.key, this.api, this.openTodayOnLoad = false});
@@ -450,6 +451,25 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                     style: Theme.of(context).textTheme.labelLarge
                       ?.copyWith(color: colors.primary)),
                   const SizedBox(height: 6),
+                  // Build flag solo para tests/preview aislados. Nunca activar
+                  // sin backend preparado, custodia de claves y release gate.
+                  if (const bool.fromEnvironment('VENCIRA_MFA_UI_ENABLED', defaultValue: false))
+                    ListTile(
+                      key: const ValueKey('settings-mfa-setup'),
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.verified_user_outlined),
+                      title: Text(preferences.locale.languageCode == 'ca'
+                        ? 'Activar verificació en dos passos'
+                        : 'Activar verificación en dos pasos'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () {
+                        Navigator.of(sheetContext).pop();
+                        Navigator.of(context).push(MaterialPageRoute<void>(
+                          builder: (_) => MfaSetupScreen(api: _api,
+                            catalan: preferences.locale.languageCode == 'ca'),
+                        ));
+                      },
+                    ),
                   ListTile(
                     key: const ValueKey('settings-close-other-sessions'),
                     contentPadding: EdgeInsets.zero,
