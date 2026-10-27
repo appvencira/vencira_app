@@ -6,7 +6,7 @@ from django.db.migrations.recorder import MigrationRecorder
 
 from reminders.mfa_key_config import load_mfa_keys
 
-REQUIRED = {"0019_user_mfa_state", "0020_mfa_attempt_limits", "0021_mfa_prepared_at"}
+from reminders.management.commands.mfa_rollback_guard import REQUIRED
 
 
 def readiness_report():
