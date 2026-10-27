@@ -46,3 +46,6 @@ Después del commit 3b19746e93bff06d006e52fbc6fff79155937ed5 se ejecutó `remind
 
 ## Preinspección estructural (pendiente de gate)
 `attachment_content_inspection.py` añade preinspección conservadora PDF/JPEG/PNG sin instalar parser de terceros ni afirmar detección de malware. Comprueba truncamiento básico PDF/JPEG y chunks/CRC/dimensiones PNG. Su `release_allowed` siempre es `False`, también cuando la estructura parece correcta. **No es antivirus ni escaneo completo**: PDF puede contener contenido activo, JPEG requiere decodificador seguro, PNG requiere decodificación real y límites de memoria. `attachment_gate.py` sigue bloqueando descargas sin excepción. Pruebas sintéticas en `test_attachment_content_inspection.py`; pendiente validarlas. Sin endpoints ni exposición pública.
+
+## Gate de preinspección — evidencia de operador
+El operador ejecutó `reminders.test_attachment_content_inspection` después del commit `1d9c728a8399cf7629581a2ee1e90429e870d18a` y comunicó `OK`, `RESULTADO_FINAL=0`. Se consideran superados los tests estructurales sintéticos en el alcance ensayado; no se declara conformidad de parser, antivirus, aprobación para descarga o integración productiva. Sin despliegue ni migración persistente. Evitar repetir la batería aislada.
