@@ -35,3 +35,8 @@ Operador confirma `LOCALCHECK_HEALTH_PRE=OK`, `CONFIG_COMPOSE=OK`, `I18N_ES_CA=O
 Se añade `scripts/rehearse_mfa_0019_0021_o5_clone.sh`: exige root y variable explícita `MFA_O5_CLONE_CONFIRM=RESTORE_ONLY_EPHEMERAL_CLONE`; comprueba rama y base viva en migración 0018; usa bloqueo O5, backup Restic cifrado actual, PostgreSQL17 efímero en red Docker interna, `restic dump` por tubería directa a `pg_restore` sin dump descifrado en disco. Verifica el esquema 0018 restaurado, aplica 0019–0021 exclusivamente al clon, verifica tablas MFA y comprueba que la base persistente sigue en 0018 y con igual contador de migraciones. Elimina contenedor/red efímeros al salir. **No ejecutado aún; contiene datos restaurados reales en la memoria/almacenamiento efímero de contenedor hasta su eliminación: ejecución autorizada únicamente por custodio.** No usa el script antiguo O5 que exigía migración 0014.
 
 **Secuencia**: gate estático del script (revisión de sintaxis), ensayo O5 en clon, revisión QR Android/PC, custodia externa de claves y procedimiento de recuperación administrativa auditado. El bloque C no tiene aprobación para deploy. Si faltan claves MFA o no existe recuperación administrativa segura, mantener flag desactivado incluso tras una eventual migración autorizada.
+
+
+## Bloque B — Revisión estática aprobada (27/10/2026)
+
+Operador reporta `SINTAXIS_MFA_CLON=0` para `scripts/rehearse_mfa_0019_0021_o5_clone.sh`, y contenedores `vencira_localcheck-api-1`, `-db-1`, `-web_preview-1` todos `healthy`. `RESTAURACION_NO_EJECUTADA=1`, `MIGRACIONES_PERSISTENTES_NO_APLICADAS=1`. Preparación verificada; **el ensayo de restauración O5 todavía no ha sido ejecutado ni aprobado como completado**.
