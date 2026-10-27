@@ -180,3 +180,36 @@ class RotationFailClosedTests(TestCase):
         state.refresh_from_db()
         self.assertEqual(state.pending_rotation_secret, "")
         self.assertEqual(state.session_epoch, 0)
+
+    def test_recovery_pending_blocks_staged_confirmation_and_finalization(self):
+        from .models import MfaAdministrativeRecoveryCase, UserMfaPendingRotationCode
+        from .mfa_factor_rotation import finalize_factor_rotation
+        user = get_user_model().objects.create_user("rotation_interrupted")
+        keys = [Fernet.generate_key().decode("ascii")]
+        old_secret = generate_secret()
+        new_secret = generate_secret()
+        state = UserMfaState.objects.create(
+            user=user, enabled=True,
+            encrypted_totp_secret=encrypt_totp_secret(old_secret, user_id=user.pk, keys=keys),
+            pending_rotation_secret=encrypt_totp_secret(new_secret, user_id=user.pk, keys=keys),
+            pending_rotation_expires_at=timezone.now() + timedelta(minutes=10),
+        )
+        now = timezone.now()
+        MfaAdministrativeRecoveryCase.objects.create(
+            subject=user, requester=user,
+            quarantine_until=now + timedelta(hours=24),
+            expires_at=now + timedelta(hours=72),
+        )
+        code = "A" * 32
+        UserMfaPendingRotationCode.objects.create(state=state, code_hash=hash_recovery_code(code))
+        instant = int(now.timestamp())
+        self.assertIsNone(confirm_factor_rotation(
+            user_id=user.pk, new_code=totp_at(new_secret, instant),
+            keys=keys, timestamp=instant,
+        ))
+        self.assertFalse(finalize_factor_rotation(user_id=user.pk, proof_code=code, keys=keys))
+        state.refresh_from_db()
+        self.assertEqual(decrypt_totp_secret(
+            state.encrypted_totp_secret, user_id=user.pk, keys=keys,
+        ), old_secret)
+        self.assertEqual(state.session_epoch, 0)
