@@ -18,6 +18,7 @@ from .explicit_control_api import explicit_control_notice
 from .operational_api import operational_reminders, operational_reminder_action
 from .operational_inbox import operational_inbox
 from .operational_history import operational_reminder_history
+from .attachment_api import renewal_attachments, renewal_attachment_detail
 
 urlpatterns = [
     path("me/", views.me, name="api-me"),
@@ -38,6 +39,8 @@ urlpatterns = [
     path("workspaces/<uuid:workspace_id>/renewals/suggestions/", person_suggestions, name="api-person-suggestions"),
     path("workspaces/<uuid:workspace_id>/renewals/", views.renewals, name="api-renewals"),
     path("workspaces/<uuid:workspace_id>/renewals/<uuid:renewal_id>/", views.renewal_detail, name="api-renewal-detail"),
+    path("workspaces/<uuid:workspace_id>/renewals/<uuid:renewal_id>/attachments/", renewal_attachments, name="api-renewal-attachments"),
+    path("workspaces/<uuid:workspace_id>/renewals/<uuid:renewal_id>/attachments/<uuid:attachment_id>/", renewal_attachment_detail, name="api-renewal-attachment-detail"),
     path("workspaces/<uuid:workspace_id>/renewals/<uuid:renewal_id>/history/", views.renewal_history, name="api-renewal-history"),
     path("workspaces/<uuid:workspace_id>/renewals/<uuid:renewal_id>/reminder-preview/", renewal_reminder_preview, name="api-reminder-preview"),
     path("workspaces/<uuid:workspace_id>/renewals/<uuid:renewal_id>/reminder-config/", reminder_draft, name="api-reminder-draft"),
