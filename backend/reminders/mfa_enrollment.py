@@ -74,9 +74,49 @@ def confirm_mfa(user_id: int, code: str, *, keys: list[str],
         for value in codes
     ])
     state.last_accepted_counter = counter
-    state.enabled = True
+    # Entrega provisional: activar solo tras demostrar posesión de un código.
+    state.enabled = False
     state.failed_attempts = 0
     state.attempts_started_at = None
     state.locked_until = None
     state.save()
     return codes
+
+
+@transaction.atomic
+def finalize_mfa(user_id: int, proof_code: str, *, issued_at: int) -> bool:
+    """Confirma custodia de un código entregado; activa solo con prueba válida.
+
+    Una respuesta perdida no bloquea la cuenta: se puede reiniciar el alta
+    mientras enabled=False y se eliminan los códigos provisionales.
+    """
+    from .mfa_secrets import verify_recovery_code
+    from .mfa_store import _blocked, _failed
+    state = UserMfaState.objects.select_for_update().filter(
+        user_id=user_id, enabled=False,
+    ).first()
+    if state is None or state.prepared_at is None:
+        return False
+    now = timezone.now()
+    if abs(now.timestamp() - issued_at) > PENDING_LIFETIME.total_seconds():
+        return False
+    if _blocked(state, now):
+        return False
+    if UserMfaRecoveryCode.objects.filter(state=state).count() != 10:
+        return False
+    valid = False
+    if isinstance(proof_code, str) and len(proof_code) == 32:
+        valid = any(
+            verify_recovery_code(proof_code, stored.code_hash)
+            for stored in UserMfaRecoveryCode.objects.filter(state=state).order_by("pk")
+        )
+    if not valid:
+        _failed(state, now)
+        return False
+    state.enabled = True
+    state.prepared_at = None
+    state.failed_attempts = 0
+    state.attempts_started_at = None
+    state.locked_until = None
+    state.save()
+    return True
