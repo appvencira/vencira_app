@@ -68,3 +68,6 @@ Validación aislada del commit `f992fd2803e78616cdcea855a6e557d139c2365a`: prueb
 
 ## Gate MFA y Fernet sintético
 Commit validado `90150029dd0f0607ce7f56389fd34c0e940425f6`. Ejecución aislada: SQLite OK, PostgreSQL 17 temporal OK, pruebas sintéticas Fernet OK, entrada de despliegue bloqueada correctamente, limpieza OK, resultado final 0. No se modificó el entorno persistente. Custodia externa real y recuperación integral siguen pendientes.
+
+## Gate de preflight y custodia documental
+Commit validado `9fb4d5f4250ba0345035b42104e40c384d700905`. Salida reportada: SQLite OK, PostgreSQL 17 temporal OK, bloqueos de publicación OK, limpieza OK y resultado final 0. No se comprobó mediante una prueba negativa específica el rechazo de archivos sin seguimiento. Sin despliegues ni migraciones persistentes. La custodia real externa de Fernet continúa pendiente.
