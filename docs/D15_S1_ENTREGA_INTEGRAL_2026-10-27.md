@@ -71,3 +71,6 @@ Commit validado `90150029dd0f0607ce7f56389fd34c0e940425f6`. Ejecución aislada: 
 
 ## Gate de preflight y custodia documental
 Commit validado `9fb4d5f4250ba0345035b42104e40c384d700905`. Salida reportada: SQLite OK, PostgreSQL 17 temporal OK, bloqueos de publicación OK, limpieza OK y resultado final 0. No se comprobó mediante una prueba negativa específica el rechazo de archivos sin seguimiento. Sin despliegues ni migraciones persistentes. La custodia real externa de Fernet continúa pendiente.
+
+## Gate negativo de archivo sin seguimiento
+Validación del commit `5b06b3687ca096b545e55a2529e7bb429bbcc52c`: `S1_UNTRACKED_FILES_REJECTED=OK`, `S1_DEPLOY_ENTRY_FAIL_CLOSED=OK`, `S1_PG17_GATE_RESULT=0`, `RESULTADO_FINAL=0`, `CLEANUP=OK`, sin despliegue ni migraciones persistentes. Esta prueba verifica el rechazo de un archivo temporal sin seguimiento en el preflight; no acredita aún integración del guard con todas las rutas operativas de despliegue.
