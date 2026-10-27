@@ -139,3 +139,8 @@ LOGGING = {
 
 # D1.5k: no exponer alta MFA sin activación operativa explícita.
 VENCIRA_MFA_ENROLLMENT_ENABLED = os.getenv("VENCIRA_MFA_ENROLLMENT_ENABLED", "0") == "1"
+
+# D1.5-S1: los revisores de recuperación NO se configuran desde HTTP ni
+# se infieren de is_staff. Hasta disponer de un registro custodial autenticado,
+# no se autorizan revisores operativos. Pruebas usan override_settings.
+VENCIRA_MFA_RECOVERY_REVIEWER_IDS = ()
