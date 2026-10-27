@@ -11,7 +11,7 @@ from django.views.decorators.http import require_http_methods
 
 from .mfa_store import consume_recovery_code, consume_totp
 from .mfa_key_config import load_mfa_keys
-from .mfa_middleware import SESSION_VERIFIED
+from .mfa_middleware import SESSION_VERIFIED, SESSION_EPOCH
 from .login_security import clear_failures
 from .models import UserMfaState
 
@@ -71,6 +71,7 @@ def mfa_challenge(request):
     request.session.pop(PENDING_KEY, None)
     auth_login(request, user, backend=backend)
     request.session[SESSION_VERIFIED] = user.get_session_auth_hash()
+    request.session[SESSION_EPOCH] = UserMfaState.objects.get(user=user).session_epoch
     clear_failures(user.get_username())
     response = redirect(next_url)
     response["Cache-Control"] = "no-store"
