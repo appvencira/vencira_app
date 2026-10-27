@@ -40,3 +40,8 @@ Se añade `scripts/rehearse_mfa_0019_0021_o5_clone.sh`: exige root y variable ex
 ## Bloque B — Revisión estática aprobada (27/10/2026)
 
 Operador reporta `SINTAXIS_MFA_CLON=0` para `scripts/rehearse_mfa_0019_0021_o5_clone.sh`, y contenedores `vencira_localcheck-api-1`, `-db-1`, `-web_preview-1` todos `healthy`. `RESTAURACION_NO_EJECUTADA=1`, `MIGRACIONES_PERSISTENTES_NO_APLICADAS=1`. Preparación verificada; **el ensayo de restauración O5 todavía no ha sido ejecutado ni aprobado como completado**.
+
+
+## Verificación previa de script O5→clon — OK (27/10/2026)
+
+Operador informa `SINTAXIS_MFA_CLON=0`, `RESTAURACION_NO_EJECUTADA=1`, `MIGRACIONES_PERSISTENTES_NO_APLICADAS=1`; contenedores `vencira_localcheck-api-1`, `vencira_localcheck-db-1`, `vencira_localcheck-web_preview-1` en estado `healthy`. **No equivale a ensayo O5 restaurado ni autoriza despliegue o activación MFA.** Siguiente paso: ejecutar de forma expresamente controlada el clon efímero, revisar salida y confirmar destrucción de recursos.
