@@ -31,3 +31,6 @@ RELEASE_UNIFICADO=PREPARADO_SIN_OPERATIVA
 MFA_PRODUCTION_ROLLBACK_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
+
+## Gate final comunicado por operador
+Tras commit 2e70020fd4701b01ff11d9d28c429f449c5cd312, ejecutó scripts/check_mfa_unified_release_negative.sh y obtuvo MFA_UNIFIED_THREE_STAGES_FAIL_CLOSED=OK, NO_DEPLOY_NO_LIVE_MIGRATION=1, RESULTADO_FINAL=0. Esto confirma rechazo de las tres etapas por la entrada unificada inoperativa, no autorización de publicación. MFA_RELEASE_AUTHORIZED=NO.
