@@ -74,7 +74,7 @@ PHASE=FLUTTER
 sudo docker run --rm \
  -v "$PWD/clients/flutter:/work" -w /work \
  ghcr.io/cirruslabs/flutter:stable \
- sh -ec "flutter pub get && flutter analyze && flutter test test/renewal_attachments_card_test.dart" >>"$LOG" 2>&1
-echo "C_FICHA_FLUTTER_LOCKED_CARD=OK"
+ sh -ec "flutter pub get && flutter analyze && flutter test && flutter build web --release --pwa-strategy=none" >>"$LOG" 2>&1
+echo "C_FICHA_FLUTTER_ANALYZE_TEST_BUILD=OK"
 echo "C_FICHA_PUBLIC_UPLOAD_DOWNLOAD=DISABLED"
 echo "C_FICHA_LIVE_MIGRATION_0027=NOT_AUTHORIZED"
