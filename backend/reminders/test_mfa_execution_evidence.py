@@ -167,6 +167,25 @@ class AdministrativeFinalizationLifecycleTests(TestCase):
         self.assertEqual(self.state.encrypted_totp_secret, "old-encrypted-secret")
         self.assertEqual(self.state.session_epoch, 0)
 
+    def test_invalid_custody_proofs_lock_account_after_five_attempts(self):
+        from .mfa_admin_recovery_service import finalize_administrative_factor
+        with patch(
+            "reminders.mfa_admin_recovery_service.inspect_external_execution_evidence",
+            return_value=(True, "SYNTHETIC_TEST_ONLY"),
+        ):
+            for _ in range(5):
+                self.assertFalse(finalize_administrative_factor(
+                    case_id=self.case.pk, proof_code="Q" * 32,
+                ))
+            self.assertFalse(finalize_administrative_factor(
+                case_id=self.case.pk, proof_code=self.code,
+            ))
+        self.state.refresh_from_db()
+        self.assertEqual(self.state.failed_attempts, 5)
+        self.assertGreater(self.state.locked_until, timezone.now())
+        self.assertEqual(self.state.encrypted_totp_secret, "old-encrypted-secret")
+        self.assertEqual(self.state.session_epoch, 0)
+
 
 class AdministrativeOwnershipIsolationTests(TestCase):
     def test_expired_factor_owned_by_other_case_is_not_overwritten(self):
@@ -199,21 +218,3 @@ class AdministrativeOwnershipIsolationTests(TestCase):
         self.assertEqual(state.pending_rotation_secret, "old-staged-unchanged")
         self.assertEqual(state.encrypted_totp_secret, "active-unchanged")
 
-    def test_invalid_custody_proofs_lock_account_after_five_attempts(self):
-        from .mfa_admin_recovery_service import finalize_administrative_factor
-        with patch(
-            "reminders.mfa_admin_recovery_service.inspect_external_execution_evidence",
-            return_value=(True, "SYNTHETIC_TEST_ONLY"),
-        ):
-            for _ in range(5):
-                self.assertFalse(finalize_administrative_factor(
-                    case_id=self.case.pk, proof_code="Q" * 32,
-                ))
-            self.assertFalse(finalize_administrative_factor(
-                case_id=self.case.pk, proof_code=self.code,
-            ))
-        self.state.refresh_from_db()
-        self.assertEqual(self.state.failed_attempts, 5)
-        self.assertGreater(self.state.locked_until, timezone.now())
-        self.assertEqual(self.state.encrypted_totp_secret, "old-encrypted-secret")
-        self.assertEqual(self.state.session_epoch, 0)
