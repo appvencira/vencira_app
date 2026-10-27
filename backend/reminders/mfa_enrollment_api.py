@@ -10,7 +10,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .mfa_enrollment import confirm_mfa, prepare_mfa
+from .mfa_enrollment import confirm_mfa, prepare_mfa, finalize_mfa
 from .mfa_key_config import load_mfa_keys
 from .mfa_middleware import SESSION_VERIFIED
 from .models import UserMfaState
@@ -79,10 +79,11 @@ def mfa_setup_confirm(request):
     if codes is None:
         return _response({"detail": "Código incorrecto o preparación caducada."}, 403)
     request.session.pop(PENDING_SETUP, None)
-    # Cuenta protegida desde este instante: sesión vigente queda verificada
-    # por un TOTP recién validado; sesiones antiguas sin marcador se revocan.
-    request.session[SESSION_VERIFIED] = request.user.get_session_auth_hash()
-    request.session[PENDING_RECOVERY_ACK] = request.user.pk
+    # MFA aún NO activo; requiere prueba de posesión en el paso siguiente.
+    request.session[PENDING_RECOVERY_ACK] = {
+        'uid': request.user.pk,
+        'issued': int(timezone.now().timestamp()),
+    }
     return _response({
         "recovery_codes": codes,
         "warning": "Guarda los códigos ahora: no podrán volver a consultarse.",
@@ -95,11 +96,20 @@ def mfa_recovery_ack(request):
     """Registra confirmación explícita, sin recuperar ni repetir los códigos."""
     if not getattr(settings, "VENCIRA_MFA_ENROLLMENT_ENABLED", False):
         return _response({"detail": "Función no disponible."}, 404)
-    if request.session.get(PENDING_RECOVERY_ACK) != request.user.pk:
+    pending = request.session.get(PENDING_RECOVERY_ACK)
+    if not isinstance(pending, dict) or pending.get("uid") != request.user.pk:
         return _response({"detail": "No existe una entrega pendiente en esta sesión."}, 409)
-    if set(request.data) != {"saved"} or request.data.get("saved") is not True:
-        return _response({"detail": "Debes confirmar que has guardado los códigos."}, 400)
-    if not UserMfaState.objects.filter(user=request.user, enabled=True).exists():
-        return _response({"detail": "MFA no está activo."}, 409)
+    if (set(request.data) != {"saved", "proof_code"}
+            or request.data.get("saved") is not True
+            or not isinstance(request.data.get("proof_code"), str)):
+        return _response({"detail": "Confirma los códigos e introduce uno para comprobarlo."}, 400)
+    if not isinstance(pending.get("issued"), int):
+        request.session.pop(PENDING_RECOVERY_ACK, None)
+        return _response({"detail": "Preparación no disponible."}, 409)
+    if not finalize_mfa(
+        request.user.pk, request.data["proof_code"], issued_at=pending["issued"],
+    ):
+        return _response({"detail": "Código incorrecto o proceso caducado. Reinicia la preparación si es necesario."}, 403)
     request.session.pop(PENDING_RECOVERY_ACK, None)
-    return _response({"acknowledged": True}, 200)
+    request.session[SESSION_VERIFIED] = request.user.get_session_auth_hash()
+    return _response({"acknowledged": True, "enabled": True}, 200)
