@@ -244,7 +244,8 @@ def prepare_administrative_factor(*, case_id, keys):
         secret, user_id=case.subject_id, keys=keys,
     )
     state.pending_rotation_expires_at = min(now + timedelta(minutes=10), case.expires_at)
+    state.pending_administrative_case_id = case.pk
     UserMfaPendingRotationCode.objects.filter(state=state).delete()
-    state.save(update_fields=["pending_rotation_secret", "pending_rotation_expires_at", "updated_at"])
+    state.save(update_fields=["pending_rotation_secret", "pending_rotation_expires_at", "pending_administrative_case_id", "updated_at"])
     Event.objects.create(case=case, actor_id=case.requester_id, action="factor_prepared")
     return secret
