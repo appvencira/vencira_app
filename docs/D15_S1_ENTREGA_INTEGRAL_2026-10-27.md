@@ -86,3 +86,6 @@ El gate previo reveló que finalize_factor_rotation permitía finalizar una rota
 
 ## Gate del ciclo administrativo sintético
 El operador informa: S1_SQLITE_SECURITY=OK, PG17_EPHEMERAL=OK, S1_POSTGRES_REVIEW_AND_RACE=OK, S1_STATIC_CANDIDATE_GUARD=OK, S1_RELEASE_FAIL_CLOSED=OK, S1_DEPLOY_ENTRY_FAIL_CLOSED=OK, S1_UNTRACKED_FILES_REJECTED=OK, CLEANUP=OK, S1_PG17_GATE_RESULT=0, RESULTADO_FINAL=0, MFA_RELEASE_AUTHORIZED=NO y NO_DEPLOY_NO_LIVE_MIGRATION=1. Código bajo prueba: 681a50a113d92e5b8272fc45b7b6db0a7575fa1d. Registro local: /tmp/vencira-s1-pg17.1LR2Tluk.log. Pendiente: carrera concurrente específica de finalización administrativa, integración de identidad y custodia Fernet real. Sin despliegue.
+
+## Gate de bloqueo de intentos administrativos (27-10-2026)
+Operador confirmó tras fe342d340121c5d9bc2ac1c44058884d64ee9aa1: S1_SQLITE_SECURITY=OK, PG17_EPHEMERAL=OK, S1_POSTGRES_REVIEW_AND_RACE=OK, S1_STATIC_CANDIDATE_GUARD=OK, S1_RELEASE_FAIL_CLOSED=OK, S1_DEPLOY_ENTRY_FAIL_CLOSED=OK, S1_UNTRACKED_FILES_REJECTED=OK, CLEANUP=OK, S1_PG17_GATE_RESULT=0, NO_DEPLOY_NO_LIVE_MIGRATION=1 y MFA_RELEASE_AUTHORIZED=NO. Registro local: /tmp/vencira-s1-pg17.Evq6MHru.log. Sin despliegue ni migración persistente. Siguen pendientes identidad externa, entrega y custodia operativa.
