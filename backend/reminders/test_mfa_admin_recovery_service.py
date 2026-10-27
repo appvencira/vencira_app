@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.utils import timezone
-from .mfa_admin_recovery_service import record_review, inspect_recovery_preconditions, cancel_recovery_case
+from .mfa_admin_recovery_service import record_review, inspect_recovery_preconditions, cancel_recovery_case, expire_recovery_case
 from .models import MfaAdministrativeRecoveryCase as Case, UserMfaState
 
 
@@ -172,3 +172,25 @@ class RecoveryReviewServiceTests(TestCase):
         ), (False, "ACTOR_NOT_AUTHORIZED"))
         self.case.refresh_from_db()
         self.assertEqual(self.case.status, Case.Status.PENDING)
+
+    def test_expiration_is_terminal_audited_and_idempotent(self):
+        when = self.case.created_at + timedelta(hours=72, seconds=1)
+        self.assertEqual(expire_recovery_case(
+            case_id=self.case.pk, actor=self.reviewer1, now=when
+        ), (True, "CASE_EXPIRED"))
+        self.assertEqual(expire_recovery_case(
+            case_id=self.case.pk, actor=self.reviewer1, now=when
+        ), (True, "ALREADY_EXPIRED"))
+        self.assertEqual(self.case.events.filter(action="expired").count(), 1)
+        self.assertEqual(self.review(reviewer=self.reviewer2, approve=True),
+                         (False, "CASE_NOT_PENDING"))
+
+    def test_expiration_cannot_be_forced_early_or_by_unprivileged_actor(self):
+        self.assertEqual(expire_recovery_case(
+            case_id=self.case.pk, actor=self.reviewer1, now=self.now
+        ), (False, "CASE_NOT_EXPIRED"))
+        self.assertEqual(expire_recovery_case(
+            case_id=self.case.pk, actor=self.subject,
+            now=self.case.expires_at + timedelta(seconds=1)
+        ), (False, "ACTOR_NOT_ELIGIBLE"))
+        self.assertEqual(self.case.events.filter(action="expired").count(), 0)
