@@ -1,10 +1,11 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from .mfa_admin_recovery_service import open_recovery_case
 from .models import MfaAdministrativeRecoveryCase, UserMfaState
 
 
+@override_settings(VENCIRA_MFA_RECOVERY_OPENING_TEST_ONLY=True)
 class RecoveryOpeningTests(TestCase):
     def test_open_and_duplicate(self):
         user = get_user_model().objects.create_user("opening_fixture")
