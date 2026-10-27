@@ -93,3 +93,16 @@ test "$entry_rc" -eq 4
 grep -Fq "MFA_DEPLOY_ENTRY_PREFLIGHT=OK" "$LOG"
 grep -Fq "REASON=RELEASE_NOT_AUTHORIZED" "$LOG"
 echo "S1_DEPLOY_ENTRY_FAIL_CLOSED=OK"
+
+PHASE=UNTRACKED_NEGATIVE_TEST
+marker="scripts/.mfa_gate_untracked_probe_$$"
+if [ -e "$marker" ]; then echo "UNTRACKED_TEST_COLLISION=1"; exit 1; fi
+printf 'isolated untracked preflight test\n' >"$marker"
+set +e
+bash scripts/mfa_deploy_entry_readonly.sh "$(git rev-parse HEAD)" >>"$LOG" 2>&1
+untracked_rc=$?
+set -e
+rm -f "$marker"
+test "$untracked_rc" -eq 4
+grep -Fxq "REASON=UNTRACKED_FILES" "$LOG"
+echo "S1_UNTRACKED_FILES_REJECTED=OK"
