@@ -51,3 +51,6 @@ Un único bloque de **preparación de entrega MFA**: corregir documentación des
 
 ## Evidencia posterior: roundtrip de migraciones 0018–0026 en PG17 temporal
 El operador comunica validación del commit 8799800c0650d210594adcbe6d5b2479a61a2360: MFA_PG17_EPHEMERAL=OK; MFA_SCHEMA_0018_BASELINE=OK; MFA_SCHEMA_UP_0026=OK; MFA_SCHEMA_DOWN_0018_EMPTY_ONLY=OK; MFA_SCHEMA_REAPPLY_0026=OK; MFA_SCHEMA_ROUNDTRIP_RESULT=0; NO_DEPLOY_NO_LIVE_MIGRATION=1. Log local: /tmp/vencira-mfa-schema-roundtrip.9wh5afAv.log. Es **prueba de esquema vacío**, no de restauración O5 con datos ni de rollback seguro con cuentas MFA activas. MFA_SCHEMA_LIVE_USER_ROLLBACK=NOT_TESTED, MFA_PRODUCTION_ROLLBACK_AUTHORIZED=NO, MFA_RELEASE_AUTHORIZED=NO. G2 sigue parcialmente pendiente.
+
+## Verificación negativa de puerta legacy comunicada
+Operador confirma para el commit b0a3e8eb239144fb51e2d595d855ded2fba64200: MFA_LEGACY_API_SCHEMA_NEGATIVE=OK, MFA_LEGACY_WEB_FAIL_CLOSED_NO_DOCKER=OK, MFA_NEGATIVE_TEST_RESULT=0, RESULTADO_FINAL=0, NO_DEPLOY_NO_LIVE_MIGRATION=1. Se probó rechazo de API/esquema y bloqueo web al simular sudo/Docker no disponible; no se ejecutaron entrypoints de despliegue. La comprobación no demuestra una protección universal frente a otros comandos externos ni rollback con usuarios activos. MFA_RELEASE_AUTHORIZED=NO.
