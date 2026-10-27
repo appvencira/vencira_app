@@ -58,3 +58,6 @@ El operador comunicó `OK` y `RESULTADO_FINAL=0` para `reminders.test_attachment
 
 ## Adaptador ClamAV aislado — pendiente de gate
 `backend/reminders/attachment_clamav_adapter.py` implementa cliente INSTREAM para socket Unix de un futuro clamd aislado: límites de tamaño, plazo de respuesta y resultado `error` ante fallo, protocolo incorrecto o ausencia de servicio. `test_attachment_clamav_adapter.py` usa socket simulado, sin lanzar antivirus ni conectarse a la red. Un `clean` es solo `CLAMD_OK_UNATTESTED`, no certificado firmado, no promoción del estado y **no autoriza descarga**. Pendiente: desplegar motor aislado con definiciones actualizadas y política de actualización, cuotas CPU/RAM, aislamiento, pruebas EICAR y de formatos maliciosos, firma de veredictos en proceso protegido, integración cifrado+BD+API y validación PG17. El socket no está configurado en producción.
+
+## Gate del adaptador ClamAV simulado — evidencia operador
+Tras commit `d9d55717557051fc1c3d29c58624efb400c2bfaf`, el operador comunicó `OK` y `RESULTADO_FINAL=0` para `reminders.test_attachment_clamav_adapter`. Prueba de socket simulado; ClamAV real, definiciones, detección EICAR y despliegue permanecen PENDIENTES. Sin despliegue ni migraciones en BD persistente. No repetir test aislado; incluirlo en gate integral.
