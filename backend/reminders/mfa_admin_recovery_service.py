@@ -1,12 +1,12 @@
-"""D1.5-S1C: aprobación interna auditada; NUNCA restablece MFA.
+"""D1.5-S1: aprobación interna auditada; NUNCA restablece MFA.
 
-No expuesta por API ni comando. La elegibilidad actual exige cuentas de
-personal activas; una política de doble control independiente sigue pendiente.
+No expuesta por API ni comando. La custodia operacional externa sigue pendiente.
 """
 from datetime import timedelta
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
+from django.contrib.auth import get_user_model
 from .models import (
     MfaAdministrativeRecoveryCase as Case,
     MfaAdministrativeRecoveryApproval as Approval,
@@ -26,7 +26,7 @@ def record_review(*, case_id, reviewer, approve: bool, now=None):
     now = timezone.now() if now is None else now
     # Roster de despliegue, nunca proporcionado por la solicitud o su caller.
     reviewer_ids = getattr(settings, "VENCIRA_MFA_RECOVERY_REVIEWER_IDS", ())
-    if not isinstance(reviewer_ids, (tuple, frozenset)) or len(reviewer_ids) < 2:
+    if not isinstance(reviewer_ids, (tuple, frozenset)) or len(set(reviewer_ids)) < 2:
         return False, "REVIEWER_AUTHORIZATION_REQUIRED"
     case = Case.objects.select_for_update().get(pk=case_id)
     if not reviewer or not reviewer.pk or not reviewer.is_active or not reviewer.is_staff:
@@ -37,7 +37,8 @@ def record_review(*, case_id, reviewer, approve: bool, now=None):
         return False, "REVIEWER_CONFLICT"
     if case.status != Case.Status.PENDING:
         return False, "CASE_NOT_PENDING"
-    if case.created_at > now or case.expires_at <= now:
+    if (case.created_at > now or case.expires_at <= now
+            or now - case.created_at > timedelta(hours=72)):
         return False, "CASE_EXPIRED"
     if case.channel_verified_at is None or case.channel_verified_at > now:
         return False, "INDEPENDENT_CHANNEL_NOT_VERIFIED"
@@ -85,9 +86,17 @@ def inspect_recovery_preconditions(*, case_id, now=None):
     roster = getattr(settings, "VENCIRA_MFA_RECOVERY_REVIEWER_IDS", ())
     if not isinstance(roster, (tuple, frozenset)) or len(set(roster)) < 2:
         return False, "REVIEWER_AUTHORIZATION_REQUIRED"
+    if case.expires_at <= now:
+        return False, "CASE_EXPIRED"
     approvals = tuple(case.approvals.all())
     if any(item.reviewer_id not in roster for item in approvals):
         return False, "REVIEWER_NOT_AUTHORIZED"
+    eligible = set(get_user_model().objects.filter(
+        pk__in=[item.reviewer_id for item in approvals],
+        is_active=True, is_staff=True,
+    ).values_list("pk", flat=True))
+    if any(item.reviewer_id not in eligible for item in approvals):
+        return False, "REVIEWER_NOT_ELIGIBLE"
     verdict = RecoveryCase(
         case_id=str(case.pk),
         subject_id=case.subject_id,
