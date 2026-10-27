@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../api/vencira_api.dart';
 
 /// D1.5n: flujo MFA por pasos; deshabilitado en Ajustes salvo build opt-in.
@@ -16,6 +17,7 @@ class _MfaSetupScreenState extends State<MfaSetupScreen> {
   final _totp = TextEditingController();
   final _proof = TextEditingController();
   String? _secret;
+  String? _provisioningUri;
   List<String> _codes = [];
   bool _saved = false;
   bool _busy = false;
@@ -85,12 +87,24 @@ class _MfaSetupScreenState extends State<MfaSetupScreen> {
               }
               if (!mounted) return;
               _password.clear();
-              setState(() { _secret = secret; });
+              setState(() { _secret = secret; _provisioningUri = uri; });
             }), child: Text(tr('Continuar', 'Continuar'))),
           ] else if (_codes.isEmpty) ...[
             Text(tr('Introduce esta clave en tu aplicación autenticadora. No la compartas.',
                     'Introduïx esta clau en l’aplicació autenticadora. No la compartisques.')),
             const SizedBox(height: 12),
+            if (_provisioningUri != null) ...[
+              Center(child: Semantics(
+                label: tr('QR para añadir VENCIRA al autenticador',
+                          'QR per afegir VENCIRA a l’autenticador'),
+                child: QrImageView(
+                  data: _provisioningUri!, version: QrVersions.auto,
+                  size: 210, backgroundColor: Colors.white,
+                  errorCorrectionLevel: QrErrorCorrectLevel.M,
+                ),
+              )),
+              const SizedBox(height: 14),
+            ],
             SelectableText(_secret!, style: const TextStyle(fontFamily: 'monospace')),
             const SizedBox(height: 8),
             Text(tr('La aplicación permite añadir la cuenta manualmente.',
@@ -103,7 +117,7 @@ class _MfaSetupScreenState extends State<MfaSetupScreen> {
               final codes = await widget.api.confirmMfaSetup(_totp.text.trim());
               if (!mounted) return;
               _totp.clear();
-              setState(() { _codes = codes; _secret = null; });
+              setState(() { _codes = codes; _secret = null; _provisioningUri = null; });
             }), child: Text(tr('Verificar código', 'Verificar codi'))),
           ] else ...[
             Text(tr('Guarda estos diez códigos. Solo se muestran una vez. No hagas capturas en un dispositivo compartido.',
