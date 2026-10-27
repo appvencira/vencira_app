@@ -16,3 +16,5 @@ echo "MFA_OPERATIONAL_CUSTODY=PENDING"
 echo "MFA_ADMIN_RECOVERY=PENDING"
 echo "MFA_RELEASE_AUTHORIZED=NO"
 echo "NO_DEPLOY_NO_MIGRATION=1"
+# Una puerta de publicación no puede devolver código 0 mientras NO está autorizada.
+fail OPERATIONAL_RELEASE_NOT_AUTHORIZED
