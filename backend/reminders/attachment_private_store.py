@@ -84,3 +84,23 @@ class PrivateQuarantineStore:
             return self.fernet.decrypt(token)
         except (OSError, InvalidToken) as exc:
             raise PrivateStoreError("Objeto ilegible o inválido") from exc
+
+    def discard_quarantine(self, key: uuid.UUID) -> None:
+        """Remove a private staged object on failed metadata creation.
+
+        Callers must check database ownership before use; not an HTTP delete.
+        """
+        name = self._id(key)
+        try:
+            fd = os.open(self.root, os.O_RDONLY | os.O_DIRECTORY |
+                         getattr(os, "O_NOFOLLOW", 0))
+            try:
+                info = os.stat(name, dir_fd=fd, follow_symlinks=False)
+                if not stat.S_ISREG(info.st_mode):
+                    raise PrivateStoreError("Objeto inseguro")
+                os.unlink(name, dir_fd=fd)
+                os.fsync(fd)
+            finally:
+                os.close(fd)
+        except OSError as exc:
+            raise PrivateStoreError("No se pudo descartar el objeto") from exc
