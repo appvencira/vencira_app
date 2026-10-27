@@ -7,7 +7,11 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import connection
 from django.db.migrations.recorder import MigrationRecorder
 
-REQUIRED = ("0019_user_mfa_state", "0020_mfa_attempt_limits", "0021_mfa_prepared_at")
+REQUIRED = (
+    "0019_user_mfa_state", "0020_mfa_attempt_limits", "0021_mfa_prepared_at",
+    "0022_mfa_admin_recovery_cases", "0023_user_mfa_session_epoch",
+    "0024_mfa_pending_rotation",
+)
 
 
 def check_candidate(*, candidate_enforces_mfa: bool) -> tuple[bool, str]:
