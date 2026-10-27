@@ -38,7 +38,7 @@ test "$ready" -eq 1
 echo "MFA_PG17_EPHEMERAL=OK"
 dcmd=(sudo docker run --rm --network "$NET" \
   -e VENCIRA_ENV=test -e VENCIRA_DB_ENGINE=postgresql \
-  -e DJANGO_DEBUG=0 -e DJANGO_SECRET_KEY=synthetic-mfa-only-2026 \
+  -e DJANGO_DEBUG=0 -e DJANGO_SECRET_KEY=synthetic-mfa-roundtrip-django-secret-2026-ephemeral-only \
   -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1 \
   -e POSTGRES_HOST="$DB" -e POSTGRES_DB=roundtrip \
   -e POSTGRES_USER=roundtrip -e POSTGRES_PASSWORD=synthetic-only \
