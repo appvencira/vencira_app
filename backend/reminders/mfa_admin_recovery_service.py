@@ -281,3 +281,41 @@ def confirm_administrative_factor(*, case_id, new_code, keys):
     ])
     Event.objects.create(case=case, actor_id=case.requester_id, action="codes_prepared")
     return codes
+
+
+@transaction.atomic
+def finalize_administrative_factor(*, case_id, proof_code):
+    """Close an authorized recovery only upon provisional code custody proof."""
+    from .models import UserMfaState, UserMfaRecoveryCode, UserMfaPendingRotationCode
+    from .mfa_secrets import verify_recovery_code
+
+    case = Case.objects.select_for_update().get(pk=case_id)
+    state = UserMfaState.objects.select_for_update().get(user_id=case.subject_id)
+    now = timezone.now()
+    if (not state.enabled or state.pending_administrative_case_id != case.pk
+            or not state.pending_rotation_secret or not state.pending_rotation_expires_at
+            or now >= state.pending_rotation_expires_at
+            or (state.locked_until and state.locked_until > now)
+            or not inspect_external_execution_evidence(case_id=case.pk)[0]):
+        return False
+    pending = list(UserMfaPendingRotationCode.objects.filter(state=state))
+    if len(pending) != 10 or not isinstance(proof_code, str) or len(proof_code) != 32:
+        return False
+    if not any(verify_recovery_code(proof_code, item.code_hash) for item in pending):
+        return False
+    UserMfaRecoveryCode.objects.filter(state=state).delete()
+    UserMfaRecoveryCode.objects.bulk_create(
+        [UserMfaRecoveryCode(state=state, code_hash=item.code_hash) for item in pending]
+    )
+    UserMfaPendingRotationCode.objects.filter(state=state).delete()
+    state.encrypted_totp_secret = state.pending_rotation_secret
+    state.pending_rotation_secret = ""
+    state.pending_rotation_expires_at = None
+    state.pending_administrative_case_id = None
+    state.last_accepted_counter = -1
+    state.session_epoch += 1
+    state.save()
+    case.status = Case.Status.CLOSED
+    case.save(update_fields=["status"])
+    Event.objects.create(case=case, actor_id=case.requester_id, action="factor_recovered")
+    return True
