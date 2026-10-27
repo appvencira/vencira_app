@@ -3,6 +3,7 @@
 No habilitar sin custodia de claves, pruebas y procedimiento de recuperación.
 """
 from django.conf import settings
+from .login_security import is_blocked, register_failure, clear_failures, BLOCK
 from django.contrib.auth import authenticate
 from django.http import HttpResponse
 from django.utils import timezone
@@ -43,11 +44,18 @@ def mfa_setup_start(request):
         return _response({"detail": "Configuración MFA no disponible."}, 503)
     if set(request.data) != {"password"} or not isinstance(request.data.get("password"), str):
         return _response({"detail": "Contraseña obligatoria."}, 400)
+    username = request.user.get_username()
+    if is_blocked(username):
+        response = _response({"detail": "Demasiados intentos. Prueba más tarde."}, 429)
+        response["Retry-After"] = str(int(BLOCK.total_seconds()))
+        return response
     password = request.data["password"]
     if not password or len(password) > 1024 or authenticate(
         request._request, username=request.user.get_username(), password=password,
     ) is None:
+        register_failure(username)
         return _response({"detail": "Confirmación incorrecta."}, 403)
+    clear_failures(username)
     if UserMfaState.objects.filter(user=request.user, enabled=True).exists():
         return _response({"detail": "MFA ya está activo."}, 409)
     secret, uri = prepare_mfa(request.user, keys=keys)
