@@ -15,15 +15,22 @@ from .mfa_secrets import (
 from .mfa_totp import generate_secret, match_counter
 from .models import UserMfaState, UserMfaRecoveryCode, UserMfaPendingRotationCode
 from .mfa_store import _failed, _succeeded
+from .models import MfaAdministrativeRecoveryCase
 
 ROTATION_TTL = timedelta(minutes=10)
+
+
+def recovery_pending(user_id):
+    return MfaAdministrativeRecoveryCase.objects.filter(
+        subject_id=user_id, status=MfaAdministrativeRecoveryCase.Status.PENDING,
+    ).exists()
 
 
 @transaction.atomic
 def prepare_factor_rotation(*, user_id, old_code, keys, timestamp=None):
     """Requiere código del TOTP activo; devuelve secreto nuevo solo al servicio."""
     state = UserMfaState.objects.select_for_update().get(user_id=user_id)
-    if not state.enabled:
+    if not state.enabled or recovery_pending(user_id):
         return None
     now = timezone.now()
     if state.locked_until and state.locked_until > now:
@@ -60,7 +67,7 @@ def confirm_factor_rotation(*, user_id, new_code, keys, timestamp=None):
     """
     state = UserMfaState.objects.select_for_update().get(user_id=user_id)
     now = timezone.now()
-    if (not state.enabled or not state.pending_rotation_secret
+    if (recovery_pending(user_id) or not state.enabled or not state.pending_rotation_secret
             or state.pending_rotation_expires_at is None
             or now >= state.pending_rotation_expires_at
             or (state.locked_until and state.locked_until > now)):
