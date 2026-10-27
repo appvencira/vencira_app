@@ -16,7 +16,6 @@ class _MfaSetupScreenState extends State<MfaSetupScreen> {
   final _totp = TextEditingController();
   final _proof = TextEditingController();
   String? _secret;
-  String? _uri;
   List<String> _codes = [];
   bool _saved = false;
   bool _busy = false;
@@ -86,7 +85,7 @@ class _MfaSetupScreenState extends State<MfaSetupScreen> {
               }
               if (!mounted) return;
               _password.clear();
-              setState(() { _secret = secret; _uri = uri; });
+              setState(() { _secret = secret; });
             }), child: Text(tr('Continuar', 'Continuar'))),
           ] else if (_codes.isEmpty) ...[
             Text(tr('Introduce esta clave en tu aplicación autenticadora. No la compartas.',
@@ -104,7 +103,7 @@ class _MfaSetupScreenState extends State<MfaSetupScreen> {
               final codes = await widget.api.confirmMfaSetup(_totp.text.trim());
               if (!mounted) return;
               _totp.clear();
-              setState(() { _codes = codes; _uri = null; _secret = null; });
+              setState(() { _codes = codes; _secret = null; });
             }), child: Text(tr('Verificar código', 'Verificar codi'))),
           ] else ...[
             Text(tr('Guarda estos diez códigos. Solo se muestran una vez. No hagas capturas en un dispositivo compartido.',
