@@ -54,3 +54,6 @@ El operador comunica validación del commit 8799800c0650d210594adcbe6d5b2479a61a
 
 ## Verificación negativa de puerta legacy comunicada
 Operador confirma para el commit b0a3e8eb239144fb51e2d595d855ded2fba64200: MFA_LEGACY_API_SCHEMA_NEGATIVE=OK, MFA_LEGACY_WEB_FAIL_CLOSED_NO_DOCKER=OK, MFA_NEGATIVE_TEST_RESULT=0, RESULTADO_FINAL=0, NO_DEPLOY_NO_LIVE_MIGRATION=1. Se probó rechazo de API/esquema y bloqueo web al simular sudo/Docker no disponible; no se ejecutaron entrypoints de despliegue. La comprobación no demuestra una protección universal frente a otros comandos externos ni rollback con usuarios activos. MFA_RELEASE_AUTHORIZED=NO.
+
+## Ensayo de rollback con cuenta MFA activa sintética — evidencia operador
+Commit validado: 5165916243411057d1ede5b2c1595f29d2dcb000. Resultados: MFA_ACTIVE_PG17_EPHEMERAL=OK; MFA_ACTIVE_SCHEMA_0026=OK; MFA_SYNTHETIC_ACTIVE_ACCOUNT=OK; MFA_ACTIVE_DOWNGRADE_REJECTED=OK; MFA_ENFORCING_CANDIDATE_PRECHECK=OK; MFA_SESSION_ENFORCEMENT_TESTS=OK; MFA_DESTRUCTIVE_SCHEMA_DOWNGRADE=NOT_RUN; MFA_ACTIVE_ROLLBACK_RESULT=0; RESULTADO_FINAL=0; NO_DEPLOY_NO_LIVE_MIGRATION=1. Log privado: /tmp/vencira-mfa-active-rollback.ECQVNKCd.log. Prueba temporal de decisión de bloqueo; no prueba rollout real ni rollback destructivo. MFA_PRODUCTION_ROLLBACK_AUTHORIZED=NO; MFA_RELEASE_AUTHORIZED=NO.
