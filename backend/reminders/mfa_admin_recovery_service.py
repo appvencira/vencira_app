@@ -265,6 +265,7 @@ def confirm_administrative_factor(*, case_id, new_code, keys):
             or not state.pending_rotation_secret
             or state.pending_rotation_expires_at is None
             or now >= state.pending_rotation_expires_at
+            or (state.locked_until and state.locked_until > now)
             or not inspect_external_execution_evidence(case_id=case.pk)[0]
             or UserMfaPendingRotationCode.objects.filter(state=state).exists()):
         return None
