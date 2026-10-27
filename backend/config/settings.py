@@ -136,3 +136,6 @@ LOGGING = {
         },
     },
 }
+
+# D1.5k: no exponer alta MFA sin activación operativa explícita.
+VENCIRA_MFA_ENROLLMENT_ENABLED = os.getenv("VENCIRA_MFA_ENROLLMENT_ENABLED", "0") == "1"
