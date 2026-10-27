@@ -74,3 +74,6 @@ Commit validado `9fb4d5f4250ba0345035b42104e40c384d700905`. Salida reportada: SQ
 
 ## Gate negativo de archivo sin seguimiento
 Validación del commit `5b06b3687ca096b545e55a2529e7bb429bbcc52c`: `S1_UNTRACKED_FILES_REJECTED=OK`, `S1_DEPLOY_ENTRY_FAIL_CLOSED=OK`, `S1_PG17_GATE_RESULT=0`, `RESULTADO_FINAL=0`, `CLEANUP=OK`, sin despliegue ni migraciones persistentes. Esta prueba verifica el rechazo de un archivo temporal sin seguimiento en el preflight; no acredita aún integración del guard con todas las rutas operativas de despliegue.
+
+## Gate verificador de identidad de recuperación
+Commit validado `502895890027eeca786b6a41a3c9615810237eca`. Pruebas sintéticas SQLite y PostgreSQL 17, rechazo sin verificador, concurrencia, bloqueo de publicación, rechazo de archivos no seguidos y limpieza: OK. Resultado global 0. No acredita un proveedor de verificación externo real ni la recuperación administrativa completa. No se desplegó ni migró PostgreSQL persistente.
