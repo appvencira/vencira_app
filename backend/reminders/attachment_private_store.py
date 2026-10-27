@@ -73,14 +73,10 @@ class PrivateQuarantineStore:
             fd = os.open(self.root, os.O_RDONLY | os.O_DIRECTORY)
             try:
                 item = os.open(name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=fd)
-                try:
-                    if not stat.S_ISREG(os.fstat(item).st_mode):
+                with os.fdopen(item, "rb") as file:
+                    if not stat.S_ISREG(os.fstat(file.fileno()).st_mode):
                         raise PrivateStoreError("Objeto inválido")
-                    with os.fdopen(item, "rb") as file:
-                        token = file.read(16 * 1024 * 1024 + 1)
-                finally:
-                    # fdopen closes on success; avoid double close.
-                    pass
+                    token = file.read(16 * 1024 * 1024 + 1)
             finally:
                 os.close(fd)
             if len(token) > 16 * 1024 * 1024:
