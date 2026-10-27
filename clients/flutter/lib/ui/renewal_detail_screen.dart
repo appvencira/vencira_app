@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
 import 'renewal_editor.dart';
+import 'renewal_attachments_card.dart';
 import 'reminder_preview_card.dart';
 import 'reminder_draft_card.dart';
 import 'control_assessment_card.dart';
@@ -808,6 +809,8 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                   _info(_t.noticeDate,
                     DateFormat.yMd(locale).format(renewal.noticeDeadlineOn!)),
             ]),
+            VenciraRenewalAttachmentsCard(locale: locale),
+            const SizedBox(height: 12),
             if (renewal.notes.isNotEmpty)
               _sectionCard(Icons.notes_outlined,
                 _t.detailCaption11, [
