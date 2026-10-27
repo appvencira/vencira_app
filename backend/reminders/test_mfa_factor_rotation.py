@@ -201,7 +201,11 @@ class RotationFailClosedTests(TestCase):
             expires_at=now + timedelta(hours=72),
         )
         code = "A" * 32
-        UserMfaPendingRotationCode.objects.create(state=state, code_hash=hash_recovery_code(code))
+        for index in range(10):
+            candidate = code if index == 0 else str(index) * 32
+            UserMfaPendingRotationCode.objects.create(
+                state=state, code_hash=hash_recovery_code(candidate),
+            )
         instant = int(now.timestamp())
         self.assertIsNone(confirm_factor_rotation(
             user_id=user.pk, new_code=totp_at(new_secret, instant),
