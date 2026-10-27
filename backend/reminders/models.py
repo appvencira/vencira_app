@@ -488,3 +488,70 @@ class UserMfaRecoveryCode(models.Model):
     )
     code_hash = models.CharField(max_length=256)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class MfaAdministrativeRecoveryCase(models.Model):
+    """Solicitud de recuperación MFA, sin facultad de cambiar factores.
+
+    Solo entidades internas. No exponer API ni ejecutar resets a partir
+    del estado de estas tablas.
+    """
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pendiente"
+        REJECTED = "rejected", "Rechazado"
+        EXPIRED = "expired", "Caducado"
+        CANCELLED = "cancelled", "Cancelado"
+        CLOSED = "closed", "Cerrado"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    subject = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="vencira_mfa_recovery_cases",
+    )
+    requester = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="vencira_requested_mfa_recoveries",
+    )
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+    channel_verified_at = models.DateTimeField(null=True, blank=True)
+    quarantine_until = models.DateTimeField()
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["subject", "status"], name="mfa_rec_subject_status")]
+
+
+class MfaAdministrativeRecoveryApproval(models.Model):
+    """Una autorización por revisor/caso; impide aprobación duplicada."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    case = models.ForeignKey(
+        MfaAdministrativeRecoveryCase, on_delete=models.PROTECT,
+        related_name="approvals",
+    )
+    reviewer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="vencira_mfa_recovery_approvals",
+    )
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["case", "reviewer"], name="uniq_mfa_case_reviewer"),
+        ]
+
+
+class MfaAdministrativeRecoveryEvent(models.Model):
+    """Registro de eventos; no almacenar documentos ni factores MFA."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    case = models.ForeignKey(
+        MfaAdministrativeRecoveryCase, on_delete=models.PROTECT,
+        related_name="events",
+    )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="vencira_mfa_recovery_events",
+    )
+    action = models.CharField(max_length=32)
+    created_at = models.DateTimeField(auto_now_add=True)
