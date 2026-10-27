@@ -133,3 +133,26 @@ def cancel_recovery_case(*, case_id, actor):
     case.save(update_fields=["status"])
     Event.objects.create(case=case, actor=actor, action="cancelled")
     return True, "CASE_CANCELLED"
+
+
+@transaction.atomic
+def expire_recovery_case(*, case_id, actor, now=None):
+    """Expira un caso vencido y audita una sola transición.
+
+    La operación requiere operador de plantilla activa; jamás altera factores,
+    cookies, sesiones o contraseñas. No existe endpoint público.
+    """
+    now = timezone.now() if now is None else now
+    if not actor or not actor.pk or not actor.is_active or not actor.is_staff:
+        return False, "ACTOR_NOT_ELIGIBLE"
+    case = Case.objects.select_for_update().get(pk=case_id)
+    if case.status == Case.Status.EXPIRED:
+        return True, "ALREADY_EXPIRED"
+    if case.status != Case.Status.PENDING:
+        return False, "CASE_NOT_PENDING"
+    if now < case.expires_at and now <= case.created_at + timedelta(hours=72):
+        return False, "CASE_NOT_EXPIRED"
+    case.status = Case.Status.EXPIRED
+    case.save(update_fields=["status"])
+    Event.objects.create(case=case, actor=actor, action="expired")
+    return True, "CASE_EXPIRED"
