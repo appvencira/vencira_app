@@ -11,6 +11,7 @@ test "$(git branch --show-current)" = integration/local-e2e-prep || fail WRONG_B
 test "$(git rev-parse HEAD)" = "$candidate" || fail WRONG_CHECKOUT
 test -z "$(git diff --name-only)" || fail DIRTY_TREE
 test -z "$(git diff --cached --name-only)" || fail DIRTY_INDEX
+test -z "$(git ls-files --others --exclude-standard | grep -vx 'clients/flutter/pubspec.lock' || true)" || fail UNTRACKED_FILES
 # Fallo cerrado hasta que el control de esquema real, la custodia y la
 # recuperacion sin factores sean integrados y acreditados.
 guard_log="$(mktemp /tmp/vencira-mfa-entry.XXXXXXXX.log)"
