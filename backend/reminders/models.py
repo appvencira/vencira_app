@@ -474,6 +474,7 @@ class UserMfaState(models.Model):
     encrypted_totp_secret = models.TextField()
     prepared_at = models.DateTimeField(null=True, blank=True)
     enabled = models.BooleanField(default=False)
+    session_epoch = models.PositiveIntegerField(default=0)  # permite invalidar todas las sesiones MFA
     last_accepted_counter = models.BigIntegerField(default=-1)
     failed_attempts = models.PositiveSmallIntegerField(default=0)
     attempts_started_at = models.DateTimeField(null=True, blank=True)
