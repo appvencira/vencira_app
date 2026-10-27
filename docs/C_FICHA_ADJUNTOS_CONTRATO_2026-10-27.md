@@ -55,3 +55,6 @@ Se incorporó `attachment_scan_contract.py` para verificar resultados firmados H
 
 ## Gate de contrato firmado — evidencia operador
 El operador comunicó `OK` y `RESULTADO_FINAL=0` para `reminders.test_attachment_scan_contract`, tras commit `5d95b381efb9a39f5960224a7d38786b71998224`. El gate solo cubre verificaciones sintéticas de firma, identidad, dictamen y caducidad, no despliegue de antivirus ni habilitación de descarga. No repetirlo por separado; integrarlo en gate final. Sin despliegue o migraciones persistentes.
+
+## Adaptador ClamAV aislado — pendiente de gate
+`backend/reminders/attachment_clamav_adapter.py` implementa cliente INSTREAM para socket Unix de un futuro clamd aislado: límites de tamaño, plazo de respuesta y resultado `error` ante fallo, protocolo incorrecto o ausencia de servicio. `test_attachment_clamav_adapter.py` usa socket simulado, sin lanzar antivirus ni conectarse a la red. Un `clean` es solo `CLAMD_OK_UNATTESTED`, no certificado firmado, no promoción del estado y **no autoriza descarga**. Pendiente: desplegar motor aislado con definiciones actualizadas y política de actualización, cuotas CPU/RAM, aislamiento, pruebas EICAR y de formatos maliciosos, firma de veredictos en proceso protegido, integración cifrado+BD+API y validación PG17. El socket no está configurado en producción.
