@@ -237,7 +237,10 @@ def prepare_administrative_factor(*, case_id, keys):
     now = timezone.now()
     if state.locked_until and state.locked_until > now:
         return None
-    if state.pending_rotation_secret and state.pending_rotation_expires_at and state.pending_rotation_expires_at > now:
+    # Nunca reapropiar un factor preparado para otro expediente, aun caducado.
+    if state.pending_administrative_case_id is not None:
+        return None
+    if state.pending_rotation_secret:
         return None
     secret = generate_secret()
     state.pending_rotation_secret = encrypt_totp_secret(
