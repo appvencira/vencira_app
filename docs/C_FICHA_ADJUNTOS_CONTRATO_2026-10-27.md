@@ -73,3 +73,6 @@ Operador confirma ejecución de `scripts/rehearse_clamav_real_isolated.sh` con c
 
 ## Gate de orquestación de cuarentena — validado según operador
 Con el commit `e5fcf5bb29dd5f0f510541fefedf3a330609840d`, el operador ejecutó `reminders.test_attachment_scan_pipeline` en Docker de prueba y comunicó `OK`, `RESULTADO_FINAL=0`. Se acreditan únicamente casos sintéticos de lectura cifrada, coincidencia SHA-256/tamaño, rechazo de discrepancias/objeto ausente y propagación de resultados simulados, con descarga siempre bloqueada. No demuestra socket clamd real, integración API ni aprobación de archivos. PostgreSQL persistente permanece sin migración 0027. No repetir el gate aislado.
+
+## Gate PostgreSQL 17 integrado — preparado, no ejecutado
+`scripts/validate_c_ficha_pg17_integrated.sh` construye imagen temporal, ejecuta `makemigrations --check`, levanta una red Docker interna y PG17 efímero, aplica 0027 con sus dependencias 0019–0026 únicamente en ese clon vacío y ejecuta el conjunto de pruebas C-FICHA. No realiza despliegues ni migraciones en la BD viva. Esta prueba NO resuelve la dependencia de publicación: 0027 no debe migrarse en el entorno persistente mientras MFA 0019–0026 no esté autorizado. Está pendiente el resultado del operador.
