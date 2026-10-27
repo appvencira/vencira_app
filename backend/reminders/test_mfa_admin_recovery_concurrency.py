@@ -138,3 +138,69 @@ class MfaReviewConcurrencyTests(TransactionTestCase):
                          case.events.filter(action="review_approved").count())
         self.assertLessEqual(case.approvals.count(), 1)
         self.assertIn((True, "CASE_CANCELLED"), results)
+
+
+class MfaFinalizationConcurrencyTests(TransactionTestCase):
+    def test_two_finalizers_only_one_commits(self):
+        if connection.vendor != "postgresql":
+            self.skipTest("Requires PostgreSQL independent row locks")
+        from unittest.mock import patch
+        from .mfa_admin_recovery_service import finalize_administrative_factor
+        from .mfa_secrets import hash_recovery_code
+        from .models import (
+            UserMfaState, UserMfaRecoveryCode, UserMfaPendingRotationCode,
+        )
+
+        user = get_user_model().objects.create_user(username="mfa_finalization_race")
+        now = timezone.now()
+        case = MfaAdministrativeRecoveryCase.objects.create(
+            subject=user, requester=user,
+            quarantine_until=now - timedelta(hours=1),
+            expires_at=now + timedelta(hours=1),
+        )
+        state = UserMfaState.objects.create(
+            user=user, enabled=True,
+            encrypted_totp_secret="old-synthetic",
+            pending_rotation_secret="new-synthetic",
+            pending_rotation_expires_at=now + timedelta(minutes=5),
+            pending_administrative_case_id=case.pk,
+        )
+        code = "A" * 32
+        for index in range(10):
+            value = code if index == 0 else "BCDEFGHIJK"[index] * 32
+            UserMfaPendingRotationCode.objects.create(
+                state=state, code_hash=hash_recovery_code(value),
+            )
+        UserMfaRecoveryCode.objects.create(
+            state=state, code_hash=hash_recovery_code("Z" * 32),
+        )
+        barrier = Barrier(2)
+
+        def worker():
+            close_old_connections()
+            try:
+                barrier.wait(timeout=10)
+                return finalize_administrative_factor(
+                    case_id=case.pk, proof_code=code,
+                )
+            finally:
+                connection.close()
+
+        with patch(
+            "reminders.mfa_admin_recovery_service.inspect_external_execution_evidence",
+            return_value=(True, "SYNTHETIC_TEST_ONLY"),
+        ):
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                jobs = [pool.submit(worker) for _ in range(2)]
+                outcomes = [job.result(timeout=30) for job in jobs]
+
+        self.assertEqual(sorted(outcomes), [False, True])
+        state.refresh_from_db()
+        case.refresh_from_db()
+        self.assertEqual(state.encrypted_totp_secret, "new-synthetic")
+        self.assertEqual(state.session_epoch, 1)
+        self.assertIsNone(state.pending_administrative_case_id)
+        self.assertEqual(case.status, MfaAdministrativeRecoveryCase.Status.CLOSED)
+        self.assertEqual(case.events.filter(action="factor_recovered").count(), 1)
+        self.assertEqual(UserMfaRecoveryCode.objects.filter(state=state).count(), 10)
+        self.assertFalse(UserMfaPendingRotationCode.objects.filter(state=state).exists())
