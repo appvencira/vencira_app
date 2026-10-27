@@ -68,3 +68,17 @@ Diseño elegido:
 - La provisión no habilita VENCIRA_MFA_ENROLLMENT_ENABLED ni cambia MFA_RELEASE_AUTHORIZED=NO. Migraciones y despliegue requieren autorización explícita distinta.
 
 Estado al documentar: NO existe todavía montaje de secreto, clave activa en VPS ni licencia para migrar o publicar.
+
+
+## Decisión técnica provisional: recuperación con administrador único
+Inspección de código: mfa_admin_recovery_policy.py exige EXACTAMENTE dos revisores distintos del titular; record_review exige roster de al menos dos miembros elegibles; settings.py lo deja vacío. Es correcto que la recuperación se bloquee hoy: no sustituir dos revisores por dos copias del secreto ni por dos aprobaciones de la misma persona.
+
+Rutas admisibles para decisión futura:
+A. **Recuperación autónoma del titular** con uno de sus diez códigos de un solo uso o un factor alternativo previamente registrado: no implica restablecimiento administrativo; verificar que esos mecanismos funcionan en pruebas UAT, que la persona entiende su custodia y que no aparece un bypass password-only. Si pierde todos los factores y códigos, la cuenta permanece bloqueada.
+B. **Prestador externo independiente**: verificar identidad con garantías adecuadas y evidencia no reutilizable ligada al expediente. El prestador no debe conocer el secreto Fernet ni poder activar MFA por sí mismo. El modelo de autorización administrativa debe rediseñarse explícitamente y someterse a revisión, nunca fingir dos revisores humanos internos.
+C. **Segundo revisor humano real**: incorporar responsable distinto, independiente y habilitado antes de ofrecer recuperación administrativa; conservar cuarentena y doble revisión.
+
+Recomendación para la primera implantación controlada: priorizar A (códigos de emergencia con prueba de restauración y aceptación de bloqueo definitivo en pérdida total), mientras B/C se estudian. Esto no cambia los criterios de despliegue existentes ni autoriza ahora MFA; para activar se necesitará una decisión y un gate separado sobre recuperación operativa. No implementar reseteo vía email simple, SMS simple, contraseña, administrador único o endpoint público improvisado.
+
+PENDIENTE_DECISION_RECUPERACION_TOTAL=SI
+MFA_RELEASE_AUTHORIZED=NO
