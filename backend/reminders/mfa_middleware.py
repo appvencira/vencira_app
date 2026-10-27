@@ -2,7 +2,7 @@
 from django.contrib.auth import logout
 from django.http import HttpResponseForbidden
 
-from .models import UserMfaState
+from .models import UserMfaState, MfaAdministrativeRecoveryCase
 
 SESSION_VERIFIED = "vencira_mfa_verified_v1"
 SESSION_EPOCH = "vencira_mfa_session_epoch_v1"
@@ -13,6 +13,13 @@ class RequireMfaSessionMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        if request.user.is_authenticated and MfaAdministrativeRecoveryCase.objects.filter(
+            subject_id=request.user.pk, status=MfaAdministrativeRecoveryCase.Status.PENDING,
+        ).exists():
+            logout(request)
+            response = HttpResponseForbidden("Cuenta protegida durante recuperación MFA.")
+            response["Cache-Control"] = "no-store"
+            return response
         state = (UserMfaState.objects.filter(user_id=request.user.pk, enabled=True).first()
                  if request.user.is_authenticated else None)
         if (state is not None and (
