@@ -11,6 +11,7 @@ REQUIRED = (
     "0019_user_mfa_state", "0020_mfa_attempt_limits", "0021_mfa_prepared_at",
     "0022_mfa_admin_recovery_cases", "0023_user_mfa_session_epoch",
     "0024_mfa_pending_rotation", "0025_mfa_pending_rotation_codes",
+    "0026_user_mfa_pending_administrative_case",
 )
 
 
