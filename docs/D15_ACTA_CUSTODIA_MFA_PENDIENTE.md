@@ -39,3 +39,17 @@ El operador ejecutó en aislamiento el commit b34da22c57b41ba052270ea5e23357db5b
 
 ## Validación de override Compose opcional
 El operador comunica la validación estática del commit db5568ac7d96fdd6b58190f112822de82f294c4f: MFA_COMPOSE_OPTIONAL_MOUNT=OK, MFA_ENROLLMENT_DISABLED=OK, NO_DEPLOY_NO_MIGRATION=1 y RESULTADO_FINAL=0. No se han instalado secretos reales ni montado claves en contenedores activos. Persisten los requisitos de verificación externa de identidad, entrega segura y autorización independiente para activar MFA. MFA_RELEASE_AUTHORIZED=NO.
+
+
+## Propuesta de modalidad de administrador único — NO aprobada para activación
+- Responsable de custodia: único administrador. La separación de medios (Bitwarden y USB cifrado) reduce el riesgo de pérdida, pero NO aporta independencia humana ni doble control contra abuso de privilegios.
+- Evidencia local ya comunicada: restauración de testigo Fernet y compatibilidad con primitivas VENCIRA; no confundir con prueba operativa del VPS.
+- Riesgos residuales: compromiso del administrador, pérdida simultánea de contraseña maestra y copia de emergencia, indisponibilidad prolongada del único operador, cambios maliciosos del contacto externo y recuperación fraudulenta de cuentas ajenas.
+- Mitigaciones propuestas: dispositivo protegido, MFA independiente de Bitwarden, copia offline cifrada y contraseña separada, ensayo periódico de restauración, alertas de recuperación fuera de banda y bloqueo de operaciones ante dudas sobre identidad.
+- No sustituir automáticamente dos revisores humanos por dos medios de almacenamiento: la recuperación administrativa de cuentas ajenas continuará NO DISPONIBLE mientras no exista verificación independiente externa y una política de revisión viable. La pérdida total de factores de un usuario no justifica habilitar acceso solo con contraseña.
+- Próxima autorización separada: aprobar por escrito el riesgo de custodia individual, decidir procedimiento ante incapacidad del administrador, comprobar identidad/entrega independiente y probar provisión operativa en entorno aislado. Este documento no autoriza cambios de flags ni despliegues.
+
+CUSTODIA_INDIVIDUAL_PROPUESTA=SI
+CUSTODIA_INDIVIDUAL_APROBADA=NO
+RECUPERACION_ADMINISTRATIVA_OPERATIVA=NO
+MFA_RELEASE_AUTHORIZED=NO
