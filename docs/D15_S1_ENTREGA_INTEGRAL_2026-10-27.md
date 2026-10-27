@@ -62,3 +62,6 @@ Commit de código verificado: `37526f8481d82bbaec39c44448241791c439e61e`. El ope
 
 ## Gate recuperación: casos cerrados y cancelados
 Validación aislada del commit `fc76b3b3e6ee86b1af865563da09f4641e0669f3`: SQLite OK, PG17 temporal OK, concurrencia OK, controles fail-closed OK, limpieza OK, resultado final 0. No hubo despliegue ni migración persistente. Sigue sin autorizarse la activación MFA.
+
+## Gate apertura de recuperación administrativa
+Validación aislada del commit `f992fd2803e78616cdcea855a6e557d139c2365a`: pruebas SQLite OK, PostgreSQL 17 temporal OK, revisión y concurrencia OK, bloqueos de publicación OK, limpieza OK, resultado global 0. La función de apertura de expediente revoca sesiones; no sustituye factores. No hubo despliegue ni migración persistente. MFA permanece desactivado.
