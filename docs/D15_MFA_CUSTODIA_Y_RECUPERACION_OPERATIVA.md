@@ -22,3 +22,6 @@ confirm_factor_rotation sustituye los códigos en la transacción que entrega la
 
 ## Autorización de despliegue
 El preflight aislado bloquea, pero los scripts históricos no lo invocan obligatoriamente. Se requiere una ruta operativa única que verifique esquema y estado real, custodios, prueba de reversión, commit exacto y autorización explícita separada para migrar y para activar MFA. Sin esta evidencia: MFA_RELEASE_AUTHORIZED=NO.
+
+## Sustitución administrativa: protocolo de tres etapas
+Diseño pendiente de implementar y probar, sin API pública: (1) revalidar atómicamente cuarentena, doble revisión y evidencia de identidad independiente; preparar factor nuevo sin modificar el anterior; (2) acreditar TOTP nuevo y emitir códigos provisionales, conservando los anteriores; (3) exigir prueba de custodia de código provisional, sustituir secretos/códigos, incrementar session_epoch y cerrar expediente en una única transacción. El middleware debe denegar sesiones durante todo el expediente. En cualquier fallo o expiración conservar el factor anterior y el bloqueo administrativo aplicable. No considerar un booleano de cliente como verificación externa. MFA_RELEASE_AUTHORIZED=NO.
