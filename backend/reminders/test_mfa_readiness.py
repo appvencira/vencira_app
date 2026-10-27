@@ -23,3 +23,13 @@ class MfaReadinessTests(TestCase):
         report = readiness_report()
         self.assertFalse(report["enrollment_flag_off"])
         self.assertTrue(report["mfa_migrations_applied"])
+
+    def test_readiness_rejects_missing_final_migration(self):
+        from django.db.migrations.recorder import MigrationRecorder
+        from .management.commands.mfa_rollback_guard import REQUIRED
+        incomplete = {("reminders", migration) for migration in REQUIRED[:-1]}
+        with patch.object(MigrationRecorder, "has_table", return_value=True), \
+                patch.object(MigrationRecorder, "applied_migrations", return_value=incomplete):
+            report = readiness_report()
+        self.assertFalse(report["mfa_migrations_applied"])
+        self.assertIsNone(report["active_accounts"])
