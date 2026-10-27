@@ -47,8 +47,9 @@ dcmd=(sudo docker run --rm --network "$NET" \
 echo "MFA_ACTIVE_SCHEMA_0026=OK"
 "${dcmd[@]}" shell -c '
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from reminders.models import UserMfaState
-user=get_user_model().objects.create_user(username="rollback_synthetic",password="SyntheticOnlyPassword-2026!")
+user=get_user_model().objects.create_user(username="rollback_synthetic",password="SyntheticOnlyPassword-2026!",last_login=timezone.now())
 UserMfaState.objects.create(user=user,enabled=True,encrypted_totp_secret="synthetic-never-real")
 ' >>"$LOG" 2>&1
 echo "MFA_SYNTHETIC_ACTIVE_ACCOUNT=OK"
