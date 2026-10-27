@@ -40,3 +40,6 @@ El gate SQLite + PostgreSQL 17 efímero + concurrencia + guard estático superó
 
 ## Criterio verificable de cierre
 No anunciar «MFA completado» sin evidencias de: ejecución técnica (Django y PG17), custodia externa con dos responsables, pérdida total probada con credenciales ficticias sin bypass, sesiones antiguas rechazadas, protección de despliegue efectivamente conectada, y autorizaciones independientes para cada paso. Si faltan evidencias, indicar PENDIENTE, no OK.
+
+## Evidencia posterior de gate consolidado
+El operador confirmó el 27/10/2026: S1_SQLITE_SECURITY=OK, PG17_EPHEMERAL=OK, S1_POSTGRES_REVIEW_AND_RACE=OK, S1_STATIC_CANDIDATE_GUARD=OK, CLEANUP=OK, S1_PG17_GATE_RESULT=0, RESULTADO_FINAL=0, NO_DEPLOY_NO_LIVE_MIGRATION=1. Corresponde a la validación tras endurecer los bloqueos de rotación TOTP. Log privado conservado en servidor. MFA_RELEASE_AUTHORIZED=NO. La validación NO acredita custodia externa de Fernet, recuperación por pérdida total de factores ni puerta de despliegue obligatoria.
