@@ -22,6 +22,9 @@ class RecoveryReviewServiceTests(TestCase):
         )
         # auto_now_add asigna created_at al guardar; el reloj de la petición
         # debe capturarse después de que exista el caso.
+        self.case.quarantine_until = self.case.created_at + timedelta(hours=24)
+        self.case.expires_at = self.case.created_at + timedelta(hours=72)
+        self.case.save(update_fields=["quarantine_until", "expires_at"])
         self.now = self.case.quarantine_until + timedelta(seconds=1)
         self.reviewers = frozenset({self.reviewer1.pk, self.reviewer2.pk})
 
