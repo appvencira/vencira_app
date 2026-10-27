@@ -43,3 +43,6 @@ Se añadió `backend/reminders/attachment_gate.py`: el queryset de metadatos se 
 
 ## Gate del aislamiento de adjuntos — resultado aportado por operador
 Después del commit 3b19746e93bff06d006e52fbc6fff79155937ed5 se ejecutó `reminders.test_attachment_gate` en contenedor Docker con SQLite temporal. El operador comunicó `OK`, destrucción de base de pruebas y `RESULTADO_FINAL=0`. Queda validado el alcance de autorización de metadatos y bloqueo incondicional de descarga de los casos de prueba. No equivale a escaneo, almacenamiento operativo, API o publicación. No repetir como prueba separada; incluir en gate integral. Sin cambios de PostgreSQL persistente.
+
+## Preinspección estructural (pendiente de gate)
+`attachment_content_inspection.py` añade preinspección conservadora PDF/JPEG/PNG sin instalar parser de terceros ni afirmar detección de malware. Comprueba truncamiento básico PDF/JPEG y chunks/CRC/dimensiones PNG. Su `release_allowed` siempre es `False`, también cuando la estructura parece correcta. **No es antivirus ni escaneo completo**: PDF puede contener contenido activo, JPEG requiere decodificador seguro, PNG requiere decodificación real y límites de memoria. `attachment_gate.py` sigue bloqueando descargas sin excepción. Pruebas sintéticas en `test_attachment_content_inspection.py`; pendiente validarlas. Sin endpoints ni exposición pública.
