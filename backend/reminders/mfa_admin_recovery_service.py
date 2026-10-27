@@ -47,12 +47,19 @@ def record_review(*, case_id, reviewer, approve: bool, now=None):
         return False, "QUARANTINE_ACTIVE"
     previous = Approval.objects.filter(case=case, reviewer=reviewer).first()
     if previous:
-        return True, "ALREADY_RECORDED" if approve else "REVIEW_ALREADY_RECORDED"
+        if previous.expires_at <= now:
+            return False, "APPROVAL_EXPIRED"
+        return (True, "ALREADY_RECORDED") if approve else (False, "REVIEW_ALREADY_RECORDED")
     if not approve:
         case.status = Case.Status.REJECTED
         case.save(update_fields=["status"])
         Event.objects.create(case=case, actor=reviewer, action="rejected")
         return True, "REJECTED"
+    # Una aprobación caducada no puede contarse como consentimiento actual.
+    # No la borramos: es evidencia auditable y su existencia bloquea
+    # nuevas aprobaciones de ese mismo revisor en este caso.
+    if Approval.objects.filter(case=case, expires_at__lte=now).exists():
+        return False, "EXPIRED_APPROVAL_IN_CASE"
     if case.approvals.count() >= 2:
         return False, "APPROVAL_LIMIT"
     Approval.objects.create(
