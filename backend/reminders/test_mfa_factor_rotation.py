@@ -202,7 +202,7 @@ class RotationFailClosedTests(TestCase):
         )
         code = "A" * 32
         for index in range(10):
-            candidate = code if index == 0 else str(index) * 32
+            candidate = code if index == 0 else "BCDEFGHIJK"[index] * 32
             UserMfaPendingRotationCode.objects.create(
                 state=state, code_hash=hash_recovery_code(candidate),
             )
