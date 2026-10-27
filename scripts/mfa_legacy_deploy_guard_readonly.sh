@@ -17,7 +17,7 @@ project="$(sudo docker inspect "$LIVE" --format '{{index .Config.Labels "com.doc
 test "$project" = vencira_localcheck || block WRONG_DB
 status="$(sudo docker inspect "$LIVE" --format '{{.State.Health.Status}}' 2>/dev/null)" || block LIVE_DB_UNKNOWN
 test "$status" = healthy || block DB_NOT_HEALTHY
-migration="$(sudo docker exec "$LIVE" sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT name FROM django_migrations WHERE app=\x27reminders\x27 ORDER BY name DESC LIMIT 1;"' 2>/dev/null)" || block MIGRATION_UNKNOWN
+migration="$(sudo docker exec "$LIVE" sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "$1"' sh "SELECT name FROM django_migrations WHERE app='reminders' ORDER BY name DESC LIMIT 1;" 2>/dev/null)" || block MIGRATION_UNKNOWN
 test "$migration" = 0018_draft_reasons || block MFA_SCHEMA_PRESENT_OR_UNKNOWN
 echo "MFA_LEGACY_WEB_PREFLIGHT=OK"
 echo "MFA_RELEASE_AUTHORIZED=NO"
