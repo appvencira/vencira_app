@@ -40,7 +40,7 @@ sudo docker run --rm --network none \
  -e VENCIRA_ENV=test -e VENCIRA_DB_ENGINE=sqlite \
  -e DJANGO_DEBUG=0 -e DJANGO_SECRET_KEY=s1-sqlite-ephemeral-only-key-2026 \
  -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,testserver \
- "$IMAGE" sh -ec 'python manage.py check && python manage.py makemigrations --check --dry-run && python manage.py test reminders.test_mfa_admin_recovery_service reminders.test_mfa_admin_recovery_models reminders.test_mfa_admin_recovery_policy reminders.test_mfa_rollback_guard reminders.test_mfa_admin_recovery_concurrency reminders.test_mfa_session_revocation reminders.test_mfa_recovery_exposure reminders.test_mfa_factor_rotation --noinput' >>"$LOG" 2>&1
+ "$IMAGE" sh -ec 'python manage.py check && python manage.py makemigrations --check --dry-run && python manage.py test reminders.test_mfa_admin_recovery_service reminders.test_mfa_recovery_opening reminders.test_mfa_admin_recovery_models reminders.test_mfa_admin_recovery_policy reminders.test_mfa_rollback_guard reminders.test_mfa_admin_recovery_concurrency reminders.test_mfa_session_revocation reminders.test_mfa_recovery_exposure reminders.test_mfa_factor_rotation --noinput' >>"$LOG" 2>&1
 echo "S1_SQLITE_SECURITY=OK"
 PHASE=PG17
 sudo docker network create --internal "$NET" >>"$LOG" 2>&1
@@ -64,7 +64,7 @@ sudo docker run --rm --network "$NET" \
  -e POSTGRES_HOST="$DB" -e POSTGRES_DB=s1test \
  -e POSTGRES_USER=s1test -e POSTGRES_PASSWORD=s1-synthetic-only \
  "$IMAGE" python manage.py test \
- reminders.test_mfa_admin_recovery_service \
+ reminders.test_mfa_admin_recovery_service reminders.test_mfa_recovery_opening \
  reminders.test_mfa_admin_recovery_models \
  reminders.test_mfa_admin_recovery_policy reminders.test_mfa_rollback_guard \
  reminders.test_mfa_admin_recovery_concurrency reminders.test_mfa_session_revocation reminders.test_mfa_recovery_exposure reminders.test_mfa_factor_rotation \
