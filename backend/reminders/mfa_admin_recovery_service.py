@@ -4,6 +4,7 @@ No expuesta por API ni comando. La elegibilidad actual exige cuentas de
 personal activas; una política de doble control independiente sigue pendiente.
 """
 from datetime import timedelta
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from .models import (
@@ -16,14 +17,16 @@ APPROVAL_LIFETIME = timedelta(hours=1)
 
 
 @transaction.atomic
-def record_review(*, case_id, reviewer, approve: bool, reviewer_ids=None, now=None):
+def record_review(*, case_id, reviewer, approve: bool, now=None):
     """Registra una decisión con bloqueo de fila y respuesta idempotente.
 
     Esta primitiva no verifica identidad externa, NO permite ejecutar un reset
     ni afirma que el caso sea recuperable.
     """
     now = timezone.now() if now is None else now
-    if not isinstance(reviewer_ids, frozenset) or not reviewer_ids:
+    # Roster de despliegue, nunca proporcionado por la solicitud o su caller.
+    reviewer_ids = getattr(settings, "VENCIRA_MFA_RECOVERY_REVIEWER_IDS", ())
+    if not isinstance(reviewer_ids, (tuple, frozenset)) or len(reviewer_ids) < 2:
         return False, "REVIEWER_AUTHORIZATION_REQUIRED"
     case = Case.objects.select_for_update().get(pk=case_id)
     if not reviewer or not reviewer.pk or not reviewer.is_active or not reviewer.is_staff:
