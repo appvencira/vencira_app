@@ -4,7 +4,7 @@ No expuesta por API ni comando. La elegibilidad actual exige cuentas de
 personal activas; una política de doble control independiente sigue pendiente.
 """
 from datetime import timedelta
-from django.db import transaction, IntegrityError
+from django.db import transaction
 from django.utils import timezone
 from .models import (
     MfaAdministrativeRecoveryCase as Case,
@@ -16,16 +16,20 @@ APPROVAL_LIFETIME = timedelta(hours=1)
 
 
 @transaction.atomic
-def record_review(*, case_id, reviewer, approve: bool, now=None):
+def record_review(*, case_id, reviewer, approve: bool, reviewer_ids=None, now=None):
     """Registra una decisión con bloqueo de fila y respuesta idempotente.
 
     Esta primitiva no verifica identidad externa, NO permite ejecutar un reset
     ni afirma que el caso sea recuperable.
     """
     now = timezone.now() if now is None else now
+    if not isinstance(reviewer_ids, frozenset) or not reviewer_ids:
+        return False, "REVIEWER_AUTHORIZATION_REQUIRED"
     case = Case.objects.select_for_update().get(pk=case_id)
     if not reviewer or not reviewer.pk or not reviewer.is_active or not reviewer.is_staff:
         return False, "REVIEWER_NOT_ELIGIBLE"
+    if reviewer.pk not in reviewer_ids:
+        return False, "REVIEWER_NOT_AUTHORIZED"
     if reviewer.pk in (case.requester_id, case.subject_id):
         return False, "REVIEWER_CONFLICT"
     if case.status != Case.Status.PENDING:
@@ -34,8 +38,10 @@ def record_review(*, case_id, reviewer, approve: bool, now=None):
         return False, "CASE_EXPIRED"
     if case.channel_verified_at is None or case.channel_verified_at > now:
         return False, "INDEPENDENT_CHANNEL_NOT_VERIFIED"
-    if case.quarantine_until <= case.created_at:
+    if case.quarantine_until < case.created_at + timedelta(hours=24):
         return False, "INVALID_QUARANTINE"
+    if now < case.quarantine_until:
+        return False, "QUARANTINE_ACTIVE"
     previous = Approval.objects.filter(case=case, reviewer=reviewer).first()
     if previous:
         return True, "ALREADY_RECORDED" if approve else "REVIEW_ALREADY_RECORDED"
