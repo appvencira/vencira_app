@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.utils import timezone
-from .mfa_admin_recovery_service import record_review, inspect_recovery_preconditions
+from .mfa_admin_recovery_service import record_review, inspect_recovery_preconditions, cancel_recovery_case
 from .models import MfaAdministrativeRecoveryCase as Case, UserMfaState
 
 
@@ -150,3 +150,25 @@ class RecoveryReviewServiceTests(TestCase):
             case_id=self.case.pk, reviewer=self.reviewer1,
             approve=True, now=expired
         ), (False, "CASE_EXPIRED"))
+
+    def test_subject_can_cancel_once_and_approvals_then_blocked(self):
+        UserMfaState.objects.create(
+            user=self.subject, enabled=True, encrypted_totp_secret="synthetic"
+        )
+        self.assertEqual(cancel_recovery_case(
+            case_id=self.case.pk, actor=self.subject
+        ), (True, "CASE_CANCELLED"))
+        self.assertEqual(cancel_recovery_case(
+            case_id=self.case.pk, actor=self.subject
+        ), (True, "ALREADY_CANCELLED"))
+        self.assertEqual(self.review(reviewer=self.reviewer1, approve=True),
+                         (False, "CASE_NOT_PENDING"))
+        self.assertEqual(self.case.events.filter(action="cancelled").count(), 1)
+        self.assertTrue(UserMfaState.objects.get(user=self.subject).enabled)
+
+    def test_nonparticipant_cannot_cancel_case(self):
+        self.assertEqual(cancel_recovery_case(
+            case_id=self.case.pk, actor=self.reviewer1
+        ), (False, "ACTOR_NOT_AUTHORIZED"))
+        self.case.refresh_from_db()
+        self.assertEqual(self.case.status, Case.Status.PENDING)
