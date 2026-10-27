@@ -26,3 +26,15 @@ class RecoveryOpeningTests(TestCase):
         UserMfaState.objects.create(user=user, enabled=False, encrypted_totp_secret="")
         self.assertEqual(open_recovery_case(subject_id=user.pk, requester=user)[1], "ACTIVE_MFA_REQUIRED")
         self.assertFalse(MfaAdministrativeRecoveryCase.objects.filter(subject=user).exists())
+
+
+class RecoveryOpeningExternalVerificationTests(TestCase):
+    def test_absent_verifier_blocks_without_mutation(self):
+        user = get_user_model().objects.create_user("opening_unverified")
+        state = UserMfaState.objects.create(user=user, enabled=True, encrypted_totp_secret="fixture")
+        with override_settings(VENCIRA_MFA_RECOVERY_IDENTITY_VERIFIER=None):
+            result = open_recovery_case(subject_id=user.pk, requester=user)
+        self.assertEqual(result[1], "INDEPENDENT_IDENTITY_VERIFIER_REQUIRED")
+        self.assertFalse(MfaAdministrativeRecoveryCase.objects.filter(subject=user).exists())
+        state.refresh_from_db()
+        self.assertEqual(state.session_epoch, 0)
