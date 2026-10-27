@@ -14,6 +14,7 @@ from .mfa_secrets import (
 )
 from .mfa_totp import generate_secret, match_counter, provisioning_uri
 from .models import UserMfaState, UserMfaRecoveryCode
+from .mfa_store import _failed, _succeeded
 
 ROTATION_TTL = timedelta(minutes=10)
 
@@ -33,7 +34,9 @@ def prepare_factor_rotation(*, user_id, old_code, keys, timestamp=None):
     counter = match_counter(old_secret, old_code, timestamp=timestamp,
                             last_accepted_counter=state.last_accepted_counter)
     if counter is None:
+        _failed(state, now)
         return None
+    _succeeded(state)
     new_secret = generate_secret()
     state.last_accepted_counter = counter
     state.pending_rotation_secret = encrypt_totp_secret(
@@ -64,8 +67,12 @@ def confirm_factor_rotation(*, user_id, new_code, keys, timestamp=None):
         state.pending_rotation_secret, user_id=user_id, keys=keys,
     )
     counter = match_counter(new_secret, new_code, timestamp=timestamp)
-    if counter is None:
+    if state.locked_until and state.locked_until > now:
         return None
+    if counter is None:
+        _failed(state, now)
+        return None
+    _succeeded(state)
     codes = generate_recovery_codes()
     hashes = [hash_recovery_code(code) for code in codes]
     UserMfaRecoveryCode.objects.filter(state=state).delete()
