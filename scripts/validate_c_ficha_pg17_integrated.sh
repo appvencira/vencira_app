@@ -11,6 +11,7 @@ NET_OK=0; DB_OK=0
 cleanup() {
   local rc=$? clean=0
   trap - EXIT
+  rm -f -- "$LOG.plan"
   if [ "$DB_OK" = 1 ]; then sudo docker rm -f "$DB" >>"$LOG" 2>&1 || clean=1; fi
   if [ "$NET_OK" = 1 ]; then sudo docker network rm "$NET" >>"$LOG" 2>&1 || clean=1; fi
   if [ "$clean" != 0 ]; then echo "CLEANUP=FAILED"; rc=1; else echo "CLEANUP=OK"; fi
@@ -57,6 +58,18 @@ DCMD=(sudo docker run --rm --network "$NET" \
  -e POSTGRES_HOST="$DB" -e POSTGRES_DB=c_ficha \
  -e POSTGRES_USER=c_ficha -e POSTGRES_PASSWORD=synthetic-c-ficha-only \
  "$IMAGE" python manage.py)
+PHASE=BASELINE_0018
+"${DCMD[@]}" migrate reminders 0018_draft_reasons --noinput >>"$LOG" 2>&1
+"${DCMD[@]}" shell -c 'from django.db.migrations.recorder import MigrationRecorder; from django.db import connection; x=MigrationRecorder(connection).applied_migrations(); assert ("reminders","0018_draft_reasons") in x; assert not any(app=="reminders" and name.startswith(tuple(f"{i:04d}_" for i in range(19,28))) for app,name in x)' >>"$LOG" 2>&1
+echo "C_FICHA_BASELINE_0018_NO_MFA=OK"
+PHASE=MIGRATION_PLAN
+"${DCMD[@]}" migrate reminders 0027_renewal_attachment_metadata --plan > "$LOG.plan" 2>&1
+grep -Fq "0019_user_mfa_state" "$LOG.plan"
+grep -Fq "0026_user_mfa_pending_administrative_case" "$LOG.plan"
+grep -Fq "0027_renewal_attachment_metadata" "$LOG.plan"
+rm -f "$LOG.plan"
+echo "C_FICHA_0027_REQUIRES_MFA_MIGRATIONS=CONFIRMED"
+echo "C_FICHA_0027_LIVE_MIGRATION=BLOCKED"
 PHASE=MIGRATION
 "${DCMD[@]}" migrate reminders 0027_renewal_attachment_metadata --noinput >>"$LOG" 2>&1
 "${DCMD[@]}" shell -c 'from django.db.migrations.recorder import MigrationRecorder; from django.db import connection; x=MigrationRecorder(connection).applied_migrations(); assert ("reminders","0026_user_mfa_pending_administrative_case") in x; assert ("reminders","0027_renewal_attachment_metadata") in x' >>"$LOG" 2>&1
