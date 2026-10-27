@@ -106,3 +106,35 @@ class MfaSessionRevocationTests(TestCase):
         req.user = self.user
         denied = RequireMfaSessionMiddleware(lambda r: None)(req)
         self.assertEqual(denied.status_code, 403)
+
+    def test_closed_case_with_disabled_mfa_does_not_restore_password_only_access(self):
+        self.state.enabled = False
+        self.state.save(update_fields=["enabled"])
+        now = timezone.now()
+        MfaAdministrativeRecoveryCase.objects.create(
+            subject=self.user, requester=self.user,
+            status=MfaAdministrativeRecoveryCase.Status.CLOSED,
+            quarantine_until=now - timedelta(hours=25),
+            expires_at=now + timedelta(hours=24),
+        )
+        req = RequestFactory().get("/api/v1/me/")
+        SessionMiddleware(lambda r: None).process_request(req)
+        req.user = self.user
+        denied = RequireMfaSessionMiddleware(lambda r: None)(req)
+        self.assertEqual(denied.status_code, 403)
+
+    def test_cancelled_case_with_disabled_mfa_does_not_restore_access(self):
+        self.state.enabled = False
+        self.state.save(update_fields=["enabled"])
+        now = timezone.now()
+        MfaAdministrativeRecoveryCase.objects.create(
+            subject=self.user, requester=self.user,
+            status=MfaAdministrativeRecoveryCase.Status.CANCELLED,
+            quarantine_until=now - timedelta(hours=25),
+            expires_at=now + timedelta(hours=24),
+        )
+        req = RequestFactory().get("/admin/")
+        SessionMiddleware(lambda r: None).process_request(req)
+        req.user = self.user
+        denied = RequireMfaSessionMiddleware(lambda r: None)(req)
+        self.assertEqual(denied.status_code, 403)
