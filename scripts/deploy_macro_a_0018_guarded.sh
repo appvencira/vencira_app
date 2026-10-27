@@ -3,6 +3,8 @@
 set -Eeuo pipefail
 umask 077
 cd /home/vencira/vencira-localcheck
+# Historical deployment MFA fail-closed preflight (before any mutating action).
+bash scripts/mfa_legacy_deploy_guard_readonly.sh schema
 PHASE=IDENTITY
 LOG="$(mktemp /tmp/vencira-macro-a-deploy.XXXXXXXX.log)"
 RECEIPT="$(mktemp /tmp/vencira-macro-a-deploy.XXXXXXXX.receipt)"
