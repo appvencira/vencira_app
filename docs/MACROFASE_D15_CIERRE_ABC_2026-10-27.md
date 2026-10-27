@@ -50,3 +50,8 @@ Operador informa `SINTAXIS_MFA_CLON=0`, `RESTAURACION_NO_EJECUTADA=1`, `MIGRACIO
 ## Bloque B — Restauración O5 y migraciones MFA en clon: APROBADO (27/10/2026)
 
 Operador confirma `LIVE_0018_READONLY=OK`, `O5_SNAPSHOT_READABLE=OK`, `PG17_TEMPORAL=OK`, `O5_RESTORE_0018=OK`, `MFA_MIGRATION_CLONE=OK`, `LIVE_UNCHANGED=OK`, `RESULTADO_CLON_MFA=0`, `BD_PERSISTENTE_INTACTA=1`, `RESULTADO_BLOQUE_B_CLON=0`; log privado `/tmp/vencira-mfa-rehearsal.t8jOBFRC.log`. Se ha probado recuperación O5 de BD y migración 0019–0021 exclusivamente en PostgreSQL17 efímero. NO se ha probado custodia externa/restauración real de secretos MFA, flujo visual móvil/escritorio, recuperación administrativa ni publicación. Sin cambios en la BD persistente; prohibida todavía la activación MFA.
+
+
+## Bloque B — Ensayo real O5 a PG17 temporal APROBADO (27/10/2026)
+
+Operador confirmó `LIVE_0018_READONLY=OK`, `O5_SNAPSHOT_READABLE=OK`, `PG17_TEMPORAL=OK`, `O5_RESTORE_0018=OK`, `MFA_MIGRATION_CLONE=OK`, `LIVE_UNCHANGED=OK`, `RESULTADO_CLON_MFA=0`, `BD_PERSISTENTE_INTACTA=1`, `RESULTADO_BLOQUE_B_CLON=0`. Log privado `/tmp/vencira-mfa-rehearsal.t8jOBFRC.log` (no compartir contenido sensible). Ensayo restauró respaldo O5 en clon PG17 efímero y migró exclusivamente ese clon hasta 0021. **No** certifica recuperación del anillo Fernet custodiado externamente, recuperación sin factores, inspección visual Android/PC ni autorización de despliegue. Sin migraciones en DB persistente.
