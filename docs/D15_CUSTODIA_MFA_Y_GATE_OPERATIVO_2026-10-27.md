@@ -46,3 +46,8 @@ Operador informa ejecución aislada Django SQLite de `reminders.test_mfa_admin_r
 
 ## Evidencia D1.5-S1B — 27/10/2026
 Operador informa gate aislado sobre commit `1f589a49ea9c6457781a8abb69b93d71132df61d`: `RESULTADO_D15_S1B=0`, `NO_DEPLOY_NO_MIGRACION_PERSISTENTE=1`, Django `check`/`makemigrations --check --dry-run` y pruebas sobre SQLite temporal completadas sin error (salida final `OK`). Modelos de solicitud, aprobación única por revisor y evento de auditoría, migración 0022 preparada pero NO aplicada a DEV. Pendientes: enforcement transaccional, autorización de revisores, evidencias independientes, auditoría protegida, revocación de sesiones y factores, custodia externa y gate de despliegue. No considerar recuperación operativa disponible. MFA_RELEASE_AUTHORIZED=NO.
+
+## Revalidación D1.5-S1C — 27/10/2026
+Operador confirmó `RESULTADO_D15_S1C=0`, commit `d22a0b2ea6b4c586df1885fa1fee682246bf9906`, pruebas aisladas de `reminders.test_mfa_admin_recovery_service` OK, `NO_DEPLOY_NO_MIGRACION=1`. El fallo anterior de dos fixtures se corrigió ajustando la hora de referencia después del `auto_now_add`, sin modificar validaciones de producción. No prueba concurrencia en PG17 ni habilita recuperación.
+
+**Hallazgo pendiente de diseño**: las aprobaciones del servicio tienen vigencia 1h, mientras la cuarentena mínima de la política es 24h; verificar secuencia de aprobaciones posterior a cuarentena, expiraciones y criterio de revisión dual. `is_staff` no es suficiente como autorización operativa de custodio independiente. No invocar restablecimiento hasta cerrar el protocolo y pruebas.
