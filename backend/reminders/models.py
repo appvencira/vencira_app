@@ -475,6 +475,8 @@ class UserMfaState(models.Model):
     prepared_at = models.DateTimeField(null=True, blank=True)
     enabled = models.BooleanField(default=False)
     session_epoch = models.PositiveIntegerField(default=0)  # permite invalidar todas las sesiones MFA
+    pending_rotation_secret = models.TextField(blank=True, default="")
+    pending_rotation_expires_at = models.DateTimeField(null=True, blank=True)
     last_accepted_counter = models.BigIntegerField(default=-1)
     failed_attempts = models.PositiveSmallIntegerField(default=0)
     attempts_started_at = models.DateTimeField(null=True, blank=True)
