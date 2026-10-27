@@ -63,3 +63,6 @@ Operador reporta `S1_SQLITE_SECURITY=OK`, `PG17_EPHEMERAL=OK`, `S1_POSTGRES_REVI
 
 ## Revalidación integral S1 con revocación de sesiones — 27/10/2026
 Operador confirmó gate aislado posterior a la migración preparada 0023 y pruebas de session_epoch: `S1_SQLITE_SECURITY=OK`, `PG17_EPHEMERAL=OK`, `S1_POSTGRES_REVIEW_AND_RACE=OK`, `S1_STATIC_CANDIDATE_GUARD=OK`, `CLEANUP=OK`, `S1_PG17_GATE_RESULT=0`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Log privado del gate disponible solo en el servidor. No se ha autorizado publicación: `MFA_RELEASE_AUTHORIZED=NO`. **Solo** demuestra el comportamiento cubierto por el gate; no prueba sustitución de factores, custodia Fernet independiente ni enforcement runtime en candidato desplegado. No repetir este gate sin cambios relevantes.
+
+## Revalidación integral MFA tras corrección de ACK — 27/10/2026
+Operador confirma `S1_SQLITE_SECURITY=OK`, `PG17_EPHEMERAL=OK`, `S1_POSTGRES_REVIEW_AND_RACE=OK`, `S1_STATIC_CANDIDATE_GUARD=OK`, `CLEANUP=OK`, `S1_PG17_GATE_RESULT=0` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Se corrigió falso positivo por `/api/v1/me/mfa/recovery/ack/` (acuse de custodia de códigos, no reset administrativo) y el session_epoch tras alta. Log privado /tmp/vencira-s1-pg17.ouuXeOAS.log. No equivale a custodia externa real ni autorización de activar MFA: `MFA_RELEASE_AUTHORIZED=NO`. No repetir este gate salvo cambios relevantes.
