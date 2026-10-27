@@ -19,10 +19,24 @@ Agrupar el trabajo pendiente S1 en un solo paquete de código, documentación y 
 Un script de preflight sin despliegue, con SHA fijado, resultados resumidos y sin secretos, comprueba migraciones, suites y seguridad. Solo se pedirá ejecución al operador cuando el paquete esté implementado y revisado. Si falla, resolver errores en GitHub y volver a ejecutar únicamente el gate del paquete actualizado.
 
 ## Restricciones
-- PostgreSQL persistente documentado en migración 0018; migraciones 0019–0022 preparadas pero NO autorizadas en vivo.
+- PostgreSQL persistente documentado en migración 0018; migraciones 0019–0024 preparadas pero NO autorizadas en vivo.
 - MFA enrollment y UI apagados, sin publicación ni cambios OAuth/Caddy/Restic.
 - No afirmar cierre S1 antes de validar código y completar la custodia real externa.
 - Un despliegue exige autorización expresa adicional; la activación de enrolamiento requiere autorización independiente.
 
 ## Situación de entrada
 S1E validado por operador: RESULTADO_D15_S1E=0 sobre 22f3cc0e66b24b93d514685f9c318f25d47e90c5. S1E documentado en 71d689af78d19659ce63fa166d794bb45d7c1189. Pruebas anteriores registradas en D15_CUSTODIA_MFA_Y_GATE_OPERATIVO_2026-10-27.md.
+
+## Cierre del gate técnico — evidencia posterior
+El gate SQLite + PostgreSQL 17 efímero + concurrencia + guard estático superó con `S1_PG17_GATE_RESULT=0`, `CLEANUP=OK`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, tras corregir el falso positivo de la ruta de acuse de códigos y registrar session_epoch en la sesión de alta. Evidencia detallada en `D15_CUSTODIA_MFA_Y_GATE_OPERATIVO_2026-10-27.md`. No repetir hasta cambios de código relevantes.
+
+## BLOQUE FINAL OPERATIVO — requisitos bloqueantes, no autorizados
+1. **Custodia Fernet real.** Designar dos custodios independientes del VPS, GitHub y acceso a Restic; cada custodio recibe copia cifrada independiente con verificación fuera de banda. No colocar claves en Git, mensajes, logs ni commits. Ensayar restauración criptográfica sintética usando la copia custodiada y registrar solo huellas no reversibles y acta de éxito. Sin doble custodia comprobable, bloqueo.
+2. **Recuperación de pérdida total.** El procedimiento no puede ser equivalente a reset de TOTP por un administrador. Requiere solicitud atribuible al titular, canal previamente verificado con prueba exterior al sistema, cuarentena 24h, dos revisores independientes activos, comprobación justo antes de ejecutar, aviso independiente al titular, supervisión de abuso y nueva inscripción MFA sin intervalo de acceso password-only. Falta implementación de sustitución administrativa completa; `inspect_recovery_preconditions` **NO** concede autorización. No exponer API ni comando para reset hasta cerrar este diseño y pruebas de regresión.
+3. **Rotación normal vs recuperación administrativa.** `mfa_factor_rotation.py` implementa solo la rotación normal con TOTP anterior. Los diez nuevos códigos se devuelven a una primitiva interna: diseñar entrega protegida, prueba de custodia y manejo de respuesta perdida antes de habilitar HTTP. No interpretar este cambio como solución a pérdida total.
+4. **Sesiones.** session_epoch invalida solicitudes autenticadas previas bajo middleware, pero evaluar las rutas alternativas y las sesiones que no pasan por Django antes de declarar revocación global integral. No modificar factores si la revocación no es verificable.
+5. **Rollback y puesta en marcha.** La puerta actual es estática e informativa: **no está conectada obligatoriamente** a la ruta de despliegue ni comprueba estado runtime de PostgreSQL persistente. El pipeline debe abortar ante fallo de guard, esquema desalineado, material Fernet no recuperable, falta de evidencia operativa o presencia de sesiones/factores incompatibles. No aceptar `MFA_CANDIDATE_STATIC_GATE=OK` como autorización.
+6. **Autorizaciones separadas.** Primera autorización explícita: aplicar migraciones 0019–0024 y desplegar con flags apagados tras backup fresco y ensayo de rollback. Segunda autorización distinta: enrolamiento/activación MFA tras UAT ES/CA Android/PC y cumplimiento de custodia real. Mientras tanto `MFA_RELEASE_AUTHORIZED=NO`.
+
+## Criterio verificable de cierre
+No anunciar «MFA completado» sin evidencias de: ejecución técnica (Django y PG17), custodia externa con dos responsables, pérdida total probada con credenciales ficticias sin bypass, sesiones antiguas rechazadas, protección de despliegue efectivamente conectada, y autorizaciones independientes para cada paso. Si faltan evidencias, indicar PENDIENTE, no OK.
