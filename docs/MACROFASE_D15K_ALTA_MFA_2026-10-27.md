@@ -7,3 +7,8 @@ Comportamiento propuesto: usuario con sesión autenticada confirma contraseña a
 **Bloqueantes pendientes para habilitar feature flag:** diseño confirmado de entrega y aceptación de guardado de códigos para evitar bloqueo por corte de conexión en primera respuesta, UI premium en configuración Flutter con QR y clave manual (sin guardar secreto en logs), pruebas de CSRF navegador, protección específica contra intentos repetidos de contraseña de reautenticación, recuperación al perder todos los factores, inventario de endpoints administrativos, custodia/rotación externa probada con restauración. El flujo no incluye aún ACK de recepción de códigos y por ello NO ESTÁ LISTO para habilitación. Sin migraciones persistentes 0019–0021, sin despliegues.
 
 Gate O7/O8 integral requerido antes de seguir; nunca poner claves reales en chats, consola copiada o repositorio.
+
+
+## Gate D1.5k — APROBADO (27/10/2026)
+
+Operador confirmó `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5K=0`, log `/tmp/vencira-o7-o8-preflight.ZhscuaB2.log`. Ningún despliegue ni migración en PostgreSQL persistente; OAuth/restic/Caddy intactos. **Feature flag de alta MFA permanece apagado por defecto.** Pendiente ACK robusto de códigos de recuperación, interfaz Flutter, custodia de claves y proceso de recuperación antes de habilitar MFA.
