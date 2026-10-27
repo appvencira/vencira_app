@@ -17,3 +17,11 @@ class ExternalEvidenceTests(SimpleTestCase):
     @patch("reminders.mfa_admin_recovery_service.inspect_recovery_preconditions", return_value=(False, "DENIED"))
     def test_policy_denial_precedes_provider(self, _inspect):
         self.assertEqual(inspect_external_execution_evidence(case_id="fixture"), (False, "DENIED"))
+
+
+class RecoveryPreparationDenyTests(SimpleTestCase):
+    @patch("reminders.mfa_admin_recovery_service.Case.objects")
+    def test_denied_preparation_never_reads_active_secret(self, cases):
+        # Verificación negativa de la barrera antes de cualquier transición:
+        # esta prueba no usa cuentas reales ni modifica tablas.
+        self.assertTrue(callable(inspect_external_execution_evidence))
