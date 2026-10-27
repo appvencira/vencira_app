@@ -13,7 +13,7 @@ from rest_framework.response import Response
 
 from .mfa_enrollment import confirm_mfa, prepare_mfa, finalize_mfa
 from .mfa_key_config import load_mfa_keys
-from .mfa_middleware import SESSION_VERIFIED
+from .mfa_middleware import SESSION_VERIFIED, SESSION_EPOCH
 from .models import UserMfaState
 
 PENDING_SETUP = "vencira_mfa_setup_v1"
@@ -120,4 +120,5 @@ def mfa_recovery_ack(request):
         return _response({"detail": "Código incorrecto o proceso caducado. Reinicia la preparación si es necesario."}, 403)
     request.session.pop(PENDING_RECOVERY_ACK, None)
     request.session[SESSION_VERIFIED] = request.user.get_session_auth_hash()
+    request.session[SESSION_EPOCH] = UserMfaState.objects.get(user=request.user).session_epoch
     return _response({"acknowledged": True, "enabled": True}, 200)
