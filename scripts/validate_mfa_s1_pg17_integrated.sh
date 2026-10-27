@@ -35,6 +35,13 @@ echo "COMMIT=$(git rev-parse HEAD)"
 PHASE=BUILD
 IMAGE="vencira-s1-test:$(git rev-parse --short=12 HEAD)"
 sudo docker build -t "$IMAGE" ./backend >>"$LOG" 2>&1
+PHASE=SQLITE_AND_MIGRATION_CHECK
+sudo docker run --rm --network none \
+ -e VENCIRA_ENV=test -e VENCIRA_DB_ENGINE=sqlite \
+ -e DJANGO_DEBUG=0 -e DJANGO_SECRET_KEY=s1-sqlite-ephemeral-only-key-2026 \
+ -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,testserver \
+ "$IMAGE" sh -ec 'python manage.py check && python manage.py makemigrations --check --dry-run && python manage.py test reminders.test_mfa_admin_recovery_service reminders.test_mfa_admin_recovery_models reminders.test_mfa_admin_recovery_policy reminders.test_mfa_admin_recovery_concurrency --noinput' >>"$LOG" 2>&1
+echo "S1_SQLITE_SECURITY=OK"
 PHASE=PG17
 sudo docker network create --internal "$NET" >>"$LOG" 2>&1
 NET_OK=1
@@ -63,3 +70,7 @@ sudo docker run --rm --network "$NET" \
  reminders.test_mfa_admin_recovery_concurrency \
  --noinput --verbosity 1 >>"$LOG" 2>&1
 echo "S1_POSTGRES_REVIEW_AND_RACE=OK"
+PHASE=STATIC_RELEASE_GUARD
+bash scripts/mfa_s1_release_readonly.sh "$(git rev-parse HEAD)" >>"$LOG" 2>&1
+echo "S1_STATIC_CANDIDATE_GUARD=OK"
+echo "MFA_RELEASE_AUTHORIZED=NO"
