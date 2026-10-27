@@ -43,3 +43,6 @@ Operador ejecutó `sudo bash scripts/validate_mfa_custody_synthetic.sh` en commi
 
 ## Evidencia D1.5-S1: política de recuperación (27/10/2026)
 Operador informa ejecución aislada Django SQLite de `reminders.test_mfa_admin_recovery_policy` y `reminders.test_mfa_rollback_guard`: **8 tests OK**, `RESULTADO_D15_RECOVERY=0`, commit `8f386e171eb1435cd52ad19c6d3563ce17ca04b4`, `NO_DEPLOY_NO_MIGRACION=1`. Pruebas de política de doble revisión y rollback sobre BD temporal. **No** acreditan caso persistente, auditoría, revocación de sesiones ni recuperación efectiva; MFA sigue desactivado, publicación NO autorizada.
+
+## Evidencia D1.5-S1B — 27/10/2026
+Operador informa gate aislado sobre commit `1f589a49ea9c6457781a8abb69b93d71132df61d`: `RESULTADO_D15_S1B=0`, `NO_DEPLOY_NO_MIGRACION_PERSISTENTE=1`, Django `check`/`makemigrations --check --dry-run` y pruebas sobre SQLite temporal completadas sin error (salida final `OK`). Modelos de solicitud, aprobación única por revisor y evento de auditoría, migración 0022 preparada pero NO aplicada a DEV. Pendientes: enforcement transaccional, autorización de revisores, evidencias independientes, auditoría protegida, revocación de sesiones y factores, custodia externa y gate de despliegue. No considerar recuperación operativa disponible. MFA_RELEASE_AUTHORIZED=NO.
