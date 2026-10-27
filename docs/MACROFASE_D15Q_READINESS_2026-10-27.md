@@ -17,3 +17,8 @@ El comando NO crea claves, NO accede a Google Drive/Restic, NO aplica migracione
 5. IP/proxy rate limit y alertas, backup O5 vigente y prueba de restauración PostgreSQL, revisión de datos personales y RGPD.
 
 El gate para este commit sigue siendo `scripts/validate_o7_o8_preflight.sh` aislado. Sin despliegue ni migración persistente.
+
+
+## Gate D1.5q — APROBADO (27/10/2026)
+
+Confirmación operador: `LOCALCHECK_HEALTH_PRE=OK`, `CONFIG_COMPOSE=OK`, `I18N_ES_CA=OK`, `BUILD_BACKEND_AISLADO=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `PG17_TEMPORAL=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `LOCALCHECK_HEALTH_POST=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5Q=0`. Log `/tmp/vencira-o7-o8-preflight.2Zd2Z3hK.log`. Sin despliegue ni migración PostgreSQL persistente; sin cambios OAuth/Restic/Caddy. Fases funcionales anteriores no se repiten. Pendientes custodia/restauración de claves, recuperación sin factores, rollback seguro y comprobación visual Android/PC.
