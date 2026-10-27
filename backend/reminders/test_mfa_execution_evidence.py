@@ -104,3 +104,65 @@ class AdministrativeFinalizationDenialTests(TestCase):
         self.assertEqual(state.encrypted_totp_secret, "active-fixture")
         self.assertEqual(state.session_epoch, 0)
         self.assertEqual(case.status, MfaAdministrativeRecoveryCase.Status.PENDING)
+
+
+class AdministrativeFinalizationLifecycleTests(TestCase):
+    def setUp(self):
+        from .models import UserMfaRecoveryCode, UserMfaPendingRotationCode
+        from .mfa_secrets import hash_recovery_code
+        self.subject = get_user_model().objects.create_user("recovery_lifecycle")
+        now = timezone.now()
+        self.case = MfaAdministrativeRecoveryCase.objects.create(
+            subject=self.subject, requester=self.subject,
+            quarantine_until=now - timedelta(hours=1),
+            expires_at=now + timedelta(hours=1),
+        )
+        self.state = UserMfaState.objects.create(
+            user=self.subject, enabled=True,
+            encrypted_totp_secret="old-encrypted-secret",
+            pending_rotation_secret="new-encrypted-secret",
+            pending_administrative_case_id=self.case.pk,
+            pending_rotation_expires_at=now + timedelta(minutes=5),
+        )
+        self.code = "A" * 32
+        for idx in range(10):
+            value = self.code if idx == 0 else "BCDEFGHIJK"[idx] * 32
+            UserMfaPendingRotationCode.objects.create(
+                state=self.state, code_hash=hash_recovery_code(value),
+            )
+        UserMfaRecoveryCode.objects.create(
+            state=self.state, code_hash=hash_recovery_code("Z" * 32),
+        )
+
+    def test_success_atomic_switch_and_replay_denial(self):
+        from .models import UserMfaRecoveryCode, UserMfaPendingRotationCode
+        from .mfa_admin_recovery_service import finalize_administrative_factor
+        with patch("reminders.mfa_admin_recovery_service.inspect_external_execution_evidence", return_value=(True, "TEST_ONLY")):
+            self.assertTrue(finalize_administrative_factor(case_id=self.case.pk, proof_code=self.code))
+            self.assertFalse(finalize_administrative_factor(case_id=self.case.pk, proof_code=self.code))
+        self.state.refresh_from_db()
+        self.case.refresh_from_db()
+        self.assertEqual(self.state.encrypted_totp_secret, "new-encrypted-secret")
+        self.assertEqual(self.state.session_epoch, 1)
+        self.assertIsNone(self.state.pending_administrative_case_id)
+        self.assertEqual(self.case.status, MfaAdministrativeRecoveryCase.Status.CLOSED)
+        self.assertEqual(UserMfaRecoveryCode.objects.filter(state=self.state).count(), 10)
+        self.assertFalse(UserMfaPendingRotationCode.objects.filter(state=self.state).exists())
+
+    def test_expired_stage_does_not_change_old_factor(self):
+        from .mfa_admin_recovery_service import finalize_administrative_factor
+        self.state.pending_rotation_expires_at = timezone.now() - timedelta(seconds=1)
+        self.state.save(update_fields=["pending_rotation_expires_at"])
+        with patch("reminders.mfa_admin_recovery_service.inspect_external_execution_evidence", return_value=(True, "TEST_ONLY")):
+            self.assertFalse(finalize_administrative_factor(case_id=self.case.pk, proof_code=self.code))
+        self.state.refresh_from_db()
+        self.assertEqual(self.state.encrypted_totp_secret, "old-encrypted-secret")
+        self.assertEqual(self.state.session_epoch, 0)
+
+    def test_invalid_proof_does_not_change_old_factor(self):
+        from .mfa_admin_recovery_service import finalize_administrative_factor
+        with patch("reminders.mfa_admin_recovery_service.inspect_external_execution_evidence", return_value=(True, "TEST_ONLY")):
+            self.assertFalse(finalize_administrative_factor(case_id=self.case.pk, proof_code="Q" * 32))
+        self.state.refresh_from_db()
+        self.assertEqual(self.state.encrypted_totp_secret, "old-encrypted-secret")
+        self.assertEqual(self.state.session_epoch, 0)
