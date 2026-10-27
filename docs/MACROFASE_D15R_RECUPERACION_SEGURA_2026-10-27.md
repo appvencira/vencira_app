@@ -12,3 +12,8 @@ La primera entrega de D1.5r añade `backend/reminders/test_mfa_disaster_recovery
 - **Gate:** `scripts/validate_o7_o8_preflight.sh`, completo y sin efectos sobre DEV.
 
 La prueba criptográfica aislada no autoriza la activación pública de MFA.
+
+
+## Gate primera entrega D1.5r — APROBADO (27/10/2026)
+
+Operador confirma `LOCALCHECK_HEALTH_PRE=OK`, `CONFIG_COMPOSE=OK`, `I18N_ES_CA=OK`, `BUILD_BACKEND_AISLADO=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `PG17_TEMPORAL=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `LOCALCHECK_HEALTH_POST=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5R=0`. Log `/tmp/vencira-o7-o8-preflight.g3r99w5r.log`. No desplegado ni migrada BD persistente, OAuth/Restic/Caddy intactos. Esta aprobación solo cubre ensayo criptográfico aislado; no certifica restauración operacional O5 ni rollback protegido ni recuperación administrativa.
