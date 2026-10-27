@@ -33,3 +33,6 @@ El operador, administrador único, informa que creó Bitwarden con segundo facto
 
 ## Compatibilidad local comunicada (27-10-2026)
 Administrador único confirma ejecución local sin VPS ni BD, recuperando material custodiado: COMPATIBILIDAD_VENCIRA_FERNET=OK, AISLAMIENTO_POR_USUARIO=OK, NO_VPS_NO_DB=1. La prueba utiliza las funciones de cifrado de VENCIRA; no se aportó clave ni token. El resultado no acredita provisión en VPS, restauración PostgreSQL ni autorización de producción. MFA_RELEASE_AUTHORIZED=NO.
+
+## Verificación Docker sintética comunicada
+El operador ejecutó en aislamiento el commit b34da22c57b41ba052270ea5e23357db5bd86bfa y confirmó MFA_DOCKER_SECRET_NONROOT=OK, MFA_FERNET_SYNTHETIC_ROUNDTRIP=OK, MFA_NO_CROSS_USER_DECRYPT=OK, FERNET_DOCKER_RESULT=0, RESULTADO_FINAL=0 y NO_DEPLOY_NO_LIVE_MIGRATION=1. Sin claves reales, servicios activos ni PostgreSQL persistente. Pendiente la provisión operativa autorizada y verificación de entrega/identidad; MFA_RELEASE_AUTHORIZED=NO.
