@@ -111,3 +111,25 @@ def inspect_recovery_preconditions(*, case_id, now=None):
         status=case.status,
     )
     return assess_recovery(verdict, now=now)
+
+
+@transaction.atomic
+def cancel_recovery_case(*, case_id, actor):
+    """Cancela un caso pendiente sin tocar sesiones, secretos ni factores MFA.
+
+    Solo puede solicitarlo el titular o el solicitante persistidos. La
+    operación es terminal y serializada mediante bloqueo de fila.
+    """
+    case = Case.objects.select_for_update().get(pk=case_id)
+    if not actor or not actor.pk or not actor.is_active:
+        return False, "ACTOR_NOT_ELIGIBLE"
+    if actor.pk not in (case.subject_id, case.requester_id):
+        return False, "ACTOR_NOT_AUTHORIZED"
+    if case.status == Case.Status.CANCELLED:
+        return True, "ALREADY_CANCELLED"
+    if case.status != Case.Status.PENDING:
+        return False, "CASE_NOT_PENDING"
+    case.status = Case.Status.CANCELLED
+    case.save(update_fields=["status"])
+    Event.objects.create(case=case, actor=actor, action="cancelled")
+    return True, "CASE_CANCELLED"
