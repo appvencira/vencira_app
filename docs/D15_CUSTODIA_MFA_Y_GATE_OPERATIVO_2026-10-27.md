@@ -57,3 +57,6 @@ Operador confirmó `RESULTADO_D15_S1D=0`, commit `8dfe52213917b04dc94d97c5cb68d0
 
 ## Evidencia D1.5-S1E — 27/10/2026
 Operador confirmó `RESULTADO_D15_S1E=0`, commit `22f3cc0e66b24b93d514685f9c318f25d47e90c5`, suite SQLite aislada OK, `SIN_DESPLIEGUE_NI_MIGRACION=1`. El servicio ya no acepta roster por argumento: lo consulta desde settings del servidor y deniega por defecto si faltan dos revisores; las pruebas usan override_settings con identidades ficticias. **No equivale a autorización operativa ni valida origen seguro de esa configuración.** Pendientes: PG17 temporal bajo concurrencia, definición de custodios independientes, auditoría resistente a manipulación, custodia externa, revocación y despliegue protegido. MFA_RELEASE_AUTHORIZED=NO.
+
+## Gate integral S1 — 27/10/2026
+Operador reporta `S1_SQLITE_SECURITY=OK`, `PG17_EPHEMERAL=OK`, `S1_POSTGRES_REVIEW_AND_RACE=OK`, `S1_STATIC_CANDIDATE_GUARD=OK`, `CLEANUP=OK`, `S1_PG17_GATE_RESULT=0` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Log privado en servidor (no compartir salvo fragmentos depurados). **Solo cierra validación del código cubierto por el gate**; no valida custodia operativa, revocación de sesiones/factores ni enforcement runtime en despliegue real. `MFA_RELEASE_AUTHORIZED=NO`. Evitar repetir el gate salvo cambios relevantes.
