@@ -249,3 +249,34 @@ def prepare_administrative_factor(*, case_id, keys):
     state.save(update_fields=["pending_rotation_secret", "pending_rotation_expires_at", "pending_administrative_case_id", "updated_at"])
     Event.objects.create(case=case, actor_id=case.requester_id, action="factor_prepared")
     return secret
+
+
+@transaction.atomic
+def confirm_administrative_factor(*, case_id, new_code, keys):
+    """Comprueba un TOTP provisional sin activar todavía el factor."""
+    from .models import UserMfaState, UserMfaPendingRotationCode
+    from .mfa_secrets import decrypt_totp_secret, generate_recovery_codes, hash_recovery_code
+    from .mfa_totp import match_counter
+
+    case = Case.objects.select_for_update().get(pk=case_id)
+    state = UserMfaState.objects.select_for_update().get(user_id=case.subject_id)
+    now = timezone.now()
+    if (not state.enabled or state.pending_administrative_case_id != case.pk
+            or not state.pending_rotation_secret
+            or state.pending_rotation_expires_at is None
+            or now >= state.pending_rotation_expires_at
+            or not inspect_external_execution_evidence(case_id=case.pk)[0]
+            or UserMfaPendingRotationCode.objects.filter(state=state).exists()):
+        return None
+    secret = decrypt_totp_secret(
+        state.pending_rotation_secret, user_id=case.subject_id, keys=keys,
+    )
+    if match_counter(secret, new_code) is None:
+        return None
+    codes = generate_recovery_codes()
+    UserMfaPendingRotationCode.objects.bulk_create([
+        UserMfaPendingRotationCode(state=state, code_hash=hash_recovery_code(value))
+        for value in codes
+    ])
+    Event.objects.create(case=case, actor_id=case.requester_id, action="codes_prepared")
+    return codes
