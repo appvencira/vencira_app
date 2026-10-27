@@ -7,3 +7,8 @@ En rama `integration/local-e2e-prep` se reutiliza el bucket persistente de `back
 Pendientes: límites de abuso por IP/proxy, restauración real de claves, recuperación sin factores, pruebas visuales móvil ES/CA y plan de despliegue con rollback fail-closed. No habilitar flags, desplegar ni ejecutar migraciones 0019–0021 persistentes.
 
 Gate O7/O8 aislado requerido para validar estos cambios.
+
+
+## Gate D1.5o — APROBADO (27/10/2026)
+
+El operador confirma: `LOCALCHECK_HEALTH_PRE=OK`, `CONFIG_COMPOSE=OK`, `I18N_ES_CA=OK`, `BUILD_BACKEND_AISLADO=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `PG17_TEMPORAL=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `LOCALCHECK_HEALTH_POST=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5O=0`. Log local `/tmp/vencira-o7-o8-preflight.nnMcgvpe.log`. Validado bloqueo compartido de reautenticación de alta MFA; ningún despliegue ni migración persistente. QR todavía pendiente, custodia real de claves y recuperación sin todos los factores pendientes; no habilitar MFA.
