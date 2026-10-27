@@ -5,7 +5,11 @@ from .mfa_admin_recovery_service import open_recovery_case
 from .models import MfaAdministrativeRecoveryCase, UserMfaState
 
 
-@override_settings(VENCIRA_MFA_RECOVERY_OPENING_TEST_ONLY=True)
+def synthetic_identity_verifier(*, subject_id, requester):
+    return requester is not None and requester.pk == subject_id
+
+
+@override_settings(VENCIRA_MFA_RECOVERY_IDENTITY_VERIFIER=synthetic_identity_verifier)
 class RecoveryOpeningTests(TestCase):
     def test_open_and_duplicate(self):
         user = get_user_model().objects.create_user("opening_fixture")
