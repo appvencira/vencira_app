@@ -165,16 +165,23 @@ def open_recovery_case(*, subject_id, requester):
     La capa de transporte deberá verificar identidad reciente y canal externo
     antes de estar autorizada a invocarla. No hay endpoint publicado.
     """
+    # Comprobar atribución antes de consultar canales externos.
+    if not requester or not requester.pk or not requester.is_active or requester.pk != subject_id:
+        return None, "REQUESTER_NOT_AUTHORIZED"
+    User = get_user_model()
+    subject = User.objects.select_for_update().get(pk=subject_id)
+    if not subject.is_active:
+        return None, "REQUESTER_NOT_AUTHORIZED"
     verifier = getattr(settings, "VENCIRA_MFA_RECOVERY_IDENTITY_VERIFIER", None)
     if not callable(verifier):
         return None, "INDEPENDENT_IDENTITY_VERIFIER_REQUIRED"
-    if verifier(subject_id=subject_id, requester=requester) is not True:
+    try:
+        verified = verifier(subject_id=subject_id, requester=requester)
+    except Exception:
+        # Error del verificador: nunca abrir expediente ni revocar sesiones.
+        return None, "INDEPENDENT_IDENTITY_VERIFICATION_UNAVAILABLE"
+    if verified is not True:
         return None, "INDEPENDENT_IDENTITY_NOT_VERIFIED"
-    User = get_user_model()
-    subject = User.objects.select_for_update().get(pk=subject_id)
-    if (not requester or not requester.pk or not requester.is_active
-            or requester.pk != subject.pk or not subject.is_active):
-        return None, "REQUESTER_NOT_AUTHORIZED"
     from .models import UserMfaState
     state = UserMfaState.objects.select_for_update().filter(user_id=subject_id).first()
     if state is None or not state.enabled:
