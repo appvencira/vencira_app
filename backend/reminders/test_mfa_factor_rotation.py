@@ -85,3 +85,27 @@ class RotationFailClosedTests(TestCase):
         self.assertEqual(state.failed_attempts, 5)
         self.assertGreater(state.locked_until, timezone.now())
         self.assertEqual(state.pending_rotation_secret, "")
+
+    def test_locked_confirmation_never_replaces_factor(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from cryptography.fernet import Fernet
+        from .mfa_secrets import encrypt_totp_secret
+        from .mfa_totp import generate_secret
+        user = get_user_model().objects.create_user("rotation_locked_confirmation")
+        keys = [Fernet.generate_key().decode("ascii")]
+        active = encrypt_totp_secret(generate_secret(), user_id=user.pk, keys=keys)
+        pending = encrypt_totp_secret(generate_secret(), user_id=user.pk, keys=keys)
+        state = UserMfaState.objects.create(
+            user=user, enabled=True, encrypted_totp_secret=active,
+            pending_rotation_secret=pending,
+            pending_rotation_expires_at=timezone.now() + timedelta(minutes=10),
+            locked_until=timezone.now() + timedelta(minutes=15),
+        )
+        self.assertIsNone(confirm_factor_rotation(
+            user_id=user.pk, new_code="000000", keys=keys
+        ))
+        state.refresh_from_db()
+        self.assertEqual(state.encrypted_totp_secret, active)
+        self.assertEqual(state.pending_rotation_secret, pending)
+        self.assertEqual(state.session_epoch, 0)
