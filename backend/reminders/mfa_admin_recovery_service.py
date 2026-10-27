@@ -260,6 +260,7 @@ def confirm_administrative_factor(*, case_id, new_code, keys):
     from .models import UserMfaState, UserMfaPendingRotationCode
     from .mfa_secrets import decrypt_totp_secret, generate_recovery_codes, hash_recovery_code
     from .mfa_totp import match_counter
+    from .mfa_store import _failed, _succeeded
 
     case = Case.objects.select_for_update().get(pk=case_id)
     state = UserMfaState.objects.select_for_update().get(user_id=case.subject_id)
@@ -276,7 +277,9 @@ def confirm_administrative_factor(*, case_id, new_code, keys):
         state.pending_rotation_secret, user_id=case.subject_id, keys=keys,
     )
     if match_counter(secret, new_code) is None:
+        _failed(state, now)
         return None
+    _succeeded(state)
     codes = generate_recovery_codes()
     UserMfaPendingRotationCode.objects.bulk_create([
         UserMfaPendingRotationCode(state=state, code_hash=hash_recovery_code(value))
@@ -291,6 +294,7 @@ def finalize_administrative_factor(*, case_id, proof_code):
     """Close an authorized recovery only upon provisional code custody proof."""
     from .models import UserMfaState, UserMfaRecoveryCode, UserMfaPendingRotationCode
     from .mfa_secrets import verify_recovery_code
+    from .mfa_store import _failed, _succeeded
 
     case = Case.objects.select_for_update().get(pk=case_id)
     state = UserMfaState.objects.select_for_update().get(user_id=case.subject_id)
@@ -305,7 +309,9 @@ def finalize_administrative_factor(*, case_id, proof_code):
     if len(pending) != 10 or not isinstance(proof_code, str) or len(proof_code) != 32:
         return False
     if not any(verify_recovery_code(proof_code, item.code_hash) for item in pending):
+        _failed(state, now)
         return False
+    _succeeded(state)
     UserMfaRecoveryCode.objects.filter(state=state).delete()
     UserMfaRecoveryCode.objects.bulk_create(
         [UserMfaRecoveryCode(state=state, code_hash=item.code_hash) for item in pending]
