@@ -165,6 +165,13 @@ def open_recovery_case(*, subject_id, requester):
     La capa de transporte deberá verificar identidad reciente y canal externo
     antes de estar autorizada a invocarla. No hay endpoint publicado.
     """
+    # Fail-closed hasta contar con un verificador externo independiente.
+    # No aceptar como prueba un booleano suministrado por el solicitante.
+    verifier = getattr(settings, "VENCIRA_MFA_RECOVERY_IDENTITY_VERIFIER", None)
+    if not callable(verifier):
+        return None, "INDEPENDENT_IDENTITY_VERIFIER_REQUIRED"
+    if verifier(subject_id=subject_id, requester=requester) is not True:
+        return None, "INDEPENDENT_IDENTITY_NOT_VERIFIED"
     User = get_user_model()
     subject = User.objects.select_for_update().get(pk=subject_id)
     if (not requester or not requester.pk or not requester.is_active
