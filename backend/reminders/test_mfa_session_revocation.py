@@ -5,7 +5,9 @@ from django.contrib.sessions.middleware import SessionMiddleware
 
 from .mfa_middleware import RequireMfaSessionMiddleware, SESSION_VERIFIED, SESSION_EPOCH
 from .mfa_session_revocation import revoke_mfa_sessions
-from .models import UserMfaState
+from .models import UserMfaState, MfaAdministrativeRecoveryCase
+from django.utils import timezone
+from datetime import timedelta
 
 
 class MfaSessionRevocationTests(TestCase):
@@ -58,3 +60,34 @@ class MfaSessionRevocationTests(TestCase):
         self.state.refresh_from_db()
         self.assertEqual(self.state.session_epoch, 2)
         self.assertTrue(self.state.enabled)
+
+    def test_pending_administrative_recovery_blocks_even_verified_session(self):
+        now = timezone.now()
+        MfaAdministrativeRecoveryCase.objects.create(
+            subject=self.user, requester=self.user,
+            quarantine_until=now + timedelta(hours=24),
+            expires_at=now + timedelta(hours=72),
+        )
+        req = RequestFactory().get("/api/v1/me/")
+        SessionMiddleware(lambda r: None).process_request(req)
+        req.session[SESSION_VERIFIED] = self.user.get_session_auth_hash()
+        req.session[SESSION_EPOCH] = 0
+        req.user = self.user
+        denied = RequireMfaSessionMiddleware(lambda r: None)(req)
+        self.assertEqual(denied.status_code, 403)
+        self.assertEqual(denied["Cache-Control"], "no-store")
+
+    def test_pending_administrative_recovery_blocks_even_if_enabled_false(self):
+        self.state.enabled = False
+        self.state.save(update_fields=["enabled"])
+        now = timezone.now()
+        MfaAdministrativeRecoveryCase.objects.create(
+            subject=self.user, requester=self.user,
+            quarantine_until=now + timedelta(hours=24),
+            expires_at=now + timedelta(hours=72),
+        )
+        req = RequestFactory().get("/admin/")
+        SessionMiddleware(lambda r: None).process_request(req)
+        req.user = self.user
+        denied = RequireMfaSessionMiddleware(lambda r: None)(req)
+        self.assertEqual(denied.status_code, 403)
