@@ -7,7 +7,7 @@ usar el veredicto en una operación administrativa.
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-MAX_CASE_AGE = timedelta(hours=24)
+MAX_CASE_AGE = timedelta(hours=72)
 MIN_QUARANTINE = timedelta(hours=24)
 
 
@@ -56,7 +56,7 @@ def assess_recovery(case: RecoveryCase, *, now: datetime) -> tuple[bool, str]:
     reviewers = [a.reviewer_id for a in case.approvals]
     if any(a.case_id != case.case_id for a in case.approvals):
         return False, "CROSS_CASE_APPROVAL"
-    if any(a.expires_at.tzinfo is None or a.expires_at <= now for a in case.approvals):
+    if any(not isinstance(a, RecoveryApproval) or not isinstance(a.expires_at, datetime) or a.expires_at.tzinfo is None or a.expires_at <= now for a in case.approvals):
         return False, "EXPIRED_APPROVAL"
     if len(set(reviewers)) != 2 or any(i <= 0 for i in reviewers):
         return False, "REVIEWERS_NOT_DISTINCT"
