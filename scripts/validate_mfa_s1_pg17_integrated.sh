@@ -83,3 +83,13 @@ grep -Fq "REASON=OPERATIONAL_RELEASE_NOT_AUTHORIZED" "$LOG"
 echo "S1_STATIC_CANDIDATE_GUARD=OK"
 echo "S1_RELEASE_FAIL_CLOSED=OK"
 echo "MFA_RELEASE_AUTHORIZED=NO"
+
+PHASE=DEPLOY_ENTRY_FAIL_CLOSED
+set +e
+bash scripts/mfa_deploy_entry_readonly.sh "$(git rev-parse HEAD)" >>"$LOG" 2>&1
+entry_rc=$?
+set -e
+test "$entry_rc" -eq 4
+grep -Fq "MFA_DEPLOY_ENTRY_PREFLIGHT=OK" "$LOG"
+grep -Fq "REASON=RELEASE_NOT_AUTHORIZED" "$LOG"
+echo "S1_DEPLOY_ENTRY_FAIL_CLOSED=OK"
