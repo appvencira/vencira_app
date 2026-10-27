@@ -45,3 +45,27 @@ class EmergencyRecoveryLoginTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.state.refresh_from_db()
         self.assertEqual(self.state.session_epoch, 0)
+
+    @patch("reminders.mfa_challenge.load_mfa_keys", return_value=["synthetic"])
+    def test_malformed_attempts_count_and_lock_account(self, _keys):
+        for _ in range(5):
+            response = self.client.post(reverse("mfa-challenge"), {"code": "bad"})
+            self.assertEqual(response.status_code, 403)
+        self.state.refresh_from_db()
+        self.assertEqual(self.state.failed_attempts, 5)
+        self.assertIsNotNone(self.state.locked_until)
+        self.assertGreater(self.state.locked_until, timezone.now())
+
+    @patch("reminders.mfa_challenge.load_mfa_keys", return_value=["synthetic"])
+    def test_locked_account_rejects_recovery_code_without_consumption(self, _keys):
+        from .models import UserMfaRecoveryCode
+        from .mfa_secrets import hash_recovery_code
+        from datetime import timedelta
+        self.state.locked_until = timezone.now() + timedelta(minutes=10)
+        self.state.save(update_fields=["locked_until"])
+        UserMfaRecoveryCode.objects.create(
+            state=self.state, code_hash=hash_recovery_code("B" * 32),
+        )
+        response = self.client.post(reverse("mfa-challenge"), {"code": "B" * 32})
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(UserMfaRecoveryCode.objects.filter(state=self.state).count(), 1)
