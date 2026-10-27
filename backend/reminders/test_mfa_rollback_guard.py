@@ -28,6 +28,16 @@ class MfaRollbackGuardTests(TestCase):
                          stdout=StringIO())
         self.assertTrue(check_candidate(candidate_enforces_mfa=True)[0])
 
+    def test_missing_any_required_migration_fails_closed(self):
+        from .management.commands.mfa_rollback_guard import REQUIRED
+        from django.db.migrations.recorder import MigrationRecorder
+        applied = {("reminders", name) for name in REQUIRED[:-1]}
+        with patch.object(MigrationRecorder, "has_table", return_value=True), \
+                patch.object(MigrationRecorder, "applied_migrations", return_value=applied):
+            allowed, reason = check_candidate(candidate_enforces_mfa=True)
+        self.assertFalse(allowed)
+        self.assertEqual(reason, "MFA_SCHEMA_NOT_READY")
+
     def test_unknown_schema_fails_closed(self):
         with patch(
             "reminders.management.commands.mfa_rollback_guard."
