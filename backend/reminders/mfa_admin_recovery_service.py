@@ -156,3 +156,33 @@ def expire_recovery_case(*, case_id, actor, now=None):
     case.save(update_fields=["status"])
     Event.objects.create(case=case, actor=actor, action="expired")
     return True, "CASE_EXPIRED"
+
+@transaction.atomic
+def open_recovery_case(*, subject_id, requester):
+    """Abre expediente interno sin tocar ni revelar factores.
+
+    Solo el titular activo puede solicitarlo a través de esta primitiva.
+    La capa de transporte deberá verificar identidad reciente y canal externo
+    antes de estar autorizada a invocarla. No hay endpoint publicado.
+    """
+    User = get_user_model()
+    subject = User.objects.select_for_update().get(pk=subject_id)
+    if (not requester or not requester.pk or not requester.is_active
+            or requester.pk != subject.pk or not subject.is_active):
+        return None, "REQUESTER_NOT_AUTHORIZED"
+    from .models import UserMfaState
+    state = UserMfaState.objects.select_for_update().filter(user_id=subject_id).first()
+    if state is None or not state.enabled:
+        return None, "ACTIVE_MFA_REQUIRED"
+    if Case.objects.filter(subject_id=subject_id, status=Case.Status.PENDING).exists():
+        return None, "CASE_ALREADY_PENDING"
+    now = timezone.now()
+    case = Case.objects.create(
+        subject=subject, requester=requester,
+        quarantine_until=now + timedelta(hours=24),
+        expires_at=now + timedelta(hours=72),
+    )
+    state.session_epoch += 1
+    state.save(update_fields=["session_epoch", "updated_at"])
+    Event.objects.create(case=case, actor=requester, action="opened")
+    return case.pk, "CASE_OPENED_RESTRICTED"
