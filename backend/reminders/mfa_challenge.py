@@ -55,7 +55,8 @@ def mfa_challenge(request):
     used_recovery_code = False
     if len(code) == 6:
         accepted = consume_totp(user.pk, code, keys=keys)
-    elif len(code) == 32:
+    else:
+        # Incluso los formatos incorrectos cuentan para el bloqueo por cuenta.
         accepted = consume_recovery_code(user.pk, code)
         used_recovery_code = accepted
     if not accepted:
