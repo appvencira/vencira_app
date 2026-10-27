@@ -125,3 +125,28 @@ class RecoveryReviewServiceTests(TestCase):
         self.assertEqual(inspect_recovery_preconditions(
             case_id=self.case.pk, now=self.now
         ), (False, "EXPIRED_APPROVAL"))
+
+    def test_duplicate_roster_id_does_not_enable_administrative_review(self):
+        with override_settings(VENCIRA_MFA_RECOVERY_REVIEWER_IDS=(
+            self.reviewer1.pk, self.reviewer1.pk
+        )):
+            self.assertEqual(self.review(reviewer=self.reviewer1, approve=True),
+                             (False, "REVIEWER_AUTHORIZATION_REQUIRED"))
+
+    def test_reviewer_revoked_after_approval_blocks_inspection(self):
+        self.assertTrue(self.review(reviewer=self.reviewer1, approve=True)[0])
+        self.assertTrue(self.review(reviewer=self.reviewer2, approve=True)[0])
+        self.reviewer2.is_staff = False
+        self.reviewer2.save(update_fields=["is_staff"])
+        self.assertEqual(inspect_recovery_preconditions(
+            case_id=self.case.pk, now=self.now
+        ), (False, "REVIEWER_NOT_ELIGIBLE"))
+
+    def test_case_past_72_hours_cannot_be_approved(self):
+        expired = self.case.created_at + timedelta(hours=72, seconds=1)
+        self.case.expires_at = expired + timedelta(hours=24)
+        self.case.save(update_fields=["expires_at"])
+        self.assertEqual(record_review(
+            case_id=self.case.pk, reviewer=self.reviewer1,
+            approve=True, now=expired
+        ), (False, "CASE_EXPIRED"))
