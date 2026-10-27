@@ -65,3 +65,6 @@ Validación aislada del commit `fc76b3b3e6ee86b1af865563da09f4641e0669f3`: SQLit
 
 ## Gate apertura de recuperación administrativa
 Validación aislada del commit `f992fd2803e78616cdcea855a6e557d139c2365a`: pruebas SQLite OK, PostgreSQL 17 temporal OK, revisión y concurrencia OK, bloqueos de publicación OK, limpieza OK, resultado global 0. La función de apertura de expediente revoca sesiones; no sustituye factores. No hubo despliegue ni migración persistente. MFA permanece desactivado.
+
+## Gate MFA y Fernet sintético
+Commit validado `90150029dd0f0607ce7f56389fd34c0e940425f6`. Ejecución aislada: SQLite OK, PostgreSQL 17 temporal OK, pruebas sintéticas Fernet OK, entrada de despliegue bloqueada correctamente, limpieza OK, resultado final 0. No se modificó el entorno persistente. Custodia externa real y recuperación integral siguen pendientes.
