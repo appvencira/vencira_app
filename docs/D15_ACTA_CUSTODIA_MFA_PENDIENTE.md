@@ -1,0 +1,29 @@
+# VENCIRA — Acta de custodia MFA (plantilla; NO CUMPLIMENTADA)
+
+Estado inicial: PENDIENTE. Esta plantilla nunca equivale a autorización.
+No registrar claves Fernet, contraseñas, recovery codes, tokens, rutas
+privadas completas, capturas de secretos ni identificadores de bóveda.
+
+## Custodios y segregación
+- Custodio A: [rol, designación aprobada, fecha]
+- Custodio B: [rol, designación aprobada, fecha]
+- Ambos tienen accesos independientes y no comparten credenciales: [verificado/no]
+- El material de recuperación se conserva fuera del VPS y no depende de una única cuenta/proveedor: [verificado/no]
+- Recuperación ante pérdida del VPS documentada: [sí/no]
+
+## Prueba de restauración
+- Entorno aislado sin secretos operativos en los registros: [sí/no]
+- Identificador de acta privada (sin datos sensibles): [referencia]
+- Fecha UTC: [fecha]
+- Dos custodios presentes con constancia de aprobación separada: [sí/no]
+- Descifrado de muestra cifrada usando material custodiado: [correcto/error]
+- Integridad de muestra y pertenencia a usuario comprobadas: [sí/no]
+- Material temporal destruido y verificado: [sí/no]
+- Incidencias/plan de respuesta: [referencia]
+
+## Puerta de publicación
+CUSTODIA_EXTERNA_REAL=PENDING hasta revisión humana independiente.
+No usar esta acta como variable de entorno, bandera o autorización automática.
+Son autorizaciones distintas: (1) despliegue de esquema con MFA OFF,
+(2) activación/enrolamiento tras pruebas UAT y controles efectivos.
+Actualmente MFA_RELEASE_AUTHORIZED=NO.
