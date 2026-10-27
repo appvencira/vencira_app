@@ -67,7 +67,7 @@ PHASE=INTEGRATED_TESTS
  reminders.test_attachment_private_store reminders.test_attachment_gate \
  reminders.test_attachment_content_inspection reminders.test_attachment_scan_contract \
  reminders.test_attachment_clamav_adapter reminders.test_attachment_scan_pipeline \
- reminders.test_attachment_api \
+ reminders.test_attachment_api reminders.test_attachment_scan_attestation \
  --noinput >>"$LOG" 2>&1
 echo "C_FICHA_PG17_INTEGRATED_TESTS=OK"
 PHASE=FLUTTER
