@@ -15,7 +15,8 @@ class AdministrativeRecoveryExposureTests(SimpleTestCase):
                 else:
                     yield path
         paths = tuple(walk(get_resolver().url_patterns))
-        forbidden = ("mfa/reset", "mfa/recovery", "mfa/admin-recovery")
+        forbidden = ("mfa/reset", "mfa/admin-recovery", "mfa/recovery/reset", "mfa/recovery/approve", "mfa/recovery/complete")
+        # me/mfa/recovery/ack/ solo confirma posesión de códigos al activar MFA.
         self.assertFalse(
             [path for path in paths if any(piece in path.casefold() for piece in forbidden)],
             "La recuperación administrativa no puede exponerse públicamente",
