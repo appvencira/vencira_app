@@ -33,3 +33,23 @@ Lógica interna de tres etapas implementada y ensayada con evidencias sintética
 - Identificar y proteger todas las rutas de autenticación, incluidas sesiones administrativas, API y autenticación por tokens. La protección de middleware por sesión no prueba por sí misma el cierre de rutas alternativas.
 - Puerta de despliegue: bloquear hasta revisión independiente y autorización diferenciada de migración de esquema y activación. No modificar ni saltar el gate fail-closed para dar por completada la integración.
 - Estado a 2026-10-27: VALIDACION_INTERNA_SINTETICA=OK; IDENTIDAD_EXTERNA=PENDING; ENTREGA_SEGURA=PENDING; CUSTODIA_REAL=PENDING; MFA_RELEASE_AUTHORIZED=NO.
+
+
+## Procedimiento propuesto de recuperación manual supervisada — sin habilitación
+1. Apertura: registrar expediente y revocar sesiones; suspender operaciones de la cuenta. Nunca asumir que conocer contraseña o controlar correo demuestra identidad.
+2. Identidad: personal autorizado verifica al titular usando un canal independiente establecido antes de la incidencia. Archivar referencia opaca a evidencia en un sistema distinto; asociar sujeto, expediente, fecha, método y resultado. No guardar documentación sensible ni secretos en eventos de aplicación.
+3. Aviso: enviar comunicación fuera de banda por el contacto anterior a la incidencia, con posibilidad de impugnar y bloquear. Un cambio reciente de contacto invalida el canal hasta nueva comprobación independiente.
+4. Revisión: esperar al menos 24 horas; dos revisores activos, distintos e independientes del solicitante, aprueban con caducidad de una hora. Reevaluar todo antes de cada etapa; cualquier rechazo o caducidad impide continuar.
+5. Entrega: canal autenticado y cifrado de extremo a extremo directamente con el titular, sin acceso del personal revisor al secreto TOTP ni a los diez códigos. Prohibido correo plano, capturas, chat de soporte y logs. La implementación concreta de este canal sigue pendiente.
+6. Confirmación: titular prueba nuevo TOTP y custodia de un código provisional. Solo entonces sustituir en una transacción factores y códigos, revocar sesiones y cerrar expediente; un fallo conserva el factor anterior.
+7. Cierre: registrar únicamente identificadores de expediente, resultado, revisores, timestamps y referencia externa; comprobar revocación. No registrar TOTP, códigos, claves ni datos de identidad.
+8. Contingencias: ante expiración, pérdida del canal, cambio de identidad, conflicto de revisores o imposibilidad de custodiar claves, bloquear y escalar a revisión humana; nunca habilitar acceso basado solo en contraseña.
+
+### Evidencias que deben existir antes de producción
+- Acta privada de titularidad del canal y prueba independiente de identidad, referenciada sin revelar datos personales.
+- Demostración de que los revisores no pueden observar ni solicitar códigos, y de que los secretos no aparecen en logs, traces, respaldos de soporte ni mensajes.
+- Pruebas de entrega interrumpida, enlace caducado, captura/repetición, cambio de contacto y notificación impugnada.
+- Dos custodios reales de claves Fernet y restauración aislada del material custodiado, con acta de aprobación independiente.
+- Auditoría de rutas de autenticación y procedimiento de despliegue único autorizado.
+
+Ningún valor booleano de configuración ni test sintético sustituye estas evidencias. Este texto es un diseño operacional, NO una certificación ni autorización de activación.
