@@ -22,38 +22,54 @@ class RecoveryReviewServiceTests(TestCase):
         )
         # auto_now_add asigna created_at al guardar; el reloj de la petición
         # debe capturarse después de que exista el caso.
-        self.now = timezone.now()
+        self.now = self.case.quarantine_until + timedelta(seconds=1)
+        self.reviewers = frozenset({self.reviewer1.pk, self.reviewer2.pk})
+
+    def review(self, *, reviewer, approve):
+        return record_review(case_id=self.case.pk, reviewer=reviewer,
+                             approve=approve, reviewer_ids=self.reviewers, now=self.now)
 
     def test_two_distinct_approvals_are_recorded_once_without_reset(self):
         UserMfaState.objects.create(user=self.subject, enabled=True, encrypted_totp_secret="synthetic")
-        self.assertEqual(record_review(case_id=self.case.pk, reviewer=self.reviewer1, approve=True, now=self.now),
+        self.assertEqual(self.review(reviewer=self.reviewer1, approve=True),
                          (True, "APPROVAL_RECORDED"))
-        self.assertEqual(record_review(case_id=self.case.pk, reviewer=self.reviewer1, approve=True, now=self.now),
+        self.assertEqual(self.review(reviewer=self.reviewer1, approve=True),
                          (True, "ALREADY_RECORDED"))
-        self.assertEqual(record_review(case_id=self.case.pk, reviewer=self.reviewer2, approve=True, now=self.now),
+        self.assertEqual(self.review(reviewer=self.reviewer2, approve=True),
                          (True, "APPROVAL_RECORDED"))
         self.assertEqual(self.case.approvals.count(), 2)
         self.assertEqual(self.case.events.count(), 2)
         self.assertTrue(UserMfaState.objects.get(user=self.subject).enabled)
 
     def test_unprivileged_and_subject_cannot_approve(self):
-        self.assertEqual(record_review(case_id=self.case.pk, reviewer=self.subject, approve=True, now=self.now)[0], False)
+        self.assertEqual(self.review(reviewer=self.subject, approve=True)[0], False)
         outsider = get_user_model().objects.create_user("outsider_reviewer", password="TestPassword123!")
-        self.assertEqual(record_review(case_id=self.case.pk, reviewer=outsider, approve=True, now=self.now)[0], False)
+        self.assertEqual(self.review(reviewer=outsider, approve=True)[0], False)
         self.assertEqual(self.case.approvals.count(), 0)
 
     def test_unverified_or_expired_case_fails(self):
         self.case.channel_verified_at = None
         self.case.save(update_fields=["channel_verified_at"])
-        self.assertEqual(record_review(case_id=self.case.pk, reviewer=self.reviewer1, approve=True, now=self.now)[0], False)
+        self.assertEqual(self.review(reviewer=self.reviewer1, approve=True)[0], False)
         self.case.channel_verified_at = self.now
         self.case.expires_at = self.now
         self.case.save(update_fields=["channel_verified_at", "expires_at"])
-        self.assertEqual(record_review(case_id=self.case.pk, reviewer=self.reviewer1, approve=True, now=self.now)[0], False)
+        self.assertEqual(self.review(reviewer=self.reviewer1, approve=True)[0], False)
 
     def test_rejection_is_terminal_and_audited(self):
-        self.assertEqual(record_review(case_id=self.case.pk, reviewer=self.reviewer1, approve=False, now=self.now),
+        self.assertEqual(self.review(reviewer=self.reviewer1, approve=False),
                          (True, "REJECTED"))
-        self.assertEqual(record_review(case_id=self.case.pk, reviewer=self.reviewer2, approve=True, now=self.now),
+        self.assertEqual(self.review(reviewer=self.reviewer2, approve=True),
                          (False, "CASE_NOT_PENDING"))
         self.assertEqual(self.case.events.count(), 1)
+
+    def test_missing_roster_and_active_quarantine_fail_closed(self):
+        self.assertEqual(record_review(
+            case_id=self.case.pk, reviewer=self.reviewer1,
+            approve=True, now=self.now
+        ), (False, "REVIEWER_AUTHORIZATION_REQUIRED"))
+        self.assertEqual(record_review(
+            case_id=self.case.pk, reviewer=self.reviewer1,
+            approve=True, reviewer_ids=self.reviewers,
+            now=self.case.created_at + timedelta(minutes=1)
+        ), (False, "QUARANTINE_ACTIVE"))
