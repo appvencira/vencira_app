@@ -71,6 +71,15 @@ sudo docker run --rm --network "$NET" \
  --noinput --verbosity 1 >>"$LOG" 2>&1
 echo "S1_POSTGRES_REVIEW_AND_RACE=OK"
 PHASE=STATIC_RELEASE_GUARD
+# Gate negativo: el preflight de publicacion DEBE bloquear con estado 4.
+# Codigo 0 seria un fallo de seguridad, aunque los tests hubieran pasado.
+set +e
 bash scripts/mfa_s1_release_readonly.sh "$(git rev-parse HEAD)" >>"$LOG" 2>&1
+release_rc=$?
+set -e
+test "$release_rc" -eq 4
+grep -Fq "MFA_CANDIDATE_STATIC_GATE=OK" "$LOG"
+grep -Fq "REASON=OPERATIONAL_RELEASE_NOT_AUTHORIZED" "$LOG"
 echo "S1_STATIC_CANDIDATE_GUARD=OK"
+echo "S1_RELEASE_FAIL_CLOSED=OK"
 echo "MFA_RELEASE_AUTHORIZED=NO"
