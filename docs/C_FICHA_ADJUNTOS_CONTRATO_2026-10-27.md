@@ -61,3 +61,6 @@ El operador comunicó `OK` y `RESULTADO_FINAL=0` para `reminders.test_attachment
 
 ## Gate del adaptador ClamAV simulado — evidencia operador
 Tras commit `d9d55717557051fc1c3d29c58624efb400c2bfaf`, el operador comunicó `OK` y `RESULTADO_FINAL=0` para `reminders.test_attachment_clamav_adapter`. Prueba de socket simulado; ClamAV real, definiciones, detección EICAR y despliegue permanecen PENDIENTES. Sin despliegue ni migraciones en BD persistente. No repetir test aislado; incluirlo en gate integral.
+
+## Ensayo real ClamAV preparado, NO ejecutado todavía
+`scripts/rehearse_clamav_real_isolated.sh` descarga imagen oficial `clamav/clamav:stable` (con bases preincluidas) y realiza un único escaneo `clamscan` en contenedor **sin red**, sin privilegios, con raíz de solo lectura y límites de memoria/CPU, sobre dos archivos sintéticos: texto limpio y firma EICAR de prueba, no malware. Un código 1 con detección EICAR y texto limpio es el resultado correcto. Falta ejecutar el ensayo y confirmar frescura de firmas: la imagen `stable` es mutable y la base preincluida puede no estar actualizada. Este ensayo NO prueba el adaptador socket Unix/clAMd de punta a punta, no autoriza escaneo productivo, ni cambia el bloqueo de descargas, las migraciones o los contenedores activos. No conectar documentos reales hasta verificación de arquitectura y RGPD.
