@@ -33,7 +33,7 @@ sudo docker build -t "$IMAGE" ./backend >>"$LOG" 2>&1
 PHASE=SQLITE_MIGRATION_CHECK
 sudo docker run --rm --network none \
  -e VENCIRA_ENV=test -e VENCIRA_DB_ENGINE=sqlite \
- -e DJANGO_SECRET_KEY=synthetic-c-ficha-only-key-2026 \
+ -e DJANGO_SECRET_KEY=synthetic-c-ficha-isolated-test-key-2026-long \
  -e DJANGO_ALLOWED_HOSTS=localhost,testserver "$IMAGE" \
  python manage.py makemigrations --check --dry-run >>"$LOG" 2>&1
 echo "C_FICHA_MIGRATIONS_MATCH_MODELS=OK"
@@ -52,7 +52,7 @@ test "$ready" = 1
 echo "C_FICHA_PG17_EPHEMERAL=OK"
 DCMD=(sudo docker run --rm --network "$NET" \
  -e VENCIRA_ENV=test -e VENCIRA_DB_ENGINE=postgresql \
- -e DJANGO_SECRET_KEY=synthetic-c-ficha-only-key-2026 \
+ -e DJANGO_SECRET_KEY=synthetic-c-ficha-isolated-test-key-2026-long \
  -e DJANGO_ALLOWED_HOSTS=localhost,testserver \
  -e POSTGRES_HOST="$DB" -e POSTGRES_DB=c_ficha \
  -e POSTGRES_USER=c_ficha -e POSTGRES_PASSWORD=synthetic-c-ficha-only \
