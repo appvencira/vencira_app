@@ -81,7 +81,8 @@ class RotationFailClosedTests(TestCase):
             user=user, enabled=True,
             encrypted_totp_secret=encrypt_totp_secret(old_secret, user_id=user.pk, keys=keys),
         )
-        UserMfaRecoveryCode.objects.create(state=state, code_hash=hash_recovery_code("A" * 32))
+        original_hash = hash_recovery_code("A" * 32)
+        UserMfaRecoveryCode.objects.create(state=state, code_hash=original_hash)
         original = state.encrypted_totp_secret
         instant = int(timezone.now().timestamp())
         prepared = prepare_factor_rotation(
@@ -99,7 +100,7 @@ class RotationFailClosedTests(TestCase):
         self.assertEqual(state.session_epoch, 0)
         self.assertEqual(
             list(UserMfaRecoveryCode.objects.filter(state=state).values_list("code_hash", flat=True)),
-            [hash_recovery_code("A" * 32)],
+            [original_hash],
         )
         state.pending_rotation_expires_at = timezone.now() - timedelta(seconds=1)
         state.save(update_fields=["pending_rotation_expires_at"])
