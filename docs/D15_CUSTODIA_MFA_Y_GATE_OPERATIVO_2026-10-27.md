@@ -60,3 +60,6 @@ Operador confirmó `RESULTADO_D15_S1E=0`, commit `22f3cc0e66b24b93d514685f9c318f
 
 ## Gate integral S1 — 27/10/2026
 Operador reporta `S1_SQLITE_SECURITY=OK`, `PG17_EPHEMERAL=OK`, `S1_POSTGRES_REVIEW_AND_RACE=OK`, `S1_STATIC_CANDIDATE_GUARD=OK`, `CLEANUP=OK`, `S1_PG17_GATE_RESULT=0` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Log privado en servidor (no compartir salvo fragmentos depurados). **Solo cierra validación del código cubierto por el gate**; no valida custodia operativa, revocación de sesiones/factores ni enforcement runtime en despliegue real. `MFA_RELEASE_AUTHORIZED=NO`. Evitar repetir el gate salvo cambios relevantes.
+
+## Revalidación integral S1 con revocación de sesiones — 27/10/2026
+Operador confirmó gate aislado posterior a la migración preparada 0023 y pruebas de session_epoch: `S1_SQLITE_SECURITY=OK`, `PG17_EPHEMERAL=OK`, `S1_POSTGRES_REVIEW_AND_RACE=OK`, `S1_STATIC_CANDIDATE_GUARD=OK`, `CLEANUP=OK`, `S1_PG17_GATE_RESULT=0`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Log privado del gate disponible solo en el servidor. No se ha autorizado publicación: `MFA_RELEASE_AUTHORIZED=NO`. **Solo** demuestra el comportamiento cubierto por el gate; no prueba sustitución de factores, custodia Fernet independiente ni enforcement runtime en candidato desplegado. No repetir este gate sin cambios relevantes.
