@@ -12,7 +12,7 @@ from .mfa_secrets import (
     decrypt_totp_secret, encrypt_totp_secret, generate_recovery_codes,
     hash_recovery_code,
 )
-from .mfa_totp import generate_secret, match_counter, provisioning_uri
+from .mfa_totp import generate_secret, match_counter
 from .models import UserMfaState, UserMfaRecoveryCode
 from .mfa_store import _failed, _succeeded
 
@@ -61,14 +61,13 @@ def confirm_factor_rotation(*, user_id, new_code, keys, timestamp=None):
     now = timezone.now()
     if (not state.enabled or not state.pending_rotation_secret
             or state.pending_rotation_expires_at is None
-            or now >= state.pending_rotation_expires_at):
+            or now >= state.pending_rotation_expires_at
+            or (state.locked_until and state.locked_until > now)):
         return None
     new_secret = decrypt_totp_secret(
         state.pending_rotation_secret, user_id=user_id, keys=keys,
     )
     counter = match_counter(new_secret, new_code, timestamp=timestamp)
-    if state.locked_until and state.locked_until > now:
-        return None
     if counter is None:
         _failed(state, now)
         return None
