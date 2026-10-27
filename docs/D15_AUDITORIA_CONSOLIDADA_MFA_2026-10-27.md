@@ -48,3 +48,6 @@ Autorización distinta después de G2–G5, con política de recuperación aprob
 Un único bloque de **preparación de entrega MFA**: corregir documentación desactualizada, cerrar diseño de recuperación autoservicio sin bypass, auditar scripts históricos contra publicación accidental y construir ensayo automatizado en clon de rollback/migraciones. Una sola batería integral aislada al finalizar. No repetir gates por cambios exclusivamente documentales.
 
 **Estado irreversible de esta acta:** `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. La presente acta no cambia permisos ni estado de ningún servicio.
+
+## Evidencia posterior: roundtrip de migraciones 0018–0026 en PG17 temporal
+El operador comunica validación del commit 8799800c0650d210594adcbe6d5b2479a61a2360: MFA_PG17_EPHEMERAL=OK; MFA_SCHEMA_0018_BASELINE=OK; MFA_SCHEMA_UP_0026=OK; MFA_SCHEMA_DOWN_0018_EMPTY_ONLY=OK; MFA_SCHEMA_REAPPLY_0026=OK; MFA_SCHEMA_ROUNDTRIP_RESULT=0; NO_DEPLOY_NO_LIVE_MIGRATION=1. Log local: /tmp/vencira-mfa-schema-roundtrip.9wh5afAv.log. Es **prueba de esquema vacío**, no de restauración O5 con datos ni de rollback seguro con cuentas MFA activas. MFA_SCHEMA_LIVE_USER_ROLLBACK=NOT_TESTED, MFA_PRODUCTION_ROLLBACK_AUTHORIZED=NO, MFA_RELEASE_AUTHORIZED=NO. G2 sigue parcialmente pendiente.
