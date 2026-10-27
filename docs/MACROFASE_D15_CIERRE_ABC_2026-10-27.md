@@ -28,3 +28,10 @@ Aún pendiente: `scripts/validate_o7_o8_preflight.sh` y control estático explí
 ## Gate ABC inicial — APROBADO (27/10/2026)
 
 Operador confirma `LOCALCHECK_HEALTH_PRE=OK`, `CONFIG_COMPOSE=OK`, `I18N_ES_CA=OK`, `BUILD_BACKEND_AISLADO=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `PG17_TEMPORAL=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `LOCALCHECK_HEALTH_POST=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_GATE_ABC=0`, `RESULTADO_GUARD_ABC=0`, `MFA_CANDIDATE_STATIC_CHECK=OK`, candidato SHA `242c5f2522e7d8731712528676e647e9139cb1f1`. Log local `/tmp/vencira-o7-o8-preflight.GVNsfN4W.log`. `MFA_RUNTIME_DB_GUARD=PENDING`, `MFA_RELEASE_AUTHORIZED=NO`. Sin despliegue ni migración persistente, OAuth/Restic/Caddy intactos. La anterior salida fallida en CONTAINERS fue corregida por el operador, no persiste en este gate.
+
+
+## Bloque B — Nuevo ensayo O5→clon 0018→0021 (PENDIENTE DE EJECUCIÓN)
+
+Se añade `scripts/rehearse_mfa_0019_0021_o5_clone.sh`: exige root y variable explícita `MFA_O5_CLONE_CONFIRM=RESTORE_ONLY_EPHEMERAL_CLONE`; comprueba rama y base viva en migración 0018; usa bloqueo O5, backup Restic cifrado actual, PostgreSQL17 efímero en red Docker interna, `restic dump` por tubería directa a `pg_restore` sin dump descifrado en disco. Verifica el esquema 0018 restaurado, aplica 0019–0021 exclusivamente al clon, verifica tablas MFA y comprueba que la base persistente sigue en 0018 y con igual contador de migraciones. Elimina contenedor/red efímeros al salir. **No ejecutado aún; contiene datos restaurados reales en la memoria/almacenamiento efímero de contenedor hasta su eliminación: ejecución autorizada únicamente por custodio.** No usa el script antiguo O5 que exigía migración 0014.
+
+**Secuencia**: gate estático del script (revisión de sintaxis), ensayo O5 en clon, revisión QR Android/PC, custodia externa de claves y procedimiento de recuperación administrativa auditado. El bloque C no tiene aprobación para deploy. Si faltan claves MFA o no existe recuperación administrativa segura, mantener flag desactivado incluso tras una eventual migración autorizada.
