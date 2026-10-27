@@ -46,3 +46,7 @@ El operador confirmó el 27/10/2026: S1_SQLITE_SECURITY=OK, PG17_EPHEMERAL=OK, S
 
 ## Gate de publicación fail-closed — 27/10/2026
 Operador confirmó `S1_SQLITE_SECURITY=OK`, `PG17_EPHEMERAL=OK`, `S1_POSTGRES_REVIEW_AND_RACE=OK`, `S1_STATIC_CANDIDATE_GUARD=OK`, `S1_RELEASE_FAIL_CLOSED=OK`, `CLEANUP=OK`, `S1_PG17_GATE_RESULT=0`, `RESULTADO_FINAL=0`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` y `MFA_RELEASE_AUTHORIZED=NO`. Log privado `/tmp/vencira-s1-pg17.RvNeKw1F.log`. La prueba demuestra denegación con estado no cero del preflight de publicación; no demuestra integración del control en despliegue real. Custodia externa y recuperación de pérdida total siguen pendientes.
+
+## Hallazgo de integración de despliegue (auditoría de rutas)
+Se han localizado múltiples scripts históricos de despliegue en scripts/deploy_*.sh (Macro A, B, O8 y O9), con contratos y commits inmovilizados diferentes. El nuevo guard MFA estático NO es invocado obligatoriamente por esas rutas. Los hashes de validación que exigen varios de esos scripts ayudan a evitar despliegues de cambios nuevos, pero NO equivalen a protección MFA centralizada.
+**Decisión:** no alterar indiscriminadamente scripts históricos ya usados ni anunciar protección integrada. Antes de autorizar el primer despliegue con MFA se requiere un único entrypoint nuevo, sujeto a revisión, que valide candidato inmutable, migraciones/estado runtime y custodia, y que bloquee explícitamente cualquier ruta alternativa. Mientras no exista, MFA_RELEASE_AUTHORIZED=NO.
