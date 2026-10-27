@@ -34,3 +34,6 @@ MFA_RELEASE_AUTHORIZED=NO
 
 ## Resultado de validación comunicado por operador
 El operador ejecutó en contenedor Docker aislado y SQLite temporal los tests `reminders.test_attachment_validation` y `reminders.test_attachment_metadata` tras integrar la migración 0027. Comunicó `OK`, destrucción de la base de pruebas y `RESULTADO_FINAL=0`. Se registra como validación de esas pruebas, no como revisión integral ni prueba PostgreSQL17. Sin publicación ni migración persistente. Pendiente gate PG17 temporal y validación del almacenamiento privado.
+
+## Almacén privado cifrado — gate comunicado por operador
+Tras el commit e95a3a6c70971d7947d04cbb80d9de716fa29573, el operador ejecutó las pruebas aisladas de validación, metadatos y almacén cifrado mediante Docker/SQLite de test. Resultado comunicado: `OK`, destrucción de base de pruebas y `RESULTADO_FINAL=0`. Esto acredita únicamente los casos sintéticos probados. Aún no existe API de subida/descarga ni escáner antivirus, y el almacén no se encuentra activado. Migración 0027 NO aplicada a PostgreSQL persistente. No repetir esta batería como paso aislado; incorporarla al futuro gate integral.
