@@ -26,3 +26,8 @@ Se añaden `backend/reminders/management/commands/mfa_rollback_guard.py` y `back
 La recuperación de cuentas que perdieron todos sus factores continúa **SIN implementación de endpoint ni procedimiento automatizado**. Diseño previo obligatorio: identidad fuera de banda comprobada por dos personas autorizadas, evidencia en expediente auditado, cuarentena de cuenta, revocación de sesiones, invalidación de códigos y secreto antiguos, notificación por canal preexistente y ventana de seguridad antes de registrar un nuevo factor. Evitar recuperar solo con contraseña o correo sin segunda prueba de identidad. El procedimiento debe aprobarse antes de programar acciones sobre cuentas reales.
 
 Este segundo bloque está pendiente del gate O7/O8 aislado; no desplegar ni migrar la base persistente.
+
+
+## Gate segundo bloque D1.5r — APROBADO (27/10/2026)
+
+Confirmación operador: `LOCALCHECK_HEALTH_PRE=OK`, `CONFIG_COMPOSE=OK`, `I18N_ES_CA=OK`, `BUILD_BACKEND_AISLADO=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `PG17_TEMPORAL=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `LOCALCHECK_HEALTH_POST=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5R_ROLLBACK=0`. Log local `/tmp/vencira-o7-o8-preflight.aWkZBgHG.log`. Sin despliegue ni migración persistente; OAuth/Restic/Caddy intactos. Guardia de rollback validada en tests, **aún no conectada obligatoriamente al pipeline real**. Continúan pendientes custodia y restauración real de claves, procedimiento de recuperación sin factores y validación visual.
