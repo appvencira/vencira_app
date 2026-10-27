@@ -40,21 +40,32 @@ class PrivateQuarantineStore:
         name = self._id(key)
         token = self.fernet.encrypt(payload)
         fd = None
+        directory_fd = None
+        created = False
         try:
             # O_EXCL avoids overwriting; O_NOFOLLOW prohibits final symlink.
+            directory_fd = os.open(self.root, os.O_RDONLY | os.O_DIRECTORY)
             fd = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL |
                          getattr(os, "O_NOFOLLOW", 0), 0o600,
-                         dir_fd=os.open(self.root, os.O_RDONLY | os.O_DIRECTORY))
+                         dir_fd=directory_fd)
+            created = True
             with os.fdopen(fd, "wb") as file:
                 fd = None
                 file.write(token)
                 file.flush()
                 os.fsync(file.fileno())
         except (OSError, ValueError) as exc:
+            if created and directory_fd is not None:
+                try:
+                    os.unlink(name, dir_fd=directory_fd)
+                except OSError:
+                    pass
             raise PrivateStoreError("No se pudo guardar en cuarentena") from exc
         finally:
             if fd is not None:
                 os.close(fd)
+            if directory_fd is not None:
+                os.close(directory_fd)
 
     def read_quarantine_for_scanner_only(self, key: uuid.UUID) -> bytes:
         name = self._id(key)
