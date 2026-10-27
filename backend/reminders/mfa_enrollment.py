@@ -55,6 +55,8 @@ def confirm_mfa(user_id: int, code: str, *, keys: list[str],
     ).first()
     if state is None or not state.encrypted_totp_secret:
         return None
+    if UserMfaRecoveryCode.objects.filter(state=state).exists():
+        return None
     now = timezone.now()
     if state.prepared_at is None or now - state.prepared_at > PENDING_LIFETIME:
         return None
