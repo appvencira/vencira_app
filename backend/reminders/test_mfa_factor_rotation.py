@@ -217,3 +217,22 @@ class RotationFailClosedTests(TestCase):
             state.encrypted_totp_secret, user_id=user.pk, keys=keys,
         ), old_secret)
         self.assertEqual(state.session_epoch, 0)
+
+    def test_administrative_staging_marker_blocks_normal_rotation(self):
+        import uuid
+        user = get_user_model().objects.create_user("administrative_marker")
+        keys = [Fernet.generate_key().decode("ascii")]
+        active = generate_secret()
+        state = UserMfaState.objects.create(
+            user=user, enabled=True,
+            encrypted_totp_secret=encrypt_totp_secret(active, user_id=user.pk, keys=keys),
+            pending_administrative_case_id=uuid.uuid4(),
+        )
+        instant = int(timezone.now().timestamp())
+        self.assertIsNone(prepare_factor_rotation(
+            user_id=user.pk, old_code=totp_at(active, instant),
+            keys=keys, timestamp=instant,
+        ))
+        state.refresh_from_db()
+        self.assertEqual(state.pending_rotation_secret, "")
+        self.assertIsNotNone(state.pending_administrative_case_id)
