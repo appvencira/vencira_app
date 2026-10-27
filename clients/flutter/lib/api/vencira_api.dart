@@ -181,6 +181,13 @@ abstract class VenciraApi {
   Future<int> logoutOtherSessions(String password) async =>
       throw const VenciraApiException();
 
+  Future<Map<String, dynamic>> startMfaSetup(String password) async =>
+      throw const VenciraApiException();
+  Future<List<String>> confirmMfaSetup(String code) async =>
+      throw const VenciraApiException();
+  Future<void> acknowledgeMfaRecovery(String proofCode) async =>
+      throw const VenciraApiException();
+
   Future<void> logout();
 }
 
@@ -2211,6 +2218,53 @@ class HttpVenciraApi implements VenciraApi {
       if (revoked is! int || revoked < 0) throw const VenciraApiException();
       return revoked;
     } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  Future<Map<String, dynamic>> _postMfa(String path, Map<String, dynamic> payload) async {
+    final csrf = await _csrf();
+    final http.Response response;
+    try {
+      response = await _client.post(
+        _baseUri.resolve(path),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrf,
+        },
+        body: jsonEncode(payload),
+      );
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+    if (response.statusCode != 200) throw const VenciraApiException();
+    try {
+      return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> startMfaSetup(String password) =>
+      _postMfa('/api/v1/me/mfa/setup/start/', {'password': password});
+
+  @override
+  Future<List<String>> confirmMfaSetup(String code) async {
+    final data = await _postMfa('/api/v1/me/mfa/setup/confirm/', {'code': code});
+    final codes = data['recovery_codes'];
+    if (codes is! List || codes.length != 10 || codes.any((v) => v is! String)) {
+      throw const VenciraApiException();
+    }
+    return codes.cast<String>();
+  }
+
+  @override
+  Future<void> acknowledgeMfaRecovery(String proofCode) async {
+    final data = await _postMfa('/api/v1/me/mfa/recovery/ack/',
+        {'saved': true, 'proof_code': proofCode});
+    if (data['acknowledged'] != true || data['enabled'] != true) {
       throw const VenciraApiException();
     }
   }
