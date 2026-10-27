@@ -166,3 +166,35 @@ class AdministrativeFinalizationLifecycleTests(TestCase):
         self.state.refresh_from_db()
         self.assertEqual(self.state.encrypted_totp_secret, "old-encrypted-secret")
         self.assertEqual(self.state.session_epoch, 0)
+
+
+class AdministrativeOwnershipIsolationTests(TestCase):
+    def test_expired_factor_owned_by_other_case_is_not_overwritten(self):
+        import uuid
+        from .mfa_admin_recovery_service import prepare_administrative_factor
+        user = get_user_model().objects.create_user("recovery_case_isolation")
+        previous_case_id = uuid.uuid4()
+        state = UserMfaState.objects.create(
+            user=user, enabled=True, encrypted_totp_secret="active-unchanged",
+            pending_rotation_secret="old-staged-unchanged",
+            pending_rotation_expires_at=timezone.now() - timedelta(minutes=1),
+            pending_administrative_case_id=previous_case_id,
+        )
+        now = timezone.now()
+        case = MfaAdministrativeRecoveryCase.objects.create(
+            subject=user, requester=user,
+            quarantine_until=now - timedelta(hours=1),
+            expires_at=now + timedelta(hours=1),
+        )
+        with patch(
+            "reminders.mfa_admin_recovery_service.inspect_external_execution_evidence",
+            return_value=(True, "SYNTHETIC_ONLY"),
+        ):
+            result = prepare_administrative_factor(
+                case_id=case.pk, keys=[Fernet.generate_key().decode("ascii")],
+            )
+        self.assertIsNone(result)
+        state.refresh_from_db()
+        self.assertEqual(state.pending_administrative_case_id, previous_case_id)
+        self.assertEqual(state.pending_rotation_secret, "old-staged-unchanged")
+        self.assertEqual(state.encrypted_totp_secret, "active-unchanged")
