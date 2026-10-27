@@ -62,3 +62,26 @@ class RotationFailClosedTests(TestCase):
             user_id=user.pk, new_code=totp_at(prepared, instant),
             keys=keys, timestamp=instant,
         ))
+
+    def test_invalid_old_factor_attempts_are_rate_limited(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from cryptography.fernet import Fernet
+        from .mfa_secrets import encrypt_totp_secret
+        from .mfa_totp import generate_secret
+        user = get_user_model().objects.create_user("rotation_throttle")
+        keys = [Fernet.generate_key().decode("ascii")]
+        state = UserMfaState.objects.create(
+            user=user, enabled=True,
+            encrypted_totp_secret=encrypt_totp_secret(
+                generate_secret(), user_id=user.pk, keys=keys,
+            ),
+        )
+        for _ in range(5):
+            self.assertIsNone(prepare_factor_rotation(
+                user_id=user.pk, old_code="invalid", keys=keys,
+            ))
+        state.refresh_from_db()
+        self.assertEqual(state.failed_attempts, 5)
+        self.assertGreater(state.locked_until, timezone.now())
+        self.assertEqual(state.pending_rotation_secret, "")
