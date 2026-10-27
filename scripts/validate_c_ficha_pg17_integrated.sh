@@ -67,7 +67,14 @@ PHASE=INTEGRATED_TESTS
  reminders.test_attachment_private_store reminders.test_attachment_gate \
  reminders.test_attachment_content_inspection reminders.test_attachment_scan_contract \
  reminders.test_attachment_clamav_adapter reminders.test_attachment_scan_pipeline \
+ reminders.test_attachment_api \
  --noinput >>"$LOG" 2>&1
 echo "C_FICHA_PG17_INTEGRATED_TESTS=OK"
+PHASE=FLUTTER
+sudo docker run --rm --network none \
+ -v "$PWD/clients/flutter:/work" -w /work \
+ ghcr.io/cirruslabs/flutter:stable \
+ sh -ec "flutter pub get --offline && flutter analyze && flutter test test/renewal_attachments_card_test.dart" >>"$LOG" 2>&1
+echo "C_FICHA_FLUTTER_LOCKED_CARD=OK"
 echo "C_FICHA_PUBLIC_UPLOAD_DOWNLOAD=DISABLED"
 echo "C_FICHA_LIVE_MIGRATION_0027=NOT_AUTHORIZED"
