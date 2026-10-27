@@ -17,6 +17,7 @@ from .models import UserMfaState
 
 PENDING_SETUP = "vencira_mfa_setup_v1"
 SETUP_SECONDS = 600
+PENDING_RECOVERY_ACK = "vencira_mfa_recovery_ack_v1"
 
 
 def _response(data, code):
@@ -81,7 +82,24 @@ def mfa_setup_confirm(request):
     # Cuenta protegida desde este instante: sesión vigente queda verificada
     # por un TOTP recién validado; sesiones antiguas sin marcador se revocan.
     request.session[SESSION_VERIFIED] = request.user.get_session_auth_hash()
+    request.session[PENDING_RECOVERY_ACK] = request.user.pk
     return _response({
         "recovery_codes": codes,
         "warning": "Guarda los códigos ahora: no podrán volver a consultarse.",
     }, 200)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def mfa_recovery_ack(request):
+    """Registra confirmación explícita, sin recuperar ni repetir los códigos."""
+    if not getattr(settings, "VENCIRA_MFA_ENROLLMENT_ENABLED", False):
+        return _response({"detail": "Función no disponible."}, 404)
+    if request.session.get(PENDING_RECOVERY_ACK) != request.user.pk:
+        return _response({"detail": "No existe una entrega pendiente en esta sesión."}, 409)
+    if set(request.data) != {"saved"} or request.data.get("saved") is not True:
+        return _response({"detail": "Debes confirmar que has guardado los códigos."}, 400)
+    if not UserMfaState.objects.filter(user=request.user, enabled=True).exists():
+        return _response({"detail": "MFA no está activo."}, 409)
+    request.session.pop(PENDING_RECOVERY_ACK, None)
+    return _response({"acknowledged": True}, 200)
