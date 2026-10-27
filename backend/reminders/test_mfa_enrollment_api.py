@@ -80,6 +80,25 @@ class EnrollmentApiTests(TestCase):
             self.assertEqual(again.status_code, 409)
 
     @override_settings(VENCIRA_MFA_ENROLLMENT_ENABLED=True)
+    def test_setup_password_uses_shared_login_lockout(self):
+        from .login_security import is_blocked
+        with patch.dict("os.environ", {"VENCIRA_MFA_FERNET_KEYS": self.key}):
+            endpoint = reverse("api-mfa-setup-start")
+            for _ in range(5):
+                self.assertEqual(self.client.post(
+                    endpoint, data={"password": "incorrect"},
+                    content_type="application/json",
+                ).status_code, 403)
+            self.assertTrue(is_blocked(self.user.get_username()))
+            response = self.client.post(
+                endpoint, data={"password": "LocalOnlyPassword!2026"},
+                content_type="application/json",
+            )
+            self.assertEqual(response.status_code, 429)
+            self.assertIn("Retry-After", response)
+            self.assertFalse(UserMfaState.objects.filter(user=self.user).exists())
+
+    @override_settings(VENCIRA_MFA_ENROLLMENT_ENABLED=True)
     def test_invalid_key_never_prepares_secret(self):
         with patch.dict("os.environ", {"VENCIRA_MFA_FERNET_KEYS": ""}):
             response = self.client.post(
