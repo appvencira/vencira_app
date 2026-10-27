@@ -156,3 +156,27 @@ class RotationFailClosedTests(TestCase):
         self.assertEqual(state.encrypted_totp_secret, active)
         self.assertEqual(state.pending_rotation_secret, pending)
         self.assertEqual(state.session_epoch, 0)
+
+    def test_pending_recovery_blocks_normal_rotation(self):
+        from .models import MfaAdministrativeRecoveryCase
+        user = get_user_model().objects.create_user("rotation_pending_case")
+        keys = [Fernet.generate_key().decode("ascii")]
+        secret = generate_secret()
+        state = UserMfaState.objects.create(
+            user=user, enabled=True,
+            encrypted_totp_secret=encrypt_totp_secret(secret, user_id=user.pk, keys=keys),
+        )
+        now = timezone.now()
+        MfaAdministrativeRecoveryCase.objects.create(
+            subject=user, requester=user,
+            quarantine_until=now + timedelta(hours=24),
+            expires_at=now + timedelta(hours=72),
+        )
+        instant = int(now.timestamp())
+        self.assertIsNone(prepare_factor_rotation(
+            user_id=user.pk, old_code=totp_at(secret, instant),
+            keys=keys, timestamp=instant,
+        ))
+        state.refresh_from_db()
+        self.assertEqual(state.pending_rotation_secret, "")
+        self.assertEqual(state.session_epoch, 0)
