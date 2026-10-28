@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import '../api/vencira_api.dart';
 
 /// C-FICHA: visual section without upload/download actions until authorized.
 class VenciraRenewalAttachmentsCard extends StatelessWidget {
-  const VenciraRenewalAttachmentsCard({super.key, required this.locale});
+  const VenciraRenewalAttachmentsCard({super.key, required this.locale,
+      this.api, this.workspaceId, this.renewalId});
   final String locale;
+  final VenciraApi? api;
+  final String? workspaceId;
+  final String? renewalId;
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +33,25 @@ class VenciraRenewalAttachmentsCard extends StatelessWidget {
             : 'Archivos PDF e imágenes vinculados a esta póliza.',
             style: theme.textTheme.bodyMedium),
           const SizedBox(height: 10),
+          if (api != null && workspaceId != null && renewalId != null)
+            FutureBuilder<Map<String, dynamic>>(
+              future: api!.fetchAttachmentCapabilities(workspaceId!, renewalId!),
+              builder: (context, snapshot) {
+                // Even if backend flags change unexpectedly, this release
+                // has no download or upload actions.
+                final ready = snapshot.hasData &&
+                  snapshot.data!["upload"] == false &&
+                  snapshot.data!["download"] == false &&
+                  snapshot.data!["delete"] == false;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Text(ready
+                    ? (ca ? "Accés restringit per seguretat" : "Acceso restringido por seguridad")
+                    : (ca ? "Documents no disponibles" : "Documentos no disponibles"),
+                    style: theme.textTheme.labelSmall),
+                );
+              },
+            ),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
