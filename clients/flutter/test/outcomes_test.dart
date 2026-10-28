@@ -102,7 +102,7 @@ void main() {
           renewalId: api.item.id,
         ),
       ));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 800));
 
       final choose = find.byKey(const ValueKey('choose-outcome'));
       // This card is below O1/O2 content in a lazily built ListView.
@@ -111,17 +111,23 @@ void main() {
         choose, 180, scrollable: find.byType(Scrollable).first,
       );
       await tester.ensureVisible(choose);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 800));
       await tester.tap(choose);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 800));
       final won = find.byKey(const ValueKey('outcome-won'));
       expect(won, findsOneWidget);
       expect(api.writes, 0);
+      await tester.ensureVisible(won);
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(won, findsOneWidget);
       await tester.tap(won);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 800));
       expect(api.writes, 0);
-      await tester.tap(find.text('Confirmar'));
-      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(FilledButton),
+      ));
+      await tester.pump(const Duration(milliseconds: 800));
       expect(api.lastKind, 'won');
       expect(api.writes, 1);
       expect(api.item.status, 'closed');
@@ -133,11 +139,14 @@ void main() {
         restore, 180, scrollable: find.byType(Scrollable).first,
       );
       await tester.ensureVisible(restore);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 800));
       await tester.tap(restore);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Confirmar'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 800));
+      await tester.tap(find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(FilledButton),
+      ));
+      await tester.pump(const Duration(milliseconds: 800));
       expect(api.writes, 2);
       expect(api.item.status, 'pending');
       expect(api.item.entry, 'prospects');

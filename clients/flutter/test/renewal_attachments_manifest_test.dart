@@ -88,7 +88,9 @@ void main() {
       ));
       await tester.pumpAndSettle();
       expect(find.text(locale == 'ca'
-        ? 'Documents no disponibles' : 'Documentos no disponibles'), findsOneWidget);
+        ? 'No s’han pogut consultar els documents.'
+        : 'No se han podido consultar los documentos.'), findsOneWidget);
+      expect(find.byKey(const ValueKey('attachments-retry')), findsOneWidget);
       expect(find.byType(ListTile), findsNothing);
       expect(find.byType(FilledButton), findsNothing);
       expect(tester.takeException(), isNull);

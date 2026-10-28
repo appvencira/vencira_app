@@ -17,6 +17,10 @@ class VenciraRenewalAttachmentsCard extends StatefulWidget {
 class _AttachmentCardState extends State<VenciraRenewalAttachmentsCard> {
   Future<Map<String, dynamic>>? _manifest;
 
+  void _retry() {
+    setState(_load);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -66,26 +70,70 @@ class _AttachmentCardState extends State<VenciraRenewalAttachmentsCard> {
             FutureBuilder<Map<String, dynamic>>(
               future: _manifest,
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return Text(ca ? 'Documents no disponibles'
-                    : 'Documentos no disponibles', style: theme.textTheme.bodySmall);
-                }
-                final entries = snapshot.data!['results'] as List<dynamic>;
-                return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  if (entries.isEmpty)
-                    Text(ca ? 'Sense documents disponibles' : 'Sin documentos disponibles',
-                      style: theme.textTheme.bodySmall),
-                  for (final entry in entries)
-                    ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.insert_drive_file_outlined),
-                      title: Text(entry['display_name'] as String,
-                        maxLines: 1, overflow: TextOverflow.ellipsis),
-                      subtitle: Text(ca ? 'Accés bloquejat' : 'Acceso bloqueado'),
-                      trailing: const Icon(Icons.lock_outline, size: 16),
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: CircularProgressIndicator(),
                     ),
-                ]);
+                  );
+                }
+                if (snapshot.hasError || !snapshot.hasData) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(ca
+                        ? 'No s’han pogut consultar els documents.'
+                        : 'No se han podido consultar los documentos.',
+                        style: theme.textTheme.bodySmall),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        key: const ValueKey('attachments-retry'),
+                        onPressed: _retry,
+                        icon: const Icon(Icons.refresh),
+                        label: Text(ca ? 'Torna-ho a provar' : 'Reintentar'),
+                      ),
+                    ],
+                  );
+                }
+                final data = snapshot.data!;
+                final raw = data['results'];
+                if (raw is! List) {
+                  return Text(ca
+                    ? 'Resposta de documents no vàlida'
+                    : 'Respuesta de documentos no válida');
+                }
+                final entries = raw.whereType<Map<String, dynamic>>().toList();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (entries.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Text(ca
+                          ? 'Encara no hi ha documents disponibles'
+                          : 'Todavía no hay documentos disponibles',
+                          style: theme.textTheme.bodySmall),
+                      ),
+                    for (final entry in entries)
+                      ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(
+                          Icons.insert_drive_file_outlined),
+                        title: Text(
+                          entry['display_name'] is String
+                            ? entry['display_name'] as String
+                            : (ca ? 'Document' : 'Documento'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                        subtitle: Text(ca
+                          ? 'Accés bloquejat'
+                          : 'Acceso bloqueado'),
+                        trailing: const Icon(Icons.lock_outline, size: 16),
+                      ),
+                  ],
+                );
               },
             ),
           const SizedBox(height: 10),
