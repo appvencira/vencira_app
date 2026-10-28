@@ -10,8 +10,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction, connection
 from django.http import Http404
 from reminders.models import WorkspaceMember
-from reminders.attachment_private_store import PrivateStoreError
-from .models import RenewalAttachment
+from .models import RenewalAttachment, AttachmentDiscardJob
 
 
 @dataclass(frozen=True)
@@ -45,11 +44,9 @@ def reject_attachment_offline(*, member, attachment_id, store):
             raise Http404("Attachment not found")
         if item.state != RenewalAttachment.State.QUARANTINED:
             raise PermissionDenied("Only quarantined attachments can be rejected")
-        key = item.storage_key
         item.state = RenewalAttachment.State.REJECTED
         item.save(update_fields=["state"])
-    try:
-        store.discard_quarantine(key)
-    except (PrivateStoreError, OSError, ValueError):
-        return RejectionOutcome(item.pk, item.state, False, True)
-    return RejectionOutcome(item.pk, item.state, True, False)
+        AttachmentDiscardJob.objects.create(attachment=item)
+    from .offline_rejection_recovery import retry_rejected_discard_offline
+    return retry_rejected_discard_offline(
+        member=member, attachment_id=item.pk, store=store)
