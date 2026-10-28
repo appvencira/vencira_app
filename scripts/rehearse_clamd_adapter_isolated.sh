@@ -42,6 +42,10 @@ STARTED=1
 READY=0
 for _ in $(seq 1 45); do
   if [ -S "$ROOT/clamd.sock" ]; then READY=1; break; fi
+  if [ "$(sudo docker inspect -f "{{.State.Running}}" "$NAME")" != "true" ]; then
+    echo "CLAMD_CONTAINER_EXITED_EARLY=1"
+    exit 1
+  fi
   sleep 2
 done
 if [ "$READY" -ne 1 ]; then
@@ -60,6 +64,7 @@ clean = scan_with_clamd(payload=b"VENCIRA synthetic clean fixture", unix_socket=
                         timeout_seconds=15)
 assert clean.verdict == "clean", clean
 eicar = b"X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"
+assert len(eicar) == 68, len(eicar)
 infected = scan_with_clamd(payload=eicar, unix_socket=path,
                            timeout_seconds=15)
 assert infected.verdict == "infected", infected
