@@ -58,7 +58,8 @@ def intake_scan_offline(*, member, renewal_id, store, filename,
                 raise PermissionDenied("Attachment metadata changed during scan")
             persist_scan_evidence_offline(
                 attachment_id=item.pk, payload=result.attestation,
-                signature=result.signature, verification_key=signing_key)
+                signature=result.signature, verification_key=signing_key,
+                expected_fingerprint=tuple(getattr(item, field) for field in fingerprint))
             recorded = True
     except Exception:
         verdict = "blocked"
