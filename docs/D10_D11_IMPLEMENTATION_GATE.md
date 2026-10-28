@@ -28,3 +28,20 @@ D10_D11_RELEASE_AUTHORIZED=NO
 C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
+
+## D10B — Resistencia del diario
+
+Seis pruebas sintéticas aisladas:
+
+- Persistencia entre instancias.
+- Rechazo de registro incompleto.
+- Duplicado sin sobrescritura.
+- Rechazo de enlace simbólico.
+- Rechazo de registro excesivo.
+- Bloqueo fuera del entorno de ensayo.
+
+D10B_RESULT=0
+
+No demuestra supervivencia a pérdida física de energía,
+fallos de fsync ni estados terminales persistentes.
+No habilita HTTP ni autoriza despliegue.
