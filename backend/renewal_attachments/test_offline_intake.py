@@ -157,6 +157,11 @@ class OfflineIntakeTests(TestCase):
                 attachment_id=item.pk, payload=payload,
                 signature="0" * 64, verification_key=key)
         self.assertEqual(AttachmentScanEvidence.objects.count(), 1)
+        with self.assertRaises(PermissionDenied):
+            persist_scan_evidence_offline(
+                attachment_id=item.pk, payload=payload,
+                signature=signature, verification_key=key)
+        self.assertEqual(AttachmentScanEvidence.objects.count(), 1)
 
     def test_scan_evidence_cannot_be_recorded_in_production(self):
         from .offline_scan_evidence import persist_scan_evidence_offline
