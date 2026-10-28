@@ -19,6 +19,9 @@ class ScopedRenewalApiTests(APITestCase):
         cls.member_a = get_user_model().objects.create_user(
             username="miembro_a", password="LocalOnlyPasswordB!2026"
         )
+        cls.member_a_2 = get_user_model().objects.create_user(
+            username="miembro_a_2", password="LocalOnlyPasswordE!2026"
+        )
         cls.owner_b = get_user_model().objects.create_user(
             username="propietario_b", password="LocalOnlyPasswordC!2026"
         )
@@ -29,9 +32,11 @@ class ScopedRenewalApiTests(APITestCase):
         cls.workspace_b = Workspace.objects.create(name="Correduría B")
         WorkspaceMember.objects.create(workspace=cls.workspace_a, user=cls.owner_a, role=WorkspaceMember.Role.OWNER)
         WorkspaceMember.objects.create(workspace=cls.workspace_a, user=cls.member_a, role=WorkspaceMember.Role.MEMBER)
+        WorkspaceMember.objects.create(workspace=cls.workspace_a, user=cls.member_a_2, role=WorkspaceMember.Role.MEMBER)
         WorkspaceMember.objects.create(workspace=cls.workspace_b, user=cls.owner_b, role=WorkspaceMember.Role.OWNER)
         cls.renewal_a = Renewal.objects.create(
-            workspace=cls.workspace_a, customer_reference="TEST-A", expires_on=date(2027, 4, 10)
+            workspace=cls.workspace_a, assigned_to=cls.member_a,
+            customer_reference="TEST-A", expires_on=date(2027, 4, 10)
         )
         cls.renewal_b = Renewal.objects.create(
             workspace=cls.workspace_b, customer_reference="TEST-B", expires_on=date(2027, 5, 10)
@@ -65,6 +70,78 @@ class ScopedRenewalApiTests(APITestCase):
         self.assertEqual(response.data[0]["role"], "owner")
         self.assertEqual(self.client.get(reverse("api-me")).data["username"], "propietario_a")
 
+    def test_member_directory_only_accessible_by_workspace_owner(self):
+        url = reverse("api-workspace-members", kwargs={
+            "workspace_id": self.workspace_a.pk,
+        })
+        anonymous = self.client.get(url)
+        self.assertIn(anonymous.status_code, (401, 403))
+        self.client.force_authenticate(user=self.member_a)
+        self.assertEqual(self.client.get(url).status_code, 403)
+        self.client.force_authenticate(user=self.owner_b)
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            {row["id"] for row in response.data},
+            {self.owner_a.pk, self.member_a.pk, self.member_a_2.pk},
+        )
+        self.assertTrue(all(set(row) == {"id", "name", "role"} for row in response.data))
+        self.assertNotIn("propietario_b", str(response.data))
+        self.assertEqual(self.client.post(url, {}, format="json").status_code, 405)
+
+    def test_removing_membership_revokes_access_immediately(self):
+        item = Renewal.objects.create(
+            workspace=self.workspace_a, assigned_to=self.member_a,
+            customer_reference="REASIGNAR-TRAS-BAJA", expires_on=date(2027, 9, 3),
+        )
+        url = self.detail_url(self.workspace_a, item)
+        self.client.force_authenticate(user=self.member_a)
+        self.assertEqual(self.client.get(url).status_code, 200)
+        WorkspaceMember.objects.filter(
+            workspace=self.workspace_a, user=self.member_a
+        ).delete()
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.assertEqual(
+            self.client.get(self.list_url(self.workspace_a)).status_code, 404,
+        )
+        self.client.force_authenticate(user=self.owner_a)
+        self.assertEqual(self.client.get(url).status_code, 200)
+        changed = self.client.patch(url, {
+            "assigned_to": self.member_a_2.pk,
+        }, format="json")
+        self.assertEqual(changed.status_code, 200)
+        item.refresh_from_db()
+        self.assertEqual(item.assigned_to_id, self.member_a_2.pk)
+
+    def test_real_browser_session_loses_workspace_access_after_membership_removal(self):
+        """La cookie sigue autenticando, pero el tenant revocado debe quedar inaccesible."""
+        browser = Client()
+        self.assertTrue(browser.login(
+            username="miembro_a", password="LocalOnlyPasswordB!2026",
+        ))
+        own_list = self.list_url(self.workspace_a)
+        own_detail = self.detail_url(self.workspace_a, self.renewal_a)
+        foreign_list = self.list_url(self.workspace_b)
+        self.assertEqual(browser.get(own_list).status_code, 200)
+        self.assertEqual(browser.get(own_detail).status_code, 200)
+        self.assertEqual(browser.get(foreign_list).status_code, 404)
+
+        WorkspaceMember.objects.filter(
+            workspace=self.workspace_a, user=self.member_a,
+        ).delete()
+
+        self.assertEqual(browser.get(own_list).status_code, 404)
+        self.assertEqual(browser.get(own_detail).status_code, 404)
+        self.assertEqual(browser.get(foreign_list).status_code, 404)
+        response = browser.get(reverse("api-workspaces"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), [])
+        # La sesión global de Django permanece activa. No confundir
+        # revocación de autorización tenant con logout global.
+        self.assertEqual(browser.get(reverse("api-me")).status_code, 200)
+
     def test_member_can_read_and_update_own_workspace(self):
         self.client.force_authenticate(user=self.member_a)
         list_response = self.client.get(self.list_url(self.workspace_a))
@@ -77,6 +154,97 @@ class ScopedRenewalApiTests(APITestCase):
         self.assertEqual(detail_response.status_code, 200)
         self.renewal_a.refresh_from_db()
         self.assertEqual(self.renewal_a.status, "contacted")
+
+    def test_member_cannot_read_or_patch_teammate_or_unassigned_record(self):
+        other = Renewal.objects.create(
+            workspace=self.workspace_a, assigned_to=self.member_a_2,
+            customer_reference="TRABAJO-AJENO", expires_on=date(2027, 9, 2),
+        )
+        legacy = Renewal.objects.create(
+            workspace=self.workspace_a,
+            customer_reference="SIN-ASIGNAR", expires_on=date(2027, 10, 3),
+        )
+        self.client.force_authenticate(user=self.member_a)
+        listing = self.client.get(self.list_url(self.workspace_a))
+        self.assertEqual(listing.status_code, 200)
+        self.assertEqual(listing.data["count"], 1)
+        self.assertEqual(listing.data["results"][0]["customer_reference"], "TEST-A")
+        for item in (other, legacy):
+            with self.subTest(item=item.id):
+                self.assertEqual(self.client.get(
+                    self.detail_url(self.workspace_a, item)
+                ).status_code, 404)
+                self.assertEqual(self.client.patch(
+                    self.detail_url(self.workspace_a, item),
+                    {"status": "closed"}, format="json",
+                ).status_code, 404)
+        self.assertEqual(self.client.get(
+            self.list_url(self.workspace_a), {"q": "TRABAJO-AJENO"}
+        ).data["count"], 0)
+
+    def test_owner_can_see_unassigned_and_reassign_within_workspace(self):
+        legacy = Renewal.objects.create(
+            workspace=self.workspace_a,
+            customer_reference="PENDIENTE-ASIGNAR", expires_on=date(2027, 9, 4),
+        )
+        self.client.force_authenticate(user=self.owner_a)
+        self.assertEqual(
+            self.client.get(self.detail_url(self.workspace_a, legacy)).status_code, 200
+        )
+        changed = self.client.patch(self.detail_url(self.workspace_a, legacy), {
+            "assigned_to": self.member_a_2.pk,
+        }, format="json")
+        self.assertEqual(changed.status_code, 200)
+        legacy.refresh_from_db()
+        self.assertEqual(legacy.assigned_to_id, self.member_a_2.pk)
+        self.client.force_authenticate(user=self.member_a_2)
+        self.assertEqual(
+            self.client.get(self.detail_url(self.workspace_a, legacy)).status_code, 200
+        )
+        self.client.force_authenticate(user=self.member_a)
+        self.assertEqual(
+            self.client.get(self.detail_url(self.workspace_a, legacy)).status_code, 404
+        )
+
+    def test_member_creation_is_self_assigned_and_cannot_assign_others(self):
+        self.client.force_authenticate(user=self.member_a)
+        url = self.list_url(self.workspace_a)
+        created = self.client.post(url, {
+            "customer_reference": "ALTA-MIEMBRO",
+            "full_name": "Entidad sintética", "entry": "clients",
+            "expires_on": "2027-09-01",
+        }, format="json")
+        self.assertEqual(created.status_code, 201)
+        self.assertEqual(created.data["assigned_to"], self.member_a.pk)
+        self.assertEqual(
+            Renewal.objects.get(pk=created.data["id"]).assigned_to_id,
+            self.member_a.pk,
+        )
+        self.assertEqual(self.client.post(url, {
+            "customer_reference": "FRAUDE",
+            "expires_on": "2027-09-02",
+            "assigned_to": self.member_a_2.pk,
+        }, format="json").status_code, 400)
+        self.assertEqual(self.client.patch(
+            self.detail_url(self.workspace_a, self.renewal_a),
+            {"assigned_to": self.member_a_2.pk}, format="json",
+        ).status_code, 400)
+        self.assertEqual(self.client.patch(
+            self.detail_url(self.workspace_a, self.renewal_a),
+            {"assigned_to": None}, format="json",
+        ).status_code, 400)
+
+    def test_owner_cannot_assign_to_nonmember_or_foreign_tenant(self):
+        self.client.force_authenticate(user=self.owner_a)
+        for candidate in (self.owner_b.pk, self.unassigned.pk):
+            with self.subTest(candidate=candidate):
+                invalid = self.client.patch(
+                    self.detail_url(self.workspace_a, self.renewal_a),
+                    {"assigned_to": candidate}, format="json",
+                )
+                self.assertEqual(invalid.status_code, 400)
+        self.renewal_a.refresh_from_db()
+        self.assertEqual(self.renewal_a.assigned_to_id, self.member_a.pk)
 
     def test_cannot_see_or_mutate_other_workspace(self):
         self.client.force_authenticate(user=self.owner_a)
@@ -107,7 +275,8 @@ class ScopedRenewalApiTests(APITestCase):
         }, format="json")
         self.assertEqual(forbidden.status_code, 400)
         success = self.client.post(url, {
-            "customer_reference": "NUEVO", "expires_on": "2027-06-10", "status": "pending"
+            "customer_reference": "NUEVO", "full_name": "Entidad sintética",
+            "entry": "clients", "expires_on": "2027-06-10", "status": "pending"
         }, format="json")
         self.assertEqual(success.status_code, 201)
         item = Renewal.objects.get(pk=success.data["id"])
@@ -143,14 +312,14 @@ class ScopedRenewalApiTests(APITestCase):
         client.force_login(self.owner_a)
         url = self.list_url(self.workspace_a)
         denied = client.post(url, {
-            "customer_reference": "CSRF", "expires_on": "2027-01-01"
+            "customer_reference": "CSRF", "entry": "clients", "full_name": "Prueba CSRF", "expires_on": "2027-01-01"
         }, format="json")
         self.assertEqual(denied.status_code, 403)
         page = client.get(reverse("login"))
         self.assertEqual(page.status_code, 200)
         csrf = client.cookies[settings.CSRF_COOKIE_NAME].value
         allowed = client.post(url, {
-            "customer_reference": "CSRF", "expires_on": "2027-01-01"
+            "customer_reference": "CSRF", "entry": "clients", "full_name": "Prueba CSRF", "expires_on": "2027-01-01"
         }, format="json", HTTP_X_CSRFTOKEN=csrf)
         self.assertEqual(allowed.status_code, 201)
 
@@ -164,7 +333,7 @@ class ScopedRenewalApiTests(APITestCase):
         self.assertGreaterEqual(len(token), 32)
         create = client.post(
             self.list_url(self.workspace_a),
-            {"customer_reference": "CSRF-NEW", "expires_on": "2027-06-15"},
+            {"customer_reference": "CSRF-NEW", "entry": "clients", "full_name": "Prueba CSRF", "expires_on": "2027-06-15"},
             format="json", HTTP_X_CSRFTOKEN=token,
         )
         self.assertEqual(create.status_code, 201)

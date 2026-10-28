@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>VENCIRA Internal Backups | Integración administrativa</title>
+  <meta name="description" content="Información sobre la integración interna de VENCIRA para almacenar copias de seguridad cifradas en Google Drive.">
+  <link rel="canonical" href="https://oauth.vencira.es/">
+  <link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#contenido">Ir al contenido</a>
+  <header class="top"><div class="wrap nav"><a class="brand" href="/" aria-label="VENCIRA — inicio">V<span>●</span>ENCIRA</a><span class="status">Integración interna</span></div></header>
+  <main id="contenido" class="wrap">
+    <p class="eyebrow">SERVICIOS TÉCNICOS · GOOGLE DRIVE</p>
+    <h1>VENCIRA <em>Internal Backups</em></h1>
+    <p class="lead">Una integración administrativa de VENCIRA que permite guardar y recuperar copias de seguridad previamente cifradas en Google Drive.</p>
+    <section class="panel" aria-labelledby="funcionamiento">
+      <h2 id="funcionamiento">Qué hace esta integración</h2>
+      <p>VENCIRA utiliza herramientas de respaldo para generar copias cifradas de su entorno técnico. La integración OAuth autoriza a la cuenta Google administradora a guardar y recuperar los archivos del repositorio de respaldo en Google Drive.</p>
+      <p>El cifrado se realiza antes de enviar los datos. La clave de recuperación se custodia separada de Google Drive; Google no recibe esa clave mediante esta integración.</p>
+    </section>
+    <div class="cols">
+      <section class="panel small">
+        <h2>Permisos solicitados</h2>
+        <p>Acceso a archivos concretos de Drive gestionados por la aplicación mediante el ámbito <code>drive.file</code>. No se solicita acceso general al correo, los contactos ni al contenido completo de Drive.</p>
+      </section>
+      <section class="panel small">
+        <h2>Acceso restringido</h2>
+        <p>Este servicio está reservado a la administración de VENCIRA. No permite el registro público de usuarios ni ofrece acceso a la aplicación comercial VENCIRA.</p>
+      </section>
+    </div>
+    <section class="panel" aria-labelledby="transparencia">
+      <h2 id="transparencia">Transparencia y control</h2>
+      <p>La cuenta titular puede revisar o revocar la autorización desde su cuenta Google. La revocación interrumpe el acceso futuro de esta integración a Drive, sin eliminar automáticamente las copias ya guardadas.</p>
+      <p>Consulta la <a href="/privacidad/">política de privacidad</a> para conocer qué datos se tratan, las finalidades, el almacenamiento y las opciones de control.</p>
+    </section>
+  </main>
+  <footer class="footer"><div class="wrap foot"><span>© 2026 VENCIRA · Integración administrativa, proyecto en desarrollo.</span><nav aria-label="Enlaces legales"><a href="/privacidad/">Privacidad</a><a href="/condiciones/">Condiciones de uso</a></nav></div></footer>
+</body>
+</html>

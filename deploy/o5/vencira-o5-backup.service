@@ -1,0 +1,16 @@
+[Unit]
+Description=VENCIRA DEV PostgreSQL encrypted backup to private Restic Drive
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+OnFailure=vencira-o5-health.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+UMask=0077
+WorkingDirectory=/home/vencira/vencira-localcheck
+ExecStart=/usr/local/libexec/vencira/o5_scheduled_backup.sh
+TimeoutStartSec=3h
+NoNewPrivileges=yes

@@ -1,0 +1,10 @@
+[Unit]
+Description=VENCIRA DEV check encrypted backup freshness (local journal alert)
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+UMask=0077
+ExecStart=/usr/local/libexec/vencira/o5_backup_health.sh
+NoNewPrivileges=yes

@@ -1,0 +1,120 @@
+# VENCIRA — D1.5 · MFA TOTP y recuperación segura
+
+Estado: D1.5a implementada en rama de integración, **gate pendiente**. NO desplegada ni activada.
+
+## D1.5a — Núcleo aislado
+
+- `backend/reminders/mfa_totp.py`: generador CSPRNG de secretos Base32 de 160 bits; TOTP RFC 6238 SHA1, 30 s, 6 dígitos; comparación temporal constante; tolerancia configurable como máximo ±1 ventana; devuelve contador candidato para impedir replay en una transacción posterior; URI `otpauth` compatible con autenticadoras.
+- `backend/reminders/test_mfa_totp.py`: vectores públicos RFC 6238 SHA1 con 8 dígitos, generación, ventana, repetición, formatos inválidos y URI.
+- Sin nuevas dependencias, modelos, migraciones, endpoints ni alteración de login. **No es un sistema MFA completo**.
+
+## D1.5b — Antes de exponer la activación
+
+1. Persistir secreto TOTP **cifrado con clave independiente, rotación documentada** (no hash irreversible; se necesita para verificar el OTP). Secretos de producción nunca en logs, URL HTTP ni backups sin cifrar. Evaluar librería auditada y dependencias.
+2. Flujo seguro de enrolamiento: sesión reciente/contraseña confirmada, pendiente sin activar, QR/clave mostrada exclusivamente al titular, confirmación con código válido, marcar MFA activo atómicamente. Proteger contra CSRF e intentos repetidos.
+3. Recuperación: códigos aleatorios suficientes, mostrar una sola vez, almacenar solo hash robusto con comparación segura, consumo atómico/idempotencia controlada, rotación y alertas. Procedimiento verificado si se pierden teléfono y códigos.
+4. Login: nunca crear sesión completamente autenticada tras solo contraseña si el usuario tiene MFA activo. Estado de reto preautenticado, expiración, throttling, protección contra fijación de sesión y regresión de login sin MFA.
+5. Anti-replay: persistir `last_accepted_counter` por usuario con transacción y `select_for_update`; no aceptar mismo contador ni repetir token dentro de ventana.
+6. Revocación/reset MFA con prueba fuerte de identidad, cierre de sesiones pertinente, historial de seguridad minimizado sin PII.
+7. ES/CA, accesibilidad, móvil, backups/restauración y continuidad. No convertir VENCIRA en CRM.
+
+## Gates
+
+- Ejecutar tests aislados SQLite y PG17, incluyendo carreras de consumo y anti-replay.
+- Ninguna migración de PostgreSQL persistente ni habilitación MFA sin autorización específica.
+- No declarar sistema listo para datos reales hasta verificar privacidad y revisión de seguridad integral.
+
+
+## 26/10/2026 — Gate D1.5a superado
+
+Confirmado por el operador: `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5A=0`. Log `/tmp/vencira-o7-o8-preflight.5c3aWGs3.log`. Sin migración o despliegue. D1.5b pendiente: diseño y pruebas de cifrado de secretos y recuperación antes de cualquier enrolamiento.
+
+
+## D1.5b, primera entrega — cifrado y recuperación (PENDIENTE GATE)
+
+Se añadió dependencia `cryptography>=44,<47` a `backend/requirements.txt`; módulo `backend/reminders/mfa_secrets.py` cifra secretos TOTP con Fernet y clave independiente proporcionada explícitamente, enlace del valor a `user_id`, claves antiguas sólo para descifrado, rotación recifrando con nueva clave; genera 10 códigos de recuperación de 160 bits cada uno y utiliza PBKDF2-SHA256 de Django para almacenar únicamente hashes. Pruebas `backend/reminders/test_mfa_secrets.py`: secreto no expuesto, alteración, vinculación a cuenta, rotación, claves erróneas, generación y comprobación de códigos. Commits `a8fc40c4`, `2b4fa620`, `32038191`. **No habilitado; faltan** modelo de persistencia y transacciones anti-replay/consumo único, control de concurrencia, mecanismo de custodia y rotación real de claves, protección frente a brute force, enrolamiento y login MFA. El helper de recuperación **no consume** códigos: nunca afirmar que es un sistema de recuperación de un solo uso completo antes de implementar persistencia transaccional. Gate integral aislado pendiente, sin migraciones ni despliegue DEV.
+
+
+## 26/10/2026 — Gate D1.5b APROBADO
+
+El operador confirmó `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5B=0`, log local `/tmp/vencira-o7-o8-preflight.4UXX7YJr.log`. Valida las primitivas cifrado/rotación/códigos sin persistencia. Pendiente consumo atómico con bloqueo transaccional, límites de intentos, enrolamiento y recuperación. Sin deploy, migración persistente ni habilitación MFA.
+
+
+## D1.5c — Persistencia aditiva y consumo, PENDIENTE DE GATE
+
+Se añadieron `UserMfaState` (OneToOne usuario, secreto cifrado, `enabled=False`, contador anti-replay) y `UserMfaRecoveryCode` (hashes) al modelo, migración aditiva **0019_user_mfa_state** y `mfa_store.py` para consumo transaccional de TOTP y recuperación con `select_for_update()`; tests sintéticos `test_mfa_store.py`. Commits de modelo `4eb0130d`, migración `457693ed`, operaciones `ec5614f0`, tests `a56d32ff`. Ningún endpoint invoca estos consumos, ni se activa MFA. **Falta ejecutar gate integral y comprobar migrations check --dry-run y PG17 temporal.** También faltan tests concurrentes PG17 y limitación de intentos para consumo de recuperación antes de habilitar endpoints. No aplicar la migración a la BD persistente ni usar scripts de despliegue C2 anteriores.
+
+
+## D1.5c — Gate integral APROBADO (26/10/2026)
+
+Confirmación operador: `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5C=0`. Log local `/tmp/vencira-o7-o8-preflight.htuRUzm2.log`. La migración 0019 fue probada en entornos efímeros, **no aplicada en PostgreSQL persistente (0018)**. Pendientes obligatorios: concurrencia real de códigos sobre PG17, límite de intentos, enrolamiento MFA con confirmación y recuperación verificada; aún sin endpoints MFA ni activación.
+
+
+## D1.5d — Limitación compartida y carrera PG17; gate PENDIENTE
+
+Se introdujeron campos de intentos y bloqueo de cuenta en `UserMfaState` y migración aditiva **0020_mfa_attempt_limits** (`62ba2764`, `04ba395f`). En `mfa_store.py` (`6a7f1152`), verificación TOTP y recuperación comparten contador máximo de 5 fallos en 15 minutos y bloqueo durante 15 minutos; serialización mediante bloqueo de `UserMfaState` en transacción, reseteo tras éxito; códigos no consumidos si la cuenta está bloqueada. Prueba de bloqueo mixto (`8442783c`). Test PostgreSQL con dos conexiones y barrera para demostrar que sólo una petición simultánea puede consumir el código (`d2c2689d`); SQLite lo omite expresamente. **NO gate todavía.** MFA no conectado al login ni a endpoints. Esquema persistente permanece en 0018 y no se desplegarán migraciones 0019/0020 sin gate y aprobación posteriores. Antes de lanzar comercialmente: revisar coste del hash PBKDF2 en intentos inválidos, posibles DoS de lockout, latencia de bloqueo de fila, métricas y alertas; probar el flujo integral de recuperación.
+
+
+## D1.5d — Gate integral APROBADO (26/10/2026)
+
+Confirmado por el operador: `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5D=0`. Log `/tmp/vencira-o7-o8-preflight.L17WSQrM.log`. La suite incluye prueba de carrera con dos conexiones PostgreSQL temporal y bloqueo de intentos mixtos. Las migraciones aditivas 0019 y 0020 se validaron en pruebas, pero no están aplicadas en la BD persistente (0018). Pendiente enrolamiento confirmable, recuperación completa y segundo factor en login, sin habilitación automática.
+
+
+## D1.5e — Enrolamiento interno, gate PENDIENTE
+
+Servicio interno en `backend/reminders/mfa_enrollment.py`: preparación crea secreto cifrado con `enabled=False` y URI `otpauth` para el titular; confirmación con TOTP en ventana de 10 minutos fijada en `prepared_at` (nuevo campo aditivo de migración **0021_mfa_prepared_at**) genera 10 códigos de recuperación hasheados y marca `enabled=True` en una transacción; verificación fallida no habilita MFA y sigue límite de intentos. Tests `backend/reminders/test_mfa_enrollment.py` con preparación, confirmación, expiración e invalidación de secreto anterior. Commits `d317d316`, `cd2021a3`, `a833f7e`, `84b9c81`, `e6400bd`.
+
+**CRÍTICO:** servicio interno NO conectado con HTTP/Flutter/login. No invocar `confirm_mfa` ni permitir habilitar `enabled=True` en despliegue alguno hasta que D1.5f garantice segundo factor antes de crear sesión completa; no hay custodia de claves MFA real ni procedimiento de recuperación completo. Claves suministradas en pruebas exclusivamente. 0019/0020/0021 **no aplicar en PostgreSQL persistente**. Pendiente gate aislado completo.
+
+
+## D1.5e — Gate integral APROBADO
+
+El operador confirma `COMMIT=401afd20a899d577f11f6c303d866e5c8bcb35b4`, `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5E=0`. Log `/tmp/vencira-o7-o8-preflight.yoDMNaeQ.log`. Sin despliegues ni migraciones en PostgreSQL persistente (0018). D1.5f siguiente: reto MFA **antes** de `login()`/creación de sesión autenticada, controles de expiración/CSRF/limitación y recuperación de un solo uso. No exponer enrolamiento hasta completar D1.5f y custodia de claves independiente.
+
+
+## D1.5f — Reto de login previo a sesión: gate PENDIENTE
+
+- `backend/reminders/login_security.py`: tras contraseña correcta, si MFA `enabled=True`, NO llama a `LoginView.form_valid()` ni crea sesión autenticada; crea estado temporal no autenticado de 5 minutos y redirige al reto; usuarios sin MFA mantienen el login clásico.
+- `backend/reminders/mfa_challenge.py`: verificación TOTP o código de recuperación bajo protección CSRF, sin cache, con cuenta activa, expiración, límite transaccional de intentos ya existente en D1.5d, invalidación de challenge y login únicamente tras éxito; exige clave independiente `VENCIRA_MFA_FERNET_KEYS` y falla cerrado si falta. **No copiar claves en chat ni commit; todavía no aprovisionadas en DEV.**
+- `backend/reminders/mfa_middleware.py` y `backend/config/settings.py`: una sesión Django, incluido `/admin/`, no autoriza peticiones de cuenta MFA activa si carece de marca de verificación de segundo factor. Si se activa MFA sobre una cuenta, las sesiones previas ya no deben eludirla.
+- `backend/config/urls.py`: ruta `/accounts/mfa/`; `backend/reminders/test_mfa_login.py`: login por contraseña sin sesión completa, TOTP, código de recuperación de un solo uso, fallo de clave ausente, login sin MFA, denegación de sesión alternativa.
+- **Pendientes críticos antes de producción:** gate integral Django SQLite/PostgreSQL 17 + Flutter, pruebas de expiración y concurrencia del reto, revisión del HTML/UX ES/CA y del formulario de accesibilidad, restricciones de MFA para superusuarios/admin, almacén seguro/rotación de claves MFA, recuperación sin dispositivo, monitorización y operación de migraciones 0019–0021, validación contra bypass de rutas extra. **No desplegar** mientras 0019–0021 no estén en BD persistente; tampoco aplicar migraciones por ahora. No habilitar enrolamiento público.
+
+
+## D1.5f — Gate corregido y APROBADO (26/10/2026)
+
+Tras un fallo inicial de aserción (redirección 302 al login tras consumir reto), se corrigió `test_mfa_login.py` para comprobar destino de redirección y añadir prueba de rechazo del mismo TOTP en otro navegador. Commit `2c09893591576df355663ea1aa25a4f7086e3109`. Gate reejecutado por operador: `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5F=0`, log `/tmp/vencira-o7-o8-preflight.MhExJ1Fk.log`. **No desplegado** ni aplicadas migraciones 0019–0021 a DB persistente (0018). Próxima tarea: hardening del reto (expiración, CSRF con navegador, rutas alternativas de login, manejo de ausencia de claves, UX ES/CA, política de recuperación y custodia de Fernet). No exponer enrolamiento público ni ordenar despliegue hasta completar gates y plan de migraciones.
+
+
+## D1.5g — Auditoría de primer bloque: gate PENDIENTE
+
+Se revisó el reto MFA y se corrigió la validación del destino después de verificar el segundo factor (`mfa_challenge.py`, commit `766f3763`); aunque el login ya validaba el destino, ahora se vuelve a comprobar en el punto de redirección. Se reemplazó importación dinámica del token CSRF por importación explícita y se añade no-store también a error 503 por ausencia de claves. Tests añadidos `test_mfa_login.py` para expiración de desafío, POST sin CSRF y rechazo de redirección a dominio ajeno (commits `8bc9dfc1`, `39ed7c4a`). **No gate ejecutado aún**, no desplegar ni aplicar migraciones. Pendiente verificar navegador real ES/CA, custodia de claves, recuperación accesible, expiración de cuenta, administración y hardening de lockout frente a abuso.
+
+
+## D1.5g — Primer gate de hardening APROBADO (26/10/2026)
+
+Tras reparar preparación de cliente CSRF en prueba (`fb7fa1911e2270cdc0549067f533b5960fe9b7c4`), el operador confirma `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5G=0`. Log `/tmp/vencira-o7-o8-preflight.YEywbose.log`. Se cubren expiración de desafío, CSRF y destino seguro. La auditoría final sigue pendiente: integración de UX ES/CA, gestión de claves Fernet, recuperación sin autenticador, rutas alternativas e inventario de sesiones y despliegue seguro. **Sin despliegue ni migraciones persistentes 0019–0021; no habilitar MFA todavía.**
+
+
+## D1.5h — Custodia y rotación de claves: primer bloque, GATE PENDIENTE
+
+Se añade `backend/reminders/mfa_key_config.py` (`f692a941`) para validar configuración independiente `VENCIRA_MFA_FERNET_KEYS` de 1 a 5 claves Fernet, separadas por comas, sin valores vacíos ni duplicados, rechazando claves incorrectas sin incluir material sensible en errores. `mfa_challenge.py` (`982461c1`) responde HTTP 503 sin autenticar ante ausencia o corrupción de clave. Pruebas `test_mfa_key_config.py` (`752a9d35`) cubren ausencia, formato, duplicación y rotación; `test_mfa_login.py` (`bd40902e`) prueba fallo cerrado con clave incorrecta.
+
+**Procedimiento futuro de rotación, NO EJECUTAR aún:** 1) asegurar custodia externa, independiente del servidor y respaldos de DB, y procedimiento ensayado de recuperación; 2) con respaldo cifrado y restauración verificada, insertar clave nueva al principio del anillo `[nueva,antigua]`, conservar antigua; 3) reecriptar todos los secretos existentes por lote auditable, idempotente, con claves activas; 4) comprobar que no quedan registros bajo clave antigua en un clon efímero; 5) solo entonces retirar la clave antigua, con reversión operativa definida. Ni claves ni códigos deben almacenarse en Git, logs, capturas o chat. No introducir claves reales ni ejecutar rotaciones en esta fase.
+
+**PENDIENTE:** validación integral O7/O8, política de recuperación por pérdida total de autenticador y códigos, implementación de enrolamiento HTTP seguro, UI premium ES/CA, auditoría de rutas alternativas, custodia de secretos en VPS, plan de migración/rollback. Sin deploy y sin aplicar migraciones 0019-0021 en BD persistente.
+
+
+## D1.5h — Gate integral APROBADO (26/10/2026)
+
+Confirmado por operador: `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5H=0`. Log local `/tmp/vencira-o7-o8-preflight.kF9TlqCX.log`. Comprobaciones de claves inválidas, ausentes, duplicadas y orden de rotación en pruebas aisladas. No despliegue, sin cambios en PostgreSQL persistente ni en OAuth/restic/Caddy. **Siguientes bloqueos:** no existe todavía custodia real de claves en VPS; recuperación administrativa segura, UI enrolamiento ES/CA, pruebas de segundo factor y rollback operativos. Sin aplicar migraciones 0019–0021 ni habilitar MFA hasta completar requisitos.
+
+
+## D1.5i — Interfaz y recuperación por código, gate PENDIENTE
+
+Se añadió plantilla responsive ES/CA `backend/templates/registration/mfa_challenge.html` (`5cabdf22`) con campo de 6 dígitos o código de recuperación de un solo uso, explicación accesible de recuperación, semántica de formulario y CSS móvil; `mfa_challenge.py` se cambió a renderizado Django (`809ddbaa`), preservando autenticación, CSRF, expiración y no-store. Prueba ES/CA y no-store añadida a `test_mfa_login.py` (`a341a712`). **Códigos de recuperación existentes siguen siendo el único mecanismo de respaldo; no existe recuperación automática cuando usuario pierde tanto dispositivo como códigos.** No restaurar MFA mediante sólo correo, contraseña o soporte; diseñar verificación de identidad reforzada y proceso manual auditable, con invalidación de sesiones y notificación de seguridad antes de ofrecerlo. La vista pública de enrolamiento sigue deshabilitada, sin claves reales provisionadas. Pendiente gate O7/O8, accesibilidad manual móvil, estrategia ES/CA integrada con configuración preferida y plan de migraciones 0019–0021; no desplegar.
+
+
+## D1.5i — Gate integral APROBADO (27/10/2026)
+
+Confirmación operador: `DJANGO_SQLITE_SUITE_COMPLETA=OK`, `DJANGO_POSTGRES17_SUITE_COMPLETA=OK`, `DJANGO_CHECK_MIGRACION_SECA=OK`, `FLUTTER_ANALYZE_TEST_BUILD=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_D1_5I=0`; log `/tmp/vencira-o7-o8-preflight.ILdCv7AJ.log`. La plantilla MFA responsive ES/CA y flujo de recuperación mediante código superaron pruebas; pendiente inspección visual manual y accesibilidad con navegador real. PostgreSQL persistente sin migraciones 0019–0021; MFA sin activar ni desplegar. Siguiente D1.5j: checklist de despliegue controlado, custodia real y copia/restauración de claves, revisión de rutas de autenticación, enrolamiento seguro con reautenticación y operación ante pérdida del autenticador y códigos; ninguna migración/despliegue automático.

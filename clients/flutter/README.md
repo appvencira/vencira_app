@@ -48,3 +48,9 @@ La primera demo instalable en servidor está documentada en [SERVER_PREVIEW.md](
 - **Pendiente:** internacionalización real de widgets, mensajes y fechas con catálogos ES/CA. No confundir documentación o preparación con soporte multilingüe ya implementado.
 
 Ver las incidencias #2 (idiomas) y #3 (identidad visual y temas).
+
+## Trabajo en curso: idiomas y temas (PR #4)
+
+La rama `feat/flutter-preferences-i18n` implementa un selector ES/CA, apariencia Sistema/Claro/Oscuro y preferencias locales de navegador/dispositivo. **No está todavía desplegada ni aprobada**; es necesario revisar las pruebas y compilar con Flutter antes de integrarla.
+
+Documentación completa, límites, pruebas y recuperación: [FLUTTER_LOCALE_THEME.md](../../docs/FLUTTER_LOCALE_THEME.md). Comprobación de catálogos sin SDK Flutter: `python3 scripts/check_flutter_l10n.py` desde la raíz del repositorio.

@@ -1,0 +1,64 @@
+name: Django assignment isolation
+
+on:
+  pull_request:
+    branches:
+      - chore/bootstrap-vencira
+      - feat/team-assignment-isolation
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-security.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  django-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: vencira_ci
+          POSTGRES_USER: vencira_ci
+          POSTGRES_PASSWORD: ci-only-local
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vencira_ci -d vencira_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      VENCIRA_ENV: test
+      DJANGO_DEBUG: "1"
+      DJANGO_SECRET_KEY: ci-not-a-production-secret-2026-long-enough
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      VENCIRA_DB_ENGINE: sqlite
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install backend dependencies
+        run: pip install -r requirements.txt
+      - name: Django system checks
+        run: python manage.py check
+      - name: Migrations in sync with models
+        run: python manage.py makemigrations --check --dry-run
+      - name: Django tests SQLite
+        run: python manage.py test
+      - name: Django tests PostgreSQL 17
+        run: python manage.py test
+        env:
+          VENCIRA_DB_ENGINE: postgresql
+          POSTGRES_DB: vencira_ci
+          POSTGRES_USER: vencira_ci
+          POSTGRES_PASSWORD: ci-only-local
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_PORT: "5432"

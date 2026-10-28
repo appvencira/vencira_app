@@ -36,9 +36,12 @@ services:
       POSTGRES_DB: "${POSTGRES_DB:?required}"
       POSTGRES_USER: "${POSTGRES_USER:?required}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?required}"
+    # Modo fail-closed: solo comprueba migraciones pendientes (lectura).
+    # Nunca aplica cambios de esquema al arrancar/reiniciar el API.
+    # Las futuras migraciones requieren un paso explicito con respaldo validado.
     command: >
-      sh -c "python manage.py migrate --noinput &&
-             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --access-logfile -"
+      sh -ec "python manage.py migrate --check --noinput &&
+              exec gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --access-logfile -"
     ports:
       - "127.0.0.1:${VENCIRA_BIND_PORT:-18731}:8000"
     networks:

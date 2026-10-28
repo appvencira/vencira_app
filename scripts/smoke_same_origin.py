@@ -13,9 +13,20 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-BASE = os.getenv("VENCIRA_WEB_URL", "http://127.0.0.1:18732").rstrip("/")
-if BASE not in ("http://127.0.0.1:18732", "http://localhost:18732"):
-    raise SystemExit("Este test solo admite el proxy local en el puerto 18732")
+WEB_PORT_RAW = os.getenv("VENCIRA_WEB_BIND_PORT", "18732")
+if not WEB_PORT_RAW.isascii() or not WEB_PORT_RAW.isdecimal():
+    raise SystemExit("El puerto local debe ser numérico")
+WEB_PORT = int(WEB_PORT_RAW)
+if not 1024 <= WEB_PORT <= 65535:
+    raise SystemExit("Puerto local fuera de rango")
+BASE = os.getenv(
+    "VENCIRA_WEB_URL", f"http://127.0.0.1:{WEB_PORT}"
+).rstrip("/")
+if BASE not in (
+    f"http://127.0.0.1:{WEB_PORT}",
+    f"http://localhost:{WEB_PORT}",
+):
+    raise SystemExit("Este test solo admite un proxy loopback en el puerto configurado")
 
 
 def read(opener, path, *, data=None, headers=None, method=None):
@@ -49,6 +60,27 @@ else:
 assert json.loads(health) == {"status": "ok"}, "Respuesta de salud inesperada"
 status, page = read(client, "/")
 assert status == 200 and "flutter_bootstrap.js" in page, "No se sirve Flutter web"
+assert "serviceWorker.getRegistrations()" in page, "Falta limpieza del service worker antiguo"
+assert "flutter_bootstrap.js?v=" in page, "Falta versión fresca del bootstrap"
+
+# Evitar HTML/JS obsoletos con caché persistente; no afecta a cookies de sesión.
+for asset in ("/", "/flutter_bootstrap.js?v=cache-test", "/main.dart.js"):
+    with client.open(BASE + asset, timeout=8) as response:
+        assert response.status == 200, f"Recurso ausente: {asset}"
+        assert "no-store" in response.headers.get("Cache-Control", ""), (
+            f"Cache-Control inseguro: {asset}"
+        )
+        if asset.endswith(".js") or ".js?" in asset:
+            assert "javascript" in response.headers.get("Content-Type", ""), (
+                f"El JS no tiene el tipo MIME correcto: {asset}"
+            )
+try:
+    with client.open(BASE + "/main.dart-no-existe.js", timeout=8) as response:
+        raise AssertionError(f"JS inexistente aceptado: HTTP {response.status}")
+except urllib.error.HTTPError as error:
+    # Un recurso inexistente jamás debe aparentar un JS válido.
+    assert error.code in (404, 410)
+
 status, login_page = read(client, "/accounts/login/")
 assert status == 200 and "csrfmiddlewaretoken" in login_page, "Falta el formulario de acceso"
 status, _ = read(client, "/api/v1/workspaces/")
@@ -87,15 +119,129 @@ if username:
     renewal = json.loads(renewal_raw)
     assert renewal["count"] == expected_count
     assert renewal["results"][0]["customer_reference"] == expected_reference
+
+    # Verificar el contrato nuevo de agenda a través del mismo proxy autenticado.
+    # Se emplea la fecha ISO del primer vencimiento, sin calcularla desde UTC.
+    expiry_day = renewal["results"][0]["expires_on"]
+    agenda_path = f"/api/v1/workspaces/{workspace_id}/agenda/?day={expiry_day}"
+    status, agenda_raw = read(client, agenda_path)
+    assert status == 200, "La agenda diaria no responde por el proxy"
+    agenda = json.loads(agenda_raw)
+    assert agenda["day"] == expiry_day, "El backend alteró el día civil"
+    assert agenda["count"] >= 1, "Falta el vencimiento en la agenda diaria"
+    matching = [
+        row for row in agenda["results"]
+        if row["renewal"]["customer_reference"] == expected_reference
+    ]
+    assert len(matching) == 1, "La agenda no contiene la anotación de prueba"
+    assert any(event["kind"] == "expiry" for event in matching[0]["events"]), (
+        "El motivo de vencimiento está ausente"
+    )
+    # Un límite contractual debe aparecer en su fecha sin ReminderCandidate.
+    notice_day = renewal["results"][0].get("notice_deadline_on")
+    if notice_day:
+        notice_status, notice_raw = read(
+            client, f"/api/v1/workspaces/{workspace_id}/agenda/?day={notice_day}"
+        )
+        assert notice_status == 200, "La agenda no sirve la fecha de preaviso"
+        notice_agenda = json.loads(notice_raw)
+        assert notice_agenda["day"] == notice_day
+        notice_matches = [
+            row for row in notice_agenda["results"]
+            if row["renewal"]["customer_reference"] == expected_reference
+        ]
+        assert len(notice_matches) == 1, "El preaviso contractual no aparece"
+        assert any(
+            event["kind"] == "notice_deadline"
+            for event in notice_matches[0]["events"]
+        ), "El evento del límite de preaviso está ausente"
+
+    # Calendario mensual: agregación privada sin referencias individuales.
+    month = expiry_day[:7]
+    month_path = f"/api/v1/workspaces/{workspace_id}/agenda/month/?month={month}"
+    month_status, month_raw = read(client, month_path)
+    assert month_status == 200, "El resumen mensual no responde"
+    month_data = json.loads(month_raw)
+    assert month_data["month"] == month
+    counts = {row["day"]: row for row in month_data["days"]}
+    assert counts[expiry_day]["expiry"]["pending"] >= 1
+    if notice_day:
+        assert counts[notice_day]["notice_deadline"]["pending"] >= 1
+    assert expected_reference not in month_raw, "El resumen filtra referencias de usuarios"
+    invalid_month, _ = read(
+        client, f"/api/v1/workspaces/{workspace_id}/agenda/month/?month=2027-13"
+    )
+    assert invalid_month == 400, "La API acepta meses imposibles"
+
+    invalid_day_status, _ = read(
+        client, f"/api/v1/workspaces/{workspace_id}/agenda/?day=no-es-una-fecha"
+    )
+    assert invalid_day_status == 400, "Se aceptó una fecha de agenda inválida"
+
     # Prueba E2E también de escrituras autenticadas, CSRF y auditoría de API.
     status, token_body = read(client, "/api/v1/csrf/")
     assert status == 200, "No hay endpoint CSRF"
     token = json.loads(token_body)["csrfToken"]
+
+    modalities_path = f"/api/v1/workspaces/{workspace_id}/modalities/"
+    cat_status, cat_raw = read(client, modalities_path)
+    assert cat_status == 200, "Catálogo de modalidades no accesible"
+    assert any(item["code"] == "hogar" for item in json.loads(cat_raw))
+    cat_status, new_modality_raw = read(
+        client, modalities_path,
+        data=json.dumps({"label": "Prueba catálogo E2E"}).encode("utf-8"),
+        headers={"Content-Type": "application/json", "X-CSRFToken": token},
+        method="POST",
+    )
+    assert cat_status == 201, "No puede crear modalidad propia"
+    code = json.loads(new_modality_raw)["code"]
+    cat_detail = modalities_path + code + "/"
+    cat_status, _ = read(
+        client, cat_detail,
+        data=json.dumps({"label": "Prueba catálogo editado"}).encode("utf-8"),
+        headers={"Content-Type": "application/json", "X-CSRFToken": token},
+        method="PATCH",
+    )
+    assert cat_status == 200, "No puede renombrar modalidad"
+    cat_status, _ = read(
+        client, cat_detail,
+        data=b"", headers={"X-CSRFToken": token},
+        method="DELETE",
+    )
+    assert cat_status == 204, "No puede desactivar modalidad"
+    _, cat_raw = read(client, modalities_path)
+    assert any(
+        row["code"] == code and row["active"] is False
+        for row in json.loads(cat_raw)
+    ), "La desactivación eliminó la referencia histórica"
+    insurers_path = f"/api/v1/workspaces/{workspace_id}/insurers/"
+    ins_status, raw_ins = read(client, insurers_path)
+    assert ins_status == 200, "No se puede consultar catálogo de aseguradoras"
+    assert isinstance(json.loads(raw_ins), list)
+    ins_status, raw_ins = read(
+        client, insurers_path,
+        data=json.dumps({"name": "Aseguradora E2E Ficticia"}).encode("utf-8"),
+        headers={"Content-Type": "application/json", "X-CSRFToken": token},
+        method="POST",
+    )
+    assert ins_status == 201, "Alta de aseguradora ficticia fallida"
+    insurer_id = json.loads(raw_ins)["id"]
+    ins_detail = insurers_path + insurer_id + "/"
+    ins_status, raw_ins = read(
+        client, ins_detail,
+        data=json.dumps({"name": "Aseguradora Ficticia Renombrada"}).encode("utf-8"),
+        headers={"Content-Type": "application/json", "X-CSRFToken": token},
+        method="PATCH",
+    )
+    assert ins_status == 200 and json.loads(raw_ins)["id"] == insurer_id
     create_path = f"/api/v1/workspaces/{workspace_id}/renewals/"
     status, created_raw = read(
         client, create_path,
         data=json.dumps({
             "customer_reference": "PRUEBA-E2E-ESCRITURA",
+            "entry": "prospects",
+            "modality": "hogar",
+            "insurer": insurer_id,
             "expires_on": "2027-05-01",
             "notice_deadline_on": "2027-03-31",
         }).encode("utf-8"),
@@ -104,13 +250,58 @@ if username:
     assert status == 201, f"Alta fallida: {status}"
     created = json.loads(created_raw)
     assert created["notice_deadline_on"] == "2027-03-31"
+    assert created["entry"] == "prospects" and created["modality"] == "hogar"
+    assert str(created["insurer"]) == insurer_id, "No se guardó la aseguradora"
+    ins_status, filtered_ins = read(
+        client, create_path + "?entry=prospects&insurer=" + insurer_id
+    )
+    assert ins_status == 200 and any(
+        str(row["id"]) == str(created["id"])
+        for row in json.loads(filtered_ins)["results"]
+    ), "Filtro por aseguradora no devuelve póliza autorizada"
+    ins_status, _ = read(
+        client, ins_detail, data=b"",
+        headers={"X-CSRFToken": token}, method="DELETE",
+    )
+    assert ins_status == 204, "La desactivación de aseguradora falló"
+
+    status, filtered_raw = read(
+        client, create_path + "?entry=prospects&modality=hogar"
+    )
+    assert status == 200 and any(
+        row["id"] == created["id"]
+        for row in json.loads(filtered_raw)["results"]
+    ), "No se ve la anotación con filtros combinados"
     status, edited_raw = read(
         client, f"{create_path}{created['id']}/",
-        data=json.dumps({"status": "contacted"}).encode("utf-8"),
+        data=json.dumps({"status": "contacted", "entry": "clients"}).encode("utf-8"),
         headers={"Content-Type": "application/json", "X-CSRFToken": token},
         method="PATCH",
     )
     assert status == 200 and json.loads(edited_raw)["status"] == "contacted"
+    assert json.loads(edited_raw)["entry"] == "clients"
+    assert json.loads(edited_raw)["modality"] == "hogar"
+    # Ficha de la póliza externa y dos eventos de auditoría de alta y cambio.
+    detail_path = f"{create_path}{created['id']}/"
+    detail_status, detail_raw = read(client, detail_path)
+    assert detail_status == 200, "Ficha privada no accesible"
+    assert json.loads(detail_raw)["customer_reference"] == "PRUEBA-E2E-ESCRITURA"
+    assert str(json.loads(detail_raw)["insurer"]) == insurer_id, (
+        "Desactivar aseguradora no debe romper anotación existente"
+    )
+    history_path = f"{detail_path}history/"
+    history_status, history_raw = read(client, history_path)
+    assert history_status == 200, "Historial no accesible"
+    history = json.loads(history_raw)
+    assert history["count"] == 2, "Historial de alta/cambio incompleto"
+    assert {event["action"] for event in history["results"]} == {"created", "updated"}
+    assert "PRUEBA-E2E-ESCRITURA" not in history_raw, "Historial almacena referencia personal"
+    invalid_history_status, _ = read(
+        client, f"/api/v1/workspaces/{workspace_id}/renewals/"
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/history/"
+    )
+    assert invalid_history_status == 404, "Historial ajeno no se protege"
+
     status, after_create_raw = read(client, create_path)
     assert status == 200 and json.loads(after_create_raw)["count"] == expected_count + 1
     status, _ = read(
@@ -121,6 +312,14 @@ if username:
     assert status == 200, "Cierre de sesión sin respuesta"
     status, _ = read(client, "/api/v1/workspaces/")
     assert status in (401, 403), "La sesión sigue autenticada después de salir"
-    print("OK: mismo origen, login + CSRF, lectura de workspace y vencimiento, logout")
+    status, _ = read(client, agenda_path)
+    assert status in (401, 403), "La agenda permite consultar datos tras logout"
+    status, _ = read(client, month_path)
+    assert status in (401, 403), "El mes revela actividad después del logout"
+    status, _ = read(client, insurers_path)
+    assert status in (401, 403), "Catálogo aseguradoras expuesto tras logout"
+    status, _ = read(client, history_path)
+    assert status in (401, 403), "El historial sigue visible después del logout"
+    print("OK: origen único, login + CSRF, agenda diaria, escrituras y logout")
 else:
     print("OK: Flutter, proxy Django, login HTML y denegación anónima. Login E2E omitido.")

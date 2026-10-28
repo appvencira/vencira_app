@@ -1,0 +1,11 @@
+[Unit]
+Description=VENCIRA DEV daily backup health check at 08:00 Europe/Madrid
+
+[Timer]
+OnCalendar=*-*-* 08:00:00 Europe/Madrid
+Persistent=true
+AccuracySec=1min
+Unit=vencira-o5-health.service
+
+[Install]
+WantedBy=timers.target

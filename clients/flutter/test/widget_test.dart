@@ -1,9 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vencira/api/vencira_api.dart';
 import 'package:vencira/main.dart';
+import 'package:vencira/l10n/app_localizations.dart';
+import 'package:vencira/ui/dashboard_screen.dart';
+import 'package:vencira/ui/day_agenda_screen.dart';
 
-class FakeVenciraApi implements VenciraApi {
+class FakeVenciraApi extends VenciraApi {
   FakeVenciraApi({required this.workspaces, required this.pages, this.auth = false});
 
   final List<VenciraWorkspace> workspaces;
@@ -11,6 +16,7 @@ class FakeVenciraApi implements VenciraApi {
   final bool auth;
   String lastSearch = '';
   String lastStatus = '';
+  Completer<void>? renewalFetchGate;
 
   @override
   Future<List<VenciraWorkspace>> fetchWorkspaces() async {
@@ -23,8 +29,44 @@ class FakeVenciraApi implements VenciraApi {
       String workspaceId, {int page = 1, String search = '', String status = ''}) async {
     lastSearch = search;
     lastStatus = status;
+    if (renewalFetchGate case final gate?) await gate.future;
     return pages[workspaceId]!;
   }
+
+  @override
+  Future<List<VenciraModalityOption>> fetchModalities(String workspaceId) async =>
+      VenciraModalityOption.defaults;
+
+  @override
+  Future<VenciraRenewalPage> fetchFilteredRenewals(
+      String workspaceId, {int page = 1, String search = '',
+      String status = '', String entry = '', String modality = '', String insurer = ''}) =>
+      fetchRenewals(workspaceId, page: page, search: search, status: status);
+
+  @override
+  Future<VenciraAgendaMonth> fetchAgendaMonth(
+      String workspaceId, DateTime month) async =>
+      VenciraAgendaMonth(month: DateTime(month.year, month.month, 1), days: const []);
+
+  @override
+  Future<VenciraAgendaDayPage> fetchAgendaDay(
+    String workspaceId, DateTime day, {int page = 1}) async {
+    return VenciraAgendaDayPage(
+      day: DateTime(day.year, day.month, day.day),
+      total: 0,
+      entries: const [],
+      hasNext: false,
+    );
+  }
+
+  @override
+  Future<VenciraRenewal> fetchRenewalDetail(String workspaceId, String renewalId) async =>
+      pages[workspaceId]!.items.firstWhere((item) => item.id == renewalId);
+
+  @override
+  Future<VenciraHistoryPage> fetchRenewalHistory(
+      String workspaceId, String renewalId, {int page = 1}) async =>
+      const VenciraHistoryPage(total: 0, events: [], hasNext: false);
 
   @override
   Future<void> logout() async {}
@@ -42,6 +84,8 @@ class FakeVenciraApi implements VenciraApi {
 }
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
   const workspaceA = VenciraWorkspace(
     id: '11111111-1111-4111-8111-111111111111',
     name: 'Correduría de prueba A',
@@ -52,6 +96,45 @@ void main() {
     name: 'Correduría de prueba B',
     role: 'member',
   );
+
+  testWidgets('§5 apertura HOY tras cargar una sola organización',
+      (tester) async {
+    final api = FakeVenciraApi(
+      workspaces: [workspaceA],
+      pages: {workspaceA.id: const VenciraRenewalPage(
+          total: 0, items: [], hasNext: false)},
+    );
+    await tester.pumpWidget(MaterialApp(
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      home: VenciraDashboardScreen(api: api, openTodayOnLoad: true),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byType(VenciraDayAgendaScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('§5 no elegir por el usuario cuando hay varias organizaciones',
+      (tester) async {
+    final api = FakeVenciraApi(
+      workspaces: [workspaceA, workspaceB],
+      pages: {
+        workspaceA.id: const VenciraRenewalPage(
+            total: 0, items: [], hasNext: false),
+        workspaceB.id: const VenciraRenewalPage(
+            total: 0, items: [], hasNext: false),
+      },
+    );
+    await tester.pumpWidget(MaterialApp(
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      home: VenciraDashboardScreen(api: api, openTodayOnLoad: true),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byType(VenciraDayAgendaScreen), findsNothing);
+    expect(find.byKey(const ValueKey('workspace-select')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('respeta el tema claro y oscuro del sistema', (tester) async {
     final api = FakeVenciraApi(
@@ -72,12 +155,224 @@ void main() {
     expect(Theme.of(tester.element(find.text('VENCIRA'))).brightness,
         Brightness.dark);
     tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
-    await tester.pump();
+    // Emular la notificación del sistema además del cambio de valor simulado.
+    tester.binding.handlePlatformBrightnessChanged();
+    await tester.pumpAndSettle();
     expect(Theme.of(tester.element(find.text('VENCIRA'))).brightness,
         Brightness.light);
   });
 
+  testWidgets('selector cambia idioma y tema sin recargar datos', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final api = FakeVenciraApi(
+      workspaces: [workspaceA],
+      pages: {
+        workspaceA.id: const VenciraRenewalPage(
+          total: 0, items: [], hasNext: false,
+        ),
+      },
+    );
+    await tester.pumpWidget(VenciraApp(api: api));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Preferencias'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Català').last);
+    await tester.pumpAndSettle();
+    final appInCatalan = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(appInCatalan.locale?.languageCode, 'ca');
+    expect(find.text('Anticipa cada venciment'), findsOneWidget);
+    await tester.tap(find.byTooltip('Preferències'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Fosc').last);
+    await tester.pumpAndSettle();
+    final appInDark = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(appInDark.themeMode, ThemeMode.dark);
+    final saved = await SharedPreferences.getInstance();
+    expect(saved.getString('vencira.ui.locale.v1'), 'ca');
+    expect(saved.getString('vencira.ui.theme.v1'), 'dark');
+  });
+
+  testWidgets('restaura idioma y apariencia guardados al arrancar', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'vencira.ui.locale.v1': 'ca',
+      'vencira.ui.theme.v1': 'dark',
+    });
+    final api = FakeVenciraApi(
+      workspaces: [workspaceA],
+      pages: {
+        workspaceA.id: const VenciraRenewalPage(
+          total: 0, items: [], hasNext: false,
+        ),
+      },
+    );
+    await tester.pumpWidget(VenciraApp(api: api));
+    await tester.pumpAndSettle();
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.locale?.languageCode, 'ca');
+    expect(app.themeMode, ThemeMode.dark);
+    expect(find.text('Anticipa cada venciment'), findsOneWidget);
+  });
+
+  testWidgets('valores guardados desconocidos usan opciones seguras', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'vencira.ui.locale.v1': 'zz',
+      'vencira.ui.theme.v1': 'not-a-theme',
+    });
+    final api = FakeVenciraApi(
+      workspaces: [workspaceA],
+      pages: {
+        workspaceA.id: const VenciraRenewalPage(
+          total: 0, items: [], hasNext: false,
+        ),
+      },
+    );
+    await tester.pumpWidget(VenciraApp(api: api));
+    await tester.pumpAndSettle();
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.locale?.languageCode, 'es');
+    expect(app.themeMode, ThemeMode.system);
+  });
+
+  for (final width in <double>[320, 375, 768]) {
+    testWidgets('agenda sin desbordamiento a ${width.toInt()} px en catalán oscuro',
+        (tester) async {
+      tester.view.physicalSize = Size(width, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({
+        'vencira.ui.locale.v1': 'ca',
+        'vencira.ui.theme.v1': 'dark',
+      });
+      await tester.pumpWidget(VenciraApp(
+        api: FakeVenciraApi(
+          workspaces: [workspaceA],
+          pages: {
+            workspaceA.id: VenciraRenewalPage(
+              total: 1,
+              hasNext: false,
+              items: [
+                VenciraRenewal(
+                  id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+                  reference: 'CAS-DE-PROVA-REFERÈNCIA-MOLT-LLARGA',
+                  expiresOn: DateTime(2027, 5, 1),
+                  noticeDeadlineOn: DateTime(2027, 3, 31),
+                  status: 'contacted',
+                ),
+              ],
+            ),
+          },
+        ),
+      ));
+      await tester.pumpAndSettle();
+      expect(find.text('Anticipa cada venciment'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      // La ficha también debe caber cuando se desplaza la lista.
+      await tester.drag(find.byType(ListView).first, const Offset(0, -480));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final width in <double>[320, 375]) {
+    testWidgets('Catálogos: accesos alineados en una fila a ${width.toInt()} px',
+        (tester) async {
+      tester.view.physicalSize = Size(width, 1100);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final api = FakeVenciraApi(
+        workspaces: [workspaceA],
+        pages: {workspaceA.id: const VenciraRenewalPage(
+          total: 0, items: [], hasNext: false)},
+      );
+      await tester.pumpWidget(VenciraApp(api: api));
+      await tester.pumpAndSettle();
+      final catalog = find.byKey(const ValueKey('workspace-tools'));
+      await tester.ensureVisible(catalog);
+      await tester.tap(catalog);
+      await tester.pumpAndSettle();
+      final first = find.byKey(const ValueKey('open-catalog'));
+      final second = find.byKey(const ValueKey('open-insurers'));
+      expect(first, findsOneWidget);
+      expect(second, findsOneWidget);
+      final firstRect = tester.getRect(first);
+      final secondRect = tester.getRect(second);
+      expect(firstRect.top, closeTo(secondRect.top, 0.5));
+      expect(firstRect.height, closeTo(secondRect.height, 0.5));
+      expect(secondRect.left, greaterThan(firstRect.right));
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('UX: buscar y limpiar conservan el scroll mientras consulta API',
+      (tester) async {
+    tester.view.physicalSize = const Size(400, 850);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final page = VenciraRenewalPage(
+      total: 7, hasNext: false,
+      items: List.generate(7, (index) => VenciraRenewal(
+        id: '11111111-1111-4111-8111-${(index + 1).toString().padLeft(12, '0')}',
+        reference: 'DEMO-SCROLL-$index',
+        expiresOn: DateTime(2027, 12, index + 1),
+        noticeDeadlineOn: DateTime(2027, 11, index + 1),
+        status: 'pending',
+      )),
+    );
+    final api = FakeVenciraApi(workspaces: [workspaceA],
+      pages: {workspaceA.id: page});
+    await tester.pumpWidget(VenciraApp(api: api));
+    await tester.pumpAndSettle();
+    final scroll = tester.state<ScrollableState>(find.byType(Scrollable).first)
+      .position;
+    await tester.ensureVisible(find.byKey(
+      const ValueKey('dashboard-filters')));
+    await tester.tap(find.byKey(const ValueKey('dashboard-filters')));
+    await tester.pumpAndSettle();
+    final search = find.widgetWithText(FilledButton, 'Buscar');
+    await tester.ensureVisible(search);
+    await tester.pumpAndSettle();
+    final originalScroll = scroll.pixels;
+    final originalExtent = scroll.maxScrollExtent;
+    expect(originalExtent, greaterThan(400));
+    api.renewalFetchGate = Completer<void>();
+    await tester.tap(search);
+    await tester.pump();
+    // El campo conserva foco y el botón no se desactiva durante la espera.
+    expect(tester.widget<TextField>(find.byType(TextField).first).enabled, true);
+    expect(tester.widget<FilledButton>(search).onPressed, isNotNull);
+    // La lista debe seguir ocupando su altura: antes caía a casi cero.
+    expect(scroll.maxScrollExtent, closeTo(originalExtent, 10));
+    expect(scroll.pixels, closeTo(originalScroll, 1));
+    api.renewalFetchGate!.complete();
+    await tester.pumpAndSettle();
+    expect(scroll.maxScrollExtent, closeTo(originalExtent, 10));
+    expect(scroll.pixels, closeTo(originalScroll, 1));
+
+    final clear = find.text('Limpiar filtros');
+    await tester.ensureVisible(clear);
+    await tester.pumpAndSettle();
+    final clearPosition = scroll.pixels;
+    api.renewalFetchGate = Completer<void>();
+    await tester.tap(clear);
+    await tester.pump();
+    expect(scroll.maxScrollExtent, closeTo(originalExtent, 10));
+    expect(scroll.pixels, closeTo(clearPosition, 1));
+    api.renewalFetchGate!.complete();
+    await tester.pumpAndSettle();
+    expect(scroll.pixels, closeTo(clearPosition, 1));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('envía filtros al backend y puede limpiarlos', (tester) async {
+    // La bandeja B añade navegación encima de los filtros. Esta prueba
+    // verifica peticiones, no el scroll de un viewport de 800x600.
+    tester.view.physicalSize = const Size(1024, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final api = FakeVenciraApi(
       workspaces: [workspaceA],
       pages: {workspaceA.id: const VenciraRenewalPage(
@@ -85,15 +380,19 @@ void main() {
     );
     await tester.pumpWidget(VenciraApp(api: api));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byType(TextField).first);
     await tester.enterText(find.byType(TextField).first, 'CASA DEMO');
+    await tester.ensureVisible(find.text('Buscar'));
     await tester.tap(find.text('Buscar'));
     await tester.pumpAndSettle();
     expect(api.lastSearch, 'CASA DEMO');
-    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.ensureVisible(find.byKey(const ValueKey('status:11111111-1111-4111-8111-111111111111:')));
+    await tester.tap(find.byKey(const ValueKey('status:11111111-1111-4111-8111-111111111111:')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Contactado').last);
     await tester.pumpAndSettle();
     expect(api.lastStatus, 'contacted');
+    await tester.ensureVisible(find.text('Limpiar filtros'));
     await tester.tap(find.text('Limpiar filtros'));
     await tester.pumpAndSettle();
     expect(api.lastSearch, '');
@@ -114,13 +413,20 @@ void main() {
     await tester.tap(find.text('Añadir vencimiento'));
     await tester.pumpAndSettle();
     expect(find.text('Nuevo vencimiento'), findsOneWidget);
-    expect(find.text('Referencia'), findsOneWidget);
+    // §6: la referencia no se solicita al crear una anotación.
+    expect(find.text('Referencia'), findsNothing);
     await tester.tap(find.text('Cancelar'));
     await tester.pumpAndSettle();
     expect(find.text('Nuevo vencimiento'), findsNothing);
   });
 
   testWidgets('logout limpia los vencimientos de pantalla', (tester) async {
+    // Los filtros adicionales ocupan espacio; mantener la lista visible
+    // en estos tests funcionales y probar móvil en su suite específica.
+    tester.view.physicalSize = const Size(1024, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(VenciraApp(
       api: FakeVenciraApi(
         workspaces: [workspaceA],
@@ -141,14 +447,22 @@ void main() {
       ),
     ));
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
     expect(find.text('NO-DEBE-QUEDAR-VISIBLE'), findsOneWidget);
-    await tester.tap(find.text('Salir'));
+    await tester.tap(find.byTooltip('Salir'));
     await tester.pumpAndSettle();
     expect(find.text('NO-DEBE-QUEDAR-VISIBLE'), findsNothing);
     expect(find.textContaining('Necesitas iniciar sesión'), findsOneWidget);
   });
 
   testWidgets('muestra estado vacío sin datos reales', (tester) async {
+    // Los filtros adicionales ocupan espacio; mantener la lista visible
+    // en estos tests funcionales y probar móvil en su suite específica.
+    tester.view.physicalSize = const Size(1024, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(VenciraApp(
       api: FakeVenciraApi(
         workspaces: [workspaceA],
@@ -157,10 +471,18 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(find.text('VENCIRA'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
     expect(find.text('Aún no hay vencimientos en esta página.'), findsOneWidget);
   });
 
   testWidgets('expone por separado vencimiento y límite de preaviso', (tester) async {
+    // Los filtros adicionales ocupan espacio; mantener la lista visible
+    // en estos tests funcionales y probar móvil en su suite específica.
+    tester.view.physicalSize = const Size(1024, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(VenciraApp(
       api: FakeVenciraApi(
         workspaces: [workspaceA],
@@ -182,6 +504,8 @@ void main() {
       ),
     ));
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
     expect(find.text('Vence el 01/05/2027'), findsOneWidget);
     expect(find.text('Límite de preaviso: 31/03/2027'), findsOneWidget);
   });
@@ -196,6 +520,12 @@ void main() {
   });
 
   testWidgets('solo muestra vencimientos del workspace seleccionado', (tester) async {
+    // Los filtros adicionales ocupan espacio; mantener la lista visible
+    // en estos tests funcionales y probar móvil en su suite específica.
+    tester.view.physicalSize = const Size(1024, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final pages = {
       workspaceA.id: VenciraRenewalPage(
         total: 1,
@@ -227,10 +557,12 @@ void main() {
       api: FakeVenciraApi(workspaces: [workspaceA, workspaceB], pages: pages),
     ));
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
     expect(find.text('REFERENCIA-A'), findsOneWidget);
     expect(find.text('REFERENCIA-B'), findsNothing);
 
-    await tester.tap(find.byType(DropdownButtonFormField<VenciraWorkspace>));
+    await tester.tap(find.byKey(const ValueKey('workspace-select')));
     await tester.pumpAndSettle();
     await tester.tap(find.text(workspaceB.name).last);
     await tester.pumpAndSettle();

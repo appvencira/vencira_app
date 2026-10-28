@@ -1,0 +1,109 @@
+# VENCIRA — Operativa O3: cuatro desenlaces de pólizas externas
+
+**Estado vigente (23/10/2026): O3 CERRADA Y ACEPTADA FUNCIONALMENTE POR EL USUARIO EN ANDROID (entorno DEV)**. Usuario confirmó literalmente «Funciona perfectamente» tras solicitarle verificar Conseguido, No aceptó, Aún sin decidir, Descartar y recuperación del archivo. Aceptación global sin reporte desglosado por escenario. API/Web O3 en `vencira_localcheck`, base PostgreSQL con `0014_renewal_outcomes` aplicada durante el arranque de API a las 12:29:47 UTC; servicio healthy, módulos/ruta O3 y bundle Flutter O3 verificados. Preflight SQLite/PG17/Flutter verde `4d5270be`; backup privado pre0014 restaurado y comprobado. **No reejecutar migración ni despliegue O3**, no restaurar backup ni activar avisos reales. Uso real/producción bloqueados por puertas pendientes de seguridad y RGPD.
+
+## Hito anterior y fuente funcional
+- O2 «Recuérdamelo» aceptada funcionalmente en Android. Confirmación expresa: reprogramar fecha, cancelar y marcar como atendido funciona. Despliegue O2 `e8d5ccf9` healthy, migración `0013` aplicada y backup pre0013 íntegramente restaurado. No volver a probar O2 salvo regresión.
+- White paper original `White_paper_agenda_vencimientos.pdf`, apartado 9 / página 12: 4 desenlaces. Apartado 12: archivo y retención 2 años; apartado 10/11 historial por fecha, usuario, acción; no CRM, no cartera propia. La antigua etiqueta técnica `Renewal.status=closed` no es por sí misma una decisión comercial.
+
+## Contrato O3 (una anotación = UNA póliza externa)
+| Acción | Cambio en anotación | Seguimiento y agenda | Auditoría |
+| --- | --- | --- | --- |
+| Conseguido (`won`) | `status=closed`, `archive_outcome=won`, `archived_at=ahora`. Si era `prospects`, SOLO esta anotación pasa a `clients`; **no existe ficha CRM global**. | Deja agenda. Cancela seguimientos O2 pendientes y candidatos de aviso previstos, sin borrarlos. | Evento con actor/fecha/kind y entrada anterior para restaurar |
+| No aceptó (`declined`) | Sigue abierta, `status=pending`; vencimiento avanza 1 año civil, 29/02→28/02 cuando procede. Preaviso explícito avanza también 1 año, conservando su desplazamiento. Notas, contacto, documentos y aseguradora se preservan. | Cancela candidatos/siguimientos previstos antiguos; reconstruye **candidatos** exclusivamente de `ReminderPolicy` habilitadas de esa cuenta para fechas futuras (pueden ser fechas civiles pasadas si una anotación ya vencida). **No envía notificaciones**. | Evento con fecha anterior y nueva |
+| Aún sin decidir (`undecided`) | No cierra ni cambia vencimiento. | Exige `scheduled_for:YYYY-MM-DD`, reprograma una sola O2 `planned` dentro de la misma transacción; figura en agenda violeta. | Evento con fecha de seguimiento |
+| Descartar (`discarded`) | Cierra y archiva con motivo `discarded`; no cambia Entrada. | Fuera de agenda; cancela candidatos/siguimientos previstos, conservando historial. | Evento con actor/fecha/motivo |
+| Recuperar (`restored`) | Solo si archivada por O3. Vuelve a `pending`, limpia marcador de archivo, y en una ganada originalmente candidata restaura `prospects`. | Reconstruye candidatos de políticas habilitadas; no reabre mensajes antiguos. | Evento distinto de recuperación |
+
+## Cambios versionados propuestos
+- `backend/reminders/models.py`: `Renewal.archived_at` (nullable), `Renewal.archive_outcome` (won/discarded); `RenewalOutcome` guarda actor, momento, resultado, vencimiento antiguo/nuevo, día de seguimiento, entrada anterior, sin datos personales.
+- Migración **aditiva `backend/reminders/migrations/0014_renewal_outcomes.py`**. Nada se elimina ni convierte automáticamente de estados `closed` anteriores. No hay jobs destructivos.
+- `backend/reminders/outcomes.py`: GET de eventos O3 autorizados (máximo 50) y POST de un resultado exacto. POST serializa por anotación mediante `select_for_update` en una única transacción, limita estrictamente el JSON, aplica eventos O3 y auditoría sin PII, no comunica a clientes. Es necesario estar en organización y poder acceder a esa anotación según propietario/miembro.
+- `backend/reminders/views.py`: listado principal excluye archivados nuevos; selección `Estado=Cerrado` permite consultar archivo y cerrados antiguos para recuperación/inspección. Las agendas diaria y mensual ya excluyen `status=closed`.
+- `backend/reminders/serializers.py`: `archived_at` y `archive_outcome` SOLO lectura. Se prohíbe el salto `status=closed` mediante PATCH/POST genérico; requiere flujo O3 auditado; edición genérica de O3 archivados devuelve HTTP 409.
+- `clients/flutter/lib/api/vencira_api.dart`: método `applyOutcome` con CSRF, UUIDs, enum y fecha civil validada; lectura del resultado de archivo.
+- `clients/flutter/lib/ui/renewal_detail_screen.dart`: tarjeta de desenlaces / menú premium de cuatro acciones, fecha O2 para indecisión, pantalla de confirmación, recuperación de archivo, estado y mensajes ES/CA. En el historial técnico de escritorio se muestra el tipo exacto de desenlace además del usuario y momento; móvil no expone auditoría técnica.
+- `clients/flutter/lib/ui/renewal_editor.dart`: el editor general no ofrece «Cerrado» para anotaciones activas, porque no es un resultado O3.
+- `backend/reminders/test_outcomes.py`: tests de archive/restore, conservar original y paso anual bisiesto, candidato reprogramado, O2 «indeciso», aislamiento de tenant, payload estricto, CSRF y metadatos no sensibles.
+- `clients/flutter/test/outcomes_test.dart`, `clients/flutter/test/vencira_api_test.dart`: móvil ES/CA en 375px, confirmación, recuperación, fecha civil y no enviar datos inesperados. Tests globales existentes siguen obligatorios.
+- `scripts/validate_operativa_o3_preflight.sh`: ejecución aislada de **toda Django en SQLite**, O3+O2 en **PostgreSQL 17 temporal**, Flutter analyze/tests completos/build release. No recrea `vencira_localcheck`, no migra PostgreSQL persistente, no altera `vencira_preview`.
+
+## Riesgos y tareas no incluidas en esta fase
+1. **Retención / borrado a los 2 años según whitepaper**: NO se activa ahora. Faltan política RGPD/LOPDGDD, definición de relación entre eventos de auditoría y conservación, posibilidad de restauración y tarea cron con protección. Modelo `RenewalAuditEvent` tiene `on_delete=PROTECT`, por lo que automatizar `DELETE` sin una política explícita fallaría o degradaría auditoría. No prometer eliminación automática hasta resolver este diseño y aprobar la seguridad.
+2. No hay nuevos mensajes, notificaciones, envíos a aseguradoras ni automatización de avisos: `ReminderCandidate.planned` sigue siendo **previsión**, no entrega.
+3. No hay entidad transversal `Cliente`; pasar de Candidatos a Clientes solo cambia Entrada de una anotación. No altera otras pólizas de esa persona.
+4. Reglas activas de aviso por defecto: solo políticas `enabled=True` ya configuradas para la cuenta. No inventar un calendario global ni afirmar candidatos creados cuando no existe política.
+5. Los cerrados *legados* con `archived_at=null` no se asignan retroactivamente a `won` ni `discarded`; el usuario o una migración explícita deberá resolver su tratamiento.
+6. El archivo se consulta de forma provisional con filtro **Estado → Cerrado**. Pantalla independiente «Archivo», búsqueda específica, exportación y recuperación masiva quedan como refinamiento posterior.
+7. Posible prioridad UX para fechas pasadas, renovación Feb-29 y notas al posponer; deben validarse y corregirse si los tests muestran una interpretación errónea del whitepaper.
+
+## Gates y continuidad
+- Primero `scripts/validate_operativa_o3_preflight.sh` sobre código versionado, hasta `RESULTADO_GLOBAL=0`; corregir GitHub ante errores y documentar.
+- **Nunca** aplicar `0014` antes de otra copia `pg_dump -Fc` restaurada en PostgreSQL temporal y comprobada, sobre `vencira_localcheck-db-1`. El respaldo pre0013 pertenece a la fase anterior, no sustituye un pre0014 nuevo.
+- Despliegue API+Web solo `vencira_localcheck`, plan `migrate --plan`, imágenes anteriores conservadas y health checks de DB/HTTP/ruta O3; no rollback automático de BD. Tras éxito, verificar manualmente Android con **datos ficticios** las cuatro decisiones, 29/02 y archivo/recuperación.
+- En este momento O3 **NO probada, NO desplegada y migración 0014 NO aplicada**. O2 sigue saludable y aceptada.
+
+## O3 preflight completo OK — respaldo pre0014 separado (23/10/2026)
+
+- El usuario aportó salida completa de `scripts/validate_operativa_o3_preflight.sh`: `DJANGO_CHECK_Y_MIGRACION_EN_SECO=OK`, `DJANGO_SQLITE_SUITE=OK`, `POSTGRES_EFIMERO=OK`, `DJANGO_POSTGRES_O3_TESTS=OK`, `FLUTTER_O3_SUITE_Y_BUILD=OK`, `DJANGO_SQLITE_POSTGRES_FLUTTER_O3=OK`, `RESULTADO_GLOBAL=0`, `RESULTADO_EJECUCION=0`; commit `4d5270be3ebb7ab32d4bab103208ed34002f0082`, log `/tmp/vencira-operativa-o3-preflight.SANjeL4q.log`. No tocar la base persistente todavía.
+- Preparado `scripts/prepare_operativa_o3_backup.sh` (commit `21c98303876c9e00a6ff84c4d19e496da4dc78c0`). Verifica identidad de stack, código inalterado, migración existente `0013`, ausencia de tabla `RenewalOutcome`, respaldo pg_dump custom nuevo pre0014, SHA-256, restauración íntegra offline PostgreSQL 17, esquema y contadores incluyendo `RenewalFollowUp` y `ReminderCandidate`. Ficheros modo 600 bajo directorio 700; **no están cifrados**. Solo se genera `.verified` si restauración y comparación superan pruebas; el contenedor temporal se destruye y no se reinicia ningún servicio real.
+- El script de respaldo se ha subido, **aún NO ejecutado**. El siguiente hito verificable será `BACKUP_RESTAURACION_VERIFICADOS=1`, `RESULTADO_GLOBAL=0` sobre el nuevo pre0014. No reutilizar pre0013 de O2. Después, y en ejecución independiente, desplegar `0014` mediante API y Web con `migrate --plan`, validaciones de huella y salud. No restaurar automáticamente un backup antiguo si aparece un fallo después de escrituras reales.
+
+## O3 despliegue preparado; salida del respaldo incompleta (23/10/2026)
+
+- Tras ejecutar el backup `pre0014`, el usuario remitió únicamente `_EJECUCION=0` y `CONSOLA_ABIERTA`. No recibió el modelo prueba de `RESULTADO_GLOBAL`, `BACKUP_RESTAURACION_VERIFICADOS`, ruta/hash de copia. **No se certifica una copia restaurada solamente con ese fragmento.** La ejecución de bash aparentemente fue exitosa, pero corresponde al siguiente gate autenticar el recibo antes de tocar la DB.
+- Creado `scripts/deploy_operativa_o3.sh` (commit inicial `159299211b306775b81b33e853528e0a24d920ac`, corrección de salidas `c7206dda2b523d0b167137b7188865236e63f3a5`). Inspirado en el despliegue O2 que ya funcionó y con **guard de seguridad autónomo**. Valida un backup `pre0014_*.dump` encontrado dentro de `/home/vencira/vencira-db-backups`, acompañado por `.sha256` y `.verified`, dueño del usuario y modos 700/600, huella igual en los tres archivos y `RESTORE_TEST=OK`, valor de `VALIDATED_SHA=4d5270be3ebb7ab32d4bab103208ed34002f0082`, fecha de creación del dump menor o igual a 24 horas. Solo si encuentra una copia **válida y restaurada** puede avanzar; de lo contrario aborta sin reiniciar API/DB/Web ni aplicar migración.
+- El script también verifica la rama `integration/local-e2e-prep`, árbol limpio y **código de producción sin cambios desde preflight verde**. Exige `vencira_localcheck` healthy, migración persistente `0013_renewal_manual_followups` y ausencia de tabla y columnas del modelo O3. Etiqueta imágenes O2 de API y Web y guarda recibo privado. Construye ambas imágenes sin tocar contenedores; ejecuta `manage.py migrate --plan` en contenedor de servicio auxiliar con comando explícito, sin migrar. Solo después recrea API (que aplica `0014` al arrancar), verifica `0014`, tabla, índice y columnas, recrea Web y realiza health y HTTP anónimo 403/401. **Nunca** tocar el stack vecino `vencira_preview`, reiniciar DB, activar comunicaciones ni restaurar DB automáticamente.
+- **Estado real**: script de despliegue **en GitHub, NO ejecutado**; migración `0014` sin aplicar, O2 operativa. Próximo paso: usuario sincroniza y ejecuta `scripts/deploy_operativa_o3.sh` con las mismas protecciones de subshell; envía salida desde `=== IDENTIDAD DEL CODIGO Y REPOSITORIO ===` hasta `RESULTADO_EJECUCION`. Si el respaldo no cumple una condición, corregir backup en una operación separada sin despliegue. Tras éxito, validación manual Android con **anotaciones ficticias** de ganado, no aceptó + anual, indeciso + seguimiento, descartar y restaurar; no se considera aceptada O3 solo por HTTP healthy.
+
+## Despliegue O3 abortado por discrepancia de esquema, sin migración (23/10/2026)
+
+- `deploy_operativa_o3.sh` ejecutado por usuario en `vencira_localcheck` (`COMMIT_DESPLIEGUE=7ff974a8a163ac5585ab2f03becc8c6cd89ca2a0`). **Backup nuevo pre0014 sí VERIFICADO**: `BACKUP_RESTAURACION_VERIFICADOS=1`, `COPIA_PRE0014_INTACTA=1`, `ANTIGUEDAD_BACKUP_HORAS=0`. Código de producción idéntico a `4d5270be`, contenedores correctos, Compose válido.
+- Fase `PREMIGRACION`: `ERROR: esquema distinto de 0013; abortar`, **`RESULTADO_GLOBAL=5`, `FASE_FALLIDA=PREMIGRACION`, `MIGRACION_PUDO_HABERSE_APLICADO=0`**, `RESULTADO_EJECUCION=5`; log `/tmp/vencira-o3-deploy.InmliE66.log`. **No** hubo build, recreación de API/Web ni ejecución de `migrate` O3. No restaurar backup: se ha evitado cualquier mutación de datos.
+- El script de backup previo exigía `0013_renewal_manual_followups`, pero la lectura posterior no coincidió. **No se conoce aún el valor obtenido** porque la versión actual del deploy solo imprimía que era distinto. Nuevo diagnóstico read-only `scripts/diagnose_operativa_o3_schema.sh` (commit `b706f4b01cc8c285b066285ed2452b7c526cd3d2`) lee directamente migraciones reales, salud, tabla y columnas O3 sin tocar nada. Se espera su resultado para establecer la causa exacta antes de autorizar otro deploy.
+- **Estado:** O3 sin desplegar. Se mantiene O2 funcionando; copia pre0014 validada y preservada de forma privada. No repetir el script de deploy ni ejecutar cambios persistentes hasta resolver `PREMIGRACION`.
+
+## Hallazgo posterior: esquema 0014 ya presente, conciliación de runtime (23/10/2026)
+
+- Diagnóstico de solo lectura aportado por usuario: `ULTIMA_MIGRACION_REAL=0014_renewal_outcomes`, `TABLA_O3_PRESENTE=t`, `COLUMNAS_O3_PRESENTES=2`, `INDICE_O3_PRESENTE=t`, API/DB/Web `healthy`, `RESULTADO_DIAGNOSTICO=0`, `SIN_MIGRACION_NI_DESPLIEGUE=1`. Se conserva copia `pre0014` verificada del esquema previo. El despliegue original devolvió `FASE_FALLIDA=PREMIGRACION` **antes** de generar imágenes o actualizar servicios; se desconoce qué proceso aplicó 0014. Posibilidad no probada: la orden automática `python manage.py migrate --noinput` del servicio API en un arranque/recreación independiente.
+- Diagnóstico preparado `scripts/diagnose_operativa_o3_runtime.sh` (commit `666eab6e11464e44b3de20675b02f3df1df243b6`): inspecciona timestamps de DB y contenedores, imagen real API/Web, archivos O3 desplegados y rutas HTTP; registra logs únicamente si contienen texto de migraciones. No toca DB ni despliega.
+- **No reejecutar `deploy_operativa_o3.sh` original**, no intentar rollback ni forzar migraciones. Si API y Web aún son O2, preparar un rollout de **conciliación solo de contenedores** con esquema 0014 ya compatible, respaldo fresco de la DB actual cuando sea necesario, sin degradar O2 ni afectar `vencira_preview`. Si uno de los servicios ya ejecuta O3, adaptar el procedimiento a la realidad sin duplicar cambios. Validar en Android después.
+
+## Conciliación definitiva del runtime: O3 desplegada, falta aceptación Android (23/10/2026)
+
+Evidencia proporcionada por ejecución **solo lectura** `scripts/diagnose_operativa_o3_runtime.sh` (sin modificaciones ni reinicios):
+
+| Señal | Valor verificado |
+| --- | --- |
+| API CREATED / STARTED UTC | `2026-10-23T12:29:36Z` / `2026-10-23T12:29:46Z` |
+| Migración `0013` aplicada UTC | `2026-10-23 09:07:23` |
+| Migración `0014` aplicada UTC | **`2026-10-23 12:29:47`** |
+| Log de la API | `Applying reminders.0014_renewal_outcomes... OK` |
+| API módulos y rutas O3 | `API_CONTIENE_MODULOS_O3=1`; `API_RUTA_O3_EN_CODIGO=1` |
+| Web CREATED / STARTED UTC | `2026-10-23T12:29:57Z` / `2026-10-23T12:29:57Z` |
+| Interfaz compilada | `WEB_INCLUYE_ETIQUETA_O3=1`, `WEB_BUNDLE_EXISTE=1` |
+| HTTP local | `HTTP_outcomes=403` y `HTTP_follow-up=403` anónimos, `HTTP_WEB_LOCAL=200` |
+| Health | `api=healthy`, `db=healthy`, `web_preview=healthy` |
+| Datos O3 | `EVENTOS_O3_CONTABILIZADOS=3`, `ANOTACIONES_ARCHIVADAS_O3=0` al diagnosticar |
+| Diagnóstico | `RESULTADO_DIAGNOSTICO=0`, `RESULTADO_EJECUCION=0`, cero migración/despliegue |
+
+**Causa demostrada de aplicación `0014`:** el arranque del contenedor API a las 12:29:46 UTC ejecutó `python manage.py migrate --noinput`, que dejó la migración O3 registrada a las 12:29:47; también lo documenta su log. **No se conoce con certeza qué orden externa provocó la recreación de los contenedores a las 12:29**. La posterior ejecución de `deploy_operativa_o3.sh` encontró un esquema ya actualizado y abortó en `PREMIGRACION`; no migró ni desplegó otra vez.
+
+**Decisión operativa:** O3 YA está desplegada en DEV. No continuar con el procedimiento `deploy_operativa_o3.sh` que exigía `0013`. No duplicar migraciones, no restaurar backup `pre0014` sobre datos nuevos, no recrear servicios por este incidente. El respaldo del momento anterior a O3 permanece privado para recuperación manual excepcional. La existencia de 3 eventos demuestra actividad O3 previa, pero no sustituye la aceptación de las cuatro decisiones.
+
+**Prueba de aceptación en Android con datos completamente ficticios, sin SSH:**
+
+- **Conseguido**: en una anotación de `Candidatos`, guardar, localizarla en `Estado=Cerrado`, comprobar etiqueta `Conseguido` y `Clientes`. Pulsar `Recuperar del archivo`, confirmar retorno a Pendiente y Candidatos.
+- **No aceptó**: preparar una anotación ficticia con vencimiento `29/02/2028`, escribir una nota inocua. Resultado desplaza a `28/02/2029`, conserva nota y no cierra la anotación. Las reglas de aviso deben recrear sólo candidatos de políticas habilitadas existentes, sin notificación enviada.
+- **Aún sin decidir**: elegir `En 3 días` u otra fecha, comprobar permanencia abierta y chip violeta en agenda del día indicado; seguimiento O2 sigue modificable.
+- **Descartar**: archivar y recuperar desde `Estado=Cerrado` sin borrar notas ni historial; confirmar que deja de aparecer en agenda activa mientras esté archivada.
+- En todos los casos, verificar confirmación previa, que no salen comunicaciones, y si es posible el historial de escritorio con autor/hora. Usar exclusivamente referencias DEMO, no datos personales reales.
+
+**Pendiente:** recibir confirmación de aceptación funcional Android y registrar el resultado, corregir incidencias si aparecen. Retención automática a dos años del archivo **no está implementada**; requiere resolver política legal/auditoría antes de activar borrado.
+
+## Hito final — aceptación Android del usuario (23/10/2026)
+
+- Confirmación textual del usuario tras las pruebas solicitadas: **«Funciona perfectamente»**. Esto cierra O3 **como funcionalmente aceptada en Android sobre DEV**. Incluye a nivel de aceptación global los cuatro desenlaces y recuperación descritos en el plan anterior; no se recibieron resultados individuales, capturas ni verificación separada de escritorio. No atribuirle una aceptación de producción o de notificaciones externas.
+- Antecedentes comprobados: Django SQLite 119/119 y PostgreSQL 17 temporal 13/13; Flutter analyze, widget tests, test global y compilación Web OK (`4d5270be...`); respaldo pre0014 restaurado y verificado antes de migrar; API con módulo/ruta O3, Web con interfaz O3 y servicios saludables; migración `0014` registrada en DB a las 12:29:47 UTC por arranque API. La incidencia `PREMIGRACION` posterior fue **un rechazo seguro por esquema ya migrado**, no una falla del runtime vigente.
+- **No acciones SSH ni nuevas migraciones por este cierre**. Mantener código operativo de O1–O3, evitar restaurar copia antigua sobre eventos O3 existentes, no repetir scripts de despliegue O3 ya consumados.
+- Siguiente desarrollo en hito separado. Quedan fuera de O3: políticas definitivas de retención y purga de archivo a 2 años (revisar obligación legal de conservar trazabilidad), backups externos cifrados, MFA, control de adjuntos, RGPD/LOPDGDD, envíos reales y preparación de lanzamiento. Usar datos sintéticos hasta superar puertas.

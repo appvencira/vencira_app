@@ -1,0 +1,44 @@
+name: Flutter ES-CA validation
+
+on:
+  pull_request:
+    branches:
+      - chore/bootstrap-vencira
+      - feat/flutter-preferences-i18n
+    paths:
+      - 'clients/flutter/**'
+      - 'scripts/check_flutter_l10n.py'
+      - '.github/workflows/flutter-i18n.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  flutter-i18n:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check translations structure
+        run: python3 scripts/check_flutter_l10n.py
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: clients/flutter
+      - name: Generate l10n
+        run: flutter gen-l10n
+        working-directory: clients/flutter
+      - name: Static analysis
+        run: flutter analyze
+        working-directory: clients/flutter
+      - name: Widget and contract tests
+        run: flutter test
+        working-directory: clients/flutter
+      - name: Build web
+        run: flutter build web --release --pwa-strategy=none
+        working-directory: clients/flutter
