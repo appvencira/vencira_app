@@ -62,6 +62,9 @@ PHASE=BASELINE_0018
 "${DCMD[@]}" migrate reminders 0018_draft_reasons --noinput >>"$LOG" 2>&1
 "${DCMD[@]}" shell -c 'from django.db.migrations.recorder import MigrationRecorder; from django.db import connection; x=MigrationRecorder(connection).applied_migrations(); assert ("reminders","0018_draft_reasons") in x; assert not any(app=="reminders" and name.startswith(tuple(f"{i:04d}_" for i in range(19,28))) for app,name in x)' >>"$LOG" 2>&1
 echo "C_FICHA_BASELINE_0018_NO_MFA=OK"
+PHASE=MIGRATION_GUARD
+"${DCMD[@]}" shell -c 'from reminders.attachment_migration_guard import attachment_release_preflight; allowed, reason = attachment_release_preflight(); assert not allowed and reason == "MFA_DEPENDENCY_BLOCKS_ATTACHMENTS", (allowed, reason)' >>"$LOG" 2>&1
+echo "C_FICHA_MFA_ANCESTRY_FAIL_CLOSED=OK"
 PHASE=MIGRATION_PLAN
 "${DCMD[@]}" migrate reminders 0027_renewal_attachment_metadata --plan > "$LOG.plan" 2>&1
 grep -Fq "0019_user_mfa_state" "$LOG.plan"
@@ -83,7 +86,7 @@ PHASE=INTEGRATED_TESTS
  reminders.test_attachment_api reminders.test_attachment_scan_attestation \
  reminders.test_attachment_quarantine_intake reminders.test_attachment_orphan_audit \
  reminders.test_attachment_orphan_snapshot reminders.test_attachment_scanner_worker \
- reminders.test_attachment_release_boundaries \
+ reminders.test_attachment_release_boundaries reminders.test_attachment_migration_guard \
  --noinput >>"$LOG" 2>&1
 echo "C_FICHA_PG17_INTEGRATED_TESTS=OK"
 PHASE=FLUTTER
