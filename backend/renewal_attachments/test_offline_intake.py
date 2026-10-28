@@ -391,6 +391,73 @@ class OfflineIntakeTests(TransactionTestCase):
         self.assertEqual(
             RenewalAttachment.objects.get(pk=item.pk).state, "rejected")
 
+
+    def test_postgres_concurrent_discard_is_serialized(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from threading import Event, Lock
+        from django.db import connection, close_old_connections
+        from .offline_rejection import reject_attachment_offline
+        from .offline_rejection_recovery import retry_rejected_discard_offline
+        from .models import AttachmentDiscardJob
+
+        if connection.vendor != "postgresql":
+            self.skipTest("Requires PostgreSQL row locking")
+
+        item = self.intake()
+        entered = Event()
+        release = Event()
+        counter_lock = Lock()
+        calls = []
+        original = self.store.discard_quarantine
+
+        def controlled_discard(key):
+            with counter_lock:
+                calls.append(key)
+            entered.set()
+            if not release.wait(timeout=15):
+                raise RuntimeError("Storage synchronization timeout")
+            return original(key)
+
+        self.store.discard_quarantine = controlled_discard
+
+        def first_worker():
+            close_old_connections()
+            try:
+                return reject_attachment_offline(
+                    member=self.member,
+                    attachment_id=item.pk,
+                    store=self.store)
+            finally:
+                close_old_connections()
+
+        def second_worker():
+            close_old_connections()
+            try:
+                return retry_rejected_discard_offline(
+                    member=self.member,
+                    attachment_id=item.pk,
+                    store=self.store)
+            finally:
+                close_old_connections()
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first = pool.submit(first_worker)
+            try:
+                self.assertTrue(entered.wait(timeout=15))
+                second = pool.submit(second_worker)
+            finally:
+                release.set()
+
+            result1 = first.result(timeout=20)
+            result2 = second.result(timeout=20)
+
+        self.assertTrue(result1.private_object_discarded)
+        self.assertTrue(result2.private_object_discarded)
+        self.assertEqual(len(calls), 1)
+        job = AttachmentDiscardJob.objects.get(attachment=item)
+        self.assertEqual(job.status, "completed")
+        self.assertEqual(job.attempts, 1)
+
     def test_discard_outbox_survives_storage_failure_and_records_retry(self):
         from unittest.mock import patch
         from reminders.attachment_private_store import PrivateStoreError
