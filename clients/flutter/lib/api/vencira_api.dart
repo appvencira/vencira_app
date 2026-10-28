@@ -86,6 +86,11 @@ abstract class VenciraApi {
       required String answer, String? yesOption, int? daysLater,
   }) async => throw const VenciraApiException();
 
+  /// C-FICHA: consultar sólo capacidades y metadatos. Fail closed.
+  Future<Map<String, dynamic>> fetchAttachmentCapabilities(
+      String workspaceId, String renewalId) async =>
+      const {'upload': false, 'download': false, 'delete': false};
+
   Future<VenciraRenewal> fetchRenewalDetail(
       String workspaceId, String renewalId);
 
@@ -1124,6 +1129,27 @@ class VenciraOperationalInbox {
 }
 
 class HttpVenciraApi implements VenciraApi {
+  @override
+  Future<Map<String, dynamic>> fetchAttachmentCapabilities(
+      String workspaceId, String renewalId) async {
+    if (!_validUuid(workspaceId) || !_validUuid(renewalId)) {
+      throw const VenciraApiException();
+    }
+    try {
+      final response = await _fetch(
+        '/api/v1/workspaces/$workspaceId/renewals/$renewalId/attachments/',
+      ) as Map<String, dynamic>;
+      final caps = response['capabilities'];
+      if (caps is! Map<String, dynamic>) throw const VenciraApiException();
+      // Never infer permission from a missing, malformed or partial response.
+      for (final key in ['upload', 'download', 'delete']) {
+        if (caps[key] is! bool) throw const VenciraApiException();
+      }
+      return caps;
+    } on VenciraUnauthorized { rethrow; }
+    catch (_) { throw const VenciraApiException(); }
+  }
+
   @override
   Future<VenciraOperationalInbox> fetchOperationalInbox(String workspaceId,
       DateTime day, {String scope = 'due', int page = 1}) async {
