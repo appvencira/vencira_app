@@ -35,3 +35,16 @@ class RenewalAttachment(models.Model):
         constraints = [models.CheckConstraint(condition=models.Q(byte_size__gt=0),
                                               name="ratt_positive_bytes")]
         ordering = ["-created_at", "-id"]
+
+
+class AttachmentScanEvidence(models.Model):
+    """Audit-only evidence. A CLEAN verdict never grants file access."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    attachment = models.ForeignKey(
+        RenewalAttachment, on_delete=models.PROTECT, related_name="scan_evidence")
+    payload = models.JSONField()
+    signature = models.CharField(max_length=64)
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-recorded_at", "-id"]
