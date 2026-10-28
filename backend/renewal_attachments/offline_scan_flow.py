@@ -11,6 +11,7 @@ from reminders.attachment_scanner_worker import scan_and_attest_quarantine
 from reminders.attachment_clamav_adapter import scan_with_clamd
 from .offline_intake import stage_authorized_attachment
 from .offline_scan_evidence import persist_scan_evidence_offline
+from .models import RenewalAttachment
 
 
 @dataclass(frozen=True)
@@ -49,6 +50,12 @@ def intake_scan_offline(*, member, renewal_id, store, filename,
                     result.signature is not None)
         recorded = False
         if attested:
+            current = RenewalAttachment.objects.get(pk=item.pk)
+            fingerprint = ("storage_key", "sha256", "byte_size", "state",
+                           "display_name", "content_type")
+            if any(getattr(current, field) != getattr(item, field)
+                   for field in fingerprint):
+                raise PermissionDenied("Attachment metadata changed during scan")
             persist_scan_evidence_offline(
                 attachment_id=item.pk, payload=result.attestation,
                 signature=result.signature, verification_key=signing_key)
