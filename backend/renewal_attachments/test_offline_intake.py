@@ -171,3 +171,23 @@ class OfflineIntakeTests(TestCase):
                 persist_scan_evidence_offline(
                     attachment_id=item.pk, payload={},
                     signature="0" * 64, verification_key=b"e" * 32)
+
+    def test_readiness_requires_signature_and_matching_encrypted_bytes(self):
+        from reminders.attachment_scan_attestation import issue_scan_attestation
+        from .offline_scan_evidence import persist_scan_evidence_offline
+        from .offline_readiness import assess_attachment_readiness
+        key = b"r" * 32
+        item = self.intake()
+        base = dict(member=self.member, attachment_id=item.pk,
+                    store=self.store, verification_key=key)
+        pending = assess_attachment_readiness(**base)
+        self.assertFalse(pending.ready_for_security_review)
+        payload, signature = issue_scan_attestation(
+            attachment=item, verdict="clean", engine="synthetic-only",
+            signing_key=key)
+        persist_scan_evidence_offline(
+            attachment_id=item.pk, payload=payload, signature=signature,
+            verification_key=key)
+        ready = assess_attachment_readiness(**base)
+        self.assertTrue(ready.ready_for_security_review)
+        self.assertFalse(ready.release_allowed)
