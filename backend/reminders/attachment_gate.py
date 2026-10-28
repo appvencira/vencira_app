@@ -3,13 +3,13 @@
 No trusted scanner/verifier exists yet. Even changing state to CLEAN by hand
 must never make a byte stream accessible.
 """
-from .models import RenewalAttachment
+from .attachment_model_router import attachment_model
 from .views import _visible_renewals
 
 
 def accessible_attachment_queryset(membership):
     """Limit metadata to explicitly visible renewals in the workspace."""
-    return RenewalAttachment.objects.filter(
+    return attachment_model().objects.filter(
         renewal_id__in=_visible_renewals(membership).values("pk"),
     )
 
