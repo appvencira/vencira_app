@@ -519,6 +519,75 @@ class OfflineIntakeTests(TransactionTestCase):
         item.refresh_from_db()
         self.assertEqual(item.state, "rejected")
 
+
+    def test_postgres_worker_crash_after_unlink(self):
+        import os
+        from unittest.mock import patch
+        from django.db import connection, connections
+        from reminders.attachment_private_store import PrivateStoreError
+        from .offline_rejection import reject_attachment_offline
+        from .offline_rejection_recovery import retry_rejected_discard_offline
+        from .models import AttachmentDiscardJob
+
+        if connection.vendor != "postgresql":
+            self.skipTest("Requires PostgreSQL")
+        if not hasattr(os, "fork"):
+            self.skipTest("Requires POSIX fork")
+
+        item = self.intake()
+        path = Path(self.temp.name) / item.storage_key.hex
+
+        with patch.object(
+            self.store, "discard_quarantine",
+            side_effect=PrivateStoreError("synthetic outage")
+        ):
+            reject_attachment_offline(
+                member=self.member, attachment_id=item.pk,
+                store=self.store)
+
+        self.assertTrue(path.exists())
+
+        # Cerrar conexiones antes del fork: nunca compartir sockets PG.
+        connections.close_all()
+        pid = os.fork()
+
+        if pid == 0:
+            connections.close_all()
+            original = self.store.discard_quarantine
+
+            def crash_after_unlink(key):
+                original(key)
+                os._exit(27)
+
+            self.store.discard_quarantine = crash_after_unlink
+            try:
+                retry_rejected_discard_offline(
+                    member=self.member,
+                    attachment_id=item.pk, store=self.store)
+            except BaseException:
+                os._exit(99)
+            os._exit(98)
+
+        _, status = os.waitpid(pid, 0)
+        self.assertTrue(os.WIFEXITED(status))
+        self.assertEqual(os.WEXITSTATUS(status), 27)
+
+        # El archivo desapareció, pero la transacción no hizo commit.
+        self.assertFalse(path.exists())
+        job = AttachmentDiscardJob.objects.get(attachment=item)
+        self.assertEqual(job.status, "pending")
+
+        recovered = retry_rejected_discard_offline(
+            member=self.member,
+            attachment_id=item.pk, store=self.store)
+
+        self.assertTrue(recovered.private_object_discarded)
+        self.assertFalse(recovered.release_allowed)
+        job.refresh_from_db()
+        item.refresh_from_db()
+        self.assertEqual(job.status, "completed")
+        self.assertEqual(item.state, "rejected")
+
     def test_discard_outbox_survives_storage_failure_and_records_retry(self):
         from unittest.mock import patch
         from reminders.attachment_private_store import PrivateStoreError
