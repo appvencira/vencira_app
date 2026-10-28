@@ -12,13 +12,18 @@ from .models import RenewalAttachment, AttachmentScanEvidence
 
 
 def persist_scan_evidence_offline(*, attachment_id, payload, signature,
-                                  verification_key, now=None):
+                                  verification_key, now=None, expected_fingerprint=None):
     if (settings.VENCIRA_ENV != "test" or
             not getattr(settings, "VENCIRA_ATTACHMENT_SPLIT_REHEARSAL_ENABLED", False)):
         raise PermissionDenied("Signed evidence persistence is test only")
     with transaction.atomic():
         attachment = RenewalAttachment.objects.select_for_update().get(
             pk=attachment_id)
+        if expected_fingerprint is not None:
+            fields = ("storage_key", "sha256", "byte_size", "state",
+                      "display_name", "content_type")
+            if tuple(getattr(attachment, field) for field in fields) != tuple(expected_fingerprint):
+                raise PermissionDenied("Attachment metadata changed during scan")
         if attachment.state != RenewalAttachment.State.QUARANTINED:
             raise PermissionDenied("Attachment is no longer quarantined")
         if AttachmentScanEvidence.objects.filter(attachment=attachment).exists():
