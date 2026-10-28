@@ -18,8 +18,10 @@ def renewal_attachments(request, workspace_id, renewal_id):
     member = _membership(request, workspace_id)
     get_object_or_404(_visible_renewals(member), pk=renewal_id)
     if request.method != "GET":
-        return Response({"detail": "Adjuntos no habilitados."},
-                        status=status.HTTP_403_FORBIDDEN)
+        response = Response({"detail": "Adjuntos no habilitados."},
+                            status=status.HTTP_403_FORBIDDEN)
+        response["Cache-Control"] = "no-store"
+        return response
     records = accessible_attachment_queryset(member).filter(
         renewal_id=renewal_id).order_by("-created_at", "-id")[:50]
     response = Response({"results": [{
