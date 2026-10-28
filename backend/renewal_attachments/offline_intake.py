@@ -14,7 +14,8 @@ from reminders.models import Renewal, WorkspaceMember
 
 
 def stage_authorized_attachment(*, member, renewal_id, store,
-                                filename, content_type, content):
+                                filename, content_type, content,
+                                journal=None):
     if (settings.VENCIRA_ENV != "test" or
             not getattr(settings, "VENCIRA_ATTACHMENT_SPLIT_REHEARSAL_ENABLED", False)):
         raise PermissionDenied("Intake restricted to isolated rehearsal")
@@ -37,4 +38,5 @@ def stage_authorized_attachment(*, member, renewal_id, store,
 
     return stage_private_attachment(
         store=store, filename=filename, content_type=content_type,
-        content=content, create_metadata=create_metadata)
+        content=content, create_metadata=create_metadata,
+        journal=journal)

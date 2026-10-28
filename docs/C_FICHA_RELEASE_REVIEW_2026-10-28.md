@@ -277,3 +277,37 @@ D7_RELEASE_AUTHORIZED=NO
 C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
+
+
+## Macrofase D8 — Integración offline del diario
+
+Evidencia de ensayo aislado:
+
+- El alta autorizada puede registrar una intención antes
+  de crear el archivo cifrado.
+- La referencia del diario coincide con la huella
+  y el identificador de almacenamiento de los metadatos.
+- Un miembro de otro workspace no genera documentos
+  ni intenciones.
+- Si falla el alta de metadatos, permanece una intención
+  para conciliación y el archivo se elimina si el almacén
+  permite la limpieza.
+- En entorno de producción la integración offline
+  continúa bloqueada.
+
+D8_ISOLATED_RESULT=0
+
+Alcance: pruebas Django con SQLite y archivos sintéticos.
+No es una prueba end-to-end con PostgreSQL ni una
+autorización operativa.
+
+PENDIENTE:
+- Conciliación durable del diario con PostgreSQL 17.
+- Estados terminales y resolución de intenciones.
+- Fallos físicos y carreras entre workers.
+- Revisión integral de seguridad y autorización expresa.
+
+D8_RELEASE_AUTHORIZED=NO
+C_FICHA_RELEASE_AUTHORIZED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
