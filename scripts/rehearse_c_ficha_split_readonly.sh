@@ -75,4 +75,27 @@ assert "reminders_usermfastate" not in connection.introspection.table_names()
 ' >>"$LOG" 2>&1
 echo "C_FICHA_SPLIT_0001_WITHOUT_MFA=OK"
 echo "C_FICHA_SPLIT_NO_MFA_TABLES=OK"
+phase=ORM_ROUTING
+"${DCMD[@]}" shell -c '
+from django.apps import apps
+from reminders.attachment_model_router import attachment_model
+from reminders.attachment_gate import accessible_attachment_queryset
+from django.test import override_settings
+from django.core.exceptions import ImproperlyConfigured
+class Membership:
+    workspace_id = "00000000-0000-4000-8000-000000000001"
+    user_id = 99999
+    role = "owner"
+assert attachment_model()._meta.label_lower == "renewal_attachments.renewalattachment"
+assert accessible_attachment_queryset(Membership()).model is attachment_model()
+assert attachment_model().objects.count() == 0
+with override_settings(VENCIRA_ENV="production"):
+    try:
+        attachment_model()
+        raise AssertionError("Test-only router was usable in production")
+    except ImproperlyConfigured:
+        pass
+print("C_FICHA_SPLIT_ORM_ROUTING=OK")
+' >>"$LOG" 2>&1
+echo "C_FICHA_SPLIT_ORM_ROUTING=OK"
 echo "C_FICHA_SPLIT_RELEASE_AUTHORIZED=NO"
