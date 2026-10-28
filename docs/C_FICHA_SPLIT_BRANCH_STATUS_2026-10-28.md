@@ -79,3 +79,6 @@ Nuevo script `scripts/rehearse_clamd_adapter_isolated.sh`: levanta contenedor Cl
 
 ## Consolidación de gate y ClamAV (pendiente ejecución)
 El ensayo PG17 ahora aplica toda la ruta independiente `renewal_attachments.0001→0003` antes de la coexistencia con MFA en DB desechable y exige ausencia de migraciones reminders.0019–0027. Nuevo marcador: `C_FICHA_SPLIT_EVIDENCE_0003_WITHOUT_MFA=OK`. El ensayo real de clamd detecta salida temprana del contenedor y valida que la firma sintética EICAR tenga exactamente 68 bytes. Este endurecimiento no equivale a haber superado el ensayo de daemon ni habilita el servicio productivo. Conservamos los dos bloques y no pedimos validaciones aisladas.
+
+## ClamAV socket real — corrección de ensayo pendiente
+Corregido el patrón EICAR del script INSTREAM para construir exactamente un separador ASCII 92 y comprobar 68 bytes; directorio temporal del socket con modo sticky 1777, eliminación al finalizar. La permisividad temporal del socket sólo es aceptable en el ensayo aislado: NO reutilizar el script como configuración de servicio de producción. Pendiente comprobar versión real, arranque, conexiones Unix, firmas actualizadas y separación de credenciales. No se ha ejecutado este ensayo tras las correcciones, no existe autorización de entrega de archivos.
