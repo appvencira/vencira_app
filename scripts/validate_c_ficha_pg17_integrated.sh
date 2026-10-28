@@ -23,7 +23,7 @@ cleanup() {
   exit "$rc"
 }
 trap cleanup EXIT
-test "$(git branch --show-current)" = integration/local-e2e-prep
+test "$(git branch --show-current)" = feature/c-ficha-independent-attachments
 test -z "$(git diff --name-only)"
 test -z "$(git diff --cached --name-only)"
 test -z "$(git ls-files --others --exclude-standard | grep -vx 'clients/flutter/pubspec.lock' || true)"
