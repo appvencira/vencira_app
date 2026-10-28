@@ -108,3 +108,28 @@ class OfflineIntakeTests(TestCase):
         self.assertFalse(report.release_allowed)
         self.assertEqual(RenewalAttachment.objects.get(
             pk=report.attachment_id).state, "quarantined")
+
+    def test_scanner_error_and_exception_never_release_bytes(self):
+        from reminders.attachment_clamav_adapter import ScannerResult
+        from .offline_scan_flow import intake_scan_offline
+
+        def failed_scanner(*, payload, unix_socket):
+            return ScannerResult("error", "SCANNER_UNAVAILABLE")
+
+        def broken_scanner(*, payload, unix_socket):
+            raise ConnectionError("synthetic scanner disconnected")
+
+        for scanner in (failed_scanner, broken_scanner):
+            outcome = intake_scan_offline(
+                member=self.member, renewal_id=self.renewal.pk,
+                store=self.store, filename="synthetic.jpg",
+                content_type="image/jpeg",
+                content=b"\xff\xd8\xff\x00synthetic\xff\xd9",
+                unix_socket="/tmp/synthetic-test-only",
+                engine="synthetic-scanner", signing_key=b"s" * 32,
+                scanner=scanner)
+            self.assertEqual(outcome.verdict, "blocked")
+            self.assertFalse(outcome.attested)
+            self.assertFalse(outcome.release_allowed)
+            self.assertEqual(RenewalAttachment.objects.get(
+                pk=outcome.attachment_id).state, "quarantined")
