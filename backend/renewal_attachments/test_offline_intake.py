@@ -191,3 +191,54 @@ class OfflineIntakeTests(TestCase):
         ready = assess_attachment_readiness(**base)
         self.assertTrue(ready.ready_for_security_review)
         self.assertFalse(ready.release_allowed)
+
+    def test_readiness_denies_foreign_workspace(self):
+        from .offline_readiness import assess_attachment_readiness
+        item = self.intake()
+        result = assess_attachment_readiness(
+            member=self.foreign_member, attachment_id=item.pk,
+            store=self.store, verification_key=b"r" * 32)
+        self.assertFalse(result.metadata_authorized)
+        self.assertFalse(result.ready_for_security_review)
+        self.assertFalse(result.release_allowed)
+
+    def test_readiness_denies_tampered_metadata_after_attestation(self):
+        from reminders.attachment_scan_attestation import issue_scan_attestation
+        from .offline_scan_evidence import persist_scan_evidence_offline
+        from .offline_readiness import assess_attachment_readiness
+        key = b"r" * 32
+        item = self.intake()
+        payload, signature = issue_scan_attestation(
+            attachment=item, verdict="clean", engine="synthetic-only",
+            signing_key=key)
+        persist_scan_evidence_offline(
+            attachment_id=item.pk, payload=payload, signature=signature,
+            verification_key=key)
+        RenewalAttachment.objects.filter(pk=item.pk).update(sha256="0" * 64)
+        result = assess_attachment_readiness(
+            member=self.member, attachment_id=item.pk,
+            store=self.store, verification_key=key)
+        self.assertFalse(result.signed_evidence_valid)
+        self.assertFalse(result.ready_for_security_review)
+        self.assertFalse(result.release_allowed)
+
+    def test_readiness_denies_missing_encrypted_object(self):
+        from reminders.attachment_scan_attestation import issue_scan_attestation
+        from .offline_scan_evidence import persist_scan_evidence_offline
+        from .offline_readiness import assess_attachment_readiness
+        key = b"r" * 32
+        item = self.intake()
+        payload, signature = issue_scan_attestation(
+            attachment=item, verdict="clean", engine="synthetic-only",
+            signing_key=key)
+        persist_scan_evidence_offline(
+            attachment_id=item.pk, payload=payload, signature=signature,
+            verification_key=key)
+        self.store.discard_quarantine(item.storage_key)
+        result = assess_attachment_readiness(
+            member=self.member, attachment_id=item.pk,
+            store=self.store, verification_key=key)
+        self.assertTrue(result.signed_evidence_valid)
+        self.assertFalse(result.encrypted_object_integrity)
+        self.assertFalse(result.ready_for_security_review)
+        self.assertFalse(result.release_allowed)
