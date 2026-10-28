@@ -346,3 +346,43 @@ D9_RELEASE_AUTHORIZED=NO
 C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
+
+
+## Plan agrupado D10–D13
+
+Decisión del promotor: agrupar trabajo pendiente en tres macrobloques y evitar microfases repetidas. Se trata de un **plan de ejecución**, no de funcionalidades terminadas.
+
+### Macrobloque 1: D10–D11 — motor operativo seguro, en ensayos
+
+1. Cerrar diario D5 y reconciliación D9 frente a escrituras concurrentes, estados terminales y reintentos transaccionales; identificar objetos sin diario y cortes entre persistencia de archivos/DB.
+2. Integrar validación estricta de archivos, cuarentena cifrada, análisis antivirus autenticado, evidencias verificables y decisiones explícitas de liberación. No basta el estado `clean`.
+3. Diseñar y probar permisos HTTP por workspace, usuario, renovación, rol y estado con denegación predeterminada; limitar tipos/tamaño y bloquear acceso directo y referencias cruzadas.
+4. Mantener operativamente deshabilitadas subida, descarga y eliminación hasta superar las comprobaciones. Ensayos solo con documentos sintéticos.
+
+**Gate:** tests Django y PostgreSQL 17 temporal + regresiones HTTP; escenarios de fallo de almacenamiento, interrupciones, carreras, recuperación y no filtración. No sustituir pruebas de durabilidad por mocks.
+
+### Macrobloque 2: D12 — transición, custodia y cumplimiento
+
+1. Conciliar por identidad, propietarios, tamaños, huellas, estados y evidencias las tablas históricas `reminders.0027` e independientes, con rollback ensayado.
+2. Estudiar plan de migración incremental compatible con la rama principal, bloqueando cualquier `migrate` global sobre DEV hasta autorización.
+3. Custodia/rotación/restauración de claves, retención y borrado, permisos del almacén, RGPD y ensayo de restauración O5 exclusivamente en clon aislado.
+4. Documentar fallos y procedimiento de recuperación/retroceso sin pérdida de datos.
+
+**Gate:** conciliación y restauración verificadas en PG17 temporal/clon, auditoría de seguridad y revisión documental. Ninguna operación real.
+
+### Macrobloque 3: D13 — release controlado
+
+1. Gates integrales backend, PostgreSQL 17, Flutter web, Android y PC; review final de permisos y seguridad.
+2. Validar manifiestos, errores, indicadores UX, auditoría y capacidad de deshabilitar operaciones en cualquier momento.
+3. Verificar backup O5, reversión, dependencias MFA y separación de ambientes; pedir autorización expresa antes de cualquier despliegue/migración persistente.
+4. Sin autorización expresa, mantener release bloqueada.
+
+### Estado operativo de referencia
+
+- D1–D9 ensayadas y documentadas; último commit conocido previo al plan: `4a9f946`.
+- Trabajo D10–D13 **PENDIENTE**. Los gates de etapas previas no se repiten salvo cambios que los afecten.
+- `clients/flutter/pubspec.lock` sin seguimiento local: no añadir ni borrar.
+- `D10_D11_RELEASE_AUTHORIZED=NO`
+- `C_FICHA_RELEASE_AUTHORIZED=NO`
+- `MFA_RELEASE_AUTHORIZED=NO`
+- `NO_DEPLOY_NO_LIVE_MIGRATION=1`
