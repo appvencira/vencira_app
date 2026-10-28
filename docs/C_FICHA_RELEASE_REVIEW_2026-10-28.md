@@ -242,3 +242,38 @@ D6_RELEASE_AUTHORIZED=NO
 C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
+
+
+## Macrofase D7 — Validación transaccional PostgreSQL 17
+
+Evidencias comunicadas por el operador:
+
+- D7 preflight: seis controles estáticos correctos.
+- D7A: dos conexiones PostgreSQL 17 efímeras; bloqueo
+  FOR UPDATE, segundo trabajador omitido y un solo intento.
+  D7A_RESULT=0.
+- D7B: tres pruebas del método Django
+  retry_rejected_discard_offline() sobre PostgreSQL 17 temporal.
+  Incluyen éxito idempotente, fallo y reintento, y dos workers.
+  D7B_PG17_RESULT=0.
+  D7B_CLEANUP_RESULT=0.
+- La primera ejecución D7B falló al destruir la base de tests
+  por conexiones abiertas. Se corrigió exclusivamente el test
+  para cerrar todas las conexiones por trabajador.
+- Existía previamente un ensayo separado de muerte abrupta
+  de worker, documentado en esta misma revisión.
+
+Limitaciones:
+- D7A usa SQL sintético; D7B sí prueba el método Django real.
+- D7B utiliza un almacén simulado.
+- No existe una integración completa del diario D5 con
+  las transiciones persistentes y la recuperación automática.
+- No se autoriza una migración, descarga o despliegue real.
+- Quedan pendientes pruebas integrales y revisión de
+  recuperación ante fallos del almacenamiento.
+
+D7_PG17_TRANSACTION_TESTS=OK
+D7_RELEASE_AUTHORIZED=NO
+C_FICHA_RELEASE_AUTHORIZED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
