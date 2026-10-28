@@ -274,7 +274,7 @@ class OfflineIntakeTests(TestCase):
             member=self.member, renewal_id=self.renewal.pk,
             store=self.store, filename="synthetic.jpg",
             content_type="image/jpeg",
-            content=b"\\xff\\xd8\\xff\\x00synthetic\\xff\\xd9",
+            content=bytes.fromhex("ffd8ff00") + b"synthetic" + bytes.fromhex("ffd9"),
             unix_socket="/tmp/synthetic-test-only",
             engine="synthetic-scanner", signing_key=b"s" * 32,
             scanner=mutate_during_scan)
