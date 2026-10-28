@@ -26,3 +26,6 @@ Resultado comunicado por el operador (28-10-2026): `C_FICHA_SPLIT_PG17_EPHEMERAL
 
 ## Ensayo ORM en PostgreSQL 17 — APROBADO
 Resultado comunicado: `C_FICHA_SPLIT_PG17_EPHEMERAL=OK`, `C_FICHA_SPLIT_GRAPH_EXCLUDES_MFA=OK`, `C_FICHA_SPLIT_0001_WITHOUT_MFA=OK`, `C_FICHA_SPLIT_NO_MFA_TABLES=OK`, `C_FICHA_SPLIT_ORM_ROUTING=OK`, `C_FICHA_SPLIT_RELEASE_AUTHORIZED=NO`, `C_FICHA_SPLIT_PG17_RESULT=0`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Log: `/tmp/vencira-c-ficha-split.rXmUMxXv.log`. No es validación de una sustitución final del modelo antiguo ni de un migrate global. PENDIENTES: transición y coexistencia 0027, API y operación completa de archivos, gate final, autorización separada.
+
+## Ensayo de coexistencia añadido — PENDIENTE de ejecutar
+Tras demostrar en PG17 temporal que `renewal_attachments.0001` se instala sin MFA, el mismo ensayo aplica `reminders.0027` (incluidas sus dependencias MFA) **sólo en esa base desechable**. Comprueba que existen ambas tablas con nombres diferentes, que no hay registros iniciales y que el selector mantiene el modelo independiente. Esto comprueba convivencia física de esquemas, NO una migración de datos históricos, ni evita el peligro de un `migrate` global en DEV. La publicación continúa prohibida. El gate anterior no cubre esta nueva fase y no debe citarse como su resultado.
