@@ -8,6 +8,7 @@ from django.conf import settings
 from django.core.exceptions import PermissionDenied
 
 from reminders.attachment_scanner_worker import scan_and_attest_quarantine
+from reminders.attachment_clamav_adapter import scan_with_clamd
 from .offline_intake import stage_authorized_attachment
 from .offline_scan_evidence import persist_scan_evidence_offline
 
@@ -23,11 +24,12 @@ class IntakeScanOutcome:
 
 def intake_scan_offline(*, member, renewal_id, store, filename,
                         content_type, content, unix_socket,
-                        engine, signing_key, scanner):
+                        engine, signing_key, scanner=scan_with_clamd):
     """Stage first, scan immutable encrypted bytes, leave metadata quarantined.
 
-    The supplied scanner is injectable for synthetic tests. Only a real,
-    separately secured scanner process can serve as a release prerequisite.
+    Production-like rehearsal defaults to the real Unix-socket ClamAV adapter.
+    A supplied fake scanner is only valid for isolated synthetic unit tests.
+    Neither result gives permission to release file bytes.
     """
     if (settings.VENCIRA_ENV != "test" or
             not getattr(settings, "VENCIRA_ATTACHMENT_SPLIT_REHEARSAL_ENABLED", False)):
