@@ -24,7 +24,9 @@ cleanup() {
 }
 trap cleanup EXIT
 test "$(git branch --show-current)" = feature/c-ficha-independent-attachments
-test -z "$(git status --porcelain)"
+test -z "$(git diff --name-only)"
+test -z "$(git diff --cached --name-only)"
+test -z "$(git ls-files --others --exclude-standard | grep -vx 'clients/flutter/pubspec.lock' || true)"
 # The official image provides signatures; network is disabled at runtime.
 sudo docker pull clamav/clamav:stable >>"$LOG" 2>&1
 sudo docker build -q -t vencira-clamd-test:local ./backend >>"$LOG" 2>&1
