@@ -86,6 +86,44 @@ class AttachmentApiTests(TestCase):
         ):
             self.assertEqual(response.status_code, 404)
 
+
+    def test_attachment_cannot_be_accessed_through_another_renewal(self):
+        other = Renewal.objects.create(
+            workspace=self.ws,
+            assigned_to=self.member,
+            customer_reference="TEST-CROSS-RENEWAL",
+            full_name="Synthetic",
+            expires_on=date(2027, 6, 1),
+        )
+        url = reverse("api-renewal-attachment-detail", kwargs={
+            "workspace_id": self.ws.pk,
+            "renewal_id": other.pk,
+            "attachment_id": self.item.pk,
+        })
+        self.client.force_login(self.owner)
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.assertEqual(self.client.delete(url).status_code, 404)
+
+    def test_clean_state_never_grants_document_access(self):
+        self.client.force_login(self.owner)
+        self.assertEqual(self.item.state, "clean")
+        for method in (self.client.get, self.client.delete):
+            response = method(self.detail_url())
+            self.assertEqual(response.status_code, 403)
+            self.assertEqual(response["Cache-Control"], "no-store")
+            self.assertNotIn("Content-Disposition", response)
+            self.assertNotIn("storage_key", response.content.decode())
+
+    def test_manifest_does_not_expose_private_identifiers(self):
+        self.client.force_login(self.owner)
+        response = self.client.get(self.url())
+        self.assertEqual(response.status_code, 200)
+        payload = response.content.decode()
+        for forbidden in ("storage_key", "sha256", "scan_evidence",
+                          "private_path", "download_url"):
+            self.assertNotIn(forbidden, payload)
+        self.assertFalse(response.json()["capabilities"]["download"])
+
     def test_missing_file_is_not_exposed_as_a_download(self):
         self.client.force_login(self.owner)
         missing = reverse("api-renewal-attachment-detail", kwargs={

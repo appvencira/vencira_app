@@ -77,3 +77,28 @@ MFA_RELEASE_AUTHORIZED=NO
 C_FICHA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Macrofase D1 — pruebas HTTP negativas
+
+- Pruebas Django sobre SQLite aislado, sin red.
+- Aislamiento entre renovaciones.
+- Bloqueo de GET/DELETE incluso con estado CLEAN.
+- Prohibición de exponer storage_key, sha256 y rutas privadas.
+- Resultado comunicado: OK.
+- No se han habilitado operaciones reales.
+
+## Macrofase D2 — siguiente etapa
+
+Objetivo: transición y reconciliación verificable de esquemas.
+
+Condiciones:
+- Usar PostgreSQL 17 efímero exclusivamente.
+- No copiar ni modificar documentos reales.
+- Detectar registros históricos antes de cualquier transición.
+- Validar rollback y conservación de metadatos.
+- Mantener bloqueada la publicación.
+
+D2_RESULT=PENDING
+C_FICHA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
