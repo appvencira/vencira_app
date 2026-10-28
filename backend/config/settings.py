@@ -24,6 +24,13 @@ INSTALLED_APPS = [
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
     "rest_framework", "reminders",
 ]
+# Explicit test-only registration of the experimental split app.
+# Never enable it in development/production or normal application images.
+if os.getenv("VENCIRA_ATTACHMENT_SPLIT_REHEARSAL", "") == "1":
+    if VENCIRA_ENV != "test":
+        raise ImproperlyConfigured("Attachment split rehearsal only allowed in test")
+    INSTALLED_APPS.append("renewal_attachments")
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
