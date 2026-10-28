@@ -17,3 +17,6 @@ No se ha añadido la app a `INSTALLED_APPS` de la configuración habitual, ni se
 
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
+
+## Ensayo PG17 independiente preparado (pendiente ejecución)
+`backend/config/settings.py` sólo registra la app candidata con `VENCIRA_ATTACHMENT_SPLIT_REHEARSAL=1` y `VENCIRA_ENV=test`; cualquier otro entorno con esa variable falla cerrado. `scripts/rehearse_c_ficha_split_readonly.sh` crea PostgreSQL17 y red efímeros, prueba la ascendencia 0018→renewal_attachments.0001, ejecuta esas migraciones **exclusivamente en la base vacía temporal** y verifica que ninguna 0019–0027 de reminders figura aplicada ni aparece la tabla `reminders_usermfastate`. Esta prueba todavía NO demuestra coexistencia posterior a MFA, no resuelve el modelo duplicado ni autoriza migración global o publicación. La rama de integración sigue intacta.
