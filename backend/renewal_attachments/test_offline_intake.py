@@ -6,7 +6,7 @@ from pathlib import Path
 from cryptography.fernet import Fernet
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
-from django.test import TestCase, override_settings
+from django.test import TransactionTestCase, override_settings
 
 from reminders.attachment_private_store import PrivateQuarantineStore
 from reminders.models import Renewal, Workspace, WorkspaceMember
@@ -16,7 +16,7 @@ from .offline_intake import stage_authorized_attachment
 
 
 @override_settings(VENCIRA_ENV="test", VENCIRA_ATTACHMENT_SPLIT_REHEARSAL_ENABLED=True)
-class OfflineIntakeTests(TestCase):
+class OfflineIntakeTests(TransactionTestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
