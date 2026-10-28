@@ -123,4 +123,32 @@ print("C_FICHA_SPLIT_BOTH_SCHEMAS_COEXIST=OK")
 ' >>"$LOG" 2>&1
 echo "C_FICHA_SPLIT_BOTH_SCHEMAS_COEXIST=OK"
 echo "C_FICHA_SPLIT_HISTORICAL_MFA_EPHEMERAL_ONLY=OK"
+phase=TRANSITION_SYNTHETIC
+"${DCMD[@]}" shell -c '
+from datetime import date
+from reminders.models import Workspace, Renewal, RenewalAttachment as Legacy
+from renewal_attachments.models import RenewalAttachment as New
+from renewal_attachments.transition_preflight import inspect_attachment_transition
+initial = inspect_attachment_transition()
+assert initial.safe_empty_transition and initial.reason == "EMPTY_SCHEMAS_ONLY"
+ws = Workspace.objects.create(name="SYNTHETIC_SPLIT_ONLY")
+renewal = Renewal.objects.create(
+    workspace=ws, customer_reference="SYNTHETIC-001",
+    full_name="Synthetic", expires_on=date(2027, 5, 1))
+row = Legacy.objects.create(renewal=renewal, display_name="synthetic.pdf",
+    content_type="application/pdf", byte_size=10, sha256="a"*64)
+blocked = inspect_attachment_transition()
+assert not blocked.safe_empty_transition
+assert blocked.reason == "LEGACY_RECORDS_REQUIRE_VERIFIED_RECONCILIATION"
+row.delete()
+new_row = New.objects.create(renewal=renewal, display_name="synthetic.png",
+    content_type="image/png", byte_size=10, sha256="b"*64)
+blocked_new = inspect_attachment_transition()
+assert not blocked_new.safe_empty_transition
+assert blocked_new.reason == "INDEPENDENT_RECORDS_REQUIRE_VERIFIED_RECONCILIATION"
+new_row.delete()
+assert inspect_attachment_transition().safe_empty_transition
+print("C_FICHA_SPLIT_HISTORICAL_RECORDS_BLOCKED=OK")
+' >>"$LOG" 2>&1
+echo "C_FICHA_SPLIT_HISTORICAL_RECORDS_BLOCKED=OK"
 echo "C_FICHA_SPLIT_RELEASE_AUTHORIZED=NO"
