@@ -7,7 +7,7 @@ Never delete audit metadata or signed evidence.
 from dataclasses import dataclass
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
+from django.db import transaction, connection
 from django.http import Http404
 from reminders.models import WorkspaceMember
 from reminders.attachment_private_store import PrivateStoreError
@@ -29,6 +29,9 @@ def reject_attachment_offline(*, member, attachment_id, store):
         raise PermissionDenied("Offline rejection restricted to rehearsal")
     if member is None or not member.pk:
         raise PermissionDenied("Membership required")
+    # A caller transaction could roll back after bytes were destroyed.
+    if connection.in_atomic_block:
+        raise PermissionDenied("Rejection requires an outermost committed transaction")
     with transaction.atomic():
         active = WorkspaceMember.objects.get(
             pk=member.pk, workspace_id=member.workspace_id,
