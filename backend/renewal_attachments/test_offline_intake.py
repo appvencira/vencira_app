@@ -87,6 +87,7 @@ class OfflineIntakeTests(TestCase):
             scanner=clean_scanner)
         self.assertEqual(report.verdict, "attested")
         self.assertTrue(report.attested)
+        self.assertTrue(report.evidence_recorded)
         self.assertFalse(report.release_allowed)
         self.assertEqual(RenewalAttachment.objects.get(
             pk=report.attachment_id).state, "quarantined")
@@ -105,6 +106,7 @@ class OfflineIntakeTests(TestCase):
             engine="synthetic-scanner", signing_key=b"s" * 32,
             scanner=infected)
         self.assertFalse(report.attested)
+        self.assertFalse(report.evidence_recorded)
         self.assertFalse(report.release_allowed)
         self.assertEqual(RenewalAttachment.objects.get(
             pk=report.attachment_id).state, "quarantined")
