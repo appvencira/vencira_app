@@ -30,6 +30,7 @@ if os.getenv("VENCIRA_ATTACHMENT_SPLIT_REHEARSAL", "") == "1":
     if VENCIRA_ENV != "test":
         raise ImproperlyConfigured("Attachment split rehearsal only allowed in test")
     INSTALLED_APPS.append("renewal_attachments")
+    VENCIRA_ATTACHMENT_SPLIT_REHEARSAL_ENABLED = True
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
