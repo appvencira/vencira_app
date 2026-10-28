@@ -242,3 +242,21 @@ class OfflineIntakeTests(TestCase):
         self.assertFalse(result.encrypted_object_integrity)
         self.assertFalse(result.ready_for_security_review)
         self.assertFalse(result.release_allowed)
+
+    def test_real_adapter_default_fails_closed_without_clamd_socket(self):
+        from .offline_scan_flow import intake_scan_offline
+        from .models import AttachmentScanEvidence
+        result = intake_scan_offline(
+            member=self.member, renewal_id=self.renewal.pk,
+            store=self.store, filename="synthetic.jpg",
+            content_type="image/jpeg",
+            content=bytes.fromhex("ffd8ff00") + b"synthetic" + bytes.fromhex("ffd9"),
+            unix_socket="/tmp/vencira-nonexistent-clamd-test.sock",
+            engine="clamav-isolated-test", signing_key=b"s" * 32)
+        self.assertEqual(result.verdict, "blocked")
+        self.assertFalse(result.attested)
+        self.assertFalse(result.evidence_recorded)
+        self.assertFalse(result.release_allowed)
+        self.assertEqual(AttachmentScanEvidence.objects.count(), 0)
+        self.assertEqual(RenewalAttachment.objects.get(
+            pk=result.attachment_id).state, "quarantined")
