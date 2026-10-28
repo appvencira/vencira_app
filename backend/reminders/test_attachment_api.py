@@ -48,6 +48,10 @@ class AttachmentApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Cache-Control"], "no-store")
         self.assertFalse(response.json()["upload_enabled"])
+        self.assertEqual(response.json()["capabilities"], {
+            "upload": False, "download": False, "delete": False,
+            "reason": "SECURITY_REVIEW_PENDING",
+        })
         self.assertEqual(len(response.json()["results"]), 1)
         row = response.json()["results"][0]
         self.assertFalse(row["download_enabled"])
