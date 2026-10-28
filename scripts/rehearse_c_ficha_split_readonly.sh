@@ -151,4 +151,42 @@ assert inspect_attachment_transition().safe_empty_transition
 print("C_FICHA_SPLIT_HISTORICAL_RECORDS_BLOCKED=OK")
 ' >>"$LOG" 2>&1
 echo "C_FICHA_SPLIT_HISTORICAL_RECORDS_BLOCKED=OK"
+phase=RECONCILIATION_SYNTHETIC
+"${DCMD[@]}" shell -c '
+from datetime import date
+from reminders.models import Workspace, Renewal, RenewalAttachment as Legacy
+from renewal_attachments.models import RenewalAttachment as New
+from renewal_attachments.transition_reconciliation import inspect_reconciliation
+from django.db import transaction
+with transaction.atomic():
+    baseline = inspect_reconciliation()
+    assert baseline.legacy_count == 0 and baseline.independent_count == 0
+    assert not baseline.release_authorized
+    ws = Workspace.objects.create(name="SYNTHETIC_RECONCILIATION")
+    ren = Renewal.objects.create(workspace=ws, customer_reference="SYNTHETIC-REC",
+        full_name="Synthetic", expires_on=date(2027, 5, 2))
+    legacy = Legacy.objects.create(renewal=ren, display_name="synthetic.pdf",
+        content_type="application/pdf", byte_size=10, sha256="c"*64)
+    only_old = inspect_reconciliation()
+    assert only_old.missing_in_independent == 1
+    assert only_old.conflicting_records == 0
+    copy = New.objects.create(id=legacy.id, renewal=ren,
+        storage_key=legacy.storage_key, display_name=legacy.display_name,
+        content_type=legacy.content_type, byte_size=legacy.byte_size,
+        sha256=legacy.sha256, state=legacy.state)
+    matching = inspect_reconciliation()
+    assert matching.missing_in_independent == 0
+    assert matching.missing_in_legacy == 0
+    assert matching.conflicting_records == 0
+    assert matching.reused_storage_keys == 0
+    assert matching.release_authorized is False
+    copy.display_name = "different.pdf"
+    copy.save(update_fields=["display_name"])
+    conflict = inspect_reconciliation()
+    assert conflict.conflicting_records == 1
+    copy.delete()
+    legacy.delete()
+print("C_FICHA_SPLIT_RECONCILIATION_READONLY=OK")
+' >>"$LOG" 2>&1
+echo "C_FICHA_SPLIT_RECONCILIATION_READONLY=OK"
 echo "C_FICHA_SPLIT_RELEASE_AUTHORIZED=NO"
