@@ -364,3 +364,27 @@ class OfflineIntakeTests(TransactionTestCase):
             with self.assertRaises(PermissionDenied):
                 retry_rejected_discard_offline(
                     member=self.member, attachment_id=item.pk, store=self.store)
+
+    def test_discard_outbox_survives_storage_failure_and_records_retry(self):
+        from unittest.mock import patch
+        from reminders.attachment_private_store import PrivateStoreError
+        from .offline_rejection import reject_attachment_offline
+        from .offline_rejection_recovery import retry_rejected_discard_offline
+        from .models import AttachmentDiscardJob
+        item = self.intake()
+        with patch.object(self.store, "discard_quarantine",
+                          side_effect=PrivateStoreError("synthetic outage")):
+            outcome = reject_attachment_offline(
+                member=self.member, attachment_id=item.pk, store=self.store)
+        self.assertTrue(outcome.needs_storage_reconciliation)
+        job = AttachmentDiscardJob.objects.get(attachment_id=item.pk)
+        self.assertEqual(job.status, "pending")
+        self.assertEqual(job.attempts, 1)
+        recovered = retry_rejected_discard_offline(
+            member=self.member, attachment_id=item.pk, store=self.store)
+        self.assertTrue(recovered.private_object_discarded)
+        job.refresh_from_db()
+        self.assertEqual(job.status, "completed")
+        self.assertEqual(job.attempts, 2)
+        self.assertIsNotNone(job.completed_at)
+        self.assertFalse(recovered.release_allowed)
