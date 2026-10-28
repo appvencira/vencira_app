@@ -809,7 +809,9 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                   _info(_t.noticeDate,
                     DateFormat.yMd(locale).format(renewal.noticeDeadlineOn!)),
             ]),
-            VenciraRenewalAttachmentsCard(locale: locale),
+            VenciraRenewalAttachmentsCard(
+              locale: locale, api: widget.api,
+              workspaceId: widget.workspace.id, renewalId: renewal.id),
             const SizedBox(height: 12),
             if (renewal.notes.isNotEmpty)
               _sectionCard(Icons.notes_outlined,
