@@ -38,7 +38,7 @@ sudo docker run -d --name "$NAME" --network none \
   --cap-drop ALL --security-opt no-new-privileges \
   --mount "type=bind,src=$ROOT,dst=/scan-socket" \
   --entrypoint /bin/sh clamav/clamav:stable \
-  -c 'sed -e "/^LocalSocket /d" -e "/^TCPSocket /d" -e "/^LocalSocketMode /d" /etc/clamav/clamd.conf > /tmp/vencira-clamd.conf && printf "\nLocalSocket /scan-socket/clamd.sock\nLocalSocketMode 666\n" >> /tmp/vencira-clamd.conf && exec clamd --foreground --config-file=/tmp/vencira-clamd.conf' >>"$LOG" 2>&1
+  -c 'sed -e "/^LogFile /d" -e "/^LocalSocket /d" -e "/^TCPSocket /d" -e "/^LocalSocketMode /d" /etc/clamav/clamd.conf > /tmp/vencira-clamd.conf && printf "\nLocalSocket /scan-socket/clamd.sock\nLocalSocketMode 666\n" >> /tmp/vencira-clamd.conf && exec clamd --foreground --config-file=/tmp/vencira-clamd.conf' >>"$LOG" 2>&1
 STARTED=1
 # Require the explicitly configured Unix socket; never fall back to TCP.
 READY=0
