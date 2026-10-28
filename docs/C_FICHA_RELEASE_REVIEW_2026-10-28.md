@@ -311,3 +311,38 @@ D8_RELEASE_AUTHORIZED=NO
 C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
+
+
+## Macrofase D9 — Reconciliación integral PG17
+
+Ensayo aislado sobre PostgreSQL 17 efímero.
+
+Se verifican:
+- Coincidencia de diario, metadatos y archivo cifrado.
+- Intención sin metadatos.
+- Metadatos sin intención.
+- Archivo ausente.
+- Discordancia de huella SHA-256.
+- Almacenamiento inaccesible.
+
+D9_PG17_TEST_RESULT=0
+
+El auditor solo devuelve recuentos.
+No modifica objetos, intenciones o metadatos.
+No concede permisos de descarga.
+
+Limitaciones:
+- No existe snapshot coherente frente a escrituras
+  concurrentes.
+- Un estado consistente no equivale a análisis
+  antivirus ni a autorización de publicación.
+- No resuelve automáticamente registros pendientes.
+- Sigue pendiente el circuito de estados terminales.
+- Pendiente revisión de objetos huérfanos sin diario
+  y coordinación transaccional entre sistemas.
+- No demuestra recuperación ante fallo físico.
+
+D9_RELEASE_AUTHORIZED=NO
+C_FICHA_RELEASE_AUTHORIZED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
