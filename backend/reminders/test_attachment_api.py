@@ -75,3 +75,22 @@ class AttachmentApiTests(TestCase):
             "workspace_id": self.ws.pk, "renewal_id": other.pk})
         self.client.force_login(self.member)
         self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_foreign_member_cannot_read_or_modify_file_endpoint(self):
+        self.client.force_login(self.foreign)
+        for response in (
+            self.client.get(self.detail_url()),
+            self.client.delete(self.detail_url()),
+            self.client.post(self.url(), data={},
+                             content_type="application/json"),
+        ):
+            self.assertEqual(response.status_code, 404)
+
+    def test_missing_file_is_not_exposed_as_a_download(self):
+        self.client.force_login(self.owner)
+        missing = reverse("api-renewal-attachment-detail", kwargs={
+            "workspace_id": self.ws.pk, "renewal_id": self.renewal.pk,
+            "attachment_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"})
+        response = self.client.get(missing)
+        self.assertEqual(response.status_code, 404)
+        self.assertNotIn("Content-Disposition", response)
