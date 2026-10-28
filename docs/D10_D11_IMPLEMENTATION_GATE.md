@@ -45,3 +45,22 @@ D10B_RESULT=0
 No demuestra supervivencia a pérdida física de energía,
 fallos de fsync ni estados terminales persistentes.
 No habilita HTTP ni autoriza despliegue.
+
+## D10C — Política de estados de recuperación
+
+Diez pruebas aisladas de transiciones e idempotencia.
+
+La resolución manual es un estado lógico de ensayo,
+no una autorización de descarga ni una transición
+persistida en PostgreSQL.
+
+Pendiente:
+- persistencia de estados y evidencia de aprobación;
+- bloqueo transaccional entre trabajadores en PG17;
+- reanudación tras caída del proceso;
+- integración con diario D5, inventario D10A
+  y trabajos de descarte D7.
+
+D10C_TEST_RESULT=0
+D10_D11_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
