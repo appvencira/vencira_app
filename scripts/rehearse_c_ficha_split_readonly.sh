@@ -78,23 +78,24 @@ echo "C_FICHA_SPLIT_NO_MFA_TABLES=OK"
 phase=INDEPENDENT_EVIDENCE_SCHEMA
 # Extend the independent path through signed evidence and anti-replay
 # BEFORE the disposable MFA coexistence rehearsal.
-"${DCMD[@]}" migrate renewal_attachments 0003_unique_scan_evidence --noinput >>"$LOG" 2>&1
+"${DCMD[@]}" migrate renewal_attachments 0004_attachmentdiscardjob --noinput >>"$LOG" 2>&1
 "${DCMD[@]}" shell -c '
 from django.db import connection
 from django.db.migrations.recorder import MigrationRecorder
 from django.db.migrations.loader import MigrationLoader
 applied = MigrationRecorder(connection).applied_migrations()
 path = set(MigrationLoader(None).graph.forwards_plan(
-    ("renewal_attachments", "0003_unique_scan_evidence")))
+    ("renewal_attachments", "0004_attachmentdiscardjob")))
 blocked = {f"{n:04d}" for n in range(19, 28)}
 assert not any(app == "reminders" and name[:4] in blocked for app, name in path)
 assert not any(app == "reminders" and name[:4] in blocked for app, name in applied)
-assert ("renewal_attachments", "0003_unique_scan_evidence") in applied
+assert ("renewal_attachments", "0004_attachmentdiscardjob") in applied
 tables = set(connection.introspection.table_names())
 assert "renewal_attachments_attachmentscanevidence" in tables
+assert "renewal_attachments_attachmentdiscardjob" in tables
 print("INDEPENDENT_EVIDENCE_GRAPH_NO_MFA=OK")
 ' >>"$LOG" 2>&1
-echo "C_FICHA_SPLIT_EVIDENCE_0003_WITHOUT_MFA=OK"
+echo "C_FICHA_SPLIT_OUTBOX_0004_WITHOUT_MFA=OK"
 phase=ORM_ROUTING
 "${DCMD[@]}" shell -c '
 from django.apps import apps
