@@ -102,5 +102,9 @@ class PrivateQuarantineStore:
                 os.fsync(fd)
             finally:
                 os.close(fd)
+        except FileNotFoundError:
+            # Operación idempotente: ausencia física tras un rechazo
+            # confirmado equivale a objeto ya descartado.
+            return
         except OSError as exc:
             raise PrivateStoreError("No se pudo descartar el objeto") from exc

@@ -365,6 +365,32 @@ class OfflineIntakeTests(TransactionTestCase):
                 retry_rejected_discard_offline(
                     member=self.member, attachment_id=item.pk, store=self.store)
 
+    def test_missing_object_after_rejection_completes_pending_job(self):
+        from unittest.mock import patch
+        from reminders.attachment_private_store import PrivateStoreError
+        from .offline_rejection import reject_attachment_offline
+        from .offline_rejection_recovery import retry_rejected_discard_offline
+        from .models import AttachmentDiscardJob
+
+        item = self.intake()
+        with patch.object(self.store, "discard_quarantine",
+                          side_effect=PrivateStoreError("synthetic failure")):
+            reject_attachment_offline(
+                member=self.member, attachment_id=item.pk, store=self.store)
+
+        # Simula caída después del unlink y antes de confirmar el trabajo.
+        self.store.discard_quarantine(item.storage_key)
+        outcome = retry_rejected_discard_offline(
+            member=self.member, attachment_id=item.pk, store=self.store)
+
+        self.assertTrue(outcome.private_object_discarded)
+        self.assertFalse(outcome.release_allowed)
+        self.assertEqual(
+            AttachmentDiscardJob.objects.get(attachment=item).status,
+            "completed")
+        self.assertEqual(
+            RenewalAttachment.objects.get(pk=item.pk).state, "rejected")
+
     def test_discard_outbox_survives_storage_failure_and_records_retry(self):
         from unittest.mock import patch
         from reminders.attachment_private_store import PrivateStoreError

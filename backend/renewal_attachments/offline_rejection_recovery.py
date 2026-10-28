@@ -33,19 +33,26 @@ def retry_rejected_discard_offline(*, member, attachment_id, store):
         raise Http404("Attachment not found")
     if item.state != RenewalAttachment.State.REJECTED:
         raise PermissionDenied("Only rejected objects may be discarded")
+    # Mantener el bloqueo de fila durante TODA la operación externa.
+    # PostgreSQL serializa los workers del mismo trabajo.
     with transaction.atomic():
         job = AttachmentDiscardJob.objects.select_for_update().get(
             attachment=item)
         if job.status == AttachmentDiscardJob.Status.COMPLETED:
             return RejectionOutcome(item.pk, item.state, True, False)
+
         job.attempts += 1
         job.save(update_fields=["attempts"])
-    try:
-        store.discard_quarantine(item.storage_key)
-    except (PrivateStoreError, OSError, ValueError):
-        AttachmentDiscardJob.objects.filter(pk=job.pk, status="pending").update(
-            last_error="STORAGE_DISCARD_FAILED")
-        return RejectionOutcome(item.pk, item.state, False, True)
-    AttachmentDiscardJob.objects.filter(pk=job.pk, status="pending").update(
-        status="completed", last_error="", completed_at=timezone.now())
-    return RejectionOutcome(item.pk, item.state, True, False)
+        try:
+            store.discard_quarantine(item.storage_key)
+        except (PrivateStoreError, OSError, ValueError):
+            job.last_error = "STORAGE_DISCARD_FAILED"
+            job.save(update_fields=["last_error"])
+            return RejectionOutcome(item.pk, item.state, False, True)
+
+        job.status = AttachmentDiscardJob.Status.COMPLETED
+        job.last_error = ""
+        job.completed_at = timezone.now()
+        job.save(update_fields=[
+            "status", "last_error", "completed_at"])
+        return RejectionOutcome(item.pk, item.state, True, False)
