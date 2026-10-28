@@ -30,7 +30,8 @@ test -z "$(git ls-files --others --exclude-standard | grep -vx 'clients/flutter/
 # The official image provides signatures; network is disabled at runtime.
 sudo docker pull clamav/clamav:stable >>"$LOG" 2>&1
 sudo docker build -q -t vencira-clamd-test:local ./backend >>"$LOG" 2>&1
-chmod 1777 "$ROOT" # temporary sticky socket directory
+sudo chgrp 101 "$ROOT"
+chmod 2770 "$ROOT" # restricted shared group
 # Use clamav image signatures and run clamd with its default configuration;
 # the local socket is set explicitly. No port is published and no network exists.
 sudo docker run -d --name "$NAME" --network none \
@@ -38,7 +39,7 @@ sudo docker run -d --name "$NAME" --network none \
   --cap-drop ALL --security-opt no-new-privileges \
   --mount "type=bind,src=$ROOT,dst=/scan-socket" \
   --user clamav --entrypoint /bin/sh clamav/clamav:stable \
-  -c 'sed -e "/^LogFile /d" -e "/^User /d" -e "/^LocalSocket /d" -e "/^TCPSocket /d" -e "/^LocalSocketMode /d" /etc/clamav/clamd.conf > /tmp/vencira-clamd.conf && printf "\nLocalSocket /scan-socket/clamd.sock\nLocalSocketMode 666\n" >> /tmp/vencira-clamd.conf && exec clamd --foreground --config-file=/tmp/vencira-clamd.conf' >>"$LOG" 2>&1
+  -c 'sed -e "/^LogFile /d" -e "/^User /d" -e "/^LocalSocket /d" -e "/^TCPSocket /d" -e "/^LocalSocketMode /d" /etc/clamav/clamd.conf > /tmp/vencira-clamd.conf && printf "\nLocalSocket /scan-socket/clamd.sock\nLocalSocketMode 660\n" >> /tmp/vencira-clamd.conf && exec clamd --foreground --config-file=/tmp/vencira-clamd.conf' >>"$LOG" 2>&1
 STARTED=1
 # Require the explicitly configured Unix socket; never fall back to TCP.
 READY=0
@@ -58,6 +59,7 @@ sudo docker run --rm --network none \
   -e VENCIRA_ENV=test -e VENCIRA_DB_ENGINE=sqlite \
   -e DJANGO_SECRET_KEY=synthetic-only-clamd-test-key-long-2026 \
   -e DJANGO_ALLOWED_HOSTS=localhost \
+  --group-add 101 \
   --mount "type=bind,src=$ROOT,dst=/scan-socket,readonly" \
   vencira-clamd-test:local python -c '
 from reminders.attachment_clamav_adapter import scan_with_clamd
