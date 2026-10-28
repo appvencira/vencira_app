@@ -67,3 +67,18 @@ class EncryptedTransitionAuditTests(TestCase):
         self.assertEqual(report.digest_mismatches, 1)
         self.assertEqual(report.size_mismatches, 1)
         self.assertFalse(report.release_authorized)
+
+    def test_metadata_change_during_audit_is_reported(self):
+        old = self._pair()
+        self.store.put_quarantine(old.storage_key, b"synthetic-test-only")
+        original = self.store.read_quarantine_for_scanner_only
+
+        def changing_read(key):
+            payload = original(key)
+            Independent.objects.filter(pk=old.pk).update(state="clean")
+            return payload
+
+        self.store.read_quarantine_for_scanner_only = changing_read
+        report = verify_encrypted_objects_readonly(store=self.store)
+        self.assertFalse(report.metadata_aligned)
+        self.assertFalse(report.release_authorized)
