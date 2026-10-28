@@ -49,5 +49,9 @@ def verify_encrypted_objects_readonly(*, store):
         bad_hash += int(not hmac.compare_digest(
             hashlib.sha256(payload).hexdigest(), item["sha256"]))
         bad_size += int(len(payload) != item["byte_size"])
+    # A second reconciliation can catch changes during object inspection.
+    # A database write freeze is still mandatory before any actual migration.
+    after = inspect_reconciliation()
+    stable = after == reconciliation
     return EncryptedObjectAudit(
-        True, len(metadata), bad_read, bad_hash, bad_size)
+        stable, len(metadata), bad_read, bad_hash, bad_size)
