@@ -50,3 +50,21 @@ class AttachmentScanEvidence(models.Model):
         ordering = ["-recorded_at", "-id"]
         constraints = [models.UniqueConstraint(
             fields=["attachment"], name="unique_attachment_scan_evidence")]
+
+
+class AttachmentDiscardJob(models.Model):
+    """Durable test-only deletion outbox; never grants download access."""
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pendiente"
+        COMPLETED = "completed", "Completado"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    attachment = models.OneToOneField(
+        RenewalAttachment, on_delete=models.PROTECT,
+        related_name="discard_job")
+    status = models.CharField(
+        max_length=12, choices=Status.choices, default=Status.PENDING)
+    attempts = models.PositiveIntegerField(default=0)
+    last_error = models.CharField(max_length=80, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
