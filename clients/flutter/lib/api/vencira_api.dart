@@ -86,6 +86,12 @@ abstract class VenciraApi {
       required String answer, String? yesOption, int? daysLater,
   }) async => throw const VenciraApiException();
 
+  /// C-FICHA: listado de metadatos (sin contenido ni enlaces privados).
+  Future<Map<String, dynamic>> fetchAttachmentManifest(
+      String workspaceId, String renewalId) async =>
+      const {'results': <dynamic>[], 'capabilities':
+        {'upload': false, 'download': false, 'delete': false}};
+
   /// C-FICHA: consultar sólo capacidades y metadatos. Fail closed.
   Future<Map<String, dynamic>> fetchAttachmentCapabilities(
       String workspaceId, String renewalId) async =>
@@ -1129,6 +1135,43 @@ class VenciraOperationalInbox {
 }
 
 class HttpVenciraApi implements VenciraApi {
+  @override
+  Future<Map<String, dynamic>> fetchAttachmentManifest(
+      String workspaceId, String renewalId) async {
+    if (!_validUuid(workspaceId) || !_validUuid(renewalId)) {
+      throw const VenciraApiException();
+    }
+    try {
+      final data = await _fetch(
+        '/api/v1/workspaces/$workspaceId/renewals/$renewalId/attachments/',
+      ) as Map<String, dynamic>;
+      final caps = data['capabilities'];
+      final results = data['results'];
+      if (caps is! Map<String, dynamic> || results is! List ||
+          caps['upload'] != false || caps['download'] != false ||
+          caps['delete'] != false || results.length > 50) {
+        throw const VenciraApiException();
+      }
+      final sanitized = <Map<String, dynamic>>[];
+      for (final row in results) {
+        if (row is! Map<String, dynamic> ||
+            row['id'] is! String || !_validUuid(row['id'] as String) ||
+            row['display_name'] is! String ||
+            (row['display_name'] as String).length > 120 ||
+            row['state'] is! String ||
+            !const ['quarantined', 'clean', 'rejected'].contains(row['state']) ||
+            row['download_enabled'] != false ||
+            row['delete_enabled'] != false) {
+          throw const VenciraApiException();
+        }
+        sanitized.add({'id': row['id'], 'display_name': row['display_name'],
+          'state': row['state']});
+      }
+      return {'results': sanitized, 'capabilities': caps};
+    } on VenciraUnauthorized { rethrow; }
+    catch (_) { throw const VenciraApiException(); }
+  }
+
   @override
   Future<Map<String, dynamic>> fetchAttachmentCapabilities(
       String workspaceId, String renewalId) async {
