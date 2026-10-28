@@ -75,7 +75,7 @@ class OfflineIntakeTests(TestCase):
         from reminders.attachment_clamav_adapter import ScannerResult
         from .offline_scan_flow import intake_scan_offline
         key = b"s" * 32
-        payload = b"\xff\xd8\\xff\x00synthetic\\xff\xd9"
+        payload = b"\xff\xd8\xff\x00synthetic\xff\xd9"
         def clean_scanner(*, payload, unix_socket):
             return ScannerResult("clean", "SYNTHETIC")
         report = intake_scan_offline(
@@ -100,7 +100,7 @@ class OfflineIntakeTests(TestCase):
             member=self.member, renewal_id=self.renewal.pk,
             store=self.store, filename="synthetic.jpg",
             content_type="image/jpeg",
-            content=b"\xff\xd8\\xff\x00synthetic\\xff\xd9",
+            content=b"\xff\xd8\xff\x00synthetic\xff\xd9",
             unix_socket="/tmp/synthetic-test-only",
             engine="synthetic-scanner", signing_key=b"s" * 32,
             scanner=infected)
