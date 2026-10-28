@@ -28,7 +28,7 @@ test -z "$(git status --porcelain)"
 # The official image provides signatures; network is disabled at runtime.
 sudo docker pull clamav/clamav:stable >>"$LOG" 2>&1
 sudo docker build -q -t vencira-clamd-test:local ./backend >>"$LOG" 2>&1
-chmod 777 "$ROOT"
+chmod 1777 "$ROOT" # temporary sticky socket directory
 # Use clamav image signatures and run clamd with its default configuration;
 # the local socket is set explicitly. No port is published and no network exists.
 sudo docker run -d --name "$NAME" --network none \
@@ -63,7 +63,7 @@ path = "/scan-socket/clamd.sock"
 clean = scan_with_clamd(payload=b"VENCIRA synthetic clean fixture", unix_socket=path,
                         timeout_seconds=15)
 assert clean.verdict == "clean", clean
-eicar = b"X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"
+eicar = b"X5O!P%@AP[4" + bytes([92]) + b"PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"
 assert len(eicar) == 68, len(eicar)
 infected = scan_with_clamd(payload=eicar, unix_socket=path,
                            timeout_seconds=15)
@@ -72,3 +72,4 @@ print("C_FICHA_REAL_CLAMD_INSTREAM_CLEAN=OK")
 print("C_FICHA_REAL_CLAMD_INSTREAM_EICAR=OK")
 ' >>"$LOG" 2>&1
 echo "C_FICHA_REAL_CLAMD_ADAPTER=OK"
+echo "C_FICHA_REAL_CLAMD_FILE_RELEASE=DISABLED"
