@@ -98,4 +98,29 @@ with override_settings(VENCIRA_ENV="production"):
 print("C_FICHA_SPLIT_ORM_ROUTING=OK")
 ' >>"$LOG" 2>&1
 echo "C_FICHA_SPLIT_ORM_ROUTING=OK"
+phase=COEXISTENCE_EPHEMERAL_ONLY
+# Historical MFA migrations are rehearsed ONLY in the disposable database.
+# This does not grant permission to apply them to DEV or production.
+"${DCMD[@]}" migrate reminders 0027_renewal_attachment_metadata --noinput >>"$LOG" 2>&1
+"${DCMD[@]}" shell -c '
+from django.db import connection
+from django.db.migrations.recorder import MigrationRecorder
+from reminders.models import RenewalAttachment as HistoricalAttachment
+from renewal_attachments.models import RenewalAttachment as IndependentAttachment
+from reminders.attachment_model_router import attachment_model
+tables=set(connection.introspection.table_names())
+assert HistoricalAttachment._meta.db_table == "reminders_renewalattachment"
+assert IndependentAttachment._meta.db_table == "renewal_attachments_renewalattachment"
+assert HistoricalAttachment._meta.db_table in tables
+assert IndependentAttachment._meta.db_table in tables
+assert HistoricalAttachment.objects.count() == 0
+assert IndependentAttachment.objects.count() == 0
+assert attachment_model() is IndependentAttachment
+applied=MigrationRecorder(connection).applied_migrations()
+assert ("reminders","0027_renewal_attachment_metadata") in applied
+assert ("renewal_attachments","0001_initial") in applied
+print("C_FICHA_SPLIT_BOTH_SCHEMAS_COEXIST=OK")
+' >>"$LOG" 2>&1
+echo "C_FICHA_SPLIT_BOTH_SCHEMAS_COEXIST=OK"
+echo "C_FICHA_SPLIT_HISTORICAL_MFA_EPHEMERAL_ONLY=OK"
 echo "C_FICHA_SPLIT_RELEASE_AUTHORIZED=NO"
