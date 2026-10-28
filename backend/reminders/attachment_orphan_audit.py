@@ -11,6 +11,8 @@ from pathlib import Path
 
 from .attachment_private_store import PrivateStoreError
 
+MAX_INVENTORY_ENTRIES = 100_000
+
 
 @dataclass(frozen=True)
 class QuarantineAudit:
@@ -36,7 +38,13 @@ def audit_private_quarantine(*, root: Path, referenced_keys):
     directory_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY |
                            getattr(os, "O_NOFOLLOW", 0))
     try:
-        for name in os.listdir(directory_fd):
+        # Do not produce a partial report if the file inventory is too large.
+        names = os.listdir(directory_fd)
+        if len(names) > MAX_INVENTORY_ENTRIES:
+            raise PrivateStoreError("Quarantine inventory limit exceeded")
+        if not stat.S_ISDIR(os.fstat(directory_fd).st_mode) or os.fstat(directory_fd).st_mode & 0o077:
+            raise PrivateStoreError("Private quarantine permissions changed")
+        for name in names:
             try:
                 obj = uuid.UUID(hex=name)
                 if obj.hex != name:
