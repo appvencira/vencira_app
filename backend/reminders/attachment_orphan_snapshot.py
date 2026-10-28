@@ -7,7 +7,7 @@ import uuid
 from dataclasses import dataclass
 from django.db import transaction
 
-from .models import RenewalAttachment
+from .attachment_model_router import attachment_model
 from .attachment_orphan_audit import audit_private_quarantine
 
 MAX_AUDIT_OBJECTS = 100_000
@@ -26,7 +26,7 @@ def audit_quarantine_against_database(*, root):
     with transaction.atomic():
         # The limit deliberately fails closed rather than providing an
         # incomplete set that might wrongly label valid objects as orphans.
-        keys = list(RenewalAttachment.objects.order_by().values_list(
+        keys = list(attachment_model().objects.order_by().values_list(
             "storage_key", flat=True)[:MAX_AUDIT_OBJECTS + 1])
         if len(keys) > MAX_AUDIT_OBJECTS:
             raise ValueError("Attachment snapshot limit exceeded")
