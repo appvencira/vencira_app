@@ -70,3 +70,41 @@ class OfflineIntakeTests(TestCase):
             with self.assertRaises(PermissionDenied):
                 self.intake()
         self.assertEqual(RenewalAttachment.objects.count(), 0)
+
+    def test_scan_flow_attests_only_clean_synthetic_content(self):
+        from reminders.attachment_clamav_adapter import ScannerResult
+        from .offline_scan_flow import intake_scan_offline
+        key = b"s" * 32
+        payload = b"\xff\xd8\\xff\x00synthetic\\xff\xd9"
+        def clean_scanner(*, payload, unix_socket):
+            return ScannerResult("clean", "SYNTHETIC")
+        report = intake_scan_offline(
+            member=self.member, renewal_id=self.renewal.pk,
+            store=self.store, filename="synthetic.jpg",
+            content_type="image/jpeg", content=payload,
+            unix_socket="/tmp/synthetic-test-only",
+            engine="synthetic-scanner", signing_key=key,
+            scanner=clean_scanner)
+        self.assertEqual(report.verdict, "attested")
+        self.assertTrue(report.attested)
+        self.assertFalse(report.release_allowed)
+        self.assertEqual(RenewalAttachment.objects.get(
+            pk=report.attachment_id).state, "quarantined")
+
+    def test_scan_flow_infected_remains_quarantined(self):
+        from reminders.attachment_clamav_adapter import ScannerResult
+        from .offline_scan_flow import intake_scan_offline
+        def infected(*, payload, unix_socket):
+            return ScannerResult("infected", "SYNTHETIC")
+        report = intake_scan_offline(
+            member=self.member, renewal_id=self.renewal.pk,
+            store=self.store, filename="synthetic.jpg",
+            content_type="image/jpeg",
+            content=b"\xff\xd8\\xff\x00synthetic\\xff\xd9",
+            unix_socket="/tmp/synthetic-test-only",
+            engine="synthetic-scanner", signing_key=b"s" * 32,
+            scanner=infected)
+        self.assertFalse(report.attested)
+        self.assertFalse(report.release_allowed)
+        self.assertEqual(RenewalAttachment.objects.get(
+            pk=report.attachment_id).state, "quarantined")
