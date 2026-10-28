@@ -49,6 +49,15 @@ class QuarantineOrphanAuditTests(SimpleTestCase):
         with self.assertRaises(PrivateStoreError):
             audit_private_quarantine(root=self.root, referenced_keys={"bad"})
 
+    def test_inventory_over_limit_fails_closed_without_deletion(self):
+        marker = self.root / "marker"
+        marker.write_text("fictional")
+        from unittest.mock import patch
+        with patch("reminders.attachment_orphan_audit.MAX_INVENTORY_ENTRIES", 0):
+            with self.assertRaises(PrivateStoreError):
+                audit_private_quarantine(root=self.root, referenced_keys=set())
+        self.assertTrue(marker.exists())
+
     def test_unknown_file_does_not_delete_anything(self):
         marker = self.root / "README"
         marker.write_text("synthetic")
