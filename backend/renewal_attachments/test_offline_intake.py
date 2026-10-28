@@ -444,7 +444,19 @@ class OfflineIntakeTests(TransactionTestCase):
             first = pool.submit(first_worker)
             try:
                 self.assertTrue(entered.wait(timeout=15))
-                second = pool.submit(second_worker)
+                second_started = Event()
+
+                def observed_second_worker():
+                    second_started.set()
+                    return second_worker()
+
+                second = pool.submit(observed_second_worker)
+                self.assertTrue(second_started.wait(timeout=10))
+                # El primer worker sigue dentro del descarte.
+                # El segundo no debe poder finalizar.
+                from concurrent.futures import TimeoutError
+                with self.assertRaises(TimeoutError):
+                    second.result(timeout=0.5)
             finally:
                 release.set()
 
@@ -457,6 +469,55 @@ class OfflineIntakeTests(TransactionTestCase):
         job = AttachmentDiscardJob.objects.get(attachment=item)
         self.assertEqual(job.status, "completed")
         self.assertEqual(job.attempts, 1)
+
+    def test_recovery_after_unlink_before_commit(self):
+        from unittest.mock import patch
+        from reminders.attachment_private_store import PrivateStoreError
+        from .offline_rejection import reject_attachment_offline
+        from .offline_rejection_recovery import retry_rejected_discard_offline
+        from .models import AttachmentDiscardJob
+
+        item = self.intake()
+        with patch.object(
+            self.store, "discard_quarantine",
+            side_effect=PrivateStoreError("initial failure")
+        ):
+            reject_attachment_offline(
+                member=self.member,
+                attachment_id=item.pk,
+                store=self.store)
+
+        original = self.store.discard_quarantine
+
+        def interrupt_after_unlink(key):
+            original(key)
+            raise KeyboardInterrupt("synthetic interruption")
+
+        with patch.object(
+            self.store, "discard_quarantine",
+            side_effect=interrupt_after_unlink
+        ):
+            with self.assertRaises(KeyboardInterrupt):
+                retry_rejected_discard_offline(
+                    member=self.member,
+                    attachment_id=item.pk,
+                    store=self.store)
+
+        job = AttachmentDiscardJob.objects.get(attachment=item)
+        self.assertEqual(job.status, "pending")
+
+        recovered = retry_rejected_discard_offline(
+            member=self.member,
+            attachment_id=item.pk,
+            store=self.store)
+
+        self.assertTrue(recovered.private_object_discarded)
+        self.assertFalse(recovered.release_allowed)
+
+        job.refresh_from_db()
+        self.assertEqual(job.status, "completed")
+        item.refresh_from_db()
+        self.assertEqual(item.state, "rejected")
 
     def test_discard_outbox_survives_storage_failure_and_records_retry(self):
         from unittest.mock import patch
