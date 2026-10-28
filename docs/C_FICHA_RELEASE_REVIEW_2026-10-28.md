@@ -202,3 +202,43 @@ D5_RELEASE_AUTHORIZED=NO
 C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
+
+
+## Macrofase D6 — Clasificación y recuperación segura
+
+Resultados comunicados, 28/10/2026:
+
+- D6A: 5 pruebas superadas. Clasificación verified,
+  missing, unavailable e invalid.
+- D6B: 9 pruebas superadas. Decisiones idempotentes
+  sin autorización de descarga ni cierre automático.
+- D6C: 2 pruebas superadas. Evaluación simultánea
+  de solo lectura sin modificación de los objetos.
+- Total: 16 pruebas superadas.
+
+D6A_RESULT=0
+D6B_RESULT=0
+D6C_RESULT=0
+
+### Limitaciones pendientes
+
+- No existen todavía transiciones terminales persistentes.
+- La evaluación concurrente no demuestra exclusión
+  transaccional entre workers PostgreSQL.
+- La clasificación puede confundir error de lectura
+  posterior con objeto inválido.
+- La recuperación no debe automatizar eliminaciones.
+- Pendientes ensayos de fallos físicos, coordinación
+  de reintentos y verificación integral en PG17 efímero.
+
+### Siguiente etapa: D7
+
+Preparar recuperación transaccional en PostgreSQL 17
+efímero, con estados persistentes, idempotencia,
+bloqueos entre workers y auditoría de transiciones.
+
+D6_ISOLATED_TESTS=OK
+D6_RELEASE_AUTHORIZED=NO
+C_FICHA_RELEASE_AUTHORIZED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
