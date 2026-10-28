@@ -282,3 +282,43 @@ class OfflineIntakeTests(TestCase):
         self.assertFalse(outcome.evidence_recorded)
         self.assertFalse(outcome.release_allowed)
         self.assertEqual(AttachmentScanEvidence.objects.count(), 0)
+
+    def test_owner_rejects_quarantine_and_discards_encrypted_bytes(self):
+        from .offline_rejection import reject_attachment_offline
+        item = self.intake()
+        path = Path(self.temp.name) / item.storage_key.hex
+        self.assertTrue(path.exists())
+        result = reject_attachment_offline(
+            member=self.member, attachment_id=item.pk, store=self.store)
+        self.assertEqual(result.state, "rejected")
+        self.assertTrue(result.private_object_discarded)
+        self.assertFalse(result.release_allowed)
+        self.assertFalse(path.exists())
+        self.assertEqual(RenewalAttachment.objects.get(pk=item.pk).state, "rejected")
+        with self.assertRaises(PermissionDenied):
+            reject_attachment_offline(
+                member=self.member, attachment_id=item.pk, store=self.store)
+
+    def test_foreign_workspace_cannot_reject_or_discard(self):
+        from .offline_rejection import reject_attachment_offline
+        item = self.intake()
+        path = Path(self.temp.name) / item.storage_key.hex
+        with self.assertRaises(Http404):
+            reject_attachment_offline(
+                member=self.foreign_member, attachment_id=item.pk, store=self.store)
+        self.assertTrue(path.exists())
+        self.assertEqual(RenewalAttachment.objects.get(pk=item.pk).state, "quarantined")
+
+    def test_rejection_storage_failure_retains_rejected_record(self):
+        from unittest.mock import patch
+        from reminders.attachment_private_store import PrivateStoreError
+        from .offline_rejection import reject_attachment_offline
+        item = self.intake()
+        with patch.object(self.store, "discard_quarantine",
+                          side_effect=PrivateStoreError("synthetic failure")):
+            result = reject_attachment_offline(
+                member=self.member, attachment_id=item.pk, store=self.store)
+        self.assertTrue(result.needs_storage_reconciliation)
+        self.assertFalse(result.private_object_discarded)
+        self.assertFalse(result.release_allowed)
+        self.assertEqual(RenewalAttachment.objects.get(pk=item.pk).state, "rejected")
