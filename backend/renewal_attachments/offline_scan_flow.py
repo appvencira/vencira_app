@@ -9,6 +9,7 @@ from django.core.exceptions import PermissionDenied
 
 from reminders.attachment_scanner_worker import scan_and_attest_quarantine
 from .offline_intake import stage_authorized_attachment
+from .offline_scan_evidence import persist_scan_evidence_offline
 
 
 @dataclass(frozen=True)
@@ -16,6 +17,7 @@ class IntakeScanOutcome:
     attachment_id: object
     verdict: str
     attested: bool
+    evidence_recorded: bool = False
     release_allowed: bool = False
 
 
@@ -43,8 +45,16 @@ def intake_scan_offline(*, member, renewal_id, store, filename,
         attested = (verdict == "attested" and
                     result.attestation is not None and
                     result.signature is not None)
+        recorded = False
+        if attested:
+            persist_scan_evidence_offline(
+                attachment_id=item.pk, payload=result.attestation,
+                signature=result.signature, verification_key=signing_key)
+            recorded = True
     except Exception:
         verdict = "blocked"
         attested = False
+        recorded = False
     return IntakeScanOutcome(
-        attachment_id=item.pk, verdict=verdict, attested=attested)
+        attachment_id=item.pk, verdict=verdict, attested=attested,
+        evidence_recorded=recorded)
