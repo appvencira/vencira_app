@@ -322,3 +322,26 @@ class OfflineIntakeTests(TestCase):
         self.assertFalse(result.private_object_discarded)
         self.assertFalse(result.release_allowed)
         self.assertEqual(RenewalAttachment.objects.get(pk=item.pk).state, "rejected")
+
+    def test_rejected_cleanup_can_be_retried_without_reactivating_document(self):
+        from unittest.mock import patch
+        from reminders.attachment_private_store import PrivateStoreError
+        from .offline_rejection import reject_attachment_offline
+        from .offline_rejection_recovery import retry_rejected_discard_offline
+        item = self.intake()
+        path = Path(self.temp.name) / item.storage_key.hex
+        with patch.object(self.store, "discard_quarantine",
+                          side_effect=PrivateStoreError("temporary storage failure")):
+            first = reject_attachment_offline(
+                member=self.member, attachment_id=item.pk, store=self.store)
+        self.assertTrue(first.needs_storage_reconciliation)
+        self.assertTrue(path.exists())
+        with self.assertRaises(Http404):
+            retry_rejected_discard_offline(
+                member=self.foreign_member, attachment_id=item.pk, store=self.store)
+        recovered = retry_rejected_discard_offline(
+            member=self.member, attachment_id=item.pk, store=self.store)
+        self.assertTrue(recovered.private_object_discarded)
+        self.assertFalse(recovered.release_allowed)
+        self.assertFalse(path.exists())
+        self.assertEqual(RenewalAttachment.objects.get(pk=item.pk).state, "rejected")
