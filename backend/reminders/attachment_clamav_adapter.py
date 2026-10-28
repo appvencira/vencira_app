@@ -5,6 +5,8 @@ Use a private Unix domain socket provided by a sandboxed clamd instance.
 """
 import socket
 import struct
+import os
+import stat
 from dataclasses import dataclass
 
 MAX_SCAN_BYTES = 10 * 1024 * 1024
@@ -32,6 +34,12 @@ def scan_with_clamd(*, payload: bytes, unix_socket: str,
             or not 0 < timeout_seconds <= 15):
         return ScannerResult("error", "INVALID_CONFIG")
     try:
+        # A socket path must already refer to a Unix socket, not a symlink
+        # or an ordinary file. Ownership and isolated mount trust remain
+        # the responsibility of the scanner deployment.
+        info = os.lstat(unix_socket)
+        if not stat.S_ISSOCK(info.st_mode):
+            return ScannerResult("error", "UNTRUSTED_SOCKET_PATH")
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
             sock.settimeout(timeout_seconds)
             sock.connect(unix_socket)
