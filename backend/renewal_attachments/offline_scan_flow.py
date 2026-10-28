@@ -33,9 +33,18 @@ def intake_scan_offline(*, member, renewal_id, store, filename,
     item = stage_authorized_attachment(
         member=member, renewal_id=renewal_id, store=store, filename=filename,
         content_type=content_type, content=content)
-    result = scan_and_attest_quarantine(
-        store=store, attachment=item, socket_path=unix_socket,
-        engine=engine, signing_key=signing_key, scanner=scanner)
+    # The staged object remains quarantined on ANY scanner failure.
+    # Exceptions must not accidentally propagate as a successful intake.
+    try:
+        result = scan_and_attest_quarantine(
+            store=store, attachment=item, socket_path=unix_socket,
+            engine=engine, signing_key=signing_key, scanner=scanner)
+        verdict = result.verdict if result.verdict == "attested" else "blocked"
+        attested = (verdict == "attested" and
+                    result.attestation is not None and
+                    result.signature is not None)
+    except Exception:
+        verdict = "blocked"
+        attested = False
     return IntakeScanOutcome(
-        attachment_id=item.pk, verdict=result.verdict,
-        attested=result.attestation is not None)
+        attachment_id=item.pk, verdict=verdict, attested=attested)
