@@ -23,7 +23,7 @@ class StagedQuarantine:
 
 
 def stage_private_attachment(*, store, filename, content_type, content,
-                             create_metadata):
+                             create_metadata, journal=None):
     """Validate and encrypt exact bytes; remove orphan on metadata failure.
 
     create_metadata(staged) must enforce workspace/renewal association, audit,
@@ -38,6 +38,9 @@ def stage_private_attachment(*, store, filename, content_type, content,
         storage_key=uuid.uuid4(), display_name=display_name,
         content_type=mime, byte_size=len(content),
         sha256=hashlib.sha256(content).hexdigest())
+    if journal is not None:
+        journal.record_intent(staged.storage_key, staged.sha256)
+
     store.put_quarantine(staged.storage_key, content)
     try:
         record = create_metadata(staged)

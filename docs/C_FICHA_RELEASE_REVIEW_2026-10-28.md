@@ -159,3 +159,46 @@ D5_RESULT=PENDING
 C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
+
+
+## Macrofase D5 — Diario de intención y recuperación
+
+**Validación aislada comunicada el 28/10/2026.**
+
+- D5A: cinco pruebas superadas. Registro de intención previo
+  al almacenamiento, validación de huella y protección
+  frente a sobrescrituras.
+- D5B: once pruebas superadas, incluidas dos regresiones D3.
+  Se comprueba el orden intención → almacenamiento.
+- D5C: cinco pruebas superadas. Inspección tras reconstruir
+  instancias del diario y del almacén privado.
+- Se detectan discrepancias de huella y registros pendientes
+  sin objeto verificable.
+- No se habilitan endpoints ni operaciones con archivos reales.
+
+Resultados:
+D5A_JOURNAL_RESULT=0
+D5B_ISOLATED_RESULT=0
+D5C_RECOVERY_TEST_RESULT=0
+
+**Límites técnicos pendientes:**
+
+1. Distinguir objeto inexistente de volumen inaccesible
+   durante la recuperación.
+2. Incorporar estados terminales, transiciones idempotentes
+   y reconciliación verificable del diario.
+3. Garantizar coordinación ante escrituras concurrentes.
+4. Ensayar interrupciones reales del proceso y durabilidad.
+5. Verificar comportamiento completo en PostgreSQL 17
+   efímero y estrategia de recuperación O5 aislada.
+6. Auditar gestión y rotación de claves antes de producción.
+
+Los ensayos utilizan SQLite y archivos sintéticos.
+No se ha demostrado recuperación automática completa ni
+resistencia a pérdida física de almacenamiento.
+
+D5_ISOLATED_TESTS=OK
+D5_RELEASE_AUTHORIZED=NO
+C_FICHA_RELEASE_AUTHORIZED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
