@@ -6,6 +6,7 @@ ENOENT; other errors remain pending for operator reconciliation.
 """
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
+from django.db import connection
 from django.http import Http404
 from reminders.models import WorkspaceMember
 from reminders.attachment_private_store import PrivateStoreError
@@ -19,6 +20,8 @@ def retry_rejected_discard_offline(*, member, attachment_id, store):
         raise PermissionDenied("Recovery restricted to rehearsal")
     if member is None or not member.pk:
         raise PermissionDenied("Membership required")
+    if connection.in_atomic_block:
+        raise PermissionDenied("Storage cleanup prohibited inside a transaction")
     active = WorkspaceMember.objects.get(
         pk=member.pk, workspace_id=member.workspace_id, user_id=member.user_id)
     if active.role != WorkspaceMember.Role.OWNER:
