@@ -127,3 +127,35 @@ abrir descarga, utilizar documentos reales ni activar endpoints.
 D3_RESULT=PENDING
 C_FICHA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
+
+
+## Macrofase D3-D4 — fallos dobles y auditoría de huérfanos
+
+**D3 — Dos pruebas superadas:**
+- Fallo de metadatos con eliminación correcta de cuarentena.
+- Fallo simultáneo de metadatos y eliminación: se detecta
+  el error y el objeto permanece cifrado.
+- D3_DOUBLE_FAILURE_TEST_RESULT=0.
+
+**D4 — Cuatro pruebas superadas:**
+- Almacén vacío consistente, sin autorización de publicación.
+- Detección de objeto huérfano sin modificarlo.
+- Fallo cerrado cuando desaparece el directorio privado.
+- Bloqueo de auditoría fuera del entorno de ensayos.
+- D4_ORPHAN_AUDIT_RESULT=0.
+
+El auditor D4 es de solo lectura. No garantiza una instantánea
+consistente si hay escrituras concurrentes, ni sustituye un
+registro duradero de recuperación.
+
+**Siguiente fase D5:**
+- Registro duradero de intención previo a almacenar archivos.
+- Estados de recuperación e idempotencia.
+- Reconciliación tras fallos y reinicios.
+- Pruebas de concurrencia, errores y rollback.
+- Sin exposición HTTP ni operaciones reales.
+
+D5_RESULT=PENDING
+C_FICHA_RELEASE_AUTHORIZED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
