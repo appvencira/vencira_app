@@ -50,3 +50,8 @@ Se añadieron `backend/renewal_attachments/transition_object_audit.py` y `test_t
 
 ## Integración del gate de objetos cifrados — pendiente de ejecución
 El ensayo de la rama experimental añade `python manage.py test renewal_attachments` con base de pruebas efímera después de la convivencia temporal de ambos esquemas. Incluye los casos de objeto cifrado válido, ausencia y discrepancia. Marcador `C_FICHA_SPLIT_OBJECT_AUDIT_TESTS=OK` aún no validado. Se añade `Cache-Control: no-store` también a la respuesta HTTP de subida rechazada. Nada de esto habilita acceso a documentos ni autoriza migraciones activas. Se mantiene el compromiso de evitar ensayos parciales y agrupar el gate con la entrega técnica completa.
+
+## BLOQUE 1 — pruebas adicionales pendientes del gate integral
+La auditoría de objetos cifrados compara también la proyección ordenada de claves, hashes y tamaños antes/después de la lectura. Un test sintético modifica metadatos durante la comprobación y exige bloqueo. test_independent_api.py comprueba que la API lista exclusivamente metadatos independientes autorizados, protege contra accesos de otros tenants y deniega operaciones HTTP. Estos tests se incluyen en la ejecución de la app independiente, pero NO se han ejecutado desde los últimos commits.
+
+La app independiente continúa registrada sólo en test, el modelo antiguo permanece y no se han habilitado uploads/downloads/deletes. Para cerrar BLOQUE 1 faltan conexión efectiva con escáner aislado y firma verificable persistida, transición final y flujo real seguro en backend y Flutter; ningún resultado previo equivale a autorización de despliegue.
