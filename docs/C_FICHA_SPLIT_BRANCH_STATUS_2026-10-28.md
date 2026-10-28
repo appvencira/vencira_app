@@ -70,3 +70,6 @@ El flujo offline de alta y escaneo ahora registra una evidencia firmada y verifi
 
 ## Bloque 1 — protección de repetición de evidencia (pendiente de gate)
 Nueva migración independiente `0003_unique_scan_evidence`: establece unicidad de evidencia por adjunto, sin depender del historial MFA. `persist_scan_evidence_offline` rechaza intentos repetidos bajo bloqueo de fila; prueba añadida para verificar que registrar dos veces la misma firma falla y se conserva una única evidencia. Es una política conservadora para el ensayo actual: un reescaneo futuro requiere un ciclo de vida explícito/versionado del objeto, no sobrescribir la evidencia. Ninguna operación pública o liberación de bytes habilitada. No se ha ejecutado gate tras estos commits.
+
+## Bloque 1: evaluación de preparación offline y regresiones adversas
+Incorporado `renewal_attachments/offline_readiness.py`: valida membresía, evidencia firmada y correspondencia de bytes cifrados con SHA-256/tamaño. Siempre devuelve `release_allowed=False`, sin exposición HTTP. Se añadieron pruebas negativas para acceso desde otra organización, alteración del digest después de la firma y objeto cifrado ausente. Quedan pendientes de ejecutar en el gate conjunto. Este resultado es una evaluación para revisión, no un escáner antivirus real ni una autorización de publicación.
