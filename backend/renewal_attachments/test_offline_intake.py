@@ -345,3 +345,22 @@ class OfflineIntakeTests(TransactionTestCase):
         self.assertFalse(recovered.release_allowed)
         self.assertFalse(path.exists())
         self.assertEqual(RenewalAttachment.objects.get(pk=item.pk).state, "rejected")
+
+    def test_cleanup_cannot_run_inside_uncommitted_transaction(self):
+        from django.db import transaction
+        from .offline_rejection import reject_attachment_offline
+        from .offline_rejection_recovery import retry_rejected_discard_offline
+        item = self.intake()
+        path = Path(self.temp.name) / item.storage_key.hex
+        with transaction.atomic():
+            with self.assertRaises(PermissionDenied):
+                reject_attachment_offline(
+                    member=self.member, attachment_id=item.pk, store=self.store)
+        self.assertTrue(path.exists())
+        self.assertEqual(RenewalAttachment.objects.get(pk=item.pk).state, "quarantined")
+        reject_attachment_offline(
+            member=self.member, attachment_id=item.pk, store=self.store)
+        with transaction.atomic():
+            with self.assertRaises(PermissionDenied):
+                retry_rejected_discard_offline(
+                    member=self.member, attachment_id=item.pk, store=self.store)
