@@ -48,3 +48,5 @@ class AttachmentScanEvidence(models.Model):
 
     class Meta:
         ordering = ["-recorded_at", "-id"]
+        constraints = [models.UniqueConstraint(
+            fields=["attachment"], name="unique_attachment_scan_evidence")]
