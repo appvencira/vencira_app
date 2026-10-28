@@ -64,3 +64,27 @@ Pendiente:
 D10C_TEST_RESULT=0
 D10_D11_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
+
+## D10 — Persistencia transaccional PG17
+
+Nuevo expediente independiente AttachmentRecoveryCase,
+con migración 0005 exclusivamente para el esquema
+experimental de ensayos.
+
+Las observaciones se serializan mediante bloqueo de
+RenewalAttachment con select_for_update antes de crear
+el expediente. Una clasificación idéntica es idempotente.
+Una clasificación diferente exige revisión manual.
+
+No se implementa cierre automático ni permiso de descarga.
+
+Validación ejecutada sobre PostgreSQL 17 efímero:
+D10_PERSISTENCE_PG17_RESULT=0
+
+Pendientes: cambios de estado auditados, resolución humana
+autenticada, recuperación de diario con interrupciones
+físicas y antivirus real. D10-D11 no está cerrado.
+
+C_FICHA_RELEASE_AUTHORIZED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1

@@ -68,3 +68,38 @@ class AttachmentDiscardJob(models.Model):
     last_error = models.CharField(max_length=80, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+
+
+class AttachmentRecoveryCase(models.Model):
+    """Estado durable de revisión, únicamente para ensayos.
+
+    No concede descarga, eliminación ni resolución automática.
+    """
+    class Status(models.TextChoices):
+        REVIEW = "review_required", "Revisión requerida"
+        RETRY = "retry_required", "Reintento requerido"
+
+    attachment = models.OneToOneField(
+        RenewalAttachment,
+        on_delete=models.PROTECT,
+        related_name="recovery_case",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+    )
+    classification = models.CharField(max_length=20)
+    attempts = models.PositiveIntegerField(default=0)
+    last_error = models.CharField(max_length=80, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(
+                    status__in=["review_required", "retry_required"]
+                ),
+                name="ratt_recovery_status_safe",
+            ),
+        ]
