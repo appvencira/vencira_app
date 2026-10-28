@@ -88,3 +88,32 @@ físicas y antivirus real. D10-D11 no está cerrado.
 C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
+
+## Gate conjunto D10–D11 — PostgreSQL 17
+
+Batería integrada ejecutada correctamente en PostgreSQL 17
+efímero, con archivos sintéticos y sin operaciones reales.
+
+Incluye:
+- concurrencia transaccional y outbox D7;
+- conciliación de diario, metadatos y objetos D9;
+- triple inventario D10;
+- resistencia del diario y políticas de estado;
+- persistencia de expedientes de recuperación;
+- verificación de evidencias sintéticas;
+- preflight integrado de cuarentena y evidencias.
+
+D10_D11_FINAL_PG17_RESULT=0
+
+No constituye aprobación para producción.
+
+Pendientes obligatorios:
+- antivirus real instalado y validado;
+- gestión de interrupciones físicas y recuperación operativa;
+- autorización HTTP exhaustiva antes de habilitar operaciones;
+- auditoría final, D12 y D13.
+
+D10_D11_RELEASE_AUTHORIZED=NO
+C_FICHA_RELEASE_AUTHORIZED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
