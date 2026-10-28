@@ -58,3 +58,12 @@ class EncryptedTransitionAuditTests(TestCase):
         self.assertFalse(report.metadata_aligned)
         self.assertEqual(report.checked, 0)
         self.assertFalse(report.release_authorized)
+
+    def test_corrupt_encrypted_object_fails_integrity(self):
+        old = self._pair()
+        self.store.put_quarantine(old.storage_key, b"unexpected-payload")
+        report = verify_encrypted_objects_readonly(store=self.store)
+        self.assertTrue(report.metadata_aligned)
+        self.assertEqual(report.digest_mismatches, 1)
+        self.assertEqual(report.size_mismatches, 1)
+        self.assertFalse(report.release_authorized)
