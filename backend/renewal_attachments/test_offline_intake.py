@@ -133,3 +133,34 @@ class OfflineIntakeTests(TestCase):
             self.assertFalse(outcome.release_allowed)
             self.assertEqual(RenewalAttachment.objects.get(
                 pk=outcome.attachment_id).state, "quarantined")
+
+    def test_signed_scan_evidence_is_persisted_without_release(self):
+        from reminders.attachment_scan_attestation import issue_scan_attestation
+        from .offline_scan_evidence import persist_scan_evidence_offline
+        from .models import AttachmentScanEvidence
+        key = b"e" * 32
+        item = self.intake()
+        payload, signature = issue_scan_attestation(
+            attachment=item, verdict="clean",
+            engine="synthetic-scanner", signing_key=key)
+        evidence = persist_scan_evidence_offline(
+            attachment_id=item.pk, payload=payload,
+            signature=signature, verification_key=key)
+        self.assertEqual(evidence.attachment_id, item.pk)
+        self.assertEqual(AttachmentScanEvidence.objects.count(), 1)
+        self.assertEqual(RenewalAttachment.objects.get(pk=item.pk).state,
+                         "quarantined")
+        with self.assertRaises(PermissionDenied):
+            persist_scan_evidence_offline(
+                attachment_id=item.pk, payload=payload,
+                signature="0" * 64, verification_key=key)
+        self.assertEqual(AttachmentScanEvidence.objects.count(), 1)
+
+    def test_scan_evidence_cannot_be_recorded_in_production(self):
+        from .offline_scan_evidence import persist_scan_evidence_offline
+        item = self.intake()
+        with override_settings(VENCIRA_ENV="production"):
+            with self.assertRaises(PermissionDenied):
+                persist_scan_evidence_offline(
+                    attachment_id=item.pk, payload={},
+                    signature="0" * 64, verification_key=b"e" * 32)
