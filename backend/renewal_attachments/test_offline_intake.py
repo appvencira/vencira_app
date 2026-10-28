@@ -1,0 +1,72 @@
+"""Synthetic offline intake authorization and encrypted storage tests."""
+import tempfile
+from datetime import date
+from pathlib import Path
+
+from cryptography.fernet import Fernet
+from django.core.exceptions import PermissionDenied
+from django.http import Http404
+from django.test import TestCase, override_settings
+
+from reminders.attachment_private_store import PrivateQuarantineStore
+from reminders.models import Renewal, Workspace, WorkspaceMember
+from django.contrib.auth import get_user_model
+from .models import RenewalAttachment
+from .offline_intake import stage_authorized_attachment
+
+
+@override_settings(VENCIRA_ENV="test", VENCIRA_ATTACHMENT_SPLIT_REHEARSAL_ENABLED=True)
+class OfflineIntakeTests(TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        root = Path(self.temp.name)
+        root.chmod(0o700)
+        self.store = PrivateQuarantineStore(root, Fernet.generate_key())
+        user = get_user_model()
+        self.owner = user.objects.create_user(username="test_intake_owner")
+        self.foreign = user.objects.create_user(username="test_intake_foreign")
+        self.ws = Workspace.objects.create(name="synthetic workspace")
+        other = Workspace.objects.create(name="foreign workspace")
+        self.member = WorkspaceMember.objects.create(
+            workspace=self.ws, user=self.owner, role=WorkspaceMember.Role.OWNER)
+        self.foreign_member = WorkspaceMember.objects.create(
+            workspace=other, user=self.foreign, role=WorkspaceMember.Role.OWNER)
+        self.renewal = Renewal.objects.create(
+            workspace=self.ws, full_name="Synthetic",
+            customer_reference="SYNTHETIC", expires_on=date(2027, 8, 1))
+
+    def intake(self, member=None, **kwargs):
+        return stage_authorized_attachment(
+            member=member or self.member, renewal_id=self.renewal.pk,
+            store=self.store, filename=kwargs.get("filename", "synthetic.pdf"),
+            content_type="application/pdf",
+            content=kwargs.get("content", b"%PDF-1.4\nsynthetic\n%%EOF"))
+
+    def test_encrypted_quarantine_and_owned_metadata(self):
+        item = self.intake()
+        self.assertEqual(item.state, "quarantined")
+        self.assertEqual(item.renewal_id, self.renewal.pk)
+        self.assertEqual(item.uploaded_by_id, self.owner.pk)
+        self.assertEqual(RenewalAttachment.objects.count(), 1)
+        self.assertEqual(self.store.read_quarantine_for_scanner_only(
+            item.storage_key), b"%PDF-1.4\nsynthetic\n%%EOF")
+        self.assertNotIn(b"%PDF", (Path(self.temp.name) / item.storage_key.hex).read_bytes())
+
+    def test_other_workspace_is_rejected_before_file_creation(self):
+        with self.assertRaises(Http404):
+            self.intake(member=self.foreign_member)
+        self.assertFalse(list(Path(self.temp.name).iterdir()))
+        self.assertEqual(RenewalAttachment.objects.count(), 0)
+
+    def test_invalid_header_does_not_create_metadata_or_files(self):
+        with self.assertRaises(ValueError):
+            self.intake(content=b"not a PDF")
+        self.assertEqual(RenewalAttachment.objects.count(), 0)
+        self.assertFalse(list(Path(self.temp.name).iterdir()))
+
+    def test_intake_cannot_run_outside_test_environment(self):
+        with override_settings(VENCIRA_ENV="production"):
+            with self.assertRaises(PermissionDenied):
+                self.intake()
+        self.assertEqual(RenewalAttachment.objects.count(), 0)
