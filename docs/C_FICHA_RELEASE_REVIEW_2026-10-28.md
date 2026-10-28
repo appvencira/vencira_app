@@ -102,3 +102,28 @@ Condiciones:
 D2_RESULT=PENDING
 C_FICHA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
+
+
+## Macrofase D2 — pruebas de reconciliación
+
+Validación comunicada el 28/10/2026:
+
+- Cuatro pruebas Django superadas en SQLite aislado.
+- Transición vacía sin autorización de publicación.
+- Registros históricos conservados.
+- Comparación de metadatos coincidentes sin conceder acceso.
+- Rollback transaccional de una copia sintética.
+- Resultado: D2_ISOLATED_TEST_RESULT=0.
+
+**Alcance:** no demuestra restauración O5, migración real ni
+rollback de esquemas PostgreSQL 17.
+
+## Macrofase D3 — siguiente control
+
+Analizar fallos simultáneos en creación de metadatos y limpieza
+de cuarentena. Deben detectarse los objetos huérfanos sin
+abrir descarga, utilizar documentos reales ni activar endpoints.
+
+D3_RESULT=PENDING
+C_FICHA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
