@@ -92,19 +92,25 @@ class PrivateQuarantineStore:
         """
         name = self._id(key)
         try:
-            fd = os.open(self.root, os.O_RDONLY | os.O_DIRECTORY |
-                         getattr(os, "O_NOFOLLOW", 0))
+            # Abrir primero el almacén. Su ausencia NO equivale
+            # a que el archivo individual haya sido descartado.
             try:
-                info = os.stat(name, dir_fd=fd, follow_symlinks=False)
+                fd = os.open(self.root, os.O_RDONLY | os.O_DIRECTORY |
+                             getattr(os, "O_NOFOLLOW", 0))
+            except FileNotFoundError as exc:
+                raise PrivateStoreError(
+                    "Almacén privado no disponible") from exc
+            try:
+                try:
+                    info = os.stat(name, dir_fd=fd, follow_symlinks=False)
+                except FileNotFoundError:
+                    # Solo es idempotente la ausencia del objeto.
+                    return
                 if not stat.S_ISREG(info.st_mode):
                     raise PrivateStoreError("Objeto inseguro")
                 os.unlink(name, dir_fd=fd)
                 os.fsync(fd)
             finally:
                 os.close(fd)
-        except FileNotFoundError:
-            # Operación idempotente: ausencia física tras un rechazo
-            # confirmado equivale a objeto ya descartado.
-            return
         except OSError as exc:
             raise PrivateStoreError("No se pudo descartar el objeto") from exc
