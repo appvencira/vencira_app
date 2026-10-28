@@ -8,10 +8,13 @@ import hmac
 import re
 
 from django.core.exceptions import PermissionDenied
+from django.conf import settings
 
 
 def verify_scan_evidence_offline(*, content, expected_digest, evidence, signature, secret):
     """Valida estructura, integridad, vínculo a bytes y autenticación de evidencia."""
+    if settings.VENCIRA_ENV != "test" or not getattr(settings, "VENCIRA_ATTACHMENT_SPLIT_REHEARSAL_ENABLED", False):
+        raise PermissionDenied("ISOLATED_REHEARSAL_ONLY")
     if not isinstance(content, bytes):
         raise PermissionDenied("INVALID_CONTENT")
     if not isinstance(expected_digest, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_digest):
