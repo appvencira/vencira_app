@@ -38,3 +38,42 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
 
 La Macrofase C está consolidada como **candidata de ensayo**; no equivale a release, a operación real de archivos ni a aprobación de la Macrofase D. Los documentos históricos anteriores pueden contener hitos marcados pendientes que ya fueron ensayados: prevalece este estado de fecha 28/10/2026 para C-FICHA, contrastado con el código de la rama.
+
+
+## Macrofase D — auditoría estática de integración (28/10/2026)
+
+Revisión directamente sobre código del repositorio; **no son pruebas de ejecución adicionales**.
+
+### Contratos y límites comprobados
+
+- `backend/config/settings.py`: `renewal_attachments` solo entra en `INSTALLED_APPS` para `VENCIRA_ATTACHMENT_SPLIT_REHEARSAL=1` y `VENCIRA_ENV=test`; el resto permanece en el modelo histórico.
+- `backend/reminders/attachment_model_router.py`: `attachment_model()` enruta al modelo histórico salvo ensayo explícito. No cambiar el router hasta aprobar migración y reconciliación.
+- `backend/reminders/attachment_gate.py`: el queryset de metadatos se cruza con renovaciones visibles al miembro; `may_download_attachment()` devuelve siempre `False`. No inferir permisos de lectura de un estado CLEAN.
+- `backend/reminders/attachment_api.py` y `backend/reminders/urls.py`: listado GET de metadatos; POST al listado devuelve 403; ruta de detalle GET/DELETE devuelve 403 tras comprobar visibilidad. El detalle no devuelve bytes. `Cache-Control: no-store` en respuestas normales; comprobar también errores/autorización en pruebas.
+- `backend/renewal_attachments/offline_intake.py`: solo test; valida pertenencia y visibilidad de renovación; no publica endpoint.
+- `backend/renewal_attachments/transition_preflight.py`: `inspect_attachment_transition()` solo declara transición vacía segura si ambas tablas están sin registros; con registros, exige conciliación verificable. **No autoriza despliegue aunque ambas tablas estén vacías.**
+- `backend/reminders/attachment_quarantine_intake.py`: si falla metadata invoca limpieza, pero hay que ensayar también fallo simultáneo del alta de metadata y de la limpieza del objeto, con reconciliación de huérfanos; no tratar excepciones como garantía de limpieza.
+- `clients/flutter/lib/api/vencira_api.dart`: manifiesto con capacidades `upload/download/delete = false`; frontend no autoriza operaciones.
+
+### Trabajo operativo de D agrupado para ejecutar sin repetición
+
+**D1 — pruebas negativas del contrato actual, solo aislamiento.**
+Comprobar anónimo, miembro de otro workspace, renovación no visible, adjunto perteneciente a otra renovación, ID inexistente, GET manifest, POST manifest, GET/DELETE detalle, respuesta 403/404 sin filtración de contenidos ni enlaces, `Cache-Control` y capacidades `false`. Usar datos sintéticos y Django test runner. No modificar endpoints para permitir operaciones.
+
+**D2 — reconciliación y rollback, solo aislamiento.**
+Determinar existencias de ambas tablas mediante preflight de solo lectura contra clon/restauración cifrada autorizada, nunca live. Bloquear cualquier transición con registros no reconciliados. Preparar mapeo reversible y auditoría de integridad (workspace, renovación, uploader, hash, tamaño, estado y evidencias); no mover objetos reales ni migrar DB persistente. Validar migraciones en PG17 efímero y rollback.
+
+**D3 — diseño previo a abrir subida/descarga.**
+Definir límites de tamaño, tipos y magic bytes; streaming con límites, cuarentena cifrada, gestión y rotación de claves, propietario y acceso, scanner autenticado, evidencia firmada y verificación de huella; política de rechazo y outbox; revocación, retención y RGPD. El resultado del escáner nunca es permiso suficiente. Hasta implementar y auditar esto mantener 403 por defecto.
+
+### Punto de continuidad
+
+- Código validado previamente: `95bb698`; documentación posterior `e30e7df`.
+- Último estado expresamente reportado de VPS: rama `feature/c-ficha-independent-attachments`, `GITHUB_SYNC=OK`, solo `clients/flutter/pubspec.lock` sin seguimiento.
+- Las tareas D1–D3 aquí descritas son **pendientes**, no marcarlas superadas sin evidencias de gates.
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+C_FICHA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
