@@ -54,6 +54,9 @@ class PrivateQuarantineStore:
                 file.write(token)
                 file.flush()
                 os.fsync(file.fileno())
+            # Persistir también la entrada de directorio.
+            # Sin este fsync, confirmar los bytes no basta.
+            os.fsync(directory_fd)
         except (OSError, ValueError) as exc:
             if created and directory_fd is not None:
                 try:
