@@ -23,3 +23,6 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 
 ## Evidencia del ensayo independiente — APROBADO
 Resultado comunicado por el operador (28-10-2026): `C_FICHA_SPLIT_PG17_EPHEMERAL=OK`, `C_FICHA_SPLIT_GRAPH_EXCLUDES_MFA=OK`, `C_FICHA_SPLIT_0001_WITHOUT_MFA=OK`, `C_FICHA_SPLIT_NO_MFA_TABLES=OK`, `C_FICHA_SPLIT_RELEASE_AUTHORIZED=NO`, `C_FICHA_SPLIT_PG17_RESULT=0`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `RESULTADO_FINAL=0`. Log local: `/tmp/vencira-c-ficha-split.T86Gv2sF.log`. Se ha verificado ruta independiente en PG17 temporal; no implica que esté integrada en backend/API ni que un `migrate` global sea seguro. Próximo hito: transición de modelos, coexistencia y gate completo sin tocar DEV.
+
+## Ensayo ORM en PostgreSQL 17 — APROBADO
+Resultado comunicado: `C_FICHA_SPLIT_PG17_EPHEMERAL=OK`, `C_FICHA_SPLIT_GRAPH_EXCLUDES_MFA=OK`, `C_FICHA_SPLIT_0001_WITHOUT_MFA=OK`, `C_FICHA_SPLIT_NO_MFA_TABLES=OK`, `C_FICHA_SPLIT_ORM_ROUTING=OK`, `C_FICHA_SPLIT_RELEASE_AUTHORIZED=NO`, `C_FICHA_SPLIT_PG17_RESULT=0`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Log: `/tmp/vencira-c-ficha-split.rXmUMxXv.log`. No es validación de una sustitución final del modelo antiguo ni de un migrate global. PENDIENTES: transición y coexistencia 0027, API y operación completa de archivos, gate final, autorización separada.
