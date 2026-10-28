@@ -1,5 +1,7 @@
 """No antivirus process, socket, external network, or real document."""
 from unittest.mock import patch
+import stat
+from types import SimpleNamespace
 from django.test import SimpleTestCase
 from .attachment_clamav_adapter import scan_with_clamd
 
@@ -37,7 +39,9 @@ class ClamavAdapterTests(SimpleTestCase):
     def scan(self, response, payload=b"synthetic", failure=False):
         fake = FakeSocket(response, failure)
         with patch("reminders.attachment_clamav_adapter.socket.socket",
-                   return_value=fake):
+                   return_value=fake), patch(
+                       "reminders.attachment_clamav_adapter.os.lstat",
+                       return_value=SimpleNamespace(st_mode=stat.S_IFSOCK | 0o600)):
             verdict = scan_with_clamd(payload=payload, unix_socket="/tmp/synthetic-clamd.sock")
         return verdict, fake
 
@@ -64,3 +68,13 @@ class ClamavAdapterTests(SimpleTestCase):
         self.assertEqual(scan_with_clamd(payload=b"a", unix_socket="relative").verdict, "error")
         self.assertEqual(scan_with_clamd(payload=b"a", unix_socket="/tmp/demo",
                                          timeout_seconds=0).verdict, "error")
+
+    def test_regular_file_and_symlink_are_not_trusted_sockets(self):
+        for mode in (stat.S_IFREG | 0o600, stat.S_IFLNK | 0o777):
+            with self.subTest(mode=mode), patch(
+                "reminders.attachment_clamav_adapter.os.lstat",
+                return_value=SimpleNamespace(st_mode=mode)):
+                result = scan_with_clamd(
+                    payload=b"synthetic", unix_socket="/tmp/synthetic-clamd.sock")
+                self.assertEqual(result.verdict, "error")
+                self.assertEqual(result.reason, "UNTRUSTED_SOCKET_PATH")
