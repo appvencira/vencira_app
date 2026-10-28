@@ -78,17 +78,9 @@ PHASE=MIGRATION
 "${DCMD[@]}" shell -c 'from django.db.migrations.recorder import MigrationRecorder; from django.db import connection; x=MigrationRecorder(connection).applied_migrations(); assert ("reminders","0026_user_mfa_pending_administrative_case") in x; assert ("reminders","0027_renewal_attachment_metadata") in x' >>"$LOG" 2>&1
 echo "C_FICHA_SCHEMA_0027_WITH_MFA_DEPENDENCY=OK"
 PHASE=INTEGRATED_TESTS
-"${DCMD[@]}" test \
- reminders.test_attachment_validation reminders.test_attachment_metadata \
- reminders.test_attachment_private_store reminders.test_attachment_gate \
- reminders.test_attachment_content_inspection reminders.test_attachment_scan_contract \
- reminders.test_attachment_clamav_adapter reminders.test_attachment_scan_pipeline \
- reminders.test_attachment_api reminders.test_attachment_scan_attestation \
- reminders.test_attachment_quarantine_intake reminders.test_attachment_orphan_audit \
- reminders.test_attachment_orphan_snapshot reminders.test_attachment_scanner_worker \
- reminders.test_attachment_release_boundaries reminders.test_attachment_migration_guard \
- --noinput >>"$LOG" 2>&1
-echo "C_FICHA_PG17_INTEGRATED_TESTS=OK"
+# Full reminders suite catches regressions outside attachment-specific tests.
+"${DCMD[@]}" test reminders --noinput --verbosity 1 >>"$LOG" 2>&1
+echo "C_FICHA_PG17_FULL_DJANGO_SUITE=OK"
 PHASE=FLUTTER
 sudo docker run --rm \
  -v "$PWD/clients/flutter:/work" -w /work \
