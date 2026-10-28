@@ -39,6 +39,9 @@ def verify_encrypted_objects_readonly(*, store):
         "storage_key", "sha256", "byte_size")[:MAX_VERIFY_OBJECTS + 1])
     if len(metadata) > MAX_VERIFY_OBJECTS or len(metadata) != reconciliation.independent_count:
         raise ValueError("ENCRYPTED_OBJECT_AUDIT_LIMIT_OR_CONCURRENT_CHANGE")
+    # Pin the metadata projection itself, not merely aggregate reconciliation.
+    before_rows = tuple((row["storage_key"], row["sha256"], row["byte_size"])
+                        for row in metadata)
     bad_read = bad_hash = bad_size = 0
     for item in metadata:
         try:
@@ -52,6 +55,8 @@ def verify_encrypted_objects_readonly(*, store):
     # A second reconciliation can catch changes during object inspection.
     # A database write freeze is still mandatory before any actual migration.
     after = inspect_reconciliation()
-    stable = after == reconciliation
+    after_rows = tuple(Independent.objects.order_by().values_list(
+        "storage_key", "sha256", "byte_size")[:MAX_VERIFY_OBJECTS + 1])
+    stable = after == reconciliation and before_rows == after_rows
     return EncryptedObjectAudit(
         stable, len(metadata), bad_read, bad_hash, bad_size)
