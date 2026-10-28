@@ -27,7 +27,12 @@ def renewal_attachments(request, workspace_id, renewal_id):
         "content_type": item.content_type, "byte_size": item.byte_size,
         "state": item.state, "created_at": item.created_at.isoformat(),
         "download_enabled": False, "delete_enabled": False,
-    } for item in records], "upload_enabled": False})
+    } for item in records],
+        "capabilities": {
+            "upload": False, "download": False, "delete": False,
+            "reason": "SECURITY_REVIEW_PENDING",
+        },
+        "upload_enabled": False})
     response["Cache-Control"] = "no-store"
     return response
 
