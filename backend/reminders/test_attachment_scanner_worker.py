@@ -58,6 +58,28 @@ class OfflineScannerWorkerTests(SimpleTestCase):
         self.assertEqual(result.verdict, "blocked")
         self.assertIsNone(result.signature)
 
+    def test_metadata_changed_during_scan_never_signed(self):
+        def mutate(**kwargs):
+            self.item.sha256 = "0" * 64
+            return ScannerResult("clean", "fictional")
+        result = scan_and_attest_quarantine(
+            store=self.store, attachment=self.item, socket_path="/tmp/test",
+            engine="synthetic-scanner-v1", signing_key=self.key, now=self.now,
+            scanner=mutate)
+        self.assertEqual(result.verdict, "blocked")
+        self.assertIsNone(result.signature)
+
+    def test_state_changed_during_scan_never_signed(self):
+        def mutate(**kwargs):
+            self.item.state = "clean"
+            return ScannerResult("clean", "fictional")
+        result = scan_and_attest_quarantine(
+            store=self.store, attachment=self.item, socket_path="/tmp/test",
+            engine="synthetic-scanner-v1", signing_key=self.key, now=self.now,
+            scanner=mutate)
+        self.assertEqual(result.verdict, "blocked")
+        self.assertFalse(result.release_allowed)
+
     def test_untrusted_key_prevents_signing(self):
         self.key = b"short"
         result = self.run_worker("clean")
