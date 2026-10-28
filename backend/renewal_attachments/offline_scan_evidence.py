@@ -21,6 +21,8 @@ def persist_scan_evidence_offline(*, attachment_id, payload, signature,
             pk=attachment_id)
         if attachment.state != RenewalAttachment.State.QUARANTINED:
             raise PermissionDenied("Attachment is no longer quarantined")
+        if AttachmentScanEvidence.objects.filter(attachment=attachment).exists():
+            raise PermissionDenied("Scan evidence already recorded")
         if not verify_scan_verdict(
                 payload=payload, signature=signature,
                 verification_key=verification_key, attachment=attachment,
