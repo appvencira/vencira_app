@@ -40,9 +40,20 @@ def guard():
         or not settings.VENCIRA_ATTACHMENT_SPLIT_REHEARSAL_ENABLED
         or connection.vendor != "postgresql"
         or not os.environ.get("B07_DISPOSABLE_DB") == "1"
-        or os.environ.get("POSTGRES_DB") != "b07"
-        or not os.environ.get("POSTGRES_HOST", "").startswith(
-            "vencira-b07-"
+        or not (
+            (
+                os.environ.get("POSTGRES_DB") == "b07"
+                and os.environ.get("POSTGRES_HOST", "").startswith(
+                    "vencira-b07-"
+                )
+            )
+            or (
+                os.environ.get("B08BC_DISPOSABLE_DB") == "1"
+                and os.environ.get("POSTGRES_DB") == "b07"
+                and os.environ.get("POSTGRES_HOST", "").startswith(
+                    "vencira-b08bc-"
+                )
+            )
         )
     ):
         raise PermissionDenied("B07_ONLY_DISPOSABLE_PG17")
