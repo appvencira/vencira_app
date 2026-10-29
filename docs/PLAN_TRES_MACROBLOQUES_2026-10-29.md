@@ -40,3 +40,8 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
 
 Toda decisión, gate y evidencia se registra en GitHub. No habilitar adjuntos ni MFA ni migrar PostgreSQL persistente sin autorización documentada.
+
+
+## Resultado MB1 sintético — operador, 29/10/2026
+
+Ejecución reportada: `Ran 41 tests in 0.018s`, `OK`, `MB1_SYNTHETIC_BACKUP_MANIFEST=TESTED`, `MB1_SYNTHETIC_DB_OBJECT_JOURNAL_RECOVERY=TESTED`, `MB1_CAPTURE_FENCE_AND_DOUBLE_FAILURE=TESTED`, `MB1_RESULT=0`, `MB1_SYNTHETIC_EXIT_CODE=0`. El runner acredita **41 pruebas sintéticas superadas**; no certifica captura universal ni disaster recovery. Permanecen explícitamente `MB1_OPERATIONAL_WRITER_FREEZE=NOT_VERIFIED`, `MB1_EXTERNAL_KEY_CUSTODY=NOT_VERIFIED`, `MB1_FULL_RECOVERY_DRILL=NOT_RUN`. La custodia externa y la recuperación integral con PG17 deben verificarse antes de permitir despliegue. `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
