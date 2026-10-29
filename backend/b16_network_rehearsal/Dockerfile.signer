@@ -1,0 +1,6 @@
+FROM python:3.12-slim
+RUN pip install --no-cache-dir "cryptography>=44,<47"
+WORKDIR /app
+COPY signer.py /app/signer.py
+USER 65532:65532
+ENTRYPOINT ["python", "/app/signer.py"]
