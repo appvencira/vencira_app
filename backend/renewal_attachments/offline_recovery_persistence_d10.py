@@ -12,6 +12,7 @@ from .models import (
     RenewalAttachment,
 )
 from .offline_recovery_states_d10c import evaluate_recovery
+from .offline_write_barrier_b06b import advisory_barrier
 
 
 def record_recovery_offline(*, attachment_id, classification):
@@ -28,36 +29,39 @@ def record_recovery_offline(*, attachment_id, classification):
 
     decision = evaluate_recovery(classification)
 
-    # Se bloquea la fila padre, existente antes de crear el expediente.
-    # Esto serializa incluso la primera inserción de dos trabajadores.
-    with transaction.atomic():
-        attachment = (
-            RenewalAttachment.objects
-            .select_for_update()
-            .get(pk=attachment_id)
-        )
-
-        if attachment.state != RenewalAttachment.State.QUARANTINED:
-            raise PermissionDenied("ATTACHMENT_NOT_QUARANTINED")
-
-        case, created = AttachmentRecoveryCase.objects.get_or_create(
-            attachment=attachment,
-            defaults={
-                "status": decision.status,
-                "classification": classification,
-                "attempts": 1,
-            },
-        )
-
-        if created:
-            return case
-
-        if (
-            case.status == decision.status
-            and case.classification == classification
-        ):
-            return case
-
-        # No actualizar una decisión de revisión existente a partir
-        # de una observación diferente: requiere intervención humana.
-        raise PermissionDenied("RECOVERY_CONFLICT_REQUIRES_REVIEW")
+    # La captura B06B debe bloquear también la persistencia de recuperación.
+    with advisory_barrier(capture=False):
+        # Se bloquea la fila padre, existente antes de crear el expediente.
+        # Esto serializa incluso la primera inserción de dos trabajadores.
+        with transaction.atomic():
+            attachment = (
+                RenewalAttachment.objects
+                .select_for_update()
+                .get(pk=attachment_id)
+            )
+    
+            if attachment.state != RenewalAttachment.State.QUARANTINED:
+                raise PermissionDenied("ATTACHMENT_NOT_QUARANTINED")
+    
+            case, created = AttachmentRecoveryCase.objects.get_or_create(
+                attachment=attachment,
+                defaults={
+                    "status": decision.status,
+                    "classification": classification,
+                    "attempts": 1,
+                },
+            )
+    
+            if created:
+                return case
+    
+            if (
+                case.status == decision.status
+                and case.classification == classification
+            ):
+                return case
+    
+            # No actualizar una decisión de revisión existente a partir
+            # de una observación diferente: requiere intervención humana.
+            raise PermissionDenied("RECOVERY_CONFLICT_REQUIRES_REVIEW")
+    
