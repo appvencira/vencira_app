@@ -37,3 +37,8 @@ C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Ejecución confirmada por operador — 29/10/2026
+
+Checkout `ef98244008b359d67a6df738667271aee7cd3414`. El operador ejecutó `B18C_GAP_ONLY=1 bash scripts/rehearse_c_ficha_split_readonly.sh` y reportó `B18B_RECOVERY_SCHEMA_READY=OK`, `B18C_NONCOOPERATIVE_WRITER_BYPASS=CONFIRMED`, `B18C_OPERATIONAL_CAPTURE=BLOCKED`, `C_FICHA_FULL_SUITE=NOT_RUN`, `C_FICHA_SPLIT_PG17_RESULT=0`, `B18C_GAP_EXIT_CODE=0`. **Diagnóstico negativo acreditado según salida aportada**; demuestra un riesgo de escrituras no cooperativas, NO una protección efectiva. Paso siguiente: diseñar y validar una barrera operacional que cubra entradas de escritura y un protocolo de snapshot consistente. No reutilizar este test como gate de autorización. `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
