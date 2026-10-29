@@ -70,3 +70,21 @@ No considerar B17F cerrado antes de recibir ambos exit code 0 y comprobar que se
 El operador ejecutó la suite sintética y el auditor sobre su checkout actualizado e informó: `Ran 9 tests in 0.026s`, `OK`, `B17F_NEGATIVE_TEST_EXIT_CODE=0`, `B17F_LEGACY_INVENTORY=16`, `B17F_STATIC_AUDIT=PASS`, `B17F_STATIC_AUDIT_EXIT_CODE=0`. El resultado acredita las **9 comprobaciones negativas de fixtures y el inventario estático de 16 rutas**. No se ejecutaron por estas herramientas contenedores ni migraciones. No acredita una auditoría de seguridad independiente, gates runtime, custodia ni rollback real.
 
 **Tramo B17F estático: VALIDADO según salida del operador.** Siguiente tramo: evaluación aislada de rutas de rollback, consistencia y recuperación con datos sintéticos, evitando repetir suites ya aprobadas. `B17F_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## B17F2 — revisión de rollback y aislamiento (29/10/2026; pendiente gate)
+
+Se revisaron los scripts reales `scripts/validate_mfa_active_rollback_pg17.sh`, `scripts/rehearse_c_ficha_split_readonly.sh` y el código de transición `backend/renewal_attachments/transition_preflight.py`, `transition_reconciliation.py`. El ensayo MFA exige rama `integration/local-e2e-prep`, por lo que **NO debe ejecutarse desde la rama actual** ni relajarse esa comprobación. El ensayo de adjuntos sí exige la rama actual, pero invoca Docker y PostgreSQL desechables; no se repite en este tramo.
+
+Se añadió `scripts/test_b17f2_rollback_isolation_contracts.py` (commit `358fd2e`) con 5 pruebas Python de lectura de archivos: contratos existentes de scripts, simulación de eliminación de red interna, limpieza ausente y referencia a BD live. **Es una comprobación estática de indicadores**, no prueba dinámica de aislamiento ni respaldo/restauración integral, y no ejecuta scripts ni contenedores. Controles de reconciliación siguen siendo consultivos: no toleran registros históricos sin conciliación y no garantizan consistencia bajo escrituras concurrentes. En particular O5 BD no acredita restauración de objetos/diario/claves.
+
+Ejecución conjunta final (una sola visita al VPS):
+
+```bash
+cd ~/vencira-localcheck
+git pull --ff-only origin feature/c-ficha-independent-attachments
+python3 -B -m unittest -v scripts/test_b17f2_rollback_isolation_contracts.py
+echo "B17F2_STATIC_EXIT_CODE=$?"
+```
+
+**Pendiente:** resultado real de cinco tests B17F2. No se ha ensayado ni autorizado rollback de producción, migración persistente, claves reales ni adjuntos. `B17F_RELEASE_AUTHORIZED=NO`; `MFA_RELEASE_AUTHORIZED=NO`; `C_FICHA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
