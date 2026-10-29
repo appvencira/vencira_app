@@ -225,7 +225,15 @@ print("C_FICHA_SPLIT_RECONCILIATION_READONLY=OK")
 echo "C_FICHA_SPLIT_RECONCILIATION_READONLY=OK"
 phase=INDEPENDENT_APP_TESTS
 # The test runner creates its own temporary test database; never use the live DB.
-if [ "${B18B_FOCUSED:-0}" = 1 ]; then
+if [ "${B18C_GAP_ONLY:-0}" = 1 ]; then
+  # Deliberately demonstrate the residual risk from non-cooperative ORM writers.
+  # A green test is evidence of a CAPTURE BLOCKER, not operational safety.
+  "${DCMD[@]}" test renewal_attachments.test_b18c_noncooperative_writer_pg17 \
+    --noinput --verbosity 2 >>"$LOG" 2>&1
+  echo "B18C_NONCOOPERATIVE_WRITER_BYPASS=CONFIRMED"
+  echo "B18C_OPERATIONAL_CAPTURE=BLOCKED"
+  echo "C_FICHA_FULL_SUITE=NOT_RUN"
+elif [ "${B18B_FOCUSED:-0}" = 1 ]; then
   # The broad suite includes B14EF real clamd and B17C2 two-container
   # networking, which need their own already-established harnesses.
   # Do NOT skip them in a full C-FICHA release gate.
