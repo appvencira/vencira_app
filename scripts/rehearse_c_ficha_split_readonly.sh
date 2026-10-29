@@ -144,6 +144,19 @@ print("C_FICHA_SPLIT_BOTH_SCHEMAS_COEXIST=OK")
 ' >>"$LOG" 2>&1
 echo "C_FICHA_SPLIT_BOTH_SCHEMAS_COEXIST=OK"
 echo "C_FICHA_SPLIT_HISTORICAL_MFA_EPHEMERAL_ONLY=OK"
+phase=RECOVERY_SCHEMA_READY
+# D10 tests require AttachmentRecoveryCase (0005). Confirm the complete
+# independent schema in disposable PG17 before invoking the test runner.
+"${DCMD[@]}" migrate renewal_attachments 0006_ed25519_signature_length --noinput >>"$LOG" 2>&1
+"${DCMD[@]}" shell -c '
+from django.db import connection
+from django.db.migrations.recorder import MigrationRecorder
+applied = MigrationRecorder(connection).applied_migrations()
+assert ("renewal_attachments", "0005_recoverycase") in applied
+assert ("renewal_attachments", "0006_ed25519_signature_length") in applied
+assert "renewal_attachments_attachmentrecoverycase" in connection.introspection.table_names()
+' >>"$LOG" 2>&1
+echo "B18B_RECOVERY_SCHEMA_READY=OK"
 phase=TRANSITION_SYNTHETIC
 "${DCMD[@]}" shell -c '
 from datetime import date
@@ -210,19 +223,6 @@ with transaction.atomic():
 print("C_FICHA_SPLIT_RECONCILIATION_READONLY=OK")
 ' >>"$LOG" 2>&1
 echo "C_FICHA_SPLIT_RECONCILIATION_READONLY=OK"
-phase=RECOVERY_SCHEMA_READY
-# D10 tests require AttachmentRecoveryCase (0005). Confirm the complete
-# independent schema in disposable PG17 before invoking the test runner.
-"${DCMD[@]}" migrate renewal_attachments 0006_ed25519_signature_length --noinput >>"$LOG" 2>&1
-"${DCMD[@]}" shell -c '
-from django.db import connection
-from django.db.migrations.recorder import MigrationRecorder
-applied = MigrationRecorder(connection).applied_migrations()
-assert ("renewal_attachments", "0005_recoverycase") in applied
-assert ("renewal_attachments", "0006_ed25519_signature_length") in applied
-assert "renewal_attachments_attachmentrecoverycase" in connection.introspection.table_names()
-' >>"$LOG" 2>&1
-echo "B18B_RECOVERY_SCHEMA_READY=OK"
 phase=INDEPENDENT_APP_TESTS
 # The test runner creates its own temporary test database; never use the live DB.
 "${DCMD[@]}" test renewal_attachments --noinput --verbosity 1 >>"$LOG" 2>&1
