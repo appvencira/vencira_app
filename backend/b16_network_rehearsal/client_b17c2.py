@@ -22,6 +22,13 @@ def canonical(value):
     ).encode("ascii")
 
 
+import os
+assert not any(
+    key.startswith("POSTGRES_")
+    for key in os.environ
+), "B17D_SIGNER_DB_CREDENTIALS_EXPOSED"
+print("B17D_SIGNER_DB_ISOLATION=OK")
+
 fixture = json.loads(Path("/exchange/fixture.json").read_text())
 
 private = Ed25519PrivateKey.from_private_bytes(
@@ -79,11 +86,57 @@ def send(value):
         return exc.code
 
 
+
+# B17D: rechazos a nivel de transporte HTTP.
+def raw_request(path, payload, content_type="application/json"):
+    request = urllib.request.Request(
+        "http://b17c2-receiver:8080" + path,
+        data=payload,
+        headers={"Content-Type": content_type},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=8) as result:
+            return result.status
+    except urllib.error.HTTPError as exc:
+        return exc.code
+
+
+assert raw_request("/unknown", b"{}") == 404
+print("B17D_UNKNOWN_PATH=OK")
+
+assert raw_request(
+    "/evidence", b"{}", "text/plain"
+) == 415
+print("B17D_MEDIA_TYPE=OK")
+
+assert raw_request(
+    "/evidence", b"not-json"
+) == 403
+print("B17D_INVALID_JSON=OK")
+
+assert raw_request(
+    "/evidence", b"x" * 8193
+) == 413
+print("B17D_OVERSIZED_BODY=OK")
+
+assert raw_request(
+    "/evidence", b"[]"
+) == 403
+print("B17D_INVALID_ENVELOPE=OK")
+
 assert send(envelope(body)) == 201
 print("B17C2_HTTP_TO_DJANGO=OK")
 
 assert send(envelope(body)) == 409
 print("B17C2_REPLAY_REJECTED=OK")
+
+fresh = json.loads(json.dumps(body))
+fresh["nonce"] = secrets.token_hex(16)
+
+assert send(envelope(fresh)) == 403
+print("B17D_DUPLICATE_EVIDENCE_REJECTED=OK")
+
 
 assert send(envelope(
     body, secrets.token_bytes(32)

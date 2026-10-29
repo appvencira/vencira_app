@@ -7,6 +7,7 @@ from pathlib import Path
 from threading import Thread
 
 from django.db import connection
+from django.core.exceptions import PermissionDenied
 
 from .test_b17_transport_receiver import B17TransportReceiverTests
 from .offline_key_registry_b13d import TrustedPublicKey
@@ -36,6 +37,90 @@ class B17C2NetworkTests(B17TransportReceiverTests):
                 self.now + timedelta(minutes=10),
             )
         }
+
+
+        # B17D: todas estas operaciones usan el receptor
+        # real y la BD PostgreSQL 17 temporal.
+        def policy_receive(registry, fail=False):
+            return receive_envelope_offline(
+                envelope={
+                    "body": self.body,
+                    "mac": self.mac,
+                },
+                transport_key=self.transport_key,
+                registry=registry,
+                attachment_id=self.item.pk,
+                expected_fingerprint=self.fingerprint,
+                now=self.now,
+                fail_after_evidence=fail,
+            )
+
+        own_key = self.registry["b15f-synthetic"]
+
+        revoked = {
+            "b15f-synthetic": TrustedPublicKey(
+                own_key.key_id,
+                own_key.public_key,
+                own_key.valid_from,
+                own_key.valid_until,
+                revoked=True,
+            )
+        }
+
+        expired = {
+            "b15f-synthetic": TrustedPublicKey(
+                own_key.key_id,
+                own_key.public_key,
+                self.now - timedelta(minutes=20),
+                self.now - timedelta(minutes=1),
+            )
+        }
+
+        not_yet_valid = {
+            "b15f-synthetic": TrustedPublicKey(
+                own_key.key_id,
+                own_key.public_key,
+                self.now + timedelta(minutes=1),
+                self.now + timedelta(minutes=20),
+            )
+        }
+
+        for label, candidate in (
+            ("REVOKED", revoked),
+            ("EXPIRED", expired),
+            ("NOT_YET_VALID", not_yet_valid),
+            ("UNKNOWN", {}),
+        ):
+            with self.assertRaises(PermissionDenied):
+                policy_receive(candidate)
+
+            self.assertEqual(
+                AttachmentScanEvidence.objects.count(), 0
+            )
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT count(*) FROM b17_replay"
+                )
+                self.assertEqual(cursor.fetchone()[0], 0)
+
+            print(
+                f"B17D_{label}_KEY_REJECTED=OK",
+                flush=True,
+            )
+
+        with self.assertRaises(RuntimeError):
+            policy_receive(self.registry, fail=True)
+
+        self.assertEqual(
+            AttachmentScanEvidence.objects.count(), 0
+        )
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM b17_replay"
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
+
+        print("B17D_ATOMIC_ROLLBACK=OK", flush=True)
 
         case = self
 
