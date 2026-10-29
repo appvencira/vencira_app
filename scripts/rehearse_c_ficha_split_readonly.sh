@@ -225,6 +225,17 @@ print("C_FICHA_SPLIT_RECONCILIATION_READONLY=OK")
 echo "C_FICHA_SPLIT_RECONCILIATION_READONLY=OK"
 phase=INDEPENDENT_APP_TESTS
 # The test runner creates its own temporary test database; never use the live DB.
-"${DCMD[@]}" test renewal_attachments --noinput --verbosity 1 >>"$LOG" 2>&1
-echo "C_FICHA_SPLIT_OBJECT_AUDIT_TESTS=OK"
+if [ "${B18B_FOCUSED:-0}" = 1 ]; then
+  # The broad suite includes B14EF real clamd and B17C2 two-container
+  # networking, which need their own already-established harnesses.
+  # Do NOT skip them in a full C-FICHA release gate.
+  "${DCMD[@]}" test renewal_attachments.test_recovery_persistence_d10 \
+    --noinput --verbosity 2 >>"$LOG" 2>&1
+  echo "B18B_D10_PG17_TESTS=OK"
+  echo "B18B_FOCUSED_ONLY=1"
+  echo "C_FICHA_FULL_SUITE=NOT_RUN"
+else
+  "${DCMD[@]}" test renewal_attachments --noinput --verbosity 1 >>"$LOG" 2>&1
+  echo "C_FICHA_SPLIT_OBJECT_AUDIT_TESTS=OK"
+fi
 echo "C_FICHA_SPLIT_RELEASE_AUTHORIZED=NO"
