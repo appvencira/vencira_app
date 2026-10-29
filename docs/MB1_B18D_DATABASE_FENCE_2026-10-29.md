@@ -41,3 +41,8 @@ C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Resultado del operador — 29/10/2026
+
+Checkout `16ca51207ea13ccd0abcb17710ae843f80ab6afb`. Reporta `B18D_DB_FENCE_ONLY=1` con `C_FICHA_SPLIT_PG17_EPHEMERAL=OK`, `B18B_RECOVERY_SCHEMA_READY=OK`, `B18D_DB_FENCE_TESTS=OK`, `B18D_OPERATIONAL_FULL_CAPTURE=BLOCKED`, `C_FICHA_FULL_SUITE=NOT_RUN`, `C_FICHA_SPLIT_PG17_RESULT=0`, `B18D_DB_FENCE_EXIT_CODE=0`. **Gate experimental focalizado validado según salida aportada**, no significa congelación global de escrituras. La próxima acción debe priorizar inventario completo, frontera SQL/objetos/diario y recuperación frente a fallo; no multiplicar tests de una sola tabla. Autorizaciones: `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
