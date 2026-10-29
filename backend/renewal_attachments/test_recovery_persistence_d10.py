@@ -11,6 +11,7 @@ from django.test import TransactionTestCase, override_settings
 from reminders.models import Renewal, Workspace
 from .models import RenewalAttachment, AttachmentRecoveryCase
 from .offline_recovery_persistence_d10 import record_recovery_offline
+from .offline_write_barrier_b06b import advisory_barrier
 
 
 @override_settings(
@@ -113,4 +114,34 @@ class D10PersistentPostgresTests(TransactionTestCase):
                 attachment=self.item
             ).count(),
             1,
+        )
+
+    def test_capture_blocks_recovery_write(self):
+        entered = threading.Event()
+        finished = threading.Event()
+
+        def worker():
+            close_old_connections()
+            try:
+                entered.set()
+                result = self.record()
+                finished.set()
+                return result.pk
+            finally:
+                connections.close_all()
+
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            with advisory_barrier(capture=True, timeout=4):
+                future = pool.submit(worker)
+                self.assertTrue(entered.wait(3))
+                self.assertFalse(finished.wait(0.25))
+                self.assertFalse(
+                    AttachmentRecoveryCase.objects.filter(
+                        attachment=self.item
+                    ).exists()
+                )
+            pk = future.result(timeout=8)
+        self.assertTrue(finished.is_set())
+        self.assertTrue(
+            AttachmentRecoveryCase.objects.filter(pk=pk).exists()
         )
