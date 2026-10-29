@@ -39,3 +39,8 @@ C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Validación del operador — 29/10/2026
+
+Checkout `d0da17989671193dac0959c1e878e2cac1385cc9`. Se comunica ejecución de `B18F_CUT_ONLY=1 bash scripts/rehearse_c_ficha_split_readonly.sh` con `C_FICHA_SPLIT_PG17_EPHEMERAL=OK`, `B18B_RECOVERY_SCHEMA_READY=OK`, `B18F_MULTITABLE_DB_FENCE=OK`, `B18F_FILESYSTEM_FENCE=NOT_IMPLEMENTED`, `C_FICHA_FULL_SUITE=NOT_RUN`, `C_FICHA_SPLIT_PG17_RESULT=0`, `B18F_CUT_EXIT_CODE=0`. Se acredita únicamente el ensayo de dos tablas y la limitación filesystem. No existe orquestador integral ni autorización de producción. `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
