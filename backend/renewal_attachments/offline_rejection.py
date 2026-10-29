@@ -10,6 +10,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction, connection
 from django.http import Http404
 from reminders.models import WorkspaceMember
+from .offline_write_barrier_b06b import advisory_barrier
 from .models import RenewalAttachment, AttachmentDiscardJob
 
 
@@ -31,22 +32,23 @@ def reject_attachment_offline(*, member, attachment_id, store):
     # A caller transaction could roll back after bytes were destroyed.
     if connection.in_atomic_block:
         raise PermissionDenied("Rejection requires an outermost committed transaction")
-    with transaction.atomic():
-        active = WorkspaceMember.objects.get(
-            pk=member.pk, workspace_id=member.workspace_id,
-            user_id=member.user_id)
-        # Destructive action requires an owner rather than assignment alone.
-        if active.role != WorkspaceMember.Role.OWNER:
-            raise PermissionDenied("Owner role required for rejection")
-        item = RenewalAttachment.objects.select_for_update().filter(
-            pk=attachment_id, renewal__workspace_id=active.workspace_id).first()
-        if item is None:
-            raise Http404("Attachment not found")
-        if item.state != RenewalAttachment.State.QUARANTINED:
-            raise PermissionDenied("Only quarantined attachments can be rejected")
-        item.state = RenewalAttachment.State.REJECTED
-        item.save(update_fields=["state"])
-        AttachmentDiscardJob.objects.create(attachment=item)
-    from .offline_rejection_recovery import retry_rejected_discard_offline
-    return retry_rejected_discard_offline(
-        member=member, attachment_id=item.pk, store=store)
+    with advisory_barrier(capture=False):
+        with transaction.atomic():
+            active = WorkspaceMember.objects.get(
+                pk=member.pk, workspace_id=member.workspace_id,
+                user_id=member.user_id)
+            # Destructive action requires an owner rather than assignment alone.
+            if active.role != WorkspaceMember.Role.OWNER:
+                raise PermissionDenied("Owner role required for rejection")
+            item = RenewalAttachment.objects.select_for_update().filter(
+                pk=attachment_id, renewal__workspace_id=active.workspace_id).first()
+            if item is None:
+                raise Http404("Attachment not found")
+            if item.state != RenewalAttachment.State.QUARANTINED:
+                raise PermissionDenied("Only quarantined attachments can be rejected")
+            item.state = RenewalAttachment.State.REJECTED
+            item.save(update_fields=["state"])
+            AttachmentDiscardJob.objects.create(attachment=item)
+        from .offline_rejection_recovery import retry_rejected_discard_offline
+        return retry_rejected_discard_offline(
+            member=member, attachment_id=item.pk, store=store)
