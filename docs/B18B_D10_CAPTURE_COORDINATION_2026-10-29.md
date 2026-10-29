@@ -27,3 +27,14 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
 
 Más adelante: inventario completo de todos los mutadores, simulación de caída entre transacción y filesystem, freeze efectivo y snapshot coherente DB+objetos+diario, y custodia externa de claves. Los resultados de ensayos no sustituyen autorización humana.
+
+
+## Incidencia de ejecución — esquema PG17 incompleto (29/10)
+
+Operador comunica `C_FICHA_SPLIT_PG17_RESULT=1`, `B18B_PG17_EXIT_CODE=1`, con `ProgrammingError: relation "renewal_attachments_attachmentrecoverycase" does not exist`. El script `rehearse_c_ficha_split_readonly.sh` aplicaba explícitamente hasta `renewal_attachments.0004_attachmentdiscardjob` antes de pruebas D10; la tabla `AttachmentRecoveryCase` se crea en `0005_recoverycase`, y el head independiente actual es `0006_ed25519_signature_length`. Esto es una **brecha verificable de preparación del esquema de ensayo**; no se infiere que la prueba de bloqueo B06B haya fallado o pasado.
+
+Corrección publicada en `scripts/rehearse_c_ficha_split_readonly.sh`: después de las verificaciones históricas que intencionadamente se realizan sobre 0004, migrar **solo PG17 desechable** a 0006 y exigir tanto 0005/0006 aplicadas como tabla `renewal_attachments_attachmentrecoverycase` existente antes de arrancar la suite. Commit `227cec5`. Se conserva la fase de ensayo histórico de 0004 sin alterar sus aserciones. **Corrección pendiente de revalidar**: no declarar OK por haber actualizado el script.
+
+Al reejecutar, comunicar `B18B_RECOVERY_SCHEMA_READY=OK`, `C_FICHA_SPLIT_PG17_RESULT=0` y `B18B_PG17_EXIT_CODE=0`; en caso de fallo, compartir `FAILED_PHASE` y traza depurada, no logs con secretos. Las etiquetas de suite general por sí solas no prueban que se ejecutara el nuevo test; comprobar resultado Django o instrumentar cobertura exacta después de resolver el esquema.
+
+`B18_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
