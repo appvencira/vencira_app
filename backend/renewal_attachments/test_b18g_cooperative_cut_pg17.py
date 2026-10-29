@@ -75,15 +75,16 @@ class B18GCooperativeCutTests(TransactionTestCase):
             finally:
                 connections.close_all()
 
+        futures = []
         with ThreadPoolExecutor(max_workers=1) as pool:
             def sample():
-                future = pool.submit(writer)
+                futures.append(pool.submit(writer))
                 self.assertTrue(begun.wait(3))
                 self.assertFalse(completed.wait(0.2))
                 return dict(db_records=self.db,
                             encrypted_objects={self.key: self.obj},
                             journals={self.key: self.journal})
             result = self.run_capture(sample_components=sample)
-            future.result(timeout=10)
+            futures[0].result(timeout=10)
         self.assertTrue(completed.is_set())
         self.assertFalse(result["release_authorized"])
