@@ -44,3 +44,22 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 ## Siguiente tramo B17F
 
 Añadir pruebas negativas autocontenidas usando únicamente fixtures de scripts falsos para verificar detección de guard ausente, duplicado, modo incorrecto y mutación previa; luego ejecutar la auditoría sobre el repositorio real, sin arrancar servicios. Separadamente, ensayar puertas de rollback/recuperación con PG17 y secretos sintéticos únicamente si los recursos se pueden demostrar aislados. Toda evidencia nueva debe asociarse al commit inspeccionado y exit code real.
+
+
+## 29/10 — Validación estática inicial confirmada por operador; batería negativa preparada
+
+El operador confirmó `git pull --ff-only` hasta `0a38e44`, preservando `?? clients/flutter/pubspec.lock`, y ejecutó `python3 -B scripts/b17f_static_release_guard_audit.py`. Salida: `B17F_LEGACY_INVENTORY=16`, `B17F_STATIC_AUDIT=PASS`, `B17F_AUDIT_EXIT_CODE=0`. Este resultado acredita **solamente la ejecución estática en ese checkout**, no la detección de todos los bypass ni autorización operativa.
+
+Se añadió `scripts/test_b17f_static_release_guard_audit.py` (commit `9fa356ae`), 9 pruebas con scripts sintéticos en `TemporaryDirectory`: baseline, ausencia/duplicado/modo erróneo de guard, mutación/dinámica antes de guard, nueva ruta sin protección, invariante de bloqueo eliminado y ruta esperada ausente. El test no lanza los scripts falsos ni consulta Docker, red, BD, claves o servicios reales. **Pruebas pendientes de ejecución en Ubuntu**.
+
+Comando tras `git pull --ff-only`:
+
+```bash
+cd ~/vencira-localcheck
+python3 -B -m unittest -v scripts/test_b17f_static_release_guard_audit.py
+echo "B17F_NEGATIVE_TEST_EXIT_CODE=$?"
+python3 -B scripts/b17f_static_release_guard_audit.py
+echo "B17F_STATIC_AUDIT_EXIT_CODE=$?"
+```
+
+No considerar B17F cerrado antes de recibir ambos exit code 0 y comprobar que se ejecutaron los 9 tests. No se autoriza desplegar, migrar ni habilitar adjuntos/MFA.
