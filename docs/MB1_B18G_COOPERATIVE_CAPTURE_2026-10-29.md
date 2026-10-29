@@ -41,3 +41,8 @@ C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Primera ejecución PG17 — incidencia y corrección
+
+El operador ejecutó sobre `15b826d640116948b0616f330cc98b9d8a49f3dc`: 5/6 pruebas pasaron; `test_cooperative_writer_waits_until_capture_exits` falló con `NameError: name 'future' is not defined` por variable creada dentro del callback y consultada fuera de su ámbito. `C_FICHA_SPLIT_PG17_RESULT=1`, `B18G_EXIT_CODE=1`. No es prueba de defecto del locking ni gate aprobado. Corregido únicamente el ámbito del test en commit `33fd41d`: ahora se mantiene una lista local de futuros y se consulta al salir de la captura. **Pendiente repetir solamente el gate B18G**. Sin deploy, migración persistente ni autorización de seguridad.
