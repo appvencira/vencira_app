@@ -225,7 +225,13 @@ print("C_FICHA_SPLIT_RECONCILIATION_READONLY=OK")
 echo "C_FICHA_SPLIT_RECONCILIATION_READONLY=OK"
 phase=INDEPENDENT_APP_TESTS
 # The test runner creates its own temporary test database; never use the live DB.
-if [ "${B18F_CUT_ONLY:-0}" = 1 ]; then
+if [ "${B18G_COORDINATOR_ONLY:-0}" = 1 ]; then
+  "${DCMD[@]}" test renewal_attachments.test_b18g_cooperative_cut_pg17 \
+    --noinput --verbosity 2 >>"$LOG" 2>&1
+  echo "B18G_COOPERATIVE_CUT=OK"
+  echo "B18G_UNIVERSAL_WRITER_FREEZE=NOT_VERIFIED"
+  echo "C_FICHA_FULL_SUITE=NOT_RUN"
+elif [ "${B18F_CUT_ONLY:-0}" = 1 ]; then
   "${DCMD[@]}" test renewal_attachments.test_b18f_multitable_cut_pg17 \
     --noinput --verbosity 2 >>"$LOG" 2>&1
   echo "B18F_MULTITABLE_DB_FENCE=OK"
