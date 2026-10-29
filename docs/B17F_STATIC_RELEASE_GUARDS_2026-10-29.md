@@ -88,3 +88,8 @@ echo "B17F2_STATIC_EXIT_CODE=$?"
 ```
 
 **Pendiente:** resultado real de cinco tests B17F2. No se ha ensayado ni autorizado rollback de producción, migración persistente, claves reales ni adjuntos. `B17F_RELEASE_AUTHORIZED=NO`; `MFA_RELEASE_AUTHORIZED=NO`; `C_FICHA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## B17F2 — Resultado confirmado por operador (29/10/2026)
+
+Salida aportada: `Ran 5 tests in 0.002s`, `OK`, `B17F2_STATIC_EXIT_CODE=0`. **B17F2_STATIC_TESTS=PASS** (cinco comprobaciones estáticas). No son ensayos de ejecución de rollback, recuperación de archivos ni validación operacional. Se cierra el tramo estático B17F; el siguiente hito material es diseñar y probar recuperación coherente de BD + objetos cifrados + diario con datos sintéticos, y gestionar por separado la custodia externa real. Mantener autorización bloqueada: `B17F_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
