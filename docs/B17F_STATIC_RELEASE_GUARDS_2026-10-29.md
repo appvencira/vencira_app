@@ -63,3 +63,10 @@ echo "B17F_STATIC_AUDIT_EXIT_CODE=$?"
 ```
 
 No considerar B17F cerrado antes de recibir ambos exit code 0 y comprobar que se ejecutaron los 9 tests. No se autoriza desplegar, migrar ni habilitar adjuntos/MFA.
+
+
+## 29/10/2026 — Cierre de batería estática informado por el operador
+
+El operador ejecutó la suite sintética y el auditor sobre su checkout actualizado e informó: `Ran 9 tests in 0.026s`, `OK`, `B17F_NEGATIVE_TEST_EXIT_CODE=0`, `B17F_LEGACY_INVENTORY=16`, `B17F_STATIC_AUDIT=PASS`, `B17F_STATIC_AUDIT_EXIT_CODE=0`. El resultado acredita las **9 comprobaciones negativas de fixtures y el inventario estático de 16 rutas**. No se ejecutaron por estas herramientas contenedores ni migraciones. No acredita una auditoría de seguridad independiente, gates runtime, custodia ni rollback real.
+
+**Tramo B17F estático: VALIDADO según salida del operador.** Siguiente tramo: evaluación aislada de rutas de rollback, consistencia y recuperación con datos sintéticos, evitando repetir suites ya aprobadas. `B17F_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
