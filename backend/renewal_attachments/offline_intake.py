@@ -12,6 +12,8 @@ from reminders.attachment_model_router import attachment_model
 from reminders.attachment_quarantine_intake import stage_private_attachment
 from reminders.models import Renewal, WorkspaceMember
 
+from .offline_write_barrier_b06b import advisory_barrier
+
 
 def stage_authorized_attachment(*, member, renewal_id, store,
                                 filename, content_type, content,
@@ -36,7 +38,11 @@ def stage_authorized_attachment(*, member, renewal_id, store,
                 content_type=staged.content_type, byte_size=staged.byte_size,
                 sha256=staged.sha256, state="quarantined")
 
-    return stage_private_attachment(
-        store=store, filename=filename, content_type=content_type,
-        content=content, create_metadata=create_metadata,
-        journal=journal)
+    # Bloqueo compartido durante el ciclo completo:
+    # diario, escritura cifrada y confirmación en PostgreSQL.
+    # Solo permitido por el guard de PG17 de ensayo.
+    with advisory_barrier(capture=False):
+        return stage_private_attachment(
+            store=store, filename=filename, content_type=content_type,
+            content=content, create_metadata=create_metadata,
+            journal=journal)
