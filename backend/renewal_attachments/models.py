@@ -43,7 +43,7 @@ class AttachmentScanEvidence(models.Model):
     attachment = models.ForeignKey(
         RenewalAttachment, on_delete=models.PROTECT, related_name="scan_evidence")
     payload = models.JSONField()
-    signature = models.CharField(max_length=64)
+    signature = models.CharField(max_length=128)
     recorded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
