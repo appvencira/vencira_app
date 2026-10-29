@@ -50,3 +50,8 @@ C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Resultado de ejecución aportado por operador — 29/10/2026
+
+Se informa `Ran 12 tests in 0.002s`, `OK`, `B18E_SYNTHETIC_CONTRACTS=OK`, `B18E_CAPTURE_LOCK=NOT_IMPLEMENTED`, `B18E_OPERATIONAL_RELEASE=NO`, `B18E_RESULT=0`, `B18E_EXIT_CODE=0`. **B18E_CONTRACT_TESTS=PASS** para 12 escenarios sintéticos. No implica que exista exclusión efectiva de escritores, captura atómica ni recuperación operativa probada. Próximo objetivo: inventario exhaustivo, corte verificable y prueba PG17 con writers reales de ensayo. `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
