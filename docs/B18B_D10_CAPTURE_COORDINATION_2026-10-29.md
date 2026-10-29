@@ -38,3 +38,10 @@ Corrección publicada en `scripts/rehearse_c_ficha_split_readonly.sh`: después 
 Al reejecutar, comunicar `B18B_RECOVERY_SCHEMA_READY=OK`, `C_FICHA_SPLIT_PG17_RESULT=0` y `B18B_PG17_EXIT_CODE=0`; en caso de fallo, compartir `FAILED_PHASE` y traza depurada, no logs con secretos. Las etiquetas de suite general por sí solas no prueban que se ejecutara el nuevo test; comprobar resultado Django o instrumentar cobertura exacta después de resolver el esquema.
 
 `B18_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## Segundo fallo y orden definitivo de esquema (29/10)
+
+Operador informa ejecución commit `2743bb9` con `FAILED_PHASE=TRANSITION_SYNTHETIC`: al eliminar una fila Django consultó la tabla relacionada `renewal_attachments_attachmentrecoverycase`, aún inexistente. La verificación añadida anteriormente **estaba situada después** de la fase de transición, por tanto no podía prevenir ese fallo. No es fallo de la nueva prueba de concurrencia, que no llegó a ejecutarse.
+
+Se corrigió el **orden** en `scripts/rehearse_c_ficha_split_readonly.sh` (commit `7106ff1`): mantener primero las verificaciones históricas intencionales sobre esquema independiente 0004 y coexistencia, y **antes de `TRANSITION_SYNTHETIC`** aplicar `renewal_attachments.0006_ed25519_signature_length` en PG17 efímero, con comprobación explícita de 0005/0006 y la tabla de expedientes. La prueba sigue pendiente de revalidación. No se cambiaron migraciones ni producción.
