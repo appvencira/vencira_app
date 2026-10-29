@@ -1,0 +1,6 @@
+FROM python:3.12-slim
+RUN pip install --no-cache-dir "cryptography>=44,<47"
+WORKDIR /opt/vencira
+COPY signer.py /opt/vencira/signer.py
+USER 65532:65532
+ENTRYPOINT ["python", "/opt/vencira/signer.py"]
