@@ -16,7 +16,7 @@ class FakeManifestApi extends VenciraApi {
       'capabilities': {'upload': false, 'download': false, 'delete': false},
       'results': [
         {'id': 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-         'display_name': 'documento-ficticio.pdf', 'state': 'quarantined'},
+         'display_name': 'documento-ficticio.pdf', 'state': 'quarantined', 'byte_size': 2048},
       ],
     };
   }
@@ -69,7 +69,12 @@ void main() {
       await tester.pumpWidget(panel());
       await tester.pumpAndSettle();
       expect(find.text('documento-ficticio.pdf'), findsOneWidget);
-      expect(find.byType(ListTile), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('renewal-attachments-locked')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('2.0 KB'), findsOneWidget);
+      expect(find.byType(ListTile), findsNothing);
       expect(find.byType(FilledButton), findsNothing);
       expect(find.byType(IconButton), findsNothing);
       expect(api.requests, 1);

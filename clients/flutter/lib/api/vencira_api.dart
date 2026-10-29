@@ -1160,12 +1160,14 @@ class HttpVenciraApi implements VenciraApi {
             (row['display_name'] as String).length > 120 ||
             row['state'] is! String ||
             !const ['quarantined', 'clean', 'rejected'].contains(row['state']) ||
+            row['byte_size'] is! int ||
+            (row['byte_size'] as int) <= 0 ||
             row['download_enabled'] != false ||
             row['delete_enabled'] != false) {
           throw const VenciraApiException();
         }
         sanitized.add({'id': row['id'], 'display_name': row['display_name'],
-          'state': row['state']});
+          'state': row['state'], 'byte_size': row['byte_size']});
       }
       return {'results': sanitized, 'capabilities': caps};
     } on VenciraUnauthorized { rethrow; }
