@@ -1,0 +1,39 @@
+"""Registra eventos mínimos de vencimientos. Jamás almacena referencias de clientes."""
+from .models import RenewalAuditEvent
+
+AUDITABLE_FIELDS = ("customer_reference", "expires_on", "status", "notice_deadline_on")
+
+
+def make_audit_event(*, renewal, actor, before=None):
+    """Se invoca DENTRO de la misma transacción de escritura de la API.
+
+    El valor de customer_reference puede contener información personal:
+    se registra solo el nombre de campo, nunca su contenido.
+    """
+    changed = [
+        field for field in AUDITABLE_FIELDS
+        if (before is None and (field != "notice_deadline_on" or renewal.notice_deadline_on is not None))
+        or (before is not None and getattr(before, field) != getattr(renewal, field))
+    ]
+    if not changed:
+        return None
+    metadata = {}
+    for field in ("expires_on", "status", "notice_deadline_on"):
+        if field in changed:
+            prior = None if before is None else getattr(before, field)
+            current = getattr(renewal, field)
+            metadata[field] = {
+                "before": str(prior) if prior is not None else None,
+                "after": str(current) if current is not None else None,
+            }
+    return RenewalAuditEvent.objects.create(
+        workspace=renewal.workspace,
+        renewal=renewal,
+        actor=actor,
+        action=(
+            RenewalAuditEvent.Action.CREATED
+            if before is None else RenewalAuditEvent.Action.UPDATED
+        ),
+        changed_fields=changed,
+        metadata=metadata,
+    )

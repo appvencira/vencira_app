@@ -1,0 +1,172 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: vencira_ci
+          POSTGRES_USER: vencira_ci
+          POSTGRES_PASSWORD: ci-local-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vencira_ci -d vencira_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      VENCIRA_ENV: test
+      DJANGO_DEBUG: "1"
+      DJANGO_SECRET_KEY: "ci-only-secret-longer-than-32-characters-not-for-production"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
+      VENCIRA_DB_ENGINE: sqlite
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python manage.py check
+      - run: python manage.py makemigrations --check --dry-run
+      - name: Tests Django (SQLite)
+        run: python manage.py test
+      - name: Tests Django (PostgreSQL 17)
+        run: python manage.py test
+        env:
+          VENCIRA_DB_ENGINE: postgresql
+          POSTGRES_DB: vencira_ci
+          POSTGRES_USER: vencira_ci
+          POSTGRES_PASSWORD: ci-local-only
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_PORT: "5432"
+  flutter:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: clients/flutter
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - name: Compilar Flutter Web para integración
+        run: flutter build web --release --pwa-strategy=none
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vencira-web-build
+          path: clients/flutter/build/web/
+          if-no-files-found: error
+          retention-days: 3
+  web_integration:
+    name: Web same-origin
+    runs-on: ubuntu-latest
+    needs: [flutter]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: vencira-web-build
+          path: clients/flutter/build/web/
+      - name: Generar secretos locales
+        run: python3 scripts/init_env.py
+      - name: Validar Compose y arrancar stack local
+        run: |
+          docker compose -f compose.yaml -f compose.web.yaml config --quiet
+          docker compose -f compose.yaml -f compose.web.yaml up --build -d
+          docker compose -f compose.yaml -f compose.web.yaml exec -T web nginx -t
+      - name: Verificar política del login HTML en proxy
+        run: |
+          HEADERS="$(curl -fsSI 'http://127.0.0.1:18732/accounts/login/?next=/' | tr -d '\r')"
+          printf '%s\n' "$HEADERS" | grep -iEq '^referrer-policy: same-origin$'
+          if printf '%s\n' "$HEADERS" | grep -iEq '^referrer-policy: no-referrer$'; then
+            echo "La política no-referrer causa Origin null en el POST del login"
+            exit 1
+          fi
+      - name: Crear datos sintéticos para el test E2E
+        run: |
+          echo "VENCIRA_E2E_USERNAME=vencira_e2e_ci" >> "$GITHUB_ENV"
+          DEMO_PASSWORD="$(python3 -c 'import secrets; print(secrets.token_urlsafe(30))')"
+          echo "::add-mask::$DEMO_PASSWORD"
+          echo "VENCIRA_E2E_PASSWORD=$DEMO_PASSWORD" >> "$GITHUB_ENV"
+          docker compose -f compose.yaml -f compose.web.yaml exec -T -e VENCIRA_E2E_PASSWORD="$DEMO_PASSWORD" api python manage.py shell -c "import os; from django.contrib.auth import get_user_model; from reminders.models import Workspace, WorkspaceMember, Renewal; from datetime import date; u=get_user_model().objects.create_user(username='vencira_e2e_ci', password=os.environ['VENCIRA_E2E_PASSWORD']); w=Workspace.objects.create(name='Equipo E2E'); WorkspaceMember.objects.create(user=u, workspace=w, role='owner'); Renewal.objects.create(workspace=w, customer_reference='PRUEBA-E2E-001', expires_on=date(2027,1,31))"
+      - name: Probar sesión, CSRF, aislamiento de acceso anónimo y datos sintéticos
+        run: python3 scripts/smoke_same_origin.py
+      - name: Logs técnicos en caso de fallo
+        if: failure()
+        run: docker compose -f compose.yaml -f compose.web.yaml logs --tail=60
+      - name: Eliminar contenedores y datos efímeros CI
+        if: always()
+        run: docker compose -f compose.yaml -f compose.web.yaml down -v --remove-orphans
+
+  preview_image:
+    name: Preview Docker build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Comprobar sintaxis de los scripts
+        run: bash -n scripts/preview-up.sh scripts/preview-down.sh scripts/preview-seed.sh
+      - name: Preparar configuración temporal
+        run: python3 scripts/init_env.py
+      - name: Validar Compose aislado
+        run: docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml config --quiet
+      - name: Compilar imagen auto-contenida de Flutter Web
+        run: docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml build web_preview
+      - name: Arrancar preview Docker aislada
+        run: |
+          docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml up --build -d
+          docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml exec -T web_preview nginx -t
+      - name: Verificar política del login en preview
+        run: |
+          HEADERS="$(curl -fsSI 'http://127.0.0.1:18732/accounts/login/?next=/' | tr -d '\r')"
+          printf '%s\n' "$HEADERS" | grep -iEq '^referrer-policy: same-origin$'
+          if printf '%s\n' "$HEADERS" | grep -iEq '^referrer-policy: no-referrer$'; then
+            echo "El login de preview provocaría Origin null en el navegador"
+            exit 1
+          fi
+      - name: Crear demo y validar alta-edición vía proxy real
+        run: |
+          umask 077
+          CRED_FILE="$(mktemp)"
+          trap 'rm -f "$CRED_FILE"' EXIT
+          docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml exec -T api python manage.py seed_preview > "$CRED_FILE"
+          DEMO_PASSWORD="$(sed -n 's/^CONTRASEÑA DE PRUEBA (se muestra una vez): //p' "$CRED_FILE")"
+          if [ -z "$DEMO_PASSWORD" ]; then echo "No se pudieron crear credenciales de pruebas"; exit 1; fi
+          echo "::add-mask::$DEMO_PASSWORD"
+          VENCIRA_E2E_USERNAME=vencira_demo \
+          VENCIRA_E2E_PASSWORD="$DEMO_PASSWORD" \
+          VENCIRA_E2E_WORKSPACE="VENCIRA / DEMOSTRACIÓN" \
+          VENCIRA_E2E_COUNT=6 \
+          VENCIRA_E2E_REFERENCE="DEMO-HOGAR-001" \
+          python3 scripts/smoke_same_origin.py
+      - name: Registrar logs de preview si falla
+        if: failure()
+        run: docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml logs --tail=50
+      - name: Destruir contenedores de preview efímeros
+        if: always()
+        run: docker compose -p vencira_preview -f compose.yaml -f compose.preview.yaml down -v --remove-orphans
