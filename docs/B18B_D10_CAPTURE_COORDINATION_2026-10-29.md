@@ -63,3 +63,8 @@ echo "B18B_FOCUSED_EXIT_CODE=$?"
 ```
 
 Esperado si pasa: `B18B_RECOVERY_SCHEMA_READY=OK`, `B18B_D10_PG17_TESTS=OK`, `C_FICHA_FULL_SUITE=NOT_RUN`, `C_FICHA_SPLIT_PG17_RESULT=0`, `B18B_FOCUSED_EXIT_CODE=0`. Resultado pendiente. Persisten `B18_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## Validación focalizada confirmada por operador — 29/10/2026
+
+Checkout `7758784e6598c19dce6508ce4a1629aec6820598`. Ejecución `B18B_FOCUSED=1 bash scripts/rehearse_c_ficha_split_readonly.sh`; el operador comunica: `C_FICHA_SPLIT_PG17_EPHEMERAL=OK`, `C_FICHA_SPLIT_GRAPH_EXCLUDES_MFA=OK`, `C_FICHA_SPLIT_0001_WITHOUT_MFA=OK`, `C_FICHA_SPLIT_OUTBOX_0004_WITHOUT_MFA=OK`, `C_FICHA_SPLIT_BOTH_SCHEMAS_COEXIST=OK`, `B18B_RECOVERY_SCHEMA_READY=OK`, `C_FICHA_SPLIT_HISTORICAL_RECORDS_BLOCKED=OK`, `C_FICHA_SPLIT_RECONCILIATION_READONLY=OK`, `B18B_D10_PG17_TESTS=OK`, `B18B_FOCUSED_ONLY=1`, `C_FICHA_FULL_SUITE=NOT_RUN`, `C_FICHA_SPLIT_PG17_RESULT=0`, `B18B_FOCUSED_EXIT_CODE=0`. Evidencia reportada por el operador, no inspección independiente de log privado. **Se valida el gate D10 focalizado; no la suite C-FICHA completa**, ni una captura operativa universal. Próximo trabajo: B18C, captura/restitución coherente de base, objetos y diario en fallo aislado; y custodia externa separada. `B18_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
