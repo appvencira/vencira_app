@@ -24,3 +24,8 @@ echo "MB1_STAGE_EXIT_CODE=$?"
 5. Borrar el staging de la máquina de origen una vez finalizada la prueba; no utilizar `rm -rf` fuera de la ruta privada explícita y comprobada.
 
 Esta etapa **no** demuestra custodia real, pérdida de VPS ni congelación global. Tiene como objetivo hacer ejecutable el siguiente paso externo sin volver a correr el E2E. `MB1_EXTERNAL_KEY_CUSTODY=NOT_VERIFIED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`.
+
+
+## Resultado de preparación comunicado por operador (30/10/2026)
+
+`MB1_TRANSFER_STAGED_SYNTHETIC=OK`, `MB1_TRANSFER_PACKAGE_DIR=/tmp/vencira-mb1-transfer.5orQIVRY/package`, `MB1_TRANSFER_KEY_DIR=/tmp/vencira-mb1-transfer.5orQIVRY/keys`, `MB1_TRANSFER_KEYS_OFF_HOST=NO`, `MB1_TRANSFER_SECOND_HOST_VERIFIED=NO`, `MB1_RELEASE_AUTHORIZED=NO`. El operador mostró la orden para consultar el exit code, pero no su resultado. El contenido de las claves no ha sido compartido. Ambas carpetas siguen en el VPS de origen y no son custodia externa. Antes de cualquier traslado identificar y autenticar el destino independiente, acordar dos canales de transporte separados y comprobar que las claves no quedan expuestas en logs, Git o chat. No ejecutar todavía restore en el VPS original como sustituto de segundo host.
