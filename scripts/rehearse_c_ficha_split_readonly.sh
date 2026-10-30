@@ -225,7 +225,14 @@ print("C_FICHA_SPLIT_RECONCILIATION_READONLY=OK")
 echo "C_FICHA_SPLIT_RECONCILIATION_READONLY=OK"
 phase=INDEPENDENT_APP_TESTS
 # The test runner creates its own temporary test database; never use the live DB.
-if [ "${B18G_COORDINATOR_ONLY:-0}" = 1 ]; then
+if [ "${MB1_PG17_PHYSICAL_ONLY:-0}" = 1 ]; then
+  "${DCMD[@]}" test renewal_attachments.test_mb1_pg17_physical_integration \
+    --noinput --verbosity 2 >>"$LOG" 2>&1
+  echo "MB1_PG17_PHYSICAL_ORM_TESTS=OK"
+  echo "MB1_PG_DUMP_RESTORE=NOT_RUN"
+  echo "MB1_NONCOOPERATIVE_WRITERS=NOT_BLOCKED"
+  echo "C_FICHA_FULL_SUITE=NOT_RUN"
+elif [ "${B18G_COORDINATOR_ONLY:-0}" = 1 ]; then
   "${DCMD[@]}" test renewal_attachments.test_b18g_cooperative_cut_pg17 \
     --noinput --verbosity 2 >>"$LOG" 2>&1
   echo "B18G_COOPERATIVE_CUT=OK"
