@@ -173,9 +173,20 @@ print("MB1_INTEGRATED_AUTOMATIC_REPAIR=DISABLED")
 phase=SIGKILL_PG17
 # Real process death while a PostgreSQL transaction remains uncommitted.
 # The journal/object have been fsync'd by the actual production primitives.
-# Force the plain Python Django shell, not a detected interactive backend.
-# Interactive shells may swallow a child signal and exit 0.
-if app shell --interface python -c '
+# Run Python directly as Docker PID 1; avoid Django shell exit handling.
+# Set up Django explicitly. SIGKILL of PID 1 must return Docker exit 137.
+if docker run --rm --network "$NET" \
+ -e VENCIRA_ENV=test -e VENCIRA_ATTACHMENT_SPLIT_REHEARSAL=1 \
+ -e VENCIRA_DB_ENGINE=postgresql \
+ -e DJANGO_SETTINGS_MODULE=config.settings \
+ -e DJANGO_SECRET_KEY=synthetic-only-mb1-integration-secret \
+ -e DJANGO_ALLOWED_HOSTS=localhost,testserver \
+ -e POSTGRES_HOST="$DB" -e POSTGRES_DB=mb1 -e POSTGRES_USER=mb1 -e POSTGRES_PASSWORD=synthetic-only \
+ --mount "type=volume,source=$VOL_OBJ,target=/lab/objects" \
+ --mount "type=volume,source=$VOL_JOURNAL,target=/lab/journal" \
+ "$IMG" python -c '
+import django
+django.setup()
 import hashlib, os, signal, uuid
 from pathlib import Path
 from django.db import transaction
