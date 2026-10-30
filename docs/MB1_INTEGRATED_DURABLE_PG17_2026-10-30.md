@@ -29,3 +29,8 @@ La primera ejecución produjo `PermissionError: [Errno 1] Operation not permitte
 ## Revalidación tras corrección de permisos — PASS
 
 El operador informa `MB1_INTEGRATED_PRIVATE_VOLUME_PERMISSIONS=OK`, `MB1_INTEGRATED_REAL_STORE_JOURNAL_PG17=OK`, `MB1_INTEGRATED_RECREATED_APP_CONSISTENT=OK`, `MB1_INTEGRATED_PG17_PRIVATESTORE_JOURNAL_PERSISTENCE=OK`, `MB1_INTEGRATED_RESULT=0` y `MB1_INTEGRATED_EXIT_CODE=0`. Ensayo sintético con PostgreSQL 17 temporal y dos volúmenes Docker desechables. No acredita freeze global, custodia externa operativa ni activación de adjuntos en DEV. `MB1_OPERATIONAL_RELEASE=NO`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## Extensión M1-01 (pendiente de ejecución)
+
+Commit `52464eb`: tras validar la persistencia, el mismo laboratorio efímero crea tres fallos sintéticos distintivos en **PG17 y volúmenes reales de ensayo**: solo intención, solo objeto y solo metadatos. Enumera los tres inventarios sin mutarlos durante clasificación y verifica que el clasificador devuelve exactamente cada caso, mantiene una ficha completa y bloquea reparación, borrado y liberación. Marcadores: `MB1_INTEGRATED_PG17_ORPHAN_CLASSIFICATION=OK` y `MB1_INTEGRATED_AUTOMATIC_REPAIR=DISABLED`. **No ejecutado aún.** Ejecutar el mismo runner con `sudo` tras `git pull --ff-only`; no repetir las suites anteriores. Checklist central: `docs/VENCIRA_MASTER_COMPLETION_CHECKLIST_2026-10-30.md`.
