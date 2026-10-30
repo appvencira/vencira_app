@@ -33,3 +33,8 @@ C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Ejecución operador — 30/10/2026
+
+Resultado comunicado: `B18I_CANDIDATES=264`, `B18I_P0=131`, `B18I_P1=15`, `B18I_P2=118`, `B18I_REVIEWED=0`, `B18I_GLOBAL_FREEZE=NOT_VERIFIED`, `B18I_EXIT_CODE=0`. Suma comprobada: 131+15+118=264. Clasificación automática correcta según resultado aportado; sin revisión manual ni prueba de exhaustividad. Próximo paso: inspección focalizada de los 131 P0 usando su JSON local y clasificación de mutadores reales frente a falsos positivos. No desplegar ni migrar.
