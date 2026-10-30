@@ -173,7 +173,9 @@ print("MB1_INTEGRATED_AUTOMATIC_REPAIR=DISABLED")
 phase=SIGKILL_PG17
 # Real process death while a PostgreSQL transaction remains uncommitted.
 # The journal/object have been fsync'd by the actual production primitives.
-if app shell -c '
+# Force the plain Python Django shell, not a detected interactive backend.
+# Interactive shells may swallow a child signal and exit 0.
+if app shell --interface python -c '
 import hashlib, os, signal, uuid
 from pathlib import Path
 from django.db import transaction
