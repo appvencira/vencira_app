@@ -11,8 +11,10 @@ sudo docker run --rm --network none \
  -e VENCIRA_ENV=test -e VENCIRA_DB_ENGINE=sqlite \
  -e DJANGO_SECRET_KEY=synthetic-mb1-classifier-only-long-secret-20261030 \
  -e DJANGO_ALLOWED_HOSTS=localhost,testserver \
- "$img" python manage.py test renewal_attachments.test_recovery_classifier_mb1 --noinput --verbosity 1
+ "$img" python manage.py test renewal_attachments.test_recovery_classifier_mb1 renewal_attachments.test_mb1_sigkill_writer --noinput --verbosity 1
 echo "MB1_READONLY_CLASSIFIER_TESTS=OK"
+echo "MB1_SIGKILL_REAL_PROCESS_INTERRUPTION=OK"
+echo "MB1_SIGKILL_PG17_ATOMIC_RECONCILIATION=NOT_VERIFIED"
 echo "MB1_CLASSIFIER_AUTOMATIC_REPAIR=DISABLED"
 echo "MB1_CLASSIFIER_LIVE_INVENTORY=NOT_CONNECTED"
 echo "MB1_GLOBAL_FREEZE=NOT_VERIFIED"
