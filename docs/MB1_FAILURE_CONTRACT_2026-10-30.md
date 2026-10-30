@@ -22,3 +22,8 @@ Solo se construye la imagen Django local de la rama y se ejecutan tests SQLite s
 ## Estimación de cierre
 
 Recuperación independiente sintética y persistencia PG17/objetos/diario tras recreación: validados. Pendientes MB1: cerrar estados huérfanos bajo fallos y caídas abruptas, exclusión completa de escritores y captura coherente PG17/archivos, y custodia externa operativa con retención y restauración de claves fuera del VPS. No asignar porcentajes ni plazos sin conocer infraestructura y las pruebas pendientes. MB2 MFA/adjuntos operativos sigue bloqueado por sus propios gates, y MB3 comercial no está cubierto por MB1.
+
+
+## Validación del operador — PASS
+
+`Ran 6 tests in 0.003s`, `OK`, `MB1_INTENT_OBJECT_METADATA_FAILURE_CONTRACT=OK`, `MB1_ORPHAN_INTENT_RECONCILIATION=REQUIRED`, `MB1_FAILED_CLEANUP_RECONCILIATION=REQUIRED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `MB1_FAILURE_GATE_EXIT_CODE=0`. Son pruebas simuladas del orden de operaciones, no fallos físicos ni conciliación completada.
