@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# MB1 end-to-end disposable PG17+synthetic object/journal restore drill.
+# NO connection to preview/dev DB, no keys or persistent mounts.
+set -Eeuo pipefail
+umask 077
+cd /home/vencira/vencira-localcheck
+test "$(git branch --show-current)" = feature/c-ficha-independent-attachments
+test -z "$(git diff --name-only)"
+test -z "$(git diff --cached --name-only)"
+test -z "$(git ls-files --others --exclude-standard | grep -vx 'clients/flutter/pubspec.lock' || true)"
+RUN_ID="mb1e2e_$$"
+NET="vencira_${RUN_ID}_net"
+SRC="vencira_${RUN_ID}_source"
+DST="vencira_${RUN_ID}_target"
+ROOT="$(mktemp -d /tmp/vencira-mb1-e2e.XXXXXXXX)"
+LOG="$ROOT/drill.log"
+phase=SETUP; net=0; src=0; dst=0
+cleanup() {
+  rc=$?; trap - EXIT
+  if [ "$src" = 1 ]; then sudo docker rm -f "$SRC" >>"$LOG" 2>&1 || rc=1; fi
+  if [ "$dst" = 1 ]; then sudo docker rm -f "$DST" >>"$LOG" 2>&1 || rc=1; fi
+  if [ "$net" = 1 ]; then sudo docker network rm "$NET" >>"$LOG" 2>&1 || rc=1; fi
+  if [ "$rc" != 0 ]; then echo "MB1_E2E_FAILED_PHASE=$phase"; tail -n 25 "$LOG"; fi
+  echo "MB1_E2E_RESULT=$rc"
+  echo "MB1_E2E_LOG_LOCAL=$LOG"
+  echo "MB1_OPERATIONAL_RELEASE=NO"
+  echo "MFA_RELEASE_AUTHORIZED=NO"
+  echo "C_FICHA_RELEASE_AUTHORIZED=NO"
+  echo "NO_DEPLOY_NO_LIVE_MIGRATION=1"
+  exit "$rc"
+}
+trap cleanup EXIT
+echo "MB1_E2E_COMMIT=$(git rev-parse HEAD)"
+IMG="vencira-mb1-e2e:$(git rev-parse --short=12 HEAD)"
+phase=BUILD
+sudo docker build -t "$IMG" ./backend >>"$LOG" 2>&1
+phase=PG17_CREATE
+sudo docker network create --internal "$NET" >>"$LOG" 2>&1; net=1
+for pair in "$SRC" "$DST"; do
+  sudo docker run -d --name "$pair" --network "$NET" \
+    -e POSTGRES_DB=mb1 -e POSTGRES_USER=mb1 -e POSTGRES_PASSWORD=synthetic-mb1-only \
+    postgres:17-alpine >>"$LOG" 2>&1
+  if [ "$pair" = "$SRC" ]; then src=1; else dst=1; fi
+done
+for pair in "$SRC" "$DST"; do
+  ready=0
+  for _ in $(seq 1 40); do
+    if sudo docker exec "$pair" pg_isready -U mb1 -d mb1 >>"$LOG" 2>&1; then ready=1; break; fi
+    sleep 2
+  done
+  test "$ready" = 1
+done
+app() {
+  local db="$1"; shift
+  sudo docker run --rm --network "$NET" \
+    -e VENCIRA_ENV=test -e VENCIRA_ATTACHMENT_SPLIT_REHEARSAL=1 \
+    -e VENCIRA_DB_ENGINE=postgresql \
+    -e DJANGO_SECRET_KEY=synthetic-mb1-only-long-django-secret \
+    -e DJANGO_ALLOWED_HOSTS=localhost,testserver \
+    -e POSTGRES_HOST="$db" -e POSTGRES_DB=mb1 \
+    -e POSTGRES_USER=mb1 -e POSTGRES_PASSWORD=synthetic-mb1-only \
+    "$IMG" python manage.py "$@"
+}
+phase=SCHEMA
+app "$SRC" migrate reminders 0018_draft_reasons --noinput >>"$LOG" 2>&1
+app "$SRC" migrate renewal_attachments 0006_ed25519_signature_length --noinput >>"$LOG" 2>&1
+phase=FIXTURE
+app "$SRC" shell -c '
+from datetime import date
+from reminders.models import Workspace, Renewal
+from renewal_attachments.models import RenewalAttachment
+w=Workspace.objects.create(name="MB1_E2E_SYNTHETIC")
+r=Renewal.objects.create(workspace=w,customer_reference="MB1-E2E",full_name="Synthetic",expires_on=date(2027,12,1))
+RenewalAttachment.objects.create(renewal=r,storage_key="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",display_name="synthetic.pdf",content_type="application/pdf",byte_size=8,sha256="b"*64,state="quarantined")
+assert RenewalAttachment.objects.filter(display_name="synthetic.pdf").count()==1
+' >>"$LOG" 2>&1
+mkdir -m 700 "$ROOT/objects" "$ROOT/journal"
+printf 'CIPHER01' > "$ROOT/objects/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+printf '{"version":1,"storage_key":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","state":"pending"}' > "$ROOT/journal/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json"
+phase=FREEZE_CLONE
+# The ONLY writer is the controlled fixture process; it has exited before dump.
+# No other application processes are connected to the disposable database.
+# This physical isolation is not a production freeze mechanism.
+phase=BACKUP
+sudo docker exec "$SRC" pg_dump -Fc -U mb1 -d mb1 > "$ROOT/source.dump"
+test -s "$ROOT/source.dump"
+sha256sum "$ROOT/source.dump" "$ROOT/objects/"* "$ROOT/journal/"* > "$ROOT/inventory.sha256"
+phase=RESTORE
+sudo docker exec -i "$DST" pg_restore --exit-on-error --no-owner --no-privileges -U mb1 -d mb1 < "$ROOT/source.dump" >>"$LOG" 2>&1
+phase=VERIFY
+app "$DST" shell -c '
+from renewal_attachments.models import RenewalAttachment
+q=RenewalAttachment.objects.filter(display_name="synthetic.pdf",state="quarantined")
+assert q.count()==1
+r=q.get()
+assert r.storage_key.hex=="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+assert r.sha256=="b"*64 and r.byte_size==8
+' >>"$LOG" 2>&1
+(cd "$ROOT" && sha256sum --check inventory.sha256) >>"$LOG" 2>&1
+echo "MB1_E2E_PG17_SOURCE_TARGET=OK"
+echo "MB1_E2E_REAL_PG_DUMP_RESTORE=OK"
+echo "MB1_E2E_SYNTHETIC_OBJECT_JOURNAL_HASH=OK"
+echo "MB1_E2E_AUTHENTICATED_ENCRYPTED_SET=NOT_CREATED"
+echo "MB1_E2E_EXTERNAL_KEY_CUSTODY=NOT_VERIFIED"
+echo "MB1_E2E_GLOBAL_FREEZE=NOT_VERIFIED"
