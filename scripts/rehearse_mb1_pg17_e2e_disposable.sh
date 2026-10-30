@@ -151,11 +151,30 @@ phase=FILESYSTEM_INVENTORY_POST
 cmp -s "$ROOT/fs.before" "$ROOT/fs.after"
 echo "MB1_E2E_FILESYSTEM_INVENTORY_STABLE=OK"
 packtool negative >>"$LOG" 2>&1
+phase=DETACHED_RECOVERY_MEDIA
+# Separate bind mount for recovery: source data, original dump and inventory
+# are NOT visible to the recovery process. Synthetic local keys still remain
+# on this VPS: external custody is NOT demonstrated.
+RECOVERY="$(mktemp -d /tmp/vencira-mb1-detached.XXXXXXXX)"
+mkdir -m 700 "$RECOVERY/keys"
+cp "$ROOT/capture.enc" "$ROOT/manifest.json" "$ROOT/manifest.mac" "$RECOVERY/"
+cp "$ROOT/keys/encryption.key" "$ROOT/keys/authentication.key" "$RECOVERY/keys/"
 rm -f "$ROOT/source.dump"
+recovertool() {
+  sudo docker run --rm --network none --user "$(id -u):$(id -g)" \
+    --mount "type=bind,source=$RECOVERY,target=/capture" \
+    -e VENCIRA_ENV=test -e MB1_DISPOSABLE_ONLY=1 \
+    "$IMG" python -m renewal_attachments.mb1_e2e_authenticated_pack "$1" /capture
+}
+phase=DETACHED_FILES_RESTORE
+recovertool detached_extract >>"$LOG" 2>&1
+cmp -s "$RECOVERY/recovered/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" "$ROOT/objects/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+cmp -s "$RECOVERY/recovered/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json" "$ROOT/journal/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json"
 phase=RESTORE_VERIFIED
-# Pipefail rejects authentication/decryption errors before a successful
-# restore, and pg_restore rejects an invalid custom-format dump.
-packtool stream | sudo docker exec -i "$DST" pg_restore --exit-on-error --no-owner --no-privileges -U mb1 -d mb1 >>"$LOG" 2>&1
+# Recover solely from isolated media without source dump/objects/journal.
+recovertool detached_stream | sudo docker exec -i "$DST" pg_restore --exit-on-error --no-owner --no-privileges -U mb1 -d mb1 >>"$LOG" 2>&1
+echo "MB1_E2E_DETACHED_RECOVERY_MEDIA=OK"
+echo "MB1_E2E_DETACHED_OBJECT_JOURNAL=OK"
 phase=VERIFY
 app "$DST" shell -c '
 from renewal_attachments.models import RenewalAttachment
