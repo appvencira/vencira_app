@@ -36,3 +36,19 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 ## Ampliación de ensayo: objetos y diario (pendiente de ejecución)
 
 El runner de segundo host ahora también descifra y autentica objeto y diario del paquete, los extrae a un tercer montaje temporal de salida y exige que existan con contenido. El backend incorpora `detached_extract_to` para no escribir en el paquete de origen montado solo lectura. **No se ha ejecutado aún en un segundo host.** Esta comprobación es una prueba de recuperación de bytes sintéticos, no una comprobación completa de coherencia ORM/objeto/diario sobre datos operativos. No aprovisiona almacenamiento externo ni custodia real. `MB1_EXTERNAL_KEY_CUSTODY=NOT_VERIFIED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`.
+
+
+## Integración del mismo método en el E2E ya validado — pendiente de ensayo
+
+La revisión `8601996` incorpora al ejecutor `scripts/rehearse_mb1_pg17_e2e_disposable.sh` la operación `detached_extract_to` del runner de segundo host. Se emplean tres montajes: `/capture` **solo lectura**, `/keymedia` **solo lectura** y `/recovered` escribible por separado; se verifican hashes del objeto y diario extraídos y se imprime `MB1_E2E_THREE_MOUNT_OBJECT_JOURNAL=OK`. Sustituye la extracción antigua, sin reejecutar suites parciales ni modificar los servicios vivos. **Solo valida el método en un VPS con datos sintéticos, no la existencia de un host externo**.
+
+Validación única:
+
+```bash
+cd ~/vencira-localcheck
+git pull --ff-only origin feature/c-ficha-independent-attachments
+bash scripts/rehearse_mb1_pg17_e2e_disposable.sh
+echo "MB1_SECOND_HOST_METHOD_EXIT_CODE=$?"
+```
+
+No afirmar custodia externa ni freeze global por este resultado.
