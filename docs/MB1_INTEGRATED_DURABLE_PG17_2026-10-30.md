@@ -44,3 +44,8 @@ Commit `4ab0fa0`: ampliación del mismo laboratorio temporal. Tras los ensayos a
 ## M1-02: ejecución con salida inesperada y corrección de aislamiento de shell
 
 La ejecución del operador pasó los gates previos, pero en `SIGKILL_PG17` el comando terminó con **código 0** (`MB1_SIGKILL_UNEXPECTED_SUCCESS=1`, `MB1_INTEGRATED_RESULT=1`, `MB1_INTEGRATED_EXIT_CODE=1`), en lugar del 137 exigido. No se ha demostrado la interrupción y no es legítimo marcar PASS. No hay evidencia suficiente para afirmar por qué la shell devolvió 0; una posible causa es el intérprete interactivo autoseleccionado por Django. El commit `ba2eeae` fuerza `manage.py shell --interface python` solo para la fase SIGKILL y mantiene la exigencia de código 137 junto con la inspección independiente del estado PostgreSQL/objetos. **Pendiente de revalidación.**
+
+
+## Segunda ejecución fallida y cambio de estrategia
+
+El operador vuelve a informar `MB1_SIGKILL_UNEXPECTED_SUCCESS=1` en `SIGKILL_PG17` tras la corrección de shell (`e54be73`), por lo que la hipótesis anterior no resolvió el problema. Commit `4be795b`: la fase ahora invoca **Python directamente como PID 1 del contenedor Docker**, configura Django mediante `django.setup()` y ejecuta la transacción; se sigue exigiendo código Docker `137` por SIGKILL y posterior verificación de rollback y conservación. Esta modificación está **pendiente de ejecutar**. No se ha dado por validado M1-02. No hay cambios en DEV.
