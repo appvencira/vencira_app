@@ -78,10 +78,36 @@ mkdir -m 700 "$ROOT/objects" "$ROOT/journal"
 printf 'CIPHER01' > "$ROOT/objects/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 printf '{"version":1,"storage_key":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","state":"pending"}' > "$ROOT/journal/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json"
 phase=FREEZE_CLONE
-# The ONLY writer is the controlled fixture process; it has exited before dump.
-# No other application processes are connected to the disposable database.
-# This physical isolation is not a production freeze mechanism.
+# Prove the synthetic DB's connection inventory is empty before cutting.
+# This is NOT a universal writer freeze: host filesystem and other services
+# remain outside the controlled disposable scope.
+no_extra_sessions() {
+  local count
+  count="$(sudo docker exec "$SRC" psql -X -A -t -v ON_ERROR_STOP=1 \
+    -U mb1 -d mb1 -c "SELECT count(*) FROM pg_stat_activity WHERE datname='mb1' AND backend_type='client backend' AND pid <> pg_backend_pid();")"
+  [[ "$count" =~ ^[0-9]+$ ]] && [ "$count" -eq 0 ]
+}
+# Negative: an independently attached psql session must cause fail-closed.
+sudo docker exec -d "$SRC" psql -X -v ON_ERROR_STOP=1 -U mb1 -d mb1 \
+  -c "SELECT pg_sleep(8);" >>"$LOG" 2>&1
+session_seen=0
+for _ in $(seq 1 30); do
+  if ! no_extra_sessions; then session_seen=1; break; fi
+  sleep 0.1
+done
+test "$session_seen" = 1
+# Never terminate unknown connections; wait for our disposable probe to exit.
+idle_cut=0
+for _ in $(seq 1 120); do
+  if no_extra_sessions; then idle_cut=1; break; fi
+  sleep 0.1
+done
+test "$idle_cut" = 1
+echo "MB1_E2E_FOREIGN_DB_SESSION_REJECTED=OK"
+# An explicit source guard is repeated immediately before the pg_dump.
 phase=BACKUP
+no_extra_sessions
+echo "MB1_E2E_SOURCE_DB_SESSION_DRAIN=OK"
 sudo docker exec "$SRC" pg_dump -Fc -U mb1 -d mb1 > "$ROOT/source.dump"
 test -s "$ROOT/source.dump"
 sha256sum "$ROOT/objects/"* "$ROOT/journal/"* > "$ROOT/inventory.sha256"
