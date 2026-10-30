@@ -38,3 +38,10 @@ echo "MB1_SOURCE_LOSS_EXIT_CODE=$?"
 ```
 
 Estado de esta revisión: pendiente de ejecución. `MB1_RELEASE_AUTHORIZED=NO`.
+
+
+## Extensión: prueba sin claves — 30/10/2026, pendiente de ejecutar
+
+El gate E2E ahora copia inicialmente solo `capture.enc`, `manifest.json` y `manifest.mac` a un soporte de recuperación de ensayo, e intenta descifrar/restaurar con `keys/` vacío. Debe rechazarlo (`MB1_E2E_KEY_ABSENCE_REJECTED=OK`). Después introduce en la ubicación aislada las claves **sintéticas que siguen almacenadas en el mismo VPS** y continúa con el ensayo ya validado de destrucción de origen y restauración. Marcador adicional: `MB1_E2E_SYNTHETIC_KEYS_REHYDRATED=OK`. No se publican claves en consola ni logs de este intento.
+
+**Advertencia:** este negativo comprueba que el intento falla, pero no demuestra todavía que el motivo concreto sea la ausencia de claves frente a otros posibles fallos. Es preparación para custodia independiente, NO la prueba de custodia real externa. No enviar claves al chat ni subirlas a GitHub. Sigue pendiente el uso de un segundo entorno de recuperación separado físicamente y el procedimiento humano de entrega bajo custodia verificable. `MB1_E2E_EXTERNAL_KEY_CUSTODY=NOT_VERIFIED` y `MB1_E2E_GLOBAL_FREEZE=NOT_VERIFIED` siguen activos. Ejecutar solo el gate E2E actualizado, no las suites previas.
