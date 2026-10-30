@@ -9,7 +9,7 @@ img="vencira-mb1-classifier:$(git rev-parse --short=12 HEAD)"
 sudo docker build -q -t "$img" ./backend >/dev/null
 sudo docker run --rm --network none \
  -e VENCIRA_ENV=test -e VENCIRA_DB_ENGINE=sqlite \
- -e DJANGO_SECRET_KEY=synthetic-mb1-classifier-secret \
+ -e DJANGO_SECRET_KEY=synthetic-mb1-classifier-only-long-secret-20261030 \
  -e DJANGO_ALLOWED_HOSTS=localhost,testserver \
  "$img" python manage.py test renewal_attachments.test_recovery_classifier_mb1 --noinput --verbosity 1
 echo "MB1_READONLY_CLASSIFIER_TESTS=OK"
