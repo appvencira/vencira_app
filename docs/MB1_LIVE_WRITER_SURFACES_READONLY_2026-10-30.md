@@ -53,3 +53,8 @@ M1-03 sigue abierto hasta contrastar el inventario del host con los proyectos Do
 ## Evidencia host — PASS inventario, no freeze
 
 Operador: `MB1_HOST_CENSUS_EXIT_CODE=0`; clases: caddy=1, containerd=1, cron=1, dockerd=1, gunicorn=6, nginx=10, postgres=12, python3=1; `/proc` inaccesibles=0. Timers detectados: `dpkg-db-backup.timer`, `vencira-o5-backup.timer`, `vencira-o5-health.timer`. Persisten `MB1_HOST_USER_CRONTABS=NOT_VERIFIED`, `MB1_HOST_EXTERNAL_SQL_WRITERS=NOT_VERIFIED`, `MB1_HOST_SHARED_BIND_WRITERS=NOT_VERIFIED`, `MB1_HOST_NONCOOPERATIVE_WRITERS=NOT_EXCLUDED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`. Los recuentos incluyen todos los servicios del host y no identifican por sí solos qué procesos escriben en VENCIRA. No se debe intervenir O5 ni procesos de DEV. M1-03 sigue pendiente.
+
+
+## Evidencia censo cron/red del host — PASS parcial
+
+Salida operador: `MB1_SYSTEM_CRONTAB=PRESENT:READABLE`, `MB1_SYSTEM_CRON_D=PRESENT:READABLE`, `MB1_ROOT_CRON_SPOOL=UNKNOWN`, `MB1_USER_CRON_SPOOL_DIR=PRESENT:NOT_READABLE`, `MB1_HOST_TCP_5432_LISTENER_COUNT=0`, `MB1_EXTERNAL_SQL_AUTHORIZATION=NOT_VERIFIED`, `MB1_CONTAINER_NETWORK_EXPOSURE=NOT_VERIFIED`, `MB1_CRON_CONTENT_AND_OTHER_USERS=NOT_VERIFIED`, `MB1_SHARED_BIND_WRITERS=NOT_VERIFIED`, `MB1_NONCOOPERATIVE_WRITERS=NOT_EXCLUDED`, `MB1_SCHEDULER_NETWORK_RESULT=INVENTORY_ONLY`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `MB1_SCHEDULER_CENSUS_EXIT_CODE=0`. La ausencia de listener 5432 en el espacio de red del host no demuestra aislamiento de contenedores o falta de clientes SQL remotos. El censo no inspeccionó contenido de cron ni otros usuarios. **M1-03 sigue abierto.**
