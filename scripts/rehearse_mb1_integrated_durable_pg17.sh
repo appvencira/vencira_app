@@ -170,4 +170,68 @@ assert report["release_authorized"] is False
 print("MB1_INTEGRATED_PG17_ORPHAN_CLASSIFICATION=OK")
 print("MB1_INTEGRATED_AUTOMATIC_REPAIR=DISABLED")
 '
+phase=SIGKILL_PG17
+# Real process death while a PostgreSQL transaction remains uncommitted.
+# The journal/object have been fsync'd by the actual production primitives.
+if app shell -c '
+import hashlib, os, signal, uuid
+from pathlib import Path
+from django.db import transaction
+from reminders.attachment_private_store import PrivateQuarantineStore
+from renewal_attachments.offline_intake_journal import IntakeJournal
+from renewal_attachments.models import RenewalAttachment
+key=uuid.UUID(hex="b17b17b17b1741178117811781178117")
+payload=b"MB1_SIGKILL_PG17_SYNTHETIC"
+sha=hashlib.sha256(payload).hexdigest()
+journal=IntakeJournal("/lab/journal")
+store=PrivateQuarantineStore(Path("/lab/objects"),Path("/lab/objects/.lab-key").read_bytes())
+journal.record_intent(key,sha)
+store.put_quarantine(key,payload)
+with transaction.atomic():
+    base=RenewalAttachment.objects.get(display_name="synthetic.pdf")
+    RenewalAttachment.objects.create(
+        renewal=base.renewal,display_name="killed-transaction.pdf",
+        content_type="application/pdf",byte_size=len(payload),
+        sha256=sha,state="quarantined",storage_key=key)
+    # Persisted on filesystem but NOT committed in PG17.
+    os.kill(os.getpid(),signal.SIGKILL)
+'; then
+  echo "MB1_SIGKILL_UNEXPECTED_SUCCESS=1" >&2
+  exit 1
+else
+  kill_rc=$?
+  if [ "$kill_rc" -ne 137 ]; then
+    echo "MB1_SIGKILL_UNEXPECTED_EXIT=$kill_rc" >&2
+    exit 1
+  fi
+fi
+phase=SIGKILL_RECOVER
+app shell -c '
+import hashlib, uuid
+from pathlib import Path
+from renewal_attachments.offline_recovery_classifier_mb1 import classify_recovery_inventory
+from renewal_attachments.models import RenewalAttachment
+from renewal_attachments.offline_intake_journal import IntakeJournal
+from reminders.attachment_private_store import PrivateQuarantineStore
+key=uuid.UUID(hex="b17b17b17b1741178117811781178117")
+root=Path("/lab/objects")
+journal_root=Path("/lab/journal")
+store=PrivateQuarantineStore(root,(root/".lab-key").read_bytes())
+payload=store.read_quarantine_for_scanner_only(key)
+intent=IntakeJournal(str(journal_root)).read_intent(key)
+assert payload==b"MB1_SIGKILL_PG17_SYNTHETIC"
+assert intent["sha256"]==hashlib.sha256(payload).hexdigest()
+assert not RenewalAttachment.objects.filter(storage_key=key).exists()
+intents={uuid.UUID(hex=p.stem) for p in journal_root.iterdir() if p.suffix==".json"}
+objects={uuid.UUID(hex=p.name) for p in root.iterdir() if len(p.name)==32 and all(ch in "0123456789abcdef" for ch in p.name)}
+metadata=set(RenewalAttachment.objects.values_list("storage_key",flat=True))
+report=classify_recovery_inventory(intents=intents,objects=objects,metadata=metadata)
+assert report["intent_and_object_without_metadata"]==1,report
+assert report["repair_authorized"] is False
+assert report["deletion_authorized"] is False
+assert report["release_authorized"] is False
+print("MB1_SIGKILL_PG17_ROLLBACK=OK")
+print("MB1_SIGKILL_ENCRYPTED_OBJECT_JOURNAL_PRESERVED=OK")
+print("MB1_SIGKILL_READONLY_RECONCILIATION=OK")
+'
 echo "MB1_INTEGRATED_PG17_PRIVATESTORE_JOURNAL_PERSISTENCE=OK"
