@@ -104,10 +104,28 @@ for _ in $(seq 1 120); do
 done
 test "$idle_cut" = 1
 echo "MB1_E2E_FOREIGN_DB_SESSION_REJECTED=OK"
-# An explicit source guard is repeated immediately before the pg_dump.
-phase=BACKUP
+phase=SOURCE_NETWORK_ISOLATION
+# Do not merely inspect connection state: physically disconnect the disposable
+# database from its only application network for the whole backup window.
+# docker exec still reaches PostgreSQL over its local Unix socket.
+sudo docker network disconnect "$NET" "$SRC" >>"$LOG" 2>&1
+# Verify no remaining client sessions after network isolation.
 no_extra_sessions
 echo "MB1_E2E_SOURCE_DB_SESSION_DRAIN=OK"
+phase=DENY_NEW_DB_SESSIONS
+# Fresh client on the same internal network MUST fail to connect.
+if sudo docker run --rm --network "$NET" \
+  -e PGPASSWORD=synthetic-mb1-only -e PGCONNECT_TIMEOUT=2 \
+  postgres:17-alpine psql -X -v ON_ERROR_STOP=1 \
+    -h "$SRC" -U mb1 -d mb1 -c 'SELECT 1' >>"$LOG" 2>&1; then
+  echo "MB1_E2E_UNEXPECTED_SOURCE_RECONNECT=1"
+  exit 1
+fi
+# Local maintenance remains available for the trusted pg_dump only.
+sudo docker exec "$SRC" psql -X -A -t -v ON_ERROR_STOP=1 \
+  -U mb1 -d mb1 -c 'SELECT 1' | grep -qx '1'
+echo "MB1_E2E_SOURCE_NETWORK_INGRESS_DENIED=OK"
+phase=BACKUP
 sudo docker exec "$SRC" pg_dump -Fc -U mb1 -d mb1 > "$ROOT/source.dump"
 test -s "$ROOT/source.dump"
 sha256sum "$ROOT/objects/"* "$ROOT/journal/"* > "$ROOT/inventory.sha256"
