@@ -28,3 +28,8 @@ MB1_RELEASE_AUTHORIZED=NO
 ## Primera ejecución: fallo de preflight Django, corregido
 
 La primera prueba abortó antes de cargar los tests con `ImproperlyConfigured: Falta DJANGO_SECRET_KEY aleatoria (>=32 caracteres)` y `MB1_CLASSIFIER_EXIT_CODE=1`. El ejecutor aportaba una cadena sintética demasiado corta. Commit `5978262`: sustituida por una cadena de prueba suficientemente larga, sin credenciales operativas. **Corrección pendiente de reejecución**. Este error no constituye un fallo funcional del clasificador ni implica modificaciones en DEV.
+
+
+## Revalidación del operador — PASS
+
+La revisión corregida finalizó con `Ran 10 tests in 0.001s`, `OK`, `MB1_READONLY_CLASSIFIER_TESTS=OK`, `MB1_CLASSIFIER_AUTOMATIC_REPAIR=DISABLED`, `MB1_CLASSIFIER_LIVE_INVENTORY=NOT_CONNECTED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `MB1_CLASSIFIER_EXIT_CODE=0`. El cómputo real es 10 tests, no los 9 originalmente estimados. Se confirma solo el clasificador de inventarios sintéticos; no hay integración live ni funciones de reparación.
