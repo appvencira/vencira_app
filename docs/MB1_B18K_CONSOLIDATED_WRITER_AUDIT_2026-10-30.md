@@ -40,3 +40,8 @@ C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Resultado comunicado por operador — 30/10/2026
+
+`B18K_P0_CONTEXTS=131`, `B18K_MISSING_SOURCE_FILES=0`, `B18K_SOURCE_REVIEWED=0`, `B18K_OPERATIONAL_CAPTURE=BLOCKED`, `B18K_SOURCE_PACK=OK`, `B18K_SOURCE_EXIT=0`. Gate de primitivas: `B18K_REVIEWED_CALLSITE_PAIRS=5`, `B18K_UNEXPECTED_CALLSITE_PAIRS=0`, `B18K_SOURCE_ERRORS=0`, `B18K_UNIVERSAL_WRITER_FREEZE=NOT_VERIFIED`, `B18K_RELEASE_AUTHORIZED=NO`, `B18K_STATIC_GATE=OK`. El valor de `B18K_STATIC_EXIT` no se incluyó. La validación estática no equivale a revisión de 131 casos ni freeze universal. Documento de contextos permanece local en `/tmp/vencira-b18k-p0-source-review.md`.
