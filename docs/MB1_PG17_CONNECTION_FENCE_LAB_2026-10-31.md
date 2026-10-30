@@ -19,3 +19,8 @@ echo "MB1_PG17_FENCE_EXIT_CODE=$?"
 Esperado: MB1_PG17_NEW_WRITER_DENIAL=OK; MB1_PG17_ADMIN_BYPASS_CONFIRMED=OK; MB1_PG17_FENCE_RESULT=0. Los marcadores EXISTING_WRITER_DRAIN=NOT_VERIFIED, GLOBAL_FREEZE=NOT_VERIFIED y RELEASE_AUTHORIZED=NO deben persistir.
 
 **M1-03 pendiente** (vías SQL y tareas fuera del control); **M1-04 pendiente** (barrera integral y captura restaurable). No tachar por publicar el código ni por aprobar este ensayo parcial.
+
+
+## Resultado confirmado por operador — PASS parcial
+
+`MB1_PG17_NEW_WRITER_DENIAL=OK`, `MB1_PG17_EXISTING_WRITER_DRAIN=NOT_VERIFIED`, `MB1_PG17_ADMIN_BYPASS_CONFIRMED=OK`, `MB1_PG17_FENCE_RESULT=0`, `MB1_PG17_FENCE_EXIT_CODE=0`. Asimismo `MB1_NONCOOPERATIVE_SQL_SUPERUSER=NOT_BLOCKED`, `MB1_FILESYSTEM_WRITERS=NOT_BLOCKED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`. Prueba **únicamente** de denegación de conexión nueva a un rol ordinario, no un freeze. M1-04 sigue abierto.
