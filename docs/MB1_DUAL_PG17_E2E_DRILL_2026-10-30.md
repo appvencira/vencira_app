@@ -57,3 +57,12 @@ echo "MB1_E2E_AUTH_EXIT_CODE=$?"
 ```
 
 Si pasa: `MB1_E2E_AUTHENTICATED_ENCRYPTED_SET=OK`, `MB1_E2E_WRONG_KEY_AND_TAMPER_REJECTED=OK`, `MB1_E2E_REAL_PG_DUMP_RESTORE=OK`, `MB1_E2E_RESULT=0`. **Estado actual de esta extensión: PENDING_OPERATOR_VALIDATION.**
+
+
+## MB1 — detección fail-closed de sesiones ajenas (30/10/2026)
+
+Se ha extendido el **mismo** ensayo E2E con una comprobación `pg_stat_activity` sobre el origen PostgreSQL **efímero**, inmediatamente antes del volcado. El script abre deliberadamente una sesión `psql` paralela con `pg_sleep(8)`, comprueba que la barrera rechaza iniciar la captura cuando detecta una conexión ajena y espera a que desaparezca; después repite la comprobación antes de `pg_dump`. No mata sesiones desconocidas. Marcadores previstos: `MB1_E2E_FOREIGN_DB_SESSION_REJECTED=OK`, `MB1_E2E_SOURCE_DB_SESSION_DRAIN=OK`, junto con los de restauración cifrada.
+
+**Alcance estricto:** esto detecta conexiones de tipo cliente a la base de ensayo en el instante consultado. **No impide una conexión nueva inmediatamente después**, no prueba transacciones ya terminadas, no protege filesystem, no controla escritores a través de otros almacenes y no congela una base de producción. La carrera de tiempo entre consulta y `pg_dump` es un bloqueo pendiente de diseño; no elevar el procedimiento a un gate de freeze universal. La duración máxima de la espera sintética es 12 segundos y el único escritor inducido es una sesión de prueba `pg_sleep(8)`.
+
+Solo ejecutar de nuevo el mismo script E2E; no repetir baterías independientes. Estado de esta modificación: **PENDING_OPERATOR_VALIDATION**. `MB1_GLOBAL_FREEZE=NOT_VERIFIED`; `MB1_OPERATIONAL_RELEASE=NO`.
