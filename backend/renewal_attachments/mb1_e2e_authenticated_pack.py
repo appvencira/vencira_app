@@ -82,10 +82,21 @@ def pack(root):
     print("MB1_E2E_AUTHENTICATED_ENCRYPTED_SET=CREATED")
 
 
+def key_path(root, filename):
+    """Synthetic test keys may be mounted separately from the recovery package."""
+    external = os.environ.get("MB1_SYNTHETIC_KEY_ROOT")
+    if external:
+        base = guard(Path(external))
+        if base.resolve() == root.resolve() or root.resolve() in base.resolve().parents:
+            raise RuntimeError("KEYS_NOT_SEPARATED")
+        return base / filename
+    return root / "keys" / filename
+
+
 def verified(root, *, wrong_key=False, corrupt=False, detached=False):
     manifest_bytes = read(root / "manifest.json", 8192)
     tag = read(root / "manifest.mac", 128)
-    auth = read(root / "keys" / "authentication.key", 128)
+    auth = read(key_path(root, "authentication.key"), 128)
     if wrong_key:
         auth = os.urandom(32)
     if not hmac.compare_digest(hmac.new(auth, manifest_bytes, hashlib.sha256).hexdigest().encode(), tag):
@@ -99,7 +110,7 @@ def verified(root, *, wrong_key=False, corrupt=False, detached=False):
     if digest(envelope) != manifest["envelope_sha256"]:
         raise RuntimeError("ENVELOPE_DIGEST_MISMATCH")
     try:
-        payload = json.loads(Fernet(read(root / "keys" / "encryption.key", 128)).decrypt(envelope))
+        payload = json.loads(Fernet(read(key_path(root, "encryption.key"), 128)).decrypt(envelope))
     except (InvalidToken, ValueError) as exc:
         raise RuntimeError("DECRYPT_FAILED") from exc
     if payload["snapshot"] != SNAPSHOT:
