@@ -66,3 +66,10 @@ Se ha extendido el **mismo** ensayo E2E con una comprobación `pg_stat_activity`
 **Alcance estricto:** esto detecta conexiones de tipo cliente a la base de ensayo en el instante consultado. **No impide una conexión nueva inmediatamente después**, no prueba transacciones ya terminadas, no protege filesystem, no controla escritores a través de otros almacenes y no congela una base de producción. La carrera de tiempo entre consulta y `pg_dump` es un bloqueo pendiente de diseño; no elevar el procedimiento a un gate de freeze universal. La duración máxima de la espera sintética es 12 segundos y el único escritor inducido es una sesión de prueba `pg_sleep(8)`.
 
 Solo ejecutar de nuevo el mismo script E2E; no repetir baterías independientes. Estado de esta modificación: **PENDING_OPERATOR_VALIDATION**. `MB1_GLOBAL_FREEZE=NOT_VERIFIED`; `MB1_OPERATIONAL_RELEASE=NO`.
+
+
+## Aislamiento de red del origen de prueba — 30/10/2026
+
+Tras superar el ensayo autenticado previo, el ejecutor ahora desconecta el contenedor PostgreSQL de origen de su **única red interna de ensayo** justo después de drenar clientes. Un segundo contenedor PostgreSQL del mismo entorno intenta entrar al origen y debe fracasar; si entra, el gate falla. Se comprueba también que un `psql` local dentro del contenedor de origen sigue respondiendo para que `pg_dump` funcione mediante el socket local. El origen permanece sin red hasta su eliminación en el `trap` del script. Esta modificación está **pendiente de ejecutar**; no repetir tests anteriores.
+
+La exclusión certificable cubre únicamente nuevas conexiones por esa red temporal. Un `docker exec` privilegiado desde el host puede seguir conectándose, y los archivos de `/tmp` siguen expuestos a escritores del host con permisos suficientes. No existe un bloqueo universal de SQL/filesystem ni custodia externa real de claves. Estado: `MB1_E2E_SOURCE_NETWORK_INGRESS_DENIED=PENDING`, `MB1_E2E_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_OPERATIONAL_RELEASE=NO`.
