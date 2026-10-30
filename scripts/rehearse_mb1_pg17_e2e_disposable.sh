@@ -198,9 +198,20 @@ recovertool() {
     "$IMG" python -m renewal_attachments.mb1_e2e_authenticated_pack "$1" /capture
 }
 phase=DETACHED_FILES_RESTORE
-recovertool detached_extract >>"$LOG" 2>&1
+# Rehearse the exact three-mount extraction used by the second-host runner:
+# immutable package, immutable key media, independent writable output.
+mkdir -m 700 "$RECOVERY/recovered"
+sudo docker run --rm --network none --user "$(id -u):$(id -g)" \
+  --mount "type=bind,source=$RECOVERY,target=/capture,readonly" \
+  --mount "type=bind,source=$KEYMEDIA,target=/keymedia,readonly" \
+  --mount "type=bind,source=$RECOVERY/recovered,target=/recovered" \
+  -e VENCIRA_ENV=test -e MB1_DISPOSABLE_ONLY=1 \
+  -e MB1_SYNTHETIC_KEY_ROOT=/keymedia \
+  "$IMG" python -m renewal_attachments.mb1_e2e_authenticated_pack \
+  detached_extract_to /capture /recovered >>"$LOG" 2>&1
 test "$(sha256sum "$RECOVERY/recovered/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" | cut -d' ' -f1)" = "$OBJ_EXPECTED"
 test "$(sha256sum "$RECOVERY/recovered/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json" | cut -d' ' -f1)" = "$JOURNAL_EXPECTED"
+echo "MB1_E2E_THREE_MOUNT_OBJECT_JOURNAL=OK"
 phase=RESTORE_VERIFIED
 # Recover solely from isolated media without source dump/objects/journal.
 recovertool detached_stream | sudo docker exec -i "$DST" pg_restore --exit-on-error --no-owner --no-privileges -U mb1 -d mb1 >>"$LOG" 2>&1
