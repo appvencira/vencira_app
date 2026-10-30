@@ -14,13 +14,14 @@ SRC="vencira_${RUN_ID}_source"
 DST="vencira_${RUN_ID}_target"
 ROOT="$(mktemp -d /tmp/vencira-mb1-e2e.XXXXXXXX)"
 LOG="$ROOT/drill.log"
-phase=SETUP; net=0; src=0; dst=0; RECOVERY=""
+phase=SETUP; net=0; src=0; dst=0; RECOVERY=""; KEYMEDIA=""
 cleanup() {
   rc=$?; trap - EXIT
   if [ "$src" = 1 ]; then sudo docker rm -f "$SRC" >>"$LOG" 2>&1 || rc=1; fi
   if [ "$dst" = 1 ]; then sudo docker rm -f "$DST" >>"$LOG" 2>&1 || rc=1; fi
   if [ "$net" = 1 ]; then sudo docker network rm "$NET" >>"$LOG" 2>&1 || rc=1; fi
   if [[ "$RECOVERY" == /tmp/vencira-mb1-detached.* && -d "$RECOVERY" ]]; then rm -rf -- "$RECOVERY" || rc=1; fi
+  if [[ "$KEYMEDIA" == /tmp/vencira-mb1-keymedia.* && -d "$KEYMEDIA" ]]; then rm -rf -- "$KEYMEDIA" || rc=1; fi
   if [ "$rc" != 0 ]; then echo "MB1_E2E_FAILED_PHASE=$phase"; tail -n 25 "$LOG"; fi
   echo "MB1_E2E_RESULT=$rc"
   echo "MB1_E2E_LOG_LOCAL=$LOG"
@@ -157,7 +158,7 @@ phase=DETACHED_RECOVERY_MEDIA
 # are NOT visible to the recovery process. Synthetic local keys still remain
 # on this VPS: external custody is NOT demonstrated.
 RECOVERY="$(mktemp -d /tmp/vencira-mb1-detached.XXXXXXXX)"
-mkdir -m 700 "$RECOVERY/keys"
+KEYMEDIA="$(mktemp -d /tmp/vencira-mb1-keymedia.XXXXXXXX)"
 cp "$ROOT/capture.enc" "$ROOT/manifest.json" "$ROOT/manifest.mac" "$RECOVERY/"
 phase=KEY_ABSENCE_NEGATIVE
 # A backup copied without its keys must not be recoverable.
@@ -173,9 +174,10 @@ fi
 echo "MB1_E2E_KEY_ABSENCE_REJECTED=OK"
 phase=KEY_REHYDRATION_SYNTHETIC
 # Local synthetic keys are reintroduced for this drill ONLY.
-cp "$ROOT/keys/encryption.key" "$ROOT/keys/authentication.key" "$RECOVERY/keys/"
-chmod 600 "$RECOVERY/keys/"*
+cp "$ROOT/keys/encryption.key" "$ROOT/keys/authentication.key" "$KEYMEDIA/"
+chmod 600 "$KEYMEDIA/"*
 echo "MB1_E2E_SYNTHETIC_KEYS_REHYDRATED=OK"
+echo "MB1_E2E_SEPARATE_READONLY_KEY_MOUNT=OK"
 OBJ_EXPECTED="$(sha256sum "$ROOT/objects/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" | cut -d' ' -f1)"
 JOURNAL_EXPECTED="$(sha256sum "$ROOT/journal/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json" | cut -d' ' -f1)"
 rm -f "$ROOT/source.dump"
@@ -190,7 +192,9 @@ echo "MB1_E2E_ORIGINAL_SOURCE_DESTROYED=OK"
 recovertool() {
   sudo docker run --rm --network none --user "$(id -u):$(id -g)" \
     --mount "type=bind,source=$RECOVERY,target=/capture" \
+    --mount "type=bind,source=$KEYMEDIA,target=/keymedia,readonly" \
     -e VENCIRA_ENV=test -e MB1_DISPOSABLE_ONLY=1 \
+    -e MB1_SYNTHETIC_KEY_ROOT=/keymedia \
     "$IMG" python -m renewal_attachments.mb1_e2e_authenticated_pack "$1" /capture
 }
 phase=DETACHED_FILES_RESTORE
