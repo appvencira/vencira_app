@@ -7,7 +7,7 @@ if [ "$#" -ne 2 ]; then
   exit 2
 fi
 PACKAGE="$1"
-CHECKSUMS="$2"
+CHECKSUMS="$(realpath "$2")"
 [ -d "$PACKAGE" ] && [ ! -L "$PACKAGE" ]
 [ -f "$CHECKSUMS" ] && [ ! -L "$CHECKSUMS" ]
 [ "$(stat -c %a "$PACKAGE")" = 700 ]
