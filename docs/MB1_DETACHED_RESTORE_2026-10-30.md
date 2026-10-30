@@ -22,3 +22,19 @@ Siguiente hito real de MB1: acreditar credenciales de recuperación bajo custodi
 ## Resultado de ejecución — 30/10/2026
 
 Operador: `MB1_E2E_DETACHED_RECOVERY_MEDIA=OK`, `MB1_E2E_DETACHED_OBJECT_JOURNAL=OK`, `MB1_E2E_REAL_PG_DUMP_RESTORE=OK`, `MB1_E2E_AUTHENTICATED_ENCRYPTED_SET=OK`, `MB1_E2E_WRONG_KEY_AND_TAMPER_REJECTED=OK`, `MB1_E2E_RESULT=0`. También `MB1_E2E_SOURCE_NETWORK_INGRESS_DENIED=OK`, `MB1_E2E_FILESYSTEM_INVENTORY_STABLE=OK`. Permanecen `MB1_E2E_EXTERNAL_KEY_CUSTODY=NOT_VERIFIED`, `MB1_E2E_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_OPERATIONAL_RELEASE=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Log privado local `/tmp/vencira-mb1-e2e.CwhKJPWs/drill.log` no inspeccionado. Validada la recuperación sintética desde un soporte lógico separado, no la custodia externa real ni la congelación universal.
+
+
+## Ensayo de pérdida real del origen sintético — nueva revisión pendiente de validar
+
+El mismo ejecutor E2E se ha ampliado: **después de generar y copiar el paquete autenticado** a un directorio independiente, elimina el `source.dump`, destruye el contenedor PostgreSQL de origen y borra los originales de objeto y diario sintéticos. Solo entonces restaura el objeto y el diario a partir del paquete y comprueba sus SHA-256 esperados, y hace `pg_restore` en el contenedor destino desde el paquete descifrado. Si falla alguna validación, se detiene el gate. Marcador añadido `MB1_E2E_ORIGINAL_SOURCE_DESTROYED=OK`. El directorio de recuperación temporal se elimina al finalizar. Las claves siguen estando en el **mismo VPS**; no se demuestra continuidad tras pérdida del VPS ni custodia externa. No hay congelación global de escritores. El procedimiento continúa confinado a contenedores PG17 de ensayo y datos sintéticos.
+
+Validar mediante el **mismo gate E2E**, sin repetir pruebas parciales:
+
+```bash
+cd ~/vencira-localcheck
+git pull --ff-only origin feature/c-ficha-independent-attachments
+bash scripts/rehearse_mb1_pg17_e2e_disposable.sh
+echo "MB1_SOURCE_LOSS_EXIT_CODE=$?"
+```
+
+Estado de esta revisión: pendiente de ejecución. `MB1_RELEASE_AUTHORIZED=NO`.
