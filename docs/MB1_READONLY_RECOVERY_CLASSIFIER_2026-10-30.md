@@ -40,3 +40,8 @@ La revisión corregida finalizó con `Ran 10 tests in 0.001s`, `OK`, `MB1_READON
 M1-01 PASS del operador: `MB1_INTEGRATED_PG17_ORPHAN_CLASSIFICATION=OK`, `MB1_INTEGRATED_AUTOMATIC_REPAIR=DISABLED`, `MB1_INTEGRATED_RESULT=0`, `MB1_INTEGRATED_EXIT_CODE=0`; checklist maestra marcada en commit `080da9f`.
 
 M1-02 primera etapa (pendiente de ejecutar): commit `4ee70a9` introduce una prueba que mata **realmente** con SIGKILL dos procesos de escritura en un directorio aislado, después de `fsync` del diario y después de guardar además el objeto cifrado mediante implementaciones reales. El padre constata código `-SIGKILL`, clasifica `intent_only` e `intent_and_object_without_metadata`, y no autoriza borrar/reparar/liberar. El runner de clasificación, commit `38b3d39`, ejecuta también esa suite. Esta prueba **no** usa PostgreSQL, no corta en mitad de la escritura y no acredita un snapshot consistente ni reconciliación reparadora. M1-02 sigue [ ] hasta ensayar fallos/recuperación completos sobre PG17 y volúmenes.
+
+
+## M1-02: ensayo SIGKILL aislado validado (PASS parcial)
+
+Operador: `Ran 11 tests in 0.941s`, `OK`, `MB1_READONLY_CLASSIFIER_TESTS=OK`, `MB1_SIGKILL_REAL_PROCESS_INTERRUPTION=OK`, `MB1_SIGKILL_PG17_ATOMIC_RECONCILIATION=NOT_VERIFIED`, `MB1_CLASSIFIER_AUTOMATIC_REPAIR=DISABLED`, `MB1_CLASSIFIER_LIVE_INVENTORY=NOT_CONNECTED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `MB1_SIGKILL_EXIT_CODE=0`. Esta prueba mata procesos reales de laboratorio tras escrituras duraderas, pero **no** demuestra reconciliación PG17 ni consistencia atómica. El hito M1-02 permanece pendiente.
