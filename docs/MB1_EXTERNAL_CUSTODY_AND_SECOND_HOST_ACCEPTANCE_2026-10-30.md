@@ -47,3 +47,12 @@ C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Implementación de ensayo con montajes separados — pendiente de validación
+
+Se ha extendido el ejecutor E2E para conservar el paquete cifrado en el directorio temporal `RECOVERY` y las claves sintéticas en un directorio privado `KEYMEDIA` diferente. Durante restauración, Docker monta el paquete en `/capture` y el directorio de claves en `/keymedia` en modo **solo lectura**; el recuperador busca exclusivamente las claves en la ubicación designada mediante `MB1_SYNTHETIC_KEY_ROOT`. La comprobación negativa sin claves se ejecuta antes de aprovisionar `KEYMEDIA`. El trap elimina ambos directorios sintéticos al salir. Se añade `MB1_E2E_SEPARATE_READONLY_KEY_MOUNT=OK` como nuevo marcador de prueba.
+
+**Esto no acredita custodia externa**, pues ambos directorios son locales al mismo VPS. No asegura tampoco que administradores privilegiados no puedan leer las claves. No confundir con los destinos A/B/C exigidos para la custodia real. `MB1_E2E_EXTERNAL_KEY_CUSTODY=NOT_VERIFIED` continúa vigente.
+
+Ejecutar exclusivamente el gate integral ya conocido `bash scripts/rehearse_mb1_pg17_e2e_disposable.sh` tras `git pull --ff-only`, y comprobar además el marcador anterior y `MB1_E2E_RESULT=0`. No ejecutar ni migrar servicios persistentes.
