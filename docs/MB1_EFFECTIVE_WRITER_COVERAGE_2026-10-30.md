@@ -44,3 +44,8 @@ echo "MB1_EFFECTIVE_SCHEDULER_EXIT_CODE=$?"
 ```
 
 Esperar `MB1_SCHEDULER_AUDIT_RESULT=INVENTORY_ONLY` y código 0. M1-03 permanece abierto.
+
+
+## Resultado de auditoría efectiva de planificadores — PASS parcial
+
+El operador informa: `MB1_SCHEDULER_CRON_FILES=4`, `MB1_SCHEDULER_CRON_UNREADABLE=0`, `MB1_SCHEDULER_CRON_FLAGGED=0`; unidad O5 backup clasificada `VENCIRA,SQL,OBJECT`, unidad O5 health clasificada `VENCIRA`; `MB1_SCHEDULER_AUDIT_RESULT=INVENTORY_ONLY`, `MB1_EFFECTIVE_SCHEDULER_EXIT_CODE=0`. El clasificador buscó coincidencias, no ejecutó ni examinó el comportamiento completo de scripts indirectos. No se deduce que cron carezca de escritores. El temporizador O5 backup sí tiene relación con PostgreSQL/almacenamiento, y debe preservarse sin intervención. `MB1_SCHEDULER_SQL_PERMISSIONS=NOT_VERIFIED`, `MB1_SCHEDULER_WRITER_EXCLUSION=NOT_VERIFIED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`. M1-03 sigue abierto.
