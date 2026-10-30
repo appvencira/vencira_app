@@ -160,7 +160,17 @@ RECOVERY="$(mktemp -d /tmp/vencira-mb1-detached.XXXXXXXX)"
 mkdir -m 700 "$RECOVERY/keys"
 cp "$ROOT/capture.enc" "$ROOT/manifest.json" "$ROOT/manifest.mac" "$RECOVERY/"
 cp "$ROOT/keys/encryption.key" "$ROOT/keys/authentication.key" "$RECOVERY/keys/"
+OBJ_EXPECTED="$(sha256sum "$ROOT/objects/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" | cut -d' ' -f1)"
+JOURNAL_EXPECTED="$(sha256sum "$ROOT/journal/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json" | cut -d' ' -f1)"
 rm -f "$ROOT/source.dump"
+# Simulate loss of the disposable source after sealing the backup.
+sudo docker rm -f "$SRC" >>"$LOG" 2>&1
+src=0
+rm -f "$ROOT/objects/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" "$ROOT/journal/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json"
+test ! -e "$ROOT/source.dump"
+test ! -e "$ROOT/objects/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+test ! -e "$ROOT/journal/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json"
+echo "MB1_E2E_ORIGINAL_SOURCE_DESTROYED=OK"
 recovertool() {
   sudo docker run --rm --network none --user "$(id -u):$(id -g)" \
     --mount "type=bind,source=$RECOVERY,target=/capture" \
@@ -169,8 +179,8 @@ recovertool() {
 }
 phase=DETACHED_FILES_RESTORE
 recovertool detached_extract >>"$LOG" 2>&1
-cmp -s "$RECOVERY/recovered/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" "$ROOT/objects/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-cmp -s "$RECOVERY/recovered/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json" "$ROOT/journal/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json"
+test "$(sha256sum "$RECOVERY/recovered/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" | cut -d' ' -f1)" = "$OBJ_EXPECTED"
+test "$(sha256sum "$RECOVERY/recovered/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json" | cut -d' ' -f1)" = "$JOURNAL_EXPECTED"
 phase=RESTORE_VERIFIED
 # Recover solely from isolated media without source dump/objects/journal.
 recovertool detached_stream | sudo docker exec -i "$DST" pg_restore --exit-on-error --no-owner --no-privileges -U mb1 -d mb1 >>"$LOG" 2>&1
@@ -185,7 +195,8 @@ r=q.get()
 assert r.storage_key.hex=="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 assert r.sha256=="b"*64 and r.byte_size==8
 ' >>"$LOG" 2>&1
-(cd "$ROOT" && sha256sum --check inventory.sha256) >>"$LOG" 2>&1
+test "$(sha256sum "$RECOVERY/recovered/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" | cut -d\' \' -f1)" = "$OBJ_EXPECTED"
+test "$(sha256sum "$RECOVERY/recovered/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json" | cut -d\' \' -f1)" = "$JOURNAL_EXPECTED"
 echo "MB1_E2E_PG17_SOURCE_TARGET=OK"
 echo "MB1_E2E_REAL_PG_DUMP_RESTORE=OK"
 echo "MB1_E2E_SYNTHETIC_OBJECT_JOURNAL_HASH=OK"
