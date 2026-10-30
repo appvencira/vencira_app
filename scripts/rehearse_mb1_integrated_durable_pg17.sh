@@ -60,6 +60,21 @@ app() {
  --mount "type=volume,source=$VOL_JOURNAL,target=/lab/journal" \
  "$IMG" python manage.py "$@"
 }
+phase=VOLUME_PERMISSIONS
+# Docker creates named-volume roots as root. The Django image runs as a
+# non-root user; initialize ONLY these newly created disposable volumes.
+APP_UID="$(docker run --rm --network none "$IMG" id -u)"
+APP_GID="$(docker run --rm --network none "$IMG" id -g)"
+[[ "$APP_UID" =~ ^[0-9]+$ && "$APP_GID" =~ ^[0-9]+$ ]]
+docker run --rm --network none --user 0:0 \
+ --mount "type=volume,source=$VOL_OBJ,target=/lab/objects" \
+ --mount "type=volume,source=$VOL_JOURNAL,target=/lab/journal" \
+ -e LAB_UID="$APP_UID" -e LAB_GID="$APP_GID" \
+ python:3.12-alpine sh -ec '
+   chown "$LAB_UID:$LAB_GID" /lab/objects /lab/journal
+   chmod 0700 /lab/objects /lab/journal
+ ' >/dev/null
+echo "MB1_INTEGRATED_PRIVATE_VOLUME_PERMISSIONS=OK"
 phase=SCHEMA
 app migrate reminders 0018_draft_reasons --noinput >/dev/null
 app migrate renewal_attachments 0006_ed25519_signature_length --noinput >/dev/null
@@ -74,7 +89,8 @@ from reminders.attachment_private_store import PrivateQuarantineStore
 from renewal_attachments.models import RenewalAttachment
 from renewal_attachments.offline_intake_journal import IntakeJournal
 roots=(Path("/lab/objects"),Path("/lab/journal"))
-for root in roots: root.chmod(0o700)
+for root in roots:
+    assert root.is_dir() and root.stat().st_mode & 0o077 == 0
 payload=b"MB1_REAL_FERNET_SYNTHETIC"
 key=Fernet.generate_key()
 # Test-only fixed key file stored INSIDE disposable object volume, not host.
