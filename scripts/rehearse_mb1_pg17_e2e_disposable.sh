@@ -84,9 +84,23 @@ phase=FREEZE_CLONE
 phase=BACKUP
 sudo docker exec "$SRC" pg_dump -Fc -U mb1 -d mb1 > "$ROOT/source.dump"
 test -s "$ROOT/source.dump"
-sha256sum "$ROOT/source.dump" "$ROOT/objects/"* "$ROOT/journal/"* > "$ROOT/inventory.sha256"
-phase=RESTORE
-sudo docker exec -i "$DST" pg_restore --exit-on-error --no-owner --no-privileges -U mb1 -d mb1 < "$ROOT/source.dump" >>"$LOG" 2>&1
+sha256sum "$ROOT/objects/"* "$ROOT/journal/"* > "$ROOT/inventory.sha256"
+phase=AUTHENTICATED_PACKAGE
+# Local fixture and keys are mounted only into an ephemeral no-network
+# backend process; no DEV keys or services are involved.
+packtool() {
+  sudo docker run --rm --network none --user "$(id -u):$(id -g)" \
+    --mount "type=bind,source=$ROOT,target=/capture" \
+    -e VENCIRA_ENV=test -e MB1_DISPOSABLE_ONLY=1 \
+    "$IMG" python -m renewal_attachments.mb1_e2e_authenticated_pack "$1" /capture
+}
+packtool pack >>"$LOG" 2>&1
+packtool negative >>"$LOG" 2>&1
+rm -f "$ROOT/source.dump"
+phase=RESTORE_VERIFIED
+# Pipefail rejects authentication/decryption errors before a successful
+# restore, and pg_restore rejects an invalid custom-format dump.
+packtool stream | sudo docker exec -i "$DST" pg_restore --exit-on-error --no-owner --no-privileges -U mb1 -d mb1 >>"$LOG" 2>&1
 phase=VERIFY
 app "$DST" shell -c '
 from renewal_attachments.models import RenewalAttachment
@@ -100,6 +114,7 @@ assert r.sha256=="b"*64 and r.byte_size==8
 echo "MB1_E2E_PG17_SOURCE_TARGET=OK"
 echo "MB1_E2E_REAL_PG_DUMP_RESTORE=OK"
 echo "MB1_E2E_SYNTHETIC_OBJECT_JOURNAL_HASH=OK"
-echo "MB1_E2E_AUTHENTICATED_ENCRYPTED_SET=NOT_CREATED"
+echo "MB1_E2E_AUTHENTICATED_ENCRYPTED_SET=OK"
+echo "MB1_E2E_WRONG_KEY_AND_TAMPER_REJECTED=OK"
 echo "MB1_E2E_EXTERNAL_KEY_CUSTODY=NOT_VERIFIED"
 echo "MB1_E2E_GLOBAL_FREEZE=NOT_VERIFIED"
