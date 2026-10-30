@@ -175,8 +175,7 @@ phase=SIGKILL_PG17
 # Docker host kills the detached writer externally after it signals that the
 # PG17 transaction is open. Self-SIGKILL of container PID1 is unreliable.
 KILL_CONTAINER="${PROJECT}_kill_writer"
-if ! docker run -d --name "$KILL_CONTAINER" --network "$NET" \
-
+if docker run -d --name "$KILL_CONTAINER" --network "$NET" \
  -e VENCIRA_ENV=test -e VENCIRA_ATTACHMENT_SPLIT_REHEARSAL=1 \
  -e VENCIRA_DB_ENGINE=postgresql \
  -e DJANGO_SETTINGS_MODULE=config.settings \
