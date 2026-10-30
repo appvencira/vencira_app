@@ -49,3 +49,8 @@ Esperar `MB1_SCHEDULER_AUDIT_RESULT=INVENTORY_ONLY` y código 0. M1-03 permanece
 ## Resultado de auditoría efectiva de planificadores — PASS parcial
 
 El operador informa: `MB1_SCHEDULER_CRON_FILES=4`, `MB1_SCHEDULER_CRON_UNREADABLE=0`, `MB1_SCHEDULER_CRON_FLAGGED=0`; unidad O5 backup clasificada `VENCIRA,SQL,OBJECT`, unidad O5 health clasificada `VENCIRA`; `MB1_SCHEDULER_AUDIT_RESULT=INVENTORY_ONLY`, `MB1_EFFECTIVE_SCHEDULER_EXIT_CODE=0`. El clasificador buscó coincidencias, no ejecutó ni examinó el comportamiento completo de scripts indirectos. No se deduce que cron carezca de escritores. El temporizador O5 backup sí tiene relación con PostgreSQL/almacenamiento, y debe preservarse sin intervención. `MB1_SCHEDULER_SQL_PERMISSIONS=NOT_VERIFIED`, `MB1_SCHEDULER_WRITER_EXCLUSION=NOT_VERIFIED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`. M1-03 sigue abierto.
+
+
+## Auditoría de roles PG17 — PASS limitado
+
+Operador: `MB1_SQL_PROJECT=vencira_localcheck:LOGIN_ROLES=1:ELEVATED_ROLES=1:DB_SESSIONS=1`; `MB1_SQL_PROJECT=vencira_preview:LOGIN_ROLES=1:ELEVATED_ROLES=1:DB_SESSIONS=1`; `MB1_SQL_READONLY_ROLE_CENSUS=OK`; `MB1_SQL_AUDIT_EXIT_CODE=0`. La única sesión observada en cada base puede corresponder a la propia consulta; una instantánea no permite deducir ausencia de conexiones en otros instantes. La coincidencia entre recuento de roles login y elevados **no identifica a los usuarios ni verifica grants, autenticación de red o rutas de acceso**. `MB1_SQL_ROLE_GRANTS_AND_NETWORK_AUTH=NOT_FULLY_VERIFIED`, `MB1_SQL_ACTIVE_WRITER_EXCLUSION=NOT_VERIFIED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`. M1-03 no se considera completado.
