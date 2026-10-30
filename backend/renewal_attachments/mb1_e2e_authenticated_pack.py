@@ -82,7 +82,7 @@ def pack(root):
     print("MB1_E2E_AUTHENTICATED_ENCRYPTED_SET=CREATED")
 
 
-def verified(root, *, wrong_key=False, corrupt=False):
+def verified(root, *, wrong_key=False, corrupt=False, detached=False):
     manifest_bytes = read(root / "manifest.json", 8192)
     tag = read(root / "manifest.mac", 128)
     auth = read(root / "keys" / "authentication.key", 128)
@@ -111,21 +111,31 @@ def verified(root, *, wrong_key=False, corrupt=False):
         (db, "database_sha256"), (obj, "object_sha256"), (journal, "journal_sha256")
     )):
         raise RuntimeError("CAPTURE_COMPONENT_MISMATCH")
-    if obj != read(root / "objects" / ITEM, MAX_FILE) or journal != read(root / "journal" / (ITEM + ".json"), MAX_FILE):
+    if not detached and (obj != read(root / "objects" / ITEM, MAX_FILE) or journal != read(root / "journal" / (ITEM + ".json"), MAX_FILE)):
         raise RuntimeError("OBJECT_OR_JOURNAL_DIFFER")
-    return db
+    return db, obj, journal
 
 
 def main():
-    if len(sys.argv) != 3 or sys.argv[1] not in {"pack", "stream", "negative"}:
+    if len(sys.argv) != 3 or sys.argv[1] not in {"pack", "stream", "negative", "detached_stream", "detached_extract"}:
         raise SystemExit("USAGE")
     root = guard(sys.argv[2])
     action = sys.argv[1]
     if action == "pack":
         pack(root)
     elif action == "stream":
-        sys.stdout.buffer.write(verified(root))
+        sys.stdout.buffer.write(verified(root)[0])
         sys.stdout.buffer.flush()
+    elif action == "detached_stream":
+        sys.stdout.buffer.write(verified(root, detached=True)[0])
+        sys.stdout.buffer.flush()
+    elif action == "detached_extract":
+        _, obj, journal = verified(root, detached=True)
+        target = root / "recovered"
+        target.mkdir(mode=0o700)
+        private_write(target / ITEM, obj)
+        private_write(target / (ITEM + ".json"), journal)
+        print("MB1_E2E_DETACHED_OBJECT_JOURNAL_RESTORED=OK")
     else:
         for case in ({"wrong_key": True}, {"corrupt": True}):
             try:
