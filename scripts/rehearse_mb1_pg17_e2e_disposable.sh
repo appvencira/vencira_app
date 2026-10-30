@@ -138,7 +138,18 @@ packtool() {
     -e VENCIRA_ENV=test -e MB1_DISPOSABLE_ONLY=1 \
     "$IMG" python -m renewal_attachments.mb1_e2e_authenticated_pack "$1" /capture
 }
+# Capture a bounded filesystem inventory before packaging. This detects
+# noncooperative modifications that persist across the packaging window,
+# but cannot prevent changes or detect change-and-revert races.
+phase=FILESYSTEM_INVENTORY_PRE
+(cd "$ROOT" && find objects journal -type f -print0 | sort -z | xargs -0 sha256sum) > "$ROOT/fs.before"
+test "$(wc -l < "$ROOT/fs.before")" -eq 2
+phase=AUTHENTICATED_PACK
 packtool pack >>"$LOG" 2>&1
+phase=FILESYSTEM_INVENTORY_POST
+(cd "$ROOT" && find objects journal -type f -print0 | sort -z | xargs -0 sha256sum) > "$ROOT/fs.after"
+cmp -s "$ROOT/fs.before" "$ROOT/fs.after"
+echo "MB1_E2E_FILESYSTEM_INVENTORY_STABLE=OK"
 packtool negative >>"$LOG" 2>&1
 rm -f "$ROOT/source.dump"
 phase=RESTORE_VERIFIED
