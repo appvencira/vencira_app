@@ -17,3 +17,8 @@ echo "MB1_E2E_DETACHED_EXIT_CODE=$?"
 Marcadores nuevos esperados: `MB1_E2E_DETACHED_RECOVERY_MEDIA=OK`, `MB1_E2E_DETACHED_OBJECT_JOURNAL=OK`. Permanecen `MB1_E2E_EXTERNAL_KEY_CUSTODY=NOT_VERIFIED`, `MB1_E2E_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_OPERATIONAL_RELEASE=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
 
 Siguiente hito real de MB1: acreditar credenciales de recuperación bajo custodia independiente fuera del VPS, diseñar y comprobar aislamiento efectivo de **todos** los writers BD/objetos/diario y ensayar recuperación con borrado del origen en un clon, no más gates por componente.
+
+
+## Resultado de ejecución — 30/10/2026
+
+Operador: `MB1_E2E_DETACHED_RECOVERY_MEDIA=OK`, `MB1_E2E_DETACHED_OBJECT_JOURNAL=OK`, `MB1_E2E_REAL_PG_DUMP_RESTORE=OK`, `MB1_E2E_AUTHENTICATED_ENCRYPTED_SET=OK`, `MB1_E2E_WRONG_KEY_AND_TAMPER_REJECTED=OK`, `MB1_E2E_RESULT=0`. También `MB1_E2E_SOURCE_NETWORK_INGRESS_DENIED=OK`, `MB1_E2E_FILESYSTEM_INVENTORY_STABLE=OK`. Permanecen `MB1_E2E_EXTERNAL_KEY_CUSTODY=NOT_VERIFIED`, `MB1_E2E_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_OPERATIONAL_RELEASE=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Log privado local `/tmp/vencira-mb1-e2e.CwhKJPWs/drill.log` no inspeccionado. Validada la recuperación sintética desde un soporte lógico separado, no la custodia externa real ni la congelación universal.
