@@ -20,3 +20,8 @@ Esperado, solo después de ejecución: `MB1_PG17_PHYSICAL_ORM_TESTS=OK`, `MB1_PG
 Implementar un orquestador de clon que detenga **todos** los procesos que pueden escribir en DB, objetos y diario, sea capaz de demostrar que la instantánea está estable durante `pg_dump` y empaquetado, verifique conjunto autenticado, recupere en PG17 destino diferente mediante B09E y tenga custodia de claves fuera del VPS. Hasta entonces `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
 
 **Estado:** código preparado, prueba aún no ejecutada.
+
+
+## Resultado operador — 30/10/2026
+
+Salida recibida: `C_FICHA_SPLIT_PG17_EPHEMERAL=OK`, `B18B_RECOVERY_SCHEMA_READY=OK`, `MB1_PG17_PHYSICAL_ORM_TESTS=OK`, `MB1_PG_DUMP_RESTORE=NOT_RUN`, `MB1_NONCOOPERATIVE_WRITERS=NOT_BLOCKED`, `C_FICHA_FULL_SUITE=NOT_RUN`, `C_FICHA_SPLIT_PG17_RESULT=0`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. **Integración ORM PG17 más archivos sintéticos focalizada PASS**. El operador no ha aportado `MB1_PG17_PHYSICAL_EXIT_CODE` separado. No se acredita dump/restore conjunto, ni bloqueo de escritores externos, ni autorización de entrega.
