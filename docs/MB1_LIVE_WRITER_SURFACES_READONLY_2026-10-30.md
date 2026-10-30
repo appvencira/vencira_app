@@ -26,3 +26,10 @@ MFA_RELEASE_AUTHORIZED=NO
 C_FICHA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Inventario ejecutado en VPS (30/10/2026)
+
+`DOCKER_USUARIO_EXIT=1`, `DOCKER_SUDO_EXIT=0`: acceso Docker con `sudo`, no incorporar usuario al grupo docker. El operador informa `MB1_WRITER_CENSUS_RUNNING_VENCIRA=6`, proyectos `vencira_localcheck` y `vencira_preview`, cada uno con API, web_preview y PostgreSQL. Ambos contenedores db montan un volumen Docker RW en `/var/lib/postgresql/data`; `MB1_WRITER_RW_MOUNT_COUNT=2`, `MB1_WRITER_CENSUS_RESULT=INVENTORY_ONLY`, `MB1_WRITER_CENSUS_EXIT_CODE=0`. `MB1_WRITER_FILE_LOCK_COOPERATIVE=UNVERIFIED`, `MB1_WRITER_ENTRYPOINT_COVERAGE=UNVERIFIED`, `MB1_WRITER_NONDOCKER_PROCESSES=NOT_INVENTORIED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`.
+
+**Hallazgo operativo:** existen dos proyectos independientes en el VPS; no seleccionar uno ni parar ninguno automáticamente. El informe no identifica montajes de adjuntos en los contenedores en ejecución; eso no descarta otros destinos de almacenamiento. Siguiente inspección estrictamente de lectura: comparar identidad y roles de ambos proyectos y localizar almacenamiento/servicios no Docker sin revelar variables ni secretos.
