@@ -1,0 +1,31 @@
+# MB1 — Escritores efectivos y estrategia M1-03 / M1-04
+
+30/10/2026. Revisión estática de código y evidencias del VPS. Sin cambios en servicios.
+
+## Matriz de superficies
+
+| Superficie | Evidencia | Consecuencia |
+|---|---|---|
+| API Django localcheck | compose.yaml ejecuta Gunicorn; reminders/urls.py incluye altas y cambios de renovaciones, usuarios, modalidades y recordatorios | Escritura PG17 operacional; no basta bloquear solo adjuntos |
+| API preview | Segundo proyecto Docker, con PostgreSQL independiente; entrypoint histórico de migrate automático | No intervenir ni confundir con localcheck |
+| API pública de adjuntos | reminders/attachment_api.py: POST y DELETE 403; listado GET; attachment_gate.py impide descargas | No hay escritura operativa de adjuntos por HTTP |
+| Intake de ensayo | renewal_attachments/offline_intake.py bajo VENCIRA_ENV=test; advisory_barrier | Solo escritores cooperativos de laboratorio |
+| PG17 advisory lock | offline_write_barrier_b06b.py | No protege contra escritores SQL que ignoran el lock |
+| Objetos y diario | PrivateQuarantineStore e IntakeJournal, solo ensayos; ningún volumen de adjuntos en API DEV según inventario | No inventar almacén operacional activo |
+| Redes Docker | Ambas DB sin puertos publicados; un network por servicio | La red Docker puede admitir conexiones SQL internas |
+| Cron/O5 | Tres timers relevantes, cron del sistema y tres archivos cron.d | Comandos no inspeccionados; no detener backups |
+
+## Brechas M1-03
+
+1. Confirmar todas las rutas de escritura PostgreSQL: endpoints API, scripts de administración, tareas y clientes con acceso desde Docker.
+2. Inspeccionar comandos de cron y unidades O5 de forma privada, sin reproducir secretos; revisar permisos PostgreSQL preferentemente en clon.
+3. Identificar accesos de otros contenedores o usuarios a las redes y a volúmenes compartidos.
+4. Registrar cómo se impedirá que entren nuevas escrituras y cómo se drenarán las existentes, sin afectar el backup O5.
+
+## Arquitectura M1-04
+
+Los advisory locks son cooperativos: NO proporcionan freeze global. Una captura consistente de PG17 + objetos requiere bloquear escritores operativos, esperar transacciones activas, verificar accesos externos y mantener la exclusión durante todo el snapshot. Probar primero con clones y restaurar en un segundo equipo. En DEV actual no hay adjuntos activos ni volúmenes operacionales de objetos en API; no declarar un snapshot integral de ficheros inexistentes.
+
+M1-03=PARTIAL, M1-04=NOT_STARTED, MB1_GLOBAL_FREEZE=NOT_VERIFIED, MB1_OPERATIONAL_RELEASE=NO, NO_DEPLOY_NO_LIVE_MIGRATION=1.
+
+No repetir censos de procesos o redes: revisar rutas efectivas de escritura y planificar una barrera operacional comprobable.
