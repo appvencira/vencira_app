@@ -159,7 +159,23 @@ phase=DETACHED_RECOVERY_MEDIA
 RECOVERY="$(mktemp -d /tmp/vencira-mb1-detached.XXXXXXXX)"
 mkdir -m 700 "$RECOVERY/keys"
 cp "$ROOT/capture.enc" "$ROOT/manifest.json" "$ROOT/manifest.mac" "$RECOVERY/"
+phase=KEY_ABSENCE_NEGATIVE
+# A backup copied without its keys must not be recoverable.
+# Suppress expected failure details: no keys or decrypted payload in logs.
+if sudo docker run --rm --network none --user "$(id -u):$(id -g)" \
+  --mount "type=bind,source=$RECOVERY,target=/capture" \
+  -e VENCIRA_ENV=test -e MB1_DISPOSABLE_ONLY=1 \
+  "$IMG" python -m renewal_attachments.mb1_e2e_authenticated_pack \
+  detached_stream /capture > /dev/null 2>&1; then
+  echo "MB1_E2E_KEY_ABSENCE_NEGATIVE=FAILED"
+  exit 1
+fi
+echo "MB1_E2E_KEY_ABSENCE_REJECTED=OK"
+phase=KEY_REHYDRATION_SYNTHETIC
+# Local synthetic keys are reintroduced for this drill ONLY.
 cp "$ROOT/keys/encryption.key" "$ROOT/keys/authentication.key" "$RECOVERY/keys/"
+chmod 600 "$RECOVERY/keys/"*
+echo "MB1_E2E_SYNTHETIC_KEYS_REHYDRATED=OK"
 OBJ_EXPECTED="$(sha256sum "$ROOT/objects/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" | cut -d' ' -f1)"
 JOURNAL_EXPECTED="$(sha256sum "$ROOT/journal/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json" | cut -d' ' -f1)"
 rm -f "$ROOT/source.dump"
