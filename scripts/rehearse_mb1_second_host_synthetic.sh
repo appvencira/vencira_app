@@ -61,6 +61,20 @@ docker run --rm --network none --user "$(id -u):$(id -g)" \
  -e VENCIRA_ENV=test -e MB1_DISPOSABLE_ONLY=1 -e MB1_SYNTHETIC_KEY_ROOT=/keymedia \
  "$IMG" python -m renewal_attachments.mb1_e2e_authenticated_pack detached_stream /capture |
  docker exec -i "$DB" pg_restore --exit-on-error --no-owner --no-privileges -U mb1 -d mb1 >/dev/null
+phase=RESTORE_FILES
+# A writable temporary output directory is separate from the immutable
+# package and read-only key mounts. Never write into the source package.
+mkdir -m 700 "$RUN_DIR/recovered"
+docker run --rm --network none --user "$(id -u):$(id -g)" \
+ --mount "type=bind,source=$(realpath "$PACKAGE"),target=/capture,readonly" \
+ --mount "type=bind,source=$(realpath "$KEYS"),target=/keymedia,readonly" \
+ --mount "type=bind,source=$RUN_DIR/recovered,target=/recovered" \
+ -e VENCIRA_ENV=test -e MB1_DISPOSABLE_ONLY=1 \
+ -e MB1_SYNTHETIC_KEY_ROOT=/keymedia \
+ "$IMG" python -m renewal_attachments.mb1_e2e_authenticated_pack detached_extract_to /capture /recovered >/dev/null
+test -s "$RUN_DIR/recovered/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+test -s "$RUN_DIR/recovered/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json"
+echo "MB1_SECOND_HOST_OBJECT_JOURNAL=OK"
 phase=VERIFY
 COUNT="$(docker exec "$DB" psql -X -A -t -v ON_ERROR_STOP=1 -U mb1 -d mb1 -c \
  "SELECT count(*) FROM renewal_attachments_renewalattachment WHERE display_name='synthetic.pdf' AND state='quarantined';")"
