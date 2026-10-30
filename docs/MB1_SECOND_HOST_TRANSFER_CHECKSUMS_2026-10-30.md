@@ -26,3 +26,8 @@ MB1_EXTERNAL_CUSTODY=NOT_VERIFIED
 MB1_GLOBAL_FREEZE=NOT_VERIFIED
 MB1_RELEASE_AUTHORIZED=NO
 ```
+
+
+## Resultado comunicado por operador
+
+La verificación **local** del paquete de ensayo ha terminado con `MB1_SECOND_HOST_PACKAGE_RECEIPT=OK` y `MB1_TRANSFER_VERIFY_EXIT_CODE=0`. `MB1_SECOND_HOST_KEYS=NOT_CHECKED`, `MB1_SECOND_HOST_RESTORE=NOT_RUN`, `MB1_EXTERNAL_CUSTODY=NOT_VERIFIED` y `MB1_RELEASE_AUTHORIZED=NO`. No existen evidencias todavía de traslado fuera del VPS ni de restauración en el segundo host. No se vuelven a ejecutar los gates anteriores.
