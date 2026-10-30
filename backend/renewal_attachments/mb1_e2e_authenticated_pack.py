@@ -127,8 +127,22 @@ def verified(root, *, wrong_key=False, corrupt=False, detached=False):
     return db, obj, journal
 
 
+def detached_extract_to(root, destination):
+    """Recover only synthetic object/journal to a separate private mount."""
+    destination = guard(destination)
+    if destination.resolve() == root.resolve():
+        raise RuntimeError("OUTPUT_MUST_BE_SEPARATE")
+    if any(destination.iterdir()):
+        raise RuntimeError("OUTPUT_NOT_EMPTY")
+    _, obj, journal = verified(root, detached=True)
+    private_write(destination / ITEM, obj)
+    private_write(destination / (ITEM + ".json"), journal)
+
+
 def main():
-    if len(sys.argv) != 3 or sys.argv[1] not in {"pack", "stream", "negative", "detached_stream", "detached_extract"}:
+    if len(sys.argv) not in (3, 4) or sys.argv[1] not in {"pack", "stream", "negative", "detached_stream", "detached_extract", "detached_extract_to"}:
+        raise SystemExit("USAGE")
+    if (sys.argv[1] == "detached_extract_to") != (len(sys.argv) == 4):
         raise SystemExit("USAGE")
     root = guard(sys.argv[2])
     action = sys.argv[1]
@@ -140,6 +154,9 @@ def main():
     elif action == "detached_stream":
         sys.stdout.buffer.write(verified(root, detached=True)[0])
         sys.stdout.buffer.flush()
+    elif action == "detached_extract_to":
+        detached_extract_to(root, sys.argv[3])
+        print("MB1_E2E_DETACHED_OBJECT_JOURNAL_RESTORED=OK")
     elif action == "detached_extract":
         _, obj, journal = verified(root, detached=True)
         target = root / "recovered"
