@@ -26,3 +26,8 @@ C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Validación comunicada por operador — 30/10/2026
+
+`Ran 8 tests in 0.056s`, `OK`, `MB1_FREEZE_INPROCESS_TESTS=OK`, `MB1_FREEZE_CROSS_PROCESS=NOT_IMPLEMENTED`, `MB1_FREEZE_FILESYSTEM=NOT_ENFORCED`, `MB1_FULL_RESTORE=NOT_RUN`, `MB1_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `MB1_FREEZE_RESULT=0`. Ocho tests de contrato en memoria superados; el operador no ha incluido `MB1_FREEZE_EXIT_CODE` en la salida. **No se acreditan freeze entre procesos, coherencia de filesystem ni disaster recovery**. Próximo trabajo: integración con PG17 y objetos/diario en clon aislado, con writers controlados, y restauración B09E.
