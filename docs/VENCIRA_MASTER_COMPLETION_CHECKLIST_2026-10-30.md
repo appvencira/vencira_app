@@ -11,7 +11,7 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 - [x] Contrato de seis interrupciones simulado `c43405e`
 - [x] Clasificador puro de inventarios incompletos (10 pruebas) `cb138f4`
 - [x] Inventario inicial de los dos proyectos Docker y confirmación de Caddy: DEV servido por `vencira_localcheck`
-- [ ] **M1-01** Integrar el clasificador con inventario PG17 + volúmenes de laboratorio e introducir estados incompletos; resultado PASS de operador. Implementación `52464eb`, sin validación todavía
+- [x] **M1-01** Integración del clasificador con inventario PG17 + volúmenes temporales; estados incompletos detectados. PASS operador: `MB1_INTEGRATED_PG17_ORPHAN_CLASSIFICATION=OK`, `MB1_INTEGRATED_RESULT=0`, `MB1_INTEGRATED_EXIT_CODE=0`. Implementación `52464eb`
 - [ ] **M1-02** Pruebas de interrupción real de procesos, pérdidas parciales y recuperación/reconciliación fail-closed: ninguna eliminación automática
 - [ ] **M1-03** Censo completo de escritores y vías externas (API, cron/systemd, scripts, acceso SQL, objetos/diario)
 - [ ] **M1-04** Definir e implantar el corte consistente de DB + archivos bajo concurrencia, primero en laboratorio; exclusión efectiva de nuevos escritores y ausencia de escrituras no cooperativas
