@@ -74,6 +74,28 @@ docker run --rm --network none --user "$(id -u):$(id -g)" \
  "$IMG" python -m renewal_attachments.mb1_e2e_authenticated_pack detached_extract_to /capture /recovered >/dev/null
 test -s "$RUN_DIR/recovered/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 test -s "$RUN_DIR/recovered/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json"
+phase=VERIFY_OBJECT_JOURNAL_DIGESTS
+# The extractor authenticates the manifest with the independent HMAC key
+# before writing the files. Compare actual recovered bytes against its hashes.
+python3 - "$PACKAGE/manifest.json" "$RUN_DIR/recovered" <<'PY'
+import hashlib
+import json
+import pathlib
+import sys
+manifest = json.loads(pathlib.Path(sys.argv[1]).read_bytes())
+root = pathlib.Path(sys.argv[2])
+item = "a" * 32
+if manifest.get("snapshot") != "mb1-dual-pg17-synthetic-v1" or manifest.get("item") != item:
+    raise SystemExit("MB1_SECOND_HOST_MANIFEST_MISMATCH")
+for name, field in ((item, "object_sha256"), (item + ".json", "journal_sha256")):
+    expected = manifest.get(field)
+    if not isinstance(expected, str) or len(expected) != 64:
+        raise SystemExit("MB1_SECOND_HOST_EXPECTED_HASH_INVALID")
+    actual = hashlib.sha256((root / name).read_bytes()).hexdigest()
+    if actual != expected:
+        raise SystemExit("MB1_SECOND_HOST_RECOVERED_HASH_MISMATCH")
+PY
+echo "MB1_SECOND_HOST_RECOVERED_HASHES=OK"
 echo "MB1_SECOND_HOST_OBJECT_JOURNAL=OK"
 phase=VERIFY
 COUNT="$(docker exec "$DB" psql -X -A -t -v ON_ERROR_STOP=1 -U mb1 -d mb1 -c \
