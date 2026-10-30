@@ -32,9 +32,11 @@ class MB1PG17PhysicalCutTests(TransactionTestCase):
             expires_on=date(2027, 12, 1))
         self.key = "a" * 32
         self.cipher = b"synthetic-encrypted-object"
+        self.expected_cipher_sha = hashlib.sha256(self.cipher).hexdigest()
         self.journal = json.dumps({
             "version": 1, "storage_key": self.key, "state": "pending",
         }).encode()
+        self.expected_journal_sha = hashlib.sha256(self.journal).hexdigest()
         self.attachment = RenewalAttachment.objects.create(
             renewal=ren, storage_key=self.key, display_name="synthetic.pdf",
             content_type="application/pdf", byte_size=len(self.cipher),
@@ -47,12 +49,8 @@ class MB1PG17PhysicalCutTests(TransactionTestCase):
         with self.fence.capture():
             row = RenewalAttachment.objects.get(pk=self.attachment.pk)
             db_records = {row.storage_key.hex: {
-                "cipher_sha256": hashlib.sha256(
-                    self.cipher if False else (self.root / "object.bin").read_bytes()
-                ).hexdigest(),
-                "journal_sha256": hashlib.sha256(
-                    (self.root / "intent.json").read_bytes()
-                ).hexdigest(),
+                "cipher_sha256": self.expected_cipher_sha,
+                "journal_sha256": self.expected_journal_sha,
             }}
             obj = (self.root / "object.bin").read_bytes()
             journal = (self.root / "intent.json").read_bytes()
@@ -73,6 +71,11 @@ class MB1PG17PhysicalCutTests(TransactionTestCase):
         result = self.capture()
         self.assertTrue(result["verified"])
         self.assertFalse(result["release_authorized"])
+
+    def test_tampered_object_rejected(self):
+        (self.root / "object.bin").write_bytes(b"tampered")
+        with self.assertRaises(CaptureSetError):
+            self.capture()
 
     def test_missing_journal_rejected(self):
         (self.root / "intent.json").unlink()
