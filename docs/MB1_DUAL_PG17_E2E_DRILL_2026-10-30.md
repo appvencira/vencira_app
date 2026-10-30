@@ -78,3 +78,12 @@ La exclusión certificable cubre únicamente nuevas conexiones por esa red tempo
 ## Validación de aislamiento de red — 30/10/2026
 
 Operador: `MB1_E2E_FOREIGN_DB_SESSION_REJECTED=OK`, `MB1_E2E_SOURCE_DB_SESSION_DRAIN=OK`, `MB1_E2E_SOURCE_NETWORK_INGRESS_DENIED=OK`, `MB1_E2E_PG17_SOURCE_TARGET=OK`, `MB1_E2E_REAL_PG_DUMP_RESTORE=OK`, `MB1_E2E_SYNTHETIC_OBJECT_JOURNAL_HASH=OK`, `MB1_E2E_AUTHENTICATED_ENCRYPTED_SET=OK`, `MB1_E2E_WRONG_KEY_AND_TAMPER_REJECTED=OK`, `MB1_E2E_RESULT=0`. `MB1_E2E_EXTERNAL_KEY_CUSTODY=NOT_VERIFIED`, `MB1_E2E_GLOBAL_FREEZE=NOT_VERIFIED`. Log privado local: `/tmp/vencira-mb1-e2e.LKUqIb5C/drill.log` (no inspeccionado). Release bloqueado; sin despliegue ni migración persistente. Resultado acredita exclusión de nuevas conexiones por red interna del clon, no de procesos locales privilegiados ni filesystem.
+
+
+## Inventario estable durante empaquetado — extensión pendiente de validar
+
+Se añade al ensayo E2E una comparación antes/después del inventario de archivos físicos de `objects/` y `journal/`: listado determinista y SHA-256, comprobación de dos ficheros esperados y rechazo ante diferencias al terminar `packtool pack`. Marcador nuevo si pasa: `MB1_E2E_FILESYSTEM_INVENTORY_STABLE=OK`. Las pruebas previas de cifrado, manipulación y restore siguen en el mismo ejecutor; no ejecutar otras suites.
+
+**Limitación esencial:** es detección *a posteriori*, no un bloqueo del filesystem. No evita una mutación seguida de reversión, un cambio fuera del momento de observación, una carrera en el listado, ni escrituras de procesos privilegiados. Tampoco vincula por sí solo los hashes a un corte atómico de PostgreSQL. `MB1_E2E_GLOBAL_FREEZE=NOT_VERIFIED` permanece; custodia externa no verificada y release no autorizado.
+
+Para validar únicamente este cambio: `bash scripts/rehearse_mb1_pg17_e2e_disposable.sh` en la rama habitual, después de `git pull --ff-only`. Estado de esta extensión: pendiente de ejecución.
