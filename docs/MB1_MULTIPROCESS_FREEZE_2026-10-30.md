@@ -27,3 +27,8 @@ C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Evidencia operador — 30/10/2026
+
+El operador comunica `Ran 6 tests in 1.435s`, `OK`, `MB1_CROSS_PROCESS_COOPERATIVE_FENCE=OK`, `MB1_NONCOOPERATIVE_WRITERS=NOT_BLOCKED`, `MB1_PG17_FILESYSTEM_INTEGRAL_RESTORE=NOT_RUN`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `MB1_PROCESS_RESULT=0`. No consta en el fragmento un `MB1_PROCESS_EXIT_CODE` separado. **Se valida únicamente el ensayo de bloqueo cooperativo entre procesos**; no la captura multi-almacén ni el restore. Siguiente: ensayo de integración PG17 y filesystem aislados bajo un corte que impida escrituras también desde servicios no cooperativos, con verificación de restauración y sin activar DEV.
