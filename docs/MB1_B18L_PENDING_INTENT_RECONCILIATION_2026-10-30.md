@@ -23,3 +23,8 @@ C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Evidencia aportada por operador — 30/10/2026
+
+`Ran 8 tests in 0.001s`, `OK`, `B18L_PENDING_INTENT_CONTRACTS=OK`, `B18L_LIVE_RECONCILIATION=NOT_IMPLEMENTED`, `B18L_GLOBAL_CAPTURE=BLOCKED`, `B18L_RESULT=0`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. La salida compartida no incluye `B18L_EXIT_CODE`; la batería informa resultado 0. **Contrato B18L sintético PASS**, no autoriza publicación, reconciliación efectiva ni recuperación operativa. Próxima tarea: consolidar evidencia de ensayos y priorizar corte y restore integral sobre PG17, sin más micro-gates que no reduzcan el bloqueo principal.
