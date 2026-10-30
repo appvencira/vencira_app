@@ -48,3 +48,8 @@ echo "MB1_HOST_CENSUS_EXIT_CODE=$?"
 ```
 
 M1-03 sigue abierto hasta contrastar el inventario del host con los proyectos Docker, entradas de escritura del código y tareas fuera de Docker. M1-04 (freeze) no autorizado.
+
+
+## Evidencia host — PASS inventario, no freeze
+
+Operador: `MB1_HOST_CENSUS_EXIT_CODE=0`; clases: caddy=1, containerd=1, cron=1, dockerd=1, gunicorn=6, nginx=10, postgres=12, python3=1; `/proc` inaccesibles=0. Timers detectados: `dpkg-db-backup.timer`, `vencira-o5-backup.timer`, `vencira-o5-health.timer`. Persisten `MB1_HOST_USER_CRONTABS=NOT_VERIFIED`, `MB1_HOST_EXTERNAL_SQL_WRITERS=NOT_VERIFIED`, `MB1_HOST_SHARED_BIND_WRITERS=NOT_VERIFIED`, `MB1_HOST_NONCOOPERATIVE_WRITERS=NOT_EXCLUDED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`. Los recuentos incluyen todos los servicios del host y no identifican por sí solos qué procesos escriben en VENCIRA. No se debe intervenir O5 ni procesos de DEV. M1-03 sigue pendiente.
