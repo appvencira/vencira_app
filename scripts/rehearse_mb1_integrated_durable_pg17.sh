@@ -17,9 +17,10 @@ docker info >/dev/null
 [ "$(git branch --show-current)" = feature/c-ficha-independent-attachments ]
 # Name cannot match production compose prefixes.
 case "$PROJECT" in mb1_integrated_*) ;; *) exit 2;; esac
-created_db=0; created_net=0; created_obj=0; created_journal=0
+created_db=0; created_net=0; created_obj=0; created_journal=0; KILL_CONTAINER=""
 cleanup() {
   rc=$?; trap - EXIT
+  if [ -n "$KILL_CONTAINER" ]; then docker rm -f "$KILL_CONTAINER" >/dev/null 2>&1 || rc=1; fi
   if [ "$created_db" = 1 ]; then docker rm -f "$DB" >/dev/null 2>&1 || rc=1; fi
   if [ "$created_net" = 1 ]; then docker network rm "$NET" >/dev/null 2>&1 || rc=1; fi
   if [ "$created_obj" = 1 ]; then docker volume rm "$VOL_OBJ" >/dev/null 2>&1 || rc=1; fi
@@ -171,11 +172,11 @@ print("MB1_INTEGRATED_PG17_ORPHAN_CLASSIFICATION=OK")
 print("MB1_INTEGRATED_AUTOMATIC_REPAIR=DISABLED")
 '
 phase=SIGKILL_PG17
-# Real process death while a PostgreSQL transaction remains uncommitted.
-# The journal/object have been fsync'd by the actual production primitives.
-# Run Python directly as Docker PID 1; avoid Django shell exit handling.
-# Set up Django explicitly. SIGKILL of PID 1 must return Docker exit 137.
-if docker run --rm --network "$NET" \
+# Docker host kills the detached writer externally after it signals that the
+# PG17 transaction is open. Self-SIGKILL of container PID1 is unreliable.
+KILL_CONTAINER="${PROJECT}_kill_writer"
+if ! docker run -d --name "$KILL_CONTAINER" --network "$NET" \
+
  -e VENCIRA_ENV=test -e VENCIRA_ATTACHMENT_SPLIT_REHEARSAL=1 \
  -e VENCIRA_DB_ENGINE=postgresql \
  -e DJANGO_SETTINGS_MODULE=config.settings \
@@ -187,7 +188,7 @@ if docker run --rm --network "$NET" \
  "$IMG" python -c '
 import django
 django.setup()
-import hashlib, os, signal, uuid
+import hashlib, os, time, uuid
 from pathlib import Path
 from django.db import transaction
 from reminders.attachment_private_store import PrivateQuarantineStore
@@ -207,17 +208,42 @@ with transaction.atomic():
         content_type="application/pdf",byte_size=len(payload),
         sha256=sha,state="quarantined",storage_key=key)
     # Persisted on filesystem but NOT committed in PG17.
-    os.kill(os.getpid(),signal.SIGKILL)
-'; then
-  echo "MB1_SIGKILL_UNEXPECTED_SUCCESS=1" >&2
-  exit 1
+    marker=Path("/lab/journal/.mb1-kill-ready")
+    marker.write_text("TRANSACTION_OPEN")
+    with marker.open("rb") as fd: os.fsync(fd.fileno())
+    dirfd=os.open("/lab/journal",os.O_RDONLY|os.O_DIRECTORY)
+    try: os.fsync(dirfd)
+    finally: os.close(dirfd)
+    time.sleep(120)
+' >/dev/null; then
+  :
 else
-  kill_rc=$?
-  if [ "$kill_rc" -ne 137 ]; then
-    echo "MB1_SIGKILL_UNEXPECTED_EXIT=$kill_rc" >&2
-    exit 1
-  fi
+  echo "MB1_SIGKILL_DOCKER_START_FAILED=1" >&2
+  exit 1
 fi
+kill_ready=0
+for _ in $(seq 1 60); do
+  if docker exec "$KILL_CONTAINER" test -f /lab/journal/.mb1-kill-ready >/dev/null 2>&1; then
+    kill_ready=1
+    break
+  fi
+  if [ "$(docker inspect -f '{{.State.Running}}' "$KILL_CONTAINER")" != true ]; then break; fi
+  sleep 1
+done
+if [ "$kill_ready" != 1 ]; then
+  echo "MB1_SIGKILL_WRITER_NOT_READY=1" >&2
+  docker logs "$KILL_CONTAINER" >&2 || true
+  exit 1
+fi
+docker kill --signal KILL "$KILL_CONTAINER" >/dev/null
+kill_rc="$(docker wait "$KILL_CONTAINER")"
+docker rm "$KILL_CONTAINER" >/dev/null
+KILL_CONTAINER=""
+if [ "$kill_rc" != 137 ]; then
+  echo "MB1_SIGKILL_UNEXPECTED_EXIT=$kill_rc" >&2
+  exit 1
+fi
+echo "MB1_SIGKILL_HOST_CONFIRMED_137=OK"
 phase=SIGKILL_RECOVER
 app shell -c '
 import hashlib, uuid
