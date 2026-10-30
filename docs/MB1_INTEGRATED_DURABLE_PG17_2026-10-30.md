@@ -24,3 +24,8 @@ La etapa siguiente, tras PASS, es demostrar comportamiento fail-closed frente a 
 ## Incidencia de ejecución y corrección
 
 La primera ejecución produjo `PermissionError: [Errno 1] Operation not permitted: '/lab/objects'` en fase `WRITE`, y `MB1_INTEGRATED_RESULT=1`. Causa: raíz de volumen Docker creada con propietario root frente al usuario no privilegiado de Django. Commit `c5100f9`: tras crear **exclusivamente** los dos volúmenes efímeros, obtiene UID/GID de la imagen Django y utiliza un contenedor aislado temporal con usuario root para ajustar propietario y permisos 0700. La prueba Django ahora verifica los permisos sin intentar modificarlos. No se cambian permisos ni volúmenes de DEV. **Corrección aún pendiente de validación**.
+
+
+## Revalidación tras corrección de permisos — PASS
+
+El operador informa `MB1_INTEGRATED_PRIVATE_VOLUME_PERMISSIONS=OK`, `MB1_INTEGRATED_REAL_STORE_JOURNAL_PG17=OK`, `MB1_INTEGRATED_RECREATED_APP_CONSISTENT=OK`, `MB1_INTEGRATED_PG17_PRIVATESTORE_JOURNAL_PERSISTENCE=OK`, `MB1_INTEGRATED_RESULT=0` y `MB1_INTEGRATED_EXIT_CODE=0`. Ensayo sintético con PostgreSQL 17 temporal y dos volúmenes Docker desechables. No acredita freeze global, custodia externa operativa ni activación de adjuntos en DEV. `MB1_OPERATIONAL_RELEASE=NO`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
