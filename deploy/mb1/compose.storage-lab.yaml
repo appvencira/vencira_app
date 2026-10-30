@@ -1,0 +1,14 @@
+# MB1: isolated Docker Compose persistence rehearsal; never include in DEV compose.
+name: mb1_storage_disposable
+services:
+  storage_probe:
+    image: python:3.12-alpine
+    command: ["sleep", "infinity"]
+    network_mode: "none"
+    restart: "no"
+    volumes:
+      - encrypted_objects:/lab/objects
+      - intake_journal:/lab/journal
+volumes:
+  encrypted_objects: {}
+  intake_journal: {}
