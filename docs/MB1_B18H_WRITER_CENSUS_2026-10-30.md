@@ -50,3 +50,8 @@ C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Primera ejecución — 30/10/2026
+
+El operador confirma `B18H_AUDIT_EXIT_CODE=0`, `B18H_CLASSIFICATION=HEURISTIC_ONLY_NOT_COMPLETE`, `B18H_CANDIDATE_FILES=76`, `B18H_CANDIDATE_CALLS=264`, `B18H_SCAN_ERRORS=0`, `B18H_OPERATIONAL_FREEZE=NOT_VERIFIED`. Se trata de **76 archivos y 264 llamadas candidatas**, no de 264 escrituras efectivas, fallos ni caminos certificados. El listado detallado está solo en `/tmp/vencira-b18h-writer-candidates.json` del VPS y no se ha analizado individualmente desde GitHub. **Pendiente** clasificar llamadas y grafo de ejecución (incluyendo procesos externos y filesystem). `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
