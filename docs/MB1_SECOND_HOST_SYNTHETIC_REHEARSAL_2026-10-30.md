@@ -64,3 +64,10 @@ El operador realizó un ensayo en un Ubuntu x86_64 distinto del VPS IONOS. Se tr
 ## Endurecimiento de hashes en segundo host — pendiente de revalidación
 
 El commit `6906bb6` incorpora comparación de los hashes SHA-256 reales del objeto y diario restaurados frente a `object_sha256` y `journal_sha256` del manifiesto. Ese manifiesto es verificado mediante HMAC por el extractor antes de permitir extracción. El marcador nuevo es `MB1_SECOND_HOST_RECOVERED_HASHES=OK`. Cualquier discrepancia falla el gate. El éxito anterior en segundo host permanece válido para el código anterior; **esta mejora concreta aún no ha sido ejecutada en el Ubuntu independiente**. Ninguna clave real se usa y la liberación operativa continúa bloqueada.
+
+
+## Revalidación de integridad en Ubuntu independiente — PASS
+
+El operador ejecutó la revisión con hashes de objeto/diario en Ubuntu x86_64. Salida: `MB1_SECOND_HOST_NO_KEYS=REJECTED`, `MB1_SECOND_HOST_RECOVERED_HASHES=OK`, `MB1_SECOND_HOST_OBJECT_JOURNAL=OK`, `MB1_SECOND_HOST_PG17_RESTORE=OK`, `MB1_SECOND_HOST_PACKAGE_AND_KEYS_SEPARATE=OK`, `MB1_SECOND_HOST_SYNTHETIC_RESTORE=OK`, `MB1_SECOND_HOST_RESULT=0`, `MB1_HASH_GATE_EXIT_CODE=0`. El descifrado se realizó con claves sintéticas desde USB a directorio temporal en memoria. No se han recibido contraseñas ni claves.
+
+**Conclusión limitada**: restauración sintética integral en host independiente y hashes verificados. La custodia externa operativa y consistencia de captura con escritores concurrentes no quedan demostradas: `MB1_EXTERNAL_KEY_CUSTODY=REQUIRES_MANUAL_ATTESTATION`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`. No repetir este gate sin cambios en mecanismo.
