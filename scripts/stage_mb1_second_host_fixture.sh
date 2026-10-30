@@ -24,6 +24,10 @@ cp -- "$SOURCE/keys/encryption.key" "$SOURCE/keys/authentication.key" "$OUT/keys
 chmod 600 "$OUT/package/"* "$OUT/keys/"*
 [ "$(find "$OUT/package" -maxdepth 1 -type f | wc -l)" -eq 3 ]
 [ "$(find "$OUT/keys" -maxdepth 1 -type f | wc -l)" -eq 2 ]
+# Public checksum list contains only encrypted package files, NEVER keys.
+(cd "$OUT/package" && sha256sum capture.enc manifest.json manifest.mac) > "$OUT/package-checksums.sha256"
+chmod 600 "$OUT/package-checksums.sha256"
+echo "MB1_TRANSFER_PACKAGE_CHECKSUMS=$OUT/package-checksums.sha256"
 echo "MB1_TRANSFER_STAGED_SYNTHETIC=OK"
 echo "MB1_TRANSFER_PACKAGE_DIR=$OUT/package"
 echo "MB1_TRANSFER_KEY_DIR=$OUT/keys"
