@@ -52,3 +52,10 @@ echo "MB1_SECOND_HOST_METHOD_EXIT_CODE=$?"
 ```
 
 No afirmar custodia externa ni freeze global por este resultado.
+
+
+## Primera restauración en Ubuntu x86_64 independiente — PASS (30/10/2026)
+
+El operador realizó un ensayo en un Ubuntu x86_64 distinto del VPS IONOS. Se transfirió el paquete sintético cifrado por SSH y se verificó el inventario SHA-256 en destino (`MB1_REMOTE_PACKAGE_VERIFY_EXIT_CODE=0`). Las claves sintéticas se empaquetaron cifradas en USB local, se verificó su descifrado con éxito y se extrajeron a un directorio temporal en `/dev/shm` para restauración. Se utilizó la imagen `vencira-mb1-recovery:c2eb33902e82` (amd64). Indicadores informados: `MB1_KEYS_IN_TEMPORARY_MEMORY=OK`, `MB1_SECOND_HOST_NO_KEYS=REJECTED`, `MB1_SECOND_HOST_OBJECT_JOURNAL=OK`, `MB1_SECOND_HOST_PG17_RESTORE=OK`, `MB1_SECOND_HOST_PACKAGE_AND_KEYS_SEPARATE=OK`, `MB1_SECOND_HOST_SYNTHETIC_RESTORE=OK`, `MB1_SECOND_HOST_RESULT=0`, `MB1_INDEPENDENT_RESTORE_COMMAND=OK`, `MB1_SECOND_HOST_EXIT_CODE=0`.
+
+**Alcance exacto:** restauración completa **sintética** en un host independiente confirmada por salida del operador. El resultado de objetos/diario comprueba existencia con contenido, no comparación end-to-end de hashes contra un manifiesto de origen independiente. El paquete y las claves se originaron en el VPS: USB tras transferencia por SSH no acredita custodia externa operativa ni supervivencia ante pérdida total del VPS. El proceso no acredita congelación global de escritores reales. `MB1_EXTERNAL_KEY_CUSTODY=REQUIRES_MANUAL_ATTESTATION`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`.
