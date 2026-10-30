@@ -24,3 +24,10 @@ El usuario `vencira` actualmente necesita `sudo` para Docker; si falla antes de 
 ## Próximo trabajo
 
 Una vez validada persistencia a nivel de Compose, integrar `PrivateQuarantineStore` y `IntakeJournal` en una prueba de integración Django **separada y aislada**, junto a PostgreSQL 17 efímero, y comprobar estabilidad durante un corte consistente. No conectar aún almacenamiento al Compose DEV.
+
+
+## Resultado del ensayo comunicado por operador — PASS
+
+En el VPS se ejecutó el Compose aislado con `python:3.12-alpine`. Se crearon dos volúmenes `mb1_lab_3247327_24341_intake_journal` y `mb1_lab_3247327_24341_encrypted_objects`, luego se recreó el contenedor y se confirmaron `MB1_STORAGE_LAB_INITIAL_WRITE=OK`, `MB1_STORAGE_LAB_CONTAINER_RECREATE_PERSISTENCE=OK`, `MB1_STORAGE_LAB_OBJECT_JOURNAL_HASH=OK`, `MB1_STORAGE_LAB_RESULT=0`, `MB1_STORAGE_LAB_EXIT_CODE=0`. El script ejecuta limpieza por Compose en su trap; el operador no adjuntó verificación independiente de la eliminación de los volúmenes. Se mantienen `MB1_STORAGE_OPERATIONAL_RELEASE=NO`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+Alcance: persistencia sintética de dos volúmenes ante recreación de contenedor, sin integración ORM/PG17 y sin activar adjuntos en DEV.
