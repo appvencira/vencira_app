@@ -31,3 +31,8 @@ C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Ampliación de ensayo: objetos y diario (pendiente de ejecución)
+
+El runner de segundo host ahora también descifra y autentica objeto y diario del paquete, los extrae a un tercer montaje temporal de salida y exige que existan con contenido. El backend incorpora `detached_extract_to` para no escribir en el paquete de origen montado solo lectura. **No se ha ejecutado aún en un segundo host.** Esta comprobación es una prueba de recuperación de bytes sintéticos, no una comprobación completa de coherencia ORM/objeto/diario sobre datos operativos. No aprovisiona almacenamiento externo ni custodia real. `MB1_EXTERNAL_KEY_CUSTODY=NOT_VERIFIED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`.
