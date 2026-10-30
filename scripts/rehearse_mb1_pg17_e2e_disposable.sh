@@ -14,12 +14,13 @@ SRC="vencira_${RUN_ID}_source"
 DST="vencira_${RUN_ID}_target"
 ROOT="$(mktemp -d /tmp/vencira-mb1-e2e.XXXXXXXX)"
 LOG="$ROOT/drill.log"
-phase=SETUP; net=0; src=0; dst=0
+phase=SETUP; net=0; src=0; dst=0; RECOVERY=""
 cleanup() {
   rc=$?; trap - EXIT
   if [ "$src" = 1 ]; then sudo docker rm -f "$SRC" >>"$LOG" 2>&1 || rc=1; fi
   if [ "$dst" = 1 ]; then sudo docker rm -f "$DST" >>"$LOG" 2>&1 || rc=1; fi
   if [ "$net" = 1 ]; then sudo docker network rm "$NET" >>"$LOG" 2>&1 || rc=1; fi
+  if [[ "$RECOVERY" == /tmp/vencira-mb1-detached.* && -d "$RECOVERY" ]]; then rm -rf -- "$RECOVERY" || rc=1; fi
   if [ "$rc" != 0 ]; then echo "MB1_E2E_FAILED_PHASE=$phase"; tail -n 25 "$LOG"; fi
   echo "MB1_E2E_RESULT=$rc"
   echo "MB1_E2E_LOG_LOCAL=$LOG"
