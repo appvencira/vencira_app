@@ -127,4 +127,47 @@ assert hashlib.sha256(payload).hexdigest()==item.sha256==journal["sha256"]
 assert journal["storage_key"]==item.storage_key.hex
 print("MB1_INTEGRATED_RECREATED_APP_CONSISTENT=OK")
 '
+phase=CLASSIFIER_PG17
+# Deliberately create three incomplete *synthetic* states in the disposable
+# PG17 / object and journal volumes; classify by read-only enumeration.
+app shell -c '
+import hashlib, uuid
+from pathlib import Path
+from cryptography.fernet import Fernet
+from renewal_attachments.offline_intake_journal import IntakeJournal
+from renewal_attachments.offline_recovery_classifier_mb1 import classify_recovery_inventory
+from renewal_attachments.models import RenewalAttachment
+from reminders.attachment_private_store import PrivateQuarantineStore
+root=Path("/lab/objects")
+journal_root=Path("/lab/journal")
+store=PrivateQuarantineStore(root,(root/".lab-key").read_bytes())
+journal=IntakeJournal(str(journal_root))
+base=RenewalAttachment.objects.get(display_name="synthetic.pdf")
+intent_only=uuid.uuid4()
+object_only=uuid.uuid4()
+metadata_only=uuid.uuid4()
+payload=b"MB1_INTEGRATED_ORPHAN_SYNTHETIC"
+sha=hashlib.sha256(payload).hexdigest()
+journal.record_intent(intent_only,sha)
+store.put_quarantine(object_only,payload)
+RenewalAttachment.objects.create(
+    renewal=base.renewal,display_name="missing-object.pdf",
+    content_type="application/pdf",byte_size=len(payload),
+    sha256=sha,state="quarantined",storage_key=metadata_only)
+# Exclude the private lab key, which is not a stored attachment object.
+intents={uuid.UUID(hex=p.stem) for p in journal_root.iterdir() if p.suffix==".json"}
+objects={uuid.UUID(hex=p.name) for p in root.iterdir() if len(p.name)==32 and all(c in "0123456789abcdef" for c in p.name)}
+metadata=set(RenewalAttachment.objects.values_list("storage_key",flat=True))
+report=classify_recovery_inventory(intents=intents,objects=objects,metadata=metadata)
+assert report["complete"]==1, report
+assert report["intent_only"]==1, report
+assert report["object_only"]==1, report
+assert report["metadata_only"]==1, report
+assert report["requires_review"] is True
+assert report["repair_authorized"] is False
+assert report["deletion_authorized"] is False
+assert report["release_authorized"] is False
+print("MB1_INTEGRATED_PG17_ORPHAN_CLASSIFICATION=OK")
+print("MB1_INTEGRATED_AUTOMATIC_REPAIR=DISABLED")
+'
 echo "MB1_INTEGRATED_PG17_PRIVATESTORE_JOURNAL_PERSISTENCE=OK"
