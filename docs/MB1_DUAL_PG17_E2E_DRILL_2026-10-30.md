@@ -41,3 +41,19 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 ## Evidencia de ejecución comunicada — 30/10/2026
 
 El operador comunicó: `MB1_E2E_PG17_SOURCE_TARGET=OK`, `MB1_E2E_REAL_PG_DUMP_RESTORE=OK`, `MB1_E2E_SYNTHETIC_OBJECT_JOURNAL_HASH=OK`, `MB1_E2E_AUTHENTICATED_ENCRYPTED_SET=NOT_CREATED`, `MB1_E2E_EXTERNAL_KEY_CUSTODY=NOT_VERIFIED`, `MB1_E2E_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_E2E_RESULT=0`, `MB1_OPERATIONAL_RELEASE=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Log privado: `/tmp/vencira-mb1-e2e.PW97vX2R/drill.log` (no inspeccionado). No se incluyó `MB1_E2E_EXIT_CODE` adicional. **PASS para restauración PG17 sintética y hashes locales; no para backup integral operativo**.
+
+
+## Extensión cifrada y autenticada — pendiente de validación
+
+Nueva revisión del gate E2E: `backend/renewal_attachments/mb1_e2e_authenticated_pack.py` empaqueta el `pg_dump -Fc` y bytes de objeto/diario sintéticos mediante Fernet, autentica un manifiesto conjunto con HMAC-SHA256, registra hashes SHA-256 y `snapshot_id` común. El ejecutor ahora empaqueta, prueba **clave errónea y archivo alterado**, elimina el dump original y **verifica/autentica/descifra antes de transmitir por stdout a `pg_restore`** en destino efímero. Utiliza `--network none` para el empaquetador. El manifiesto no está firmado mediante un custodio independiente: claves y paquete están temporalmente en el mismo directorio de ensayo del VPS, y se conserva un `source.dump` sintético durante el empaquetado.
+
+**Importante:** todavía no demuestra corte universal frente a escritores externos, captura coherente SQL+filesystem, custodia externa de claves, anti-rollback o validez operativa. El uso de Fernet en memoria tiene un límite de tamaño de prueba; no sirve como streaming de backup a escala comercial. No modificar despliegues. El operador debe repetir **únicamente el gate E2E**, ya que cambió su comportamiento:
+
+```bash
+cd ~/vencira-localcheck
+git pull --ff-only origin feature/c-ficha-independent-attachments
+bash scripts/rehearse_mb1_pg17_e2e_disposable.sh
+echo "MB1_E2E_AUTH_EXIT_CODE=$?"
+```
+
+Si pasa: `MB1_E2E_AUTHENTICATED_ENCRYPTED_SET=OK`, `MB1_E2E_WRONG_KEY_AND_TAMPER_REJECTED=OK`, `MB1_E2E_REAL_PG_DUMP_RESTORE=OK`, `MB1_E2E_RESULT=0`. **Estado actual de esta extensión: PENDING_OPERATOR_VALIDATION.**
