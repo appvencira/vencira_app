@@ -29,3 +29,18 @@ Los advisory locks son cooperativos: NO proporcionan freeze global. Una captura 
 M1-03=PARTIAL, M1-04=NOT_STARTED, MB1_GLOBAL_FREEZE=NOT_VERIFIED, MB1_OPERATIONAL_RELEASE=NO, NO_DEPLOY_NO_LIVE_MIGRATION=1.
 
 No repetir censos de procesos o redes: revisar rutas efectivas de escritura y planificar una barrera operacional comprobable.
+
+
+## Siguiente gate M1-03: inspección semántica de tareas (sin exponer comandos)
+
+Commit `ec75257`: `scripts/inspect_mb1_effective_schedulers_readonly.sh` analiza localmente el contenido de `/etc/crontab`, ficheros regulares de `/etc/cron.d` y las unidades systemd `vencira-o5-backup.service` y `vencira-o5-health.service`; muestra **solo** categorías de coincidencias VENCIRA/SQL/OBJECT/EXEC y contadores, nunca comandos, variables, credenciales o el contenido completo. Es una clasificación heurística y puede omitir wrappers de shell o scripts invocados indirectamente. No inspecciona crontabs por usuario; no acredita ausencia de escritores ni autoriza freeze.
+
+```bash
+cd ~/vencira-localcheck
+git pull --ff-only origin feature/c-ficha-independent-attachments
+bash -n scripts/inspect_mb1_effective_schedulers_readonly.sh
+sudo env MB1_EFFECTIVE_SCHEDULER_AUDIT=YES bash scripts/inspect_mb1_effective_schedulers_readonly.sh
+echo "MB1_EFFECTIVE_SCHEDULER_EXIT_CODE=$?"
+```
+
+Esperar `MB1_SCHEDULER_AUDIT_RESULT=INVENTORY_ONLY` y código 0. M1-03 permanece abierto.
