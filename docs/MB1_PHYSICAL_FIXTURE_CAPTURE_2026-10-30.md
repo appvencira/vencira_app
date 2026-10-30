@@ -28,3 +28,8 @@ C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Validación aportada por operador — 30/10/2026
+
+`Ran 6 tests in 0.011s`, `OK`, `MB1_PHYSICAL_FIXTURE_CAPTURE=OK`, `MB1_REAL_PG17_CAPTURE=NOT_RUN`, `MB1_NONCOOPERATIVE_WRITER_EXCLUSION=NOT_VERIFIED`, `MB1_INDEPENDENT_RESTORE=NOT_RUN`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `MB1_PHYSICAL_RESULT=0`. Acredita únicamente las **seis pruebas de captura física sintética**; no significa snapshot de PG17 ni restore integral. El fragmento compartido no incluye un `MB1_PHYSICAL_EXIT_CODE` adicional. Próximo desarrollo de valor: un ensayo end-to-end real en PG17 efímero con storage sintético, restauración aislada y controles de exclusión efectivos, sin habilitar servicios ni datos persistentes.
