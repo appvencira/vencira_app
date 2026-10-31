@@ -6,7 +6,7 @@ Ya existían la autenticación HMAC e integridad del manifiesto, la retención p
 
 M1-05 continúa abierto. Se añade una nueva prueba **pura, de datos sintéticos, sin Docker ni servicios**, que exige un recibo/cabeza de confianza conservado **fuera del paquete de backup**.
 
-## Implementación propuesta — no ejecutada todavía
+## Implementación — subprueba pura validada (operador)
 
 - backend/renewal_attachments/offline_antirollback_head_mb1.py (commit ff0367f).
 - backend/renewal_attachments/test_antirollback_head_mb1.py (commit a000126).
@@ -24,7 +24,7 @@ M1-05 continúa abierto. Se añade una nueva prueba **pura, de datos sintéticos
     PYTHONPATH=backend python3 -m unittest -v renewal_attachments.test_antirollback_head_mb1
     echo "MB1_ANTIROLLBACK_EXIT_CODE=$?"
 
-Se esperan 11 pruebas OK y MB1_ANTIROLLBACK_EXIT_CODE=0. Solo entonces registrar PASS de la subprueba. No marca M1-05 como terminado.
+**Resultado comunicado por operador:** `Ran 11 tests in 0.004s`, `OK`, `MB1_ANTIROLLBACK_EXIT_CODE=0`. Subprueba de cabeza independiente y rechazo de rollback: **PASS**. No marca M1-05 como terminado; aún falta vínculo de la cabeza con los ficheros reales del paquete y custodia externa.
 
 ## Gates de liberación no satisfechos
 
