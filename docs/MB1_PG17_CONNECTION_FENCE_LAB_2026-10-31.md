@@ -24,3 +24,8 @@ Esperado: MB1_PG17_NEW_WRITER_DENIAL=OK; MB1_PG17_ADMIN_BYPASS_CONFIRMED=OK; MB1
 ## Resultado confirmado por operador — PASS parcial
 
 `MB1_PG17_NEW_WRITER_DENIAL=OK`, `MB1_PG17_EXISTING_WRITER_DRAIN=NOT_VERIFIED`, `MB1_PG17_ADMIN_BYPASS_CONFIRMED=OK`, `MB1_PG17_FENCE_RESULT=0`, `MB1_PG17_FENCE_EXIT_CODE=0`. Asimismo `MB1_NONCOOPERATIVE_SQL_SUPERUSER=NOT_BLOCKED`, `MB1_FILESYSTEM_WRITERS=NOT_BLOCKED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`. Prueba **únicamente** de denegación de conexión nueva a un rol ordinario, no un freeze. M1-04 sigue abierto.
+
+
+## Segunda etapa M1-04: sesión preexistente y drenaje (pendiente de operador)
+
+Commit `a7947e2`: el mismo ensayo efímero establece primero una sesión SQL de un rol ordinario, mantiene una transacción abierta con `pg_sleep(18)` y exige observarla en `pg_stat_activity`. Después impone `NOLOGIN` al rol, comprueba que nuevas conexiones fracasan y **rechaza considerar apta la captura** mientras siga viva la transacción. Tras la salida del escritor verifica que no queda sesión y marca `MB1_PG17_EXISTING_WRITER_DRAIN=OK`, `MB1_PG17_CAPTURE_SQL_QUIESCENT_LAB=OK`; verifica además que el administrador continúa pudiendo acceder. Se mantiene `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, ya que la sesión del administrador y otros roles no están bloqueados y los archivos no forman parte del ensayo. Ejecutar el mismo script tras `git pull`; no hay necesidad de repetir otras suites. **No validado aún**.
