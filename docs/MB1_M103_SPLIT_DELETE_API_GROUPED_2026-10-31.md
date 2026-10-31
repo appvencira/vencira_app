@@ -54,7 +54,7 @@ Ante cualquier fallo, NO se dan por aprobados los demás casos ni se activa la r
 
 Un resultado 0 demostrará únicamente la **viabilidad semántica** del esquema independiente en laboratorio sin activar MFA. **No significa que los datos existentes estén migrados ni que sea seguro quitar la clase histórica de la aplicación operativa.**
 
-Antes de implementar la transición real habrá que decidir el mecanismo de compatibilidad con entornos que sí tienen `reminders.0027` aplicada en clones, demostrar preservación de IDs/huellas/objetos con datos históricos, bloquear escrituras globalmente y restaurar en un segundo host. Es necesario definir el comportamiento de las API y del collector de Django frente a ambos modelos, y validar HTTP completo. La migración independiente solo se publica después de MFA/custodia con aprobación explícita; un `migrate` global arrastraría MFA y está prohibido.
+Antes de implementar la transición real habrá que decidir el mecanismo de compatibilidad con entornos que sí tienen `reminders.0027` aplicada en clones, demostrar preservación de IDs/huellas/objetos con datos históricos, bloquear escrituras globalmente y restaurar en un segundo host. Es necesario definir el comportamiento de las API y del collector de Django frente a ambos modelos, y validar HTTP completo. La ruta independiente está diseñada para **no depender de MFA**; podría autorizarse separadamente solo tras cumplir los gates aplicables de seguridad, custodia, migración de datos y aceptación operativa. MFA y el legado 0027 continúan bloqueados. Un `migrate` global que arrastre MFA sigue prohibido.
 
 ```text
 MB1_M103_SPLIT_RUNTIME_OMISSION=TEST_ONLY
