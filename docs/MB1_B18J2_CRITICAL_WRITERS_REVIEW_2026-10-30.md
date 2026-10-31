@@ -34,3 +34,10 @@ C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Actualización de trazabilidad (31/10/2026; preservar hallazgo histórico)
+
+La referencia de esta revisión del 30/10 a **borrado de objeto al fallar metadata en** `stage_private_attachment` describía el código de aquella fecha. **Fue corregida** después de demostrar el riesgo de confirmación SQL ambigua: código `05bea57`, regresión 30/30 PASS documentada en `docs/MB1_M102_GROUPED_FAILURE_M106_EXTERNAL_CUSTODY_2026-10-31.md`. El intake **conserva** ahora el ciphertext privado si se pierde la respuesta del callback de metadatos; el objeto pendiente debe conciliarse y no borrarse automáticamente. La lista de llamadas críticas B18K también impide reintroducir `discard_quarantine` dentro de este flujo (commit `f6f8c2f`). La revisión histórica sigue siendo útil para el problema restante de **fence no cooperativo**; no usar el texto original para concluir que el bug del borrado sigue presente.
+
+La revisión de 131 candidatos P0 **no ha quedado automáticamente resuelta** por corregir el primitivo. El último estado de M1-03 confirma API con rol superusuario, HBA loopback y ensayo Django bajo rol limitado con CRU PASS parcial; `Renewal.delete` queda bloqueado por `reminders.0027` y la cadena MFA. Evidencia `docs/MB1_M103_HBA_SCOPE_DJANGO_ORM_LAB_2026-10-31.md` (`92515ce`). Sin autorización de release o migración viva.
