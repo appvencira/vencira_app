@@ -1,6 +1,6 @@
 # VENCIRA — MB1 M1-03 / C-FICHA: ensayo agrupado de separación de modelos y borrado (31/10/2026)
 
-Rama: `feature/c-ficha-independent-attachments`. **PREPARADO, PENDIENTE de ejecución del operador.** No representa transición definitiva de datos ni autoriza migración operativa.
+Rama: `feature/c-ficha-independent-attachments`. **Primera ejecución FAIL en la preparación Auth, fallo reproducido y corregido en la rama; reensayo pendiente.** No representa transición definitiva de datos ni autoriza migración operativa.
 
 ## Motivo: fallo real reproducido y avance anterior
 
@@ -66,3 +66,45 @@ MFA_RELEASE_AUTHORIZED=NO
 MB1_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Incidencia observada al ejecutar — FAIL Auth incompleto (31/10/2026)
+
+El operador ejecutó el bloque de laboratorio real y obtuvo, antes del fallo:
+`MB1_M103_SPLIT_IMAGE_BUILD=OK`,
+`MB1_M103_SPLIT_POSTGRES17_INTERNAL_ONLY=OK`,
+`MB1_M103_SPLIT_INDEPENDENT_SCHEMA_WITHOUT_MFA=OK`,
+`MB1_M103_SPLIT_LIMITED_ROLE_READY=OK`,
+`MB1_M103_SPLIT_RUNTIME_ONLY_NO_HISTORICAL_MODEL=OK`,
+`MB1_M103_SPLIT_NO_MFA_MIGRATIONS=OK`,
+`MB1_M103_SPLIT_DJANGO_LIMITED_ROLE=OK`.
+
+Al crear `auth.User` ficticio, PostgreSQL rechazó el valor nulo de `auth_user.last_login`: `psycopg.errors.NotNullViolation`. Se comprobó que el runner solo migraba la dependencia mínima de Auth (procedente de `reminders.0018`), pero no ejecutaba explícitamente `migrate auth`; el campo se hace nullable mediante la migración estándar Django `auth.0005_alter_user_last_login_null`. La causa es **esquema Auth incompleto en la base efímera**, no un fallo de permisos del login limitado ni una justificación para activar MFA.
+
+La ejecución reportó `MB1_M103_SPLIT_GROUP_PHASE=REAL_ORM` y `MB1_M103_SPLIT_GROUP_RESULT=1`. **El gate completo no pasó y no debe afirmarse lo contrario**. La prueba de borrado y las vistas DRF no llegaron a ejecutarse. El contenedor de laboratorio y su volumen se destruyeron según el trap del runner. No se modificó DEV, preview ni O5.
+
+## Corrección de alcance mínimo — PENDIENTE de reensayo
+
+- Runner `scripts/rehearse_mb1_m103_split_delete_api_grouped.sh` (commit `eeae957`): tras `reminders.0018` y `renewal_attachments.0006`, ejecuta explícitamente `python manage.py migrate auth --noinput` y `migrate sessions` **solo en el contenedor efímero**. Antes de conceder grants, consulta que la migración Auth 0005 esté aplicada y que `auth_user.last_login` tenga `is_nullable=YES`. No ejecuta `migrate` global ni toca 0019–0027.
+- Programa `backend/renewal_attachments/offline_mb1_m103_split_delete_lab.py` (commit `f96b2ee`): segundo control fail-closed del mismo esquema, desde la sesión limitada, antes de crear usuarios.
+- No se repiten los gates M1-02, HBA, roles genéricos ni las auditorías previas; se vuelve a ejecutar únicamente el bloque que falló, con la corrección necesaria de las migraciones Auth.
+
+Comando:
+```bash
+cd ~/vencira-localcheck
+git pull --ff-only origin feature/c-ficha-independent-attachments
+bash -n scripts/rehearse_mb1_m103_split_delete_api_grouped.sh
+MB1_M103_SPLIT_DELETE_LAB=YES bash scripts/rehearse_mb1_m103_split_delete_api_grouped.sh
+echo "MB1_M103_SPLIT_GROUP_EXIT_CODE=$?"
+```
+
+Nuevos requisitos de aceptación **además de los marcadores previos**:
+```text
+MB1_M103_SPLIT_DJANGO_BUILTIN_AUTH_MIGRATIONS=OK
+MB1_M103_SPLIT_AUTH_LAST_LOGIN_NULLABLE=OK
+MB1_M103_SPLIT_AUTH_SCHEMA_READY=OK
+MB1_M103_SPLIT_GROUP_RESULT=0
+MB1_M103_SPLIT_GROUP_EXIT_CODE=0
+```
+
+**PENDIENTE:** el operador aún no ha ejecutado el código corregido. No cerrar M1-03 ni M2/C-FICHA basándose en estos commits. Las migraciones MFA continúan prohibidas.
