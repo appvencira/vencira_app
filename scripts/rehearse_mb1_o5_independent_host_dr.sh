@@ -32,7 +32,7 @@ trap finish EXIT
 for cmd in docker restic rclone python3 git flock; do command -v "$cmd" >/dev/null; done
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$HERE"
-[ "$(git branch --show-current)" = feature/c-ficha-independent-attachments ]
+[ "$(git -c safe.directory="$HERE" branch --show-current)" = feature/c-ficha-independent-attachments ]
 test -f scripts/o5_restore_schema_contract.py
 # Refuse to operate on known DEV or preview origin containers.
 for origin in vencira_localcheck-db-1 vencira_preview-db-1; do
@@ -47,18 +47,13 @@ echo "MB1_DR_NO_KNOWN_SOURCE_SIGNATURE=OK"
 
 PHASE=CUSTODY_PRECHECK
 CFG_DIR=/etc/vencira-recovery
-CFG="$CFG_DIR/o5.env"
 [ -d "$CFG_DIR" ] && [ ! -L "$CFG_DIR" ]
 [ "$(stat -c '%u:%a' "$CFG_DIR")" = 0:700 ]
-[ -f "$CFG" ] && [ ! -L "$CFG" ]
-[ "$(stat -c '%u:%a' "$CFG")" = 0:600 ]
-# Only provision this root-owned script from a verified independent custodian.
-# The .env file is sourced and executes shell code: NEVER use untrusted text.
-# shellcheck disable=SC1090
-. "$CFG"
-[ "$RESTIC_REPOSITORY" = rclone:vencira_google:VENCIRA-Backups/PostgreSQL ]
-[ "$RESTIC_PASSWORD_FILE" = /etc/vencira-recovery/restic-password ]
-[ "$RCLONE_CONFIG" = /etc/vencira-recovery/rclone.conf ]
+# Fixed non-secret repository locator. Do NOT source any credential script
+# with root privilege: only read two root-owned secret files.
+RESTIC_REPOSITORY=rclone:vencira_google:VENCIRA-Backups/PostgreSQL
+RESTIC_PASSWORD_FILE=/etc/vencira-recovery/restic-password
+RCLONE_CONFIG=/etc/vencira-recovery/rclone.conf
 for f in "$RESTIC_PASSWORD_FILE" "$RCLONE_CONFIG"; do
   [ -f "$f" ] && [ ! -L "$f" ] && [ -s "$f" ]
   [ "$(stat -c '%u:%a' "$f")" = 0:600 ]
