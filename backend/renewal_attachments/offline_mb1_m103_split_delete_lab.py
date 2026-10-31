@@ -67,6 +67,18 @@ def main():
         cur.execute("SELECT has_schema_privilege(current_user, 'public', 'CREATE')")
         assert cur.fetchone()[0] is False
     print("MB1_M103_SPLIT_DJANGO_LIMITED_ROLE=OK")
+    # Explicitly verify the built-in auth migrations have completed before
+    # creating synthetic users. The earlier trial failed on a NOT NULL column
+    # left by the auth.0001 baseline; it was NOT a DB privilege failure.
+    assert ("auth", "0005_alter_user_last_login_null") in applied
+    with connection.cursor() as cur:
+        cur.execute(
+            "SELECT is_nullable FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name='auth_user' "
+            "AND column_name='last_login'"
+        )
+        assert cur.fetchone() == ("YES",), "AUTH_LAST_LOGIN_MIGRATION_INCOMPLETE"
+    print("MB1_M103_SPLIT_AUTH_SCHEMA_READY=OK")
 
     owner = get_user_model().objects.create_user(username="mb1_split_owner")
     stranger = get_user_model().objects.create_user(username="mb1_split_other")
