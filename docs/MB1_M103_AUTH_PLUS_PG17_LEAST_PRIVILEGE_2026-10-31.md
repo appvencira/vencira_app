@@ -14,7 +14,7 @@ La inspección del `compose.yaml` versionado demuestra que la API y la DB recibe
 - `scripts/rehearse_mb1_m103_pg17_least_privilege_disposable.sh` (commits `c7e3acc`, `e4cd275`): crea **una nueva** instancia `postgres:17-alpine` con `--network none`, sin volúmenes de VENCIRA ni puertos; prepara un rol administrativo y un login de app independiente, con datos sintéticos. Conecta **como usuario limitado auténtico por TCP loopback y contraseña de laboratorio**, no mediante `SET ROLE` dentro de sesión superusuario.
   - Acepta lectura/creación/modificación/borrado ordinarios de una tabla sintética y uso de secuencia.
   - Deniega con SQLSTATE `42501` lectura de tabla privada, `ALTER TABLE`, `CREATE TABLE`, `TRUNCATE`, `CREATE ROLE` y `SET ROLE` administrativo.
-  - Vuelve a verificar que el login limitado sigue funcionando y destruye únicamente su contenedor efímero al terminar.
+  - Vuelve a verificar que el login limitado sigue funcionando y destruye su contenedor efímero **y volumen anónimo de PostgreSQL** con `docker rm -fv` al terminar.
 - `scripts/validate_mb1_m103_auth_plus_pg17_least_privilege.sh` (`05bb519`): reúne ambos gates y emite una salida global. No vuelve a ejecutar los censos M1-03 completos ya superados.
 
 **El ensayo de privilegios es representativo, NO una ejecución completa de Django sobre el esquema real.** Tampoco ha demostrado compatibilidad de migraciones, reportes, triggers, funciones ni respaldo O5 con identidades separadas. Cualquier promoción a DEV requerirá ensayar el modelo de usuarios sobre clon, backup previo validado, soporte de migración explícita, cambio de credenciales, rollback y aprobación independiente.
