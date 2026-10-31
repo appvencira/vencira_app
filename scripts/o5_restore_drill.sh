@@ -93,10 +93,18 @@ restic dump --tag vencira-postgresql latest vencira-postgres.dump 2>>"$LOG" |
 echo "RESTAURACION_PG17_DESDE_DRIVE=OK"
 
 PHASE=VERIFICACION_RESTORADA
-schema="$(docker exec "$RESTORE_NAME" psql -X -v ON_ERROR_STOP=1 \
+# A snapshot from a newer migration must not be rejected merely because
+# its *latest* migration no longer equals the historical baseline.
+# Validate presence of required base migrations and essential restored tables.
+# This is a minimum structural check, not full application compatibility.
+migrations="$(docker exec "$RESTORE_NAME" psql -X -v ON_ERROR_STOP=1 \
   -U o5_restore -d o5_restore -Atqc \
-  "SELECT name FROM django_migrations WHERE app='reminders' ORDER BY name DESC LIMIT 1;")"
-test "$schema" = 0014_renewal_outcomes
+  "SELECT name FROM django_migrations WHERE app='reminders' ORDER BY name;")"
+schema_tables="$(docker exec "$RESTORE_NAME" psql -X -v ON_ERROR_STOP=1 \
+  -U o5_restore -d o5_restore -Atqc \
+  "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY table_name;")"
+python3 /home/vencira/vencira-localcheck/scripts/o5_restore_schema_contract.py \
+  --migrations "$migrations" --tables "$schema_tables"
 n_migrations="$(docker exec "$RESTORE_NAME" psql -X -v ON_ERROR_STOP=1 \
   -U o5_restore -d o5_restore -Atqc "SELECT COUNT(*) FROM django_migrations;")"
 test "$n_migrations" -gt 0
@@ -105,7 +113,7 @@ restored_tables="$(docker exec "$RESTORE_NAME" psql -X -v ON_ERROR_STOP=1 \
   "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';")"
 test "$restored_tables" -gt 0
 test "$BEFORE_DB_ID" = "$(docker inspect "$DB" --format '{{.Id}}')"
-echo "ESQUEMA_O3_RESTAURADO=0014_renewal_outcomes"
+echo "O5_MINIMUM_MIGRATION_PRESENT=0014_renewal_outcomes"
 echo "TABLAS_PUBLIC_RESTAURADAS=$restored_tables"
 echo "RESTIC_SNAPSHOT_TAG=vencira-postgresql"
 echo "POSTGRES_ORIGINAL_INTACTO=1"
