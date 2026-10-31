@@ -72,3 +72,28 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 **Interpretación de seguridad:** ambos PostgreSQL operan con un solo rol habilitado para login y ese rol tiene privilegios de superusuario; aumenta el alcance de cualquier compromiso de sus credenciales. No está probado aún que el proceso API use directamente ese rol (hay que comparar configuración efectiva sin exponer nombres ni contraseñas). Seis reglas `trust` incluyen potencialmente reglas de socket/local; no puede afirmarse que las seis permitan acceso remoto sin contraseña. La regla de host amplia NO indica por sí sola `trust`; puede requerir `scram-sha-256` y estar confinada a la red Docker. **No calificar como exposición pública ni alterar pg_hba/conf mientras falte clasificación.** La ausencia puntual de conexiones y miembros foráneos no excluye root, Docker host, conexiones efímeras o futuras.
 
 El operador también recibió `MB1_M103_WRITER_ROUTES=INVENTORY_NOT_FULLY_REVIEWED`, `MB1_M103_EXTERNAL_SQL_ACCESS=NOT_EXCLUDED`, `MB1_M103_PRIVILEGED_HOST_WRITERS=NOT_EXCLUDED`, `MB1_M103_UNIVERSAL_WRITER_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. **M1-03 continúa abierto.** Siguiente auditoría única: cruzar clases local/host, autenticación de regla amplia y privilegio de la identidad efectiva de API. Sin reejecutar censo de 10 tests.
+
+## Segunda pasada focalizada: HBA local frente a host + identidad real de API (pendiente)
+
+La primera auditoría reveló `LOGIN_ROLES=1` y `SUPERUSER_LOGIN=1` tanto en localcheck como en preview; además `HBA_TRUST_RULES=6` (local+host) y `HBA_UNRESTRICTED_ADDRESS_RULES=1` (método aún desconocido). Antes de recomendar endurecimiento **es imprescindible clasificar dónde aparece `trust` y si la API usa efectivamente el superusuario**.
+
+Nuevo código **solo lectura**:
+- `scripts/audit_mb1_m103_hba_and_app_identity_readonly.py` (`7daf9af`) consulta `pg_hba_file_rules` y separa reglas `local/trust`, `host/trust`, `host` con dirección amplia y sus métodos: `trust`, `scram-sha-256`, `md5`, `password` y otros. Compara internamente las variables de conexión `POSTGRES_USER` de API y DB obtenidas mediante `docker inspect`, y comprueba si el rol de conexión de DB es superusuario; **no imprime usuarios, variables, contraseñas, direcciones ni reglas**. Un `API_USES_DB_SUPERUSER=YES` evidencia coincidencia de identidad y privilegio del rol observado; `NOT_MATCHED/UNKNOWN` requiere análisis posterior, no declara seguridad.
+- `scripts/test_mb1_m103_hba_and_app_identity_readonly.py` (`36f14d3`): 11 pruebas puras de clasificación, recuentos inconsistentes, datos ausentes y comparación de identidad.
+- `scripts/validate_mb1_m103_hba_identity_focused.sh` (`3ed78ef`): ejecuta esas 11 pruebas y una única lectura agregada SQL+Docker por cada proyecto. **No repite** las 10 pruebas ni los censos anteriores.
+
+### Comando único en el VPS (no ejecutado aún)
+
+```bash
+cd ~/vencira-localcheck
+git pull --ff-only origin feature/c-ficha-independent-attachments
+bash -n scripts/validate_mb1_m103_hba_identity_focused.sh
+bash scripts/validate_mb1_m103_hba_identity_focused.sh
+echo "MB1_M103_DETAIL_EXIT_CODE=$?"
+```
+
+Esperado: `Ran 11 tests`, `OK`, `MB1_M103_DETAIL_TESTS=OK`, `MB1_M103_HBA_IDENTITY_DETAIL=OK`, `MB1_M103_DETAIL_HBA_API_IDENTITY=OK`, `MB1_M103_DETAIL_DONE=OK`, `MB1_M103_DETAIL_RESULT=0` y `MB1_M103_DETAIL_EXIT_CODE=0`.
+
+La presencia de reglas host con `trust` puede ser relevante incluso sin puertos publicados: permite autenticación sin contraseña a los clientes a los que alcance esa regla. Si sólo aparece `trust` local y la regla amplia usa `scram-sha-256`, el hallazgo cambia de naturaleza, aunque el uso de un superusuario por la API siga siendo un riesgo de mínimo privilegio. **No ajustar HBA, usuarios ni Docker en DEV en esta fase.**
+
+Persisten `MB1_M103_WRITER_ROUTES=INVENTORY_NOT_FULLY_REVIEWED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`. M1-03 permanece abierto hasta verificar y revisar todas las rutas de escritura efectivas, incluidos accesos externos y usuarios privilegiados.
