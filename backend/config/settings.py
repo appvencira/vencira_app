@@ -32,6 +32,15 @@ if os.getenv("VENCIRA_ATTACHMENT_SPLIT_REHEARSAL", "") == "1":
     INSTALLED_APPS.append("renewal_attachments")
     VENCIRA_ATTACHMENT_SPLIT_REHEARSAL_ENABLED = True
 
+# Only in an explicitly isolated test lab, omit the historical registered
+# model whose table requires MFA-gated reminders.0027. Does not touch schema.
+VENCIRA_M103_SPLIT_DELETE_LAB = os.getenv("VENCIRA_M103_SPLIT_DELETE_LAB", "0") == "1"
+if VENCIRA_M103_SPLIT_DELETE_LAB and not (
+    VENCIRA_ENV == "test" and
+    os.getenv("VENCIRA_ATTACHMENT_SPLIT_REHEARSAL", "") == "1"
+):
+    raise ImproperlyConfigured("M103 historical-model omission is test-only")
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
