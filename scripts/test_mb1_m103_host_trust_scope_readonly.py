@@ -10,6 +10,12 @@ class HostTrustScopeTests(unittest.TestCase):
     def test_ipv6_loopback_cidr(self):
         self.assertEqual(scope("::1","128"),"LOOPBACK_IPV6")
 
+    def test_ipv6_expanded_hex_netmask_loopback(self):
+        self.assertEqual(scope("::1","ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"),"LOOPBACK_IPV6")
+
+    def test_noncontiguous_ipv6_mask_not_trusted(self):
+        self.assertEqual(scope("::1","ffff:0:ffff::"),"UNRESOLVED")
+
     def test_all_ipv4_is_not_loopback(self):
         self.assertEqual(scope("0.0.0.0","0.0.0.0"),"NONLOOPBACK")
 
