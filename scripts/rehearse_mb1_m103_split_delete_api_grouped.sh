@@ -89,7 +89,17 @@ PHASE=SCHEMA
 # Explicit migration targets. No global migrate or reminders.0019-0027.
 app mb1 mb1-split-synthetic-admin-only manage.py migrate reminders 0018_draft_reasons --noinput >/dev/null
 app mb1 mb1-split-synthetic-admin-only manage.py migrate renewal_attachments 0006_ed25519_signature_length --noinput >/dev/null
+# Django's reminders baseline can leave auth_user.last_login NOT NULL:
+# migration auth.0005 makes it nullable. Always advance ONLY the built-in
+# auth app before creating users, never run unqualified global migrate.
+app mb1 mb1-split-synthetic-admin-only manage.py migrate auth --noinput >/dev/null
 app mb1 mb1-split-synthetic-admin-only manage.py migrate sessions --noinput >/dev/null
+AUTH_LAST_LOGIN_NULLABLE="$(docker_cmd exec "$DB" psql -X -A -t -v ON_ERROR_STOP=1 -U mb1 -d mb1 -c "SELECT is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='auth_user' AND column_name='last_login';")"
+[ "$AUTH_LAST_LOGIN_NULLABLE" = YES ]
+AUTH_0005_APPLIED="$(docker_cmd exec "$DB" psql -X -A -t -v ON_ERROR_STOP=1 -U mb1 -d mb1 -c "SELECT count(*) FROM django_migrations WHERE app='auth' AND name='0005_alter_user_last_login_null';")"
+[ "$AUTH_0005_APPLIED" = 1 ]
+echo "MB1_M103_SPLIT_DJANGO_BUILTIN_AUTH_MIGRATIONS=OK"
+echo "MB1_M103_SPLIT_AUTH_LAST_LOGIN_NULLABLE=OK"
 echo "MB1_M103_SPLIT_INDEPENDENT_SCHEMA_WITHOUT_MFA=OK"
 
 PHASE=ROLES
