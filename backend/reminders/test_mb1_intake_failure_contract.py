@@ -51,26 +51,30 @@ class MB1IntakeFailureContract(unittest.TestCase):
         # classify and reconcile it. This is NOT an atomic transaction.
         self.store.discard_quarantine.assert_not_called()
 
-    def test_metadata_failure_attempts_private_object_cleanup(self):
+    def test_metadata_exception_preserves_private_object_for_reconciliation(self):
         metadata = Mock(side_effect=RuntimeError("synthetic PostgreSQL reject"))
         with self.assertRaises(RuntimeError):
             stage_private_attachment(**self.args, create_metadata=metadata)
-        self.store.discard_quarantine.assert_called_once()
+        self.store.discard_quarantine.assert_not_called()
         self.journal.record_intent.assert_called_once()
 
-    def test_missing_metadata_attempts_cleanup(self):
+    def test_missing_metadata_preserves_object_instead_of_assuming_rollback(self):
         with self.assertRaises(Exception):
             stage_private_attachment(**self.args, create_metadata=lambda _: None)
-        self.store.discard_quarantine.assert_called_once()
+        self.store.discard_quarantine.assert_not_called()
 
-    def test_cleanup_failure_is_not_silent(self):
-        self.store.discard_quarantine.side_effect = OSError("synthetic cleanup failure")
-        with self.assertRaises(OSError):
+    def test_committed_metadata_with_lost_ack_never_triggers_destructive_cleanup(self):
+        committed = []
+        def commit_then_timeout(staged):
+            committed.append(staged.storage_key)
+            raise TimeoutError("synthetic post-commit lost acknowledgement")
+        with self.assertRaises(TimeoutError):
             stage_private_attachment(
-                **self.args, create_metadata=lambda _: (_ for _ in ()).throw(
-                    RuntimeError("synthetic commit failed"))
+                **self.args, create_metadata=commit_then_timeout
             )
-        self.store.discard_quarantine.assert_called_once()
+        self.assertEqual(len(committed), 1)
+        self.journal.record_intent.assert_called_once()
+        self.store.discard_quarantine.assert_not_called()
 
 
 if __name__ == "__main__":
