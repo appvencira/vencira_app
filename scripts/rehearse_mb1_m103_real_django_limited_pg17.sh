@@ -113,4 +113,5 @@ docker_cmd run --rm --network "$NET" \
   -e POSTGRES_PASSWORD=mb1-only-synthetic-app-password \
   "$IMG" python -m reminders.offline_mb1_m103_limited_orm_lab
 PHASE=DONE
-echo "MB1_M103_DJANGO_LIMITED_PG17_ORM_GATE=OK"
+echo "MB1_M103_DJANGO_LIMITED_PG17_ORM_PARTIAL=OK"
+echo "MB1_M103_RENEWAL_DELETE=BLOCKED_BY_MFA_GATED_0027"
