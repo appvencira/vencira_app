@@ -141,59 +141,176 @@ uid="$(docker run --rm --network none "$lab_image" id -u)"
 gid="$(docker run --rm --network none "$lab_image" id -g)"
 chown "$uid:$gid" "$LAB_ROOT/objects" "$LAB_ROOT/journal"
 export MB1_FENCE_LAB_IMAGE="$lab_image"
+export MB1_FENCE_LAB_UID="$uid"
+export MB1_FENCE_LAB_GID="$gid"
 python3 - <<'PY'
-import os, subprocess, sys
+import hashlib
+import os
+import shutil
+import subprocess
+import sys
 from pathlib import Path
+
 from renewal_attachments.offline_multiprocess_fence_mb1 import IsolatedProcessFence
-root=Path(os.environ["MB1_FENCE_LAB_ROOT"])
-script="""
-import hashlib,os,uuid
+
+root = Path(os.environ["MB1_FENCE_LAB_ROOT"])
+db = os.environ["MB1_FENCE_LAB_DB"]
+image = os.environ["MB1_FENCE_LAB_IMAGE"]
+uid, gid = int(os.environ["MB1_FENCE_LAB_UID"]), int(os.environ["MB1_FENCE_LAB_GID"])
+key_hex = "b17b17b17b1741178117811781178117"
+payload = b"MB1_REAL_ENCRYPTED_CAPTURE_SYNTHETIC"
+expected_sha = hashlib.sha256(payload).hexdigest()
+fence = IsolatedProcessFence(root / "capture.lock")
+
+app_source = """
+import hashlib, os, uuid
 from pathlib import Path
 from cryptography.fernet import Fernet
-from django.conf import settings
 from reminders.attachment_private_store import PrivateQuarantineStore
 from renewal_attachments.offline_intake_journal import IntakeJournal
-key=uuid.UUID(hex="b17b17b17b1741178117811781178117")
-objects=Path("/lab/objects")
-journal=Path("/lab/journal")
-keyfile=objects/".synthetic-key"
-if not keyfile.exists():
+key = uuid.UUID(hex=os.environ["MB1_STORAGE_KEY"])
+objects = Path("/lab/objects")
+journal = Path("/lab/journal")
+keyfile = objects / ".synthetic-key"
+if os.environ["MB1_ACTION"] == "write":
+    if keyfile.exists():
+        raise RuntimeError("SYNTHETIC_KEY_ALREADY_EXISTS")
     keyfile.write_bytes(Fernet.generate_key())
     keyfile.chmod(0o600)
-store=PrivateQuarantineStore(objects,keyfile.read_bytes())
-ledger=IntakeJournal(str(journal))
-payload=b"MB1_REAL_ENCRYPTED_CAPTURE_SYNTHETIC"
-if os.environ["MB1_ACTION"]=="write":
-    ledger.record_intent(key,hashlib.sha256(payload).hexdigest())
-    store.put_quarantine(key,payload)
+store = PrivateQuarantineStore(objects, keyfile.read_bytes())
+ledger = IntakeJournal(str(journal))
+payload = b"MB1_REAL_ENCRYPTED_CAPTURE_SYNTHETIC"
+digest = hashlib.sha256(payload).hexdigest()
+if os.environ["MB1_ACTION"] == "write":
+    ledger.record_intent(key, digest)
+    store.put_quarantine(key, payload)
 else:
-    assert store.read_quarantine_for_scanner_only(key)==payload
-    assert ledger.read_intent(key)["sha256"]==hashlib.sha256(payload).hexdigest()
-print("MB1_REAL_ENCRYPTED_STORE_JOURNAL="+os.environ["MB1_ACTION"].upper())
+    if store.read_quarantine_for_scanner_only(key) != payload:
+        raise RuntimeError("DECRYPTED_CONTENT_MISMATCH")
+    if ledger.read_intent(key)["sha256"] != digest:
+        raise RuntimeError("INTAKE_JOURNAL_MISMATCH")
+print("MB1_REAL_ENCRYPTED_STORE_JOURNAL=" + os.environ["MB1_ACTION"].upper())
 """
-def app(action):
+
+def app(action, objects=None, journal=None):
+    objects = objects or root / "objects"
+    journal = journal or root / "journal"
     subprocess.run([
-        "docker","run","--rm","--network","none",
-        "-e","VENCIRA_ENV=test","-e","VENCIRA_ATTACHMENT_SPLIT_REHEARSAL=1",
-        "-e","DJANGO_SETTINGS_MODULE=config.settings",
-        # Django requires a configured database even though this offline stage
-        # never opens SQL. The sandbox has --network none; loopback has no DB.
-        "-e","POSTGRES_DB=mb1_disconnected",
-        "-e","POSTGRES_USER=mb1_synthetic",
-        "-e","POSTGRES_PASSWORD=mb1-synthetic-not-secret",
-        "-e","POSTGRES_HOST=127.0.0.1",
-        "-e","DJANGO_SECRET_KEY=mb1-synthetic-private-capture-secret-long",
-        "-e","MB1_ACTION="+action,
-        "--mount","type=bind,src="+str(root/"objects")+",dst=/lab/objects",
-        "--mount","type=bind,src="+str(root/"journal")+",dst=/lab/journal",
-        os.environ["MB1_FENCE_LAB_IMAGE"],"python","-c",
-        "import django;django.setup();"+script
-    ],check=True,timeout=45)
-app("write")
-fence=IsolatedProcessFence(root/"capture.lock")
-with fence.capture(timeout=2):
-    app("read")
-    print("MB1_ACTUAL_ENCRYPTED_OBJECT_JOURNAL_CAPTURE=OK",flush=True)
+        "docker", "run", "--rm", "--network", "none",
+        "-e", "VENCIRA_ENV=test",
+        "-e", "VENCIRA_ATTACHMENT_SPLIT_REHEARSAL=1",
+        "-e", "DJANGO_SETTINGS_MODULE=config.settings",
+        "-e", "DJANGO_SECRET_KEY=mb1-synthetic-private-capture-secret-long",
+        "-e", "POSTGRES_DB=mb1_disconnected",
+        "-e", "POSTGRES_USER=mb1_synthetic",
+        "-e", "POSTGRES_PASSWORD=mb1-synthetic-not-secret",
+        "-e", "POSTGRES_HOST=127.0.0.1",
+        "-e", "MB1_STORAGE_KEY=" + key_hex,
+        "-e", "MB1_ACTION=" + action,
+        "--mount", "type=bind,src=" + str(objects) + ",dst=/lab/objects",
+        "--mount", "type=bind,src=" + str(journal) + ",dst=/lab/journal",
+        image, "python", "-c", "import django;django.setup();" + app_source
+    ], check=True, timeout=45)
+
+def sql(database, statement):
+    result = subprocess.run([
+        "docker", "exec", db, "psql", "-X", "-A", "-t",
+        "-v", "ON_ERROR_STOP=1", "-U", "mb1admin", "-d", database,
+        "-c", statement
+    ], check=True, capture_output=True, text=True, timeout=20)
+    return result.stdout.strip()
+
+# A cooperative writer owns the same on-host inode while writing the
+# real VENCIRA encrypted store and journal. Database metadata is synthetic.
+with fence.writer(timeout=2):
+    app("write")
+    sql("mb1fence", "CREATE TABLE mb1_real_attachment "
+        "(storage_key text PRIMARY KEY, sha256 text NOT NULL)")
+    sql("mb1fence", "INSERT INTO mb1_real_attachment VALUES "
+        "('" + key_hex + "','" + expected_sha + "')")
+print("MB1_REAL_ENCRYPTED_WRITER_COOPERATIVE=OK")
+
+writer_script = (
+    "import sys; from renewal_attachments.offline_multiprocess_fence_mb1 "
+    "import IsolatedProcessFence; "
+    "f=IsolatedProcessFence(sys.argv[1]); "
+    "ctx=f.writer(timeout=0.2); ctx.__enter__(); ctx.__exit__(None,None,None)"
+)
+snapshot = root / "consistent-snapshot"
+snapshot.mkdir(mode=0o700)
+
+def checksum_tree(path):
+    return {
+        str(p.relative_to(path)): hashlib.sha256(p.read_bytes()).hexdigest()
+        for p in sorted(path.rglob("*"))
+        if p.is_file()
+    }
+
+with fence.capture(timeout=3):
+    blocked = subprocess.run(
+        [sys.executable, "-c", writer_script, str(root / "capture.lock")],
+        capture_output=True, timeout=5
+    )
+    if blocked.returncode == 0:
+        raise RuntimeError("COOPERATIVE_WRITER_BYPASSED_CAPTURE")
+    if sql("mb1fence", "SELECT count(*) FROM pg_stat_activity "
+           "WHERE usename='mb1writer'") != "0":
+        raise RuntimeError("SQL_WRITER_NOT_DRAINED")
+    print("MB1_REAL_JOINT_WRITERS_BLOCKED=OK", flush=True)
+    with (snapshot / "database.dump").open("wb") as output:
+        subprocess.run(
+            ["docker", "exec", db, "pg_dump", "-Fc",
+             "-U", "mb1admin", "-d", "mb1fence"],
+            stdout=output, check=True, timeout=30
+        )
+    shutil.copytree(root / "objects", snapshot / "objects")
+    shutil.copytree(root / "journal", snapshot / "journal")
+    copied = checksum_tree(snapshot / "objects")
+    copied.update({"journal/" + k: v for k, v in
+                   checksum_tree(snapshot / "journal").items()})
+    if key_hex not in copied or ("journal/" + key_hex + ".json") not in copied:
+        raise RuntimeError("CAPTURE_MISSING_ATTACHMENT_OR_JOURNAL")
+    if not (snapshot / "database.dump").stat().st_size:
+        raise RuntimeError("EMPTY_DATABASE_DUMP")
+    print("MB1_REAL_JOINT_SINGLE_CAPTURE_WINDOW=OK", flush=True)
+
+# Release the barrier before verifying the independent restoration.
+if subprocess.run(
+    [sys.executable, "-c", writer_script, str(root / "capture.lock")],
+    capture_output=True, timeout=5
+).returncode != 0:
+    raise RuntimeError("COOPERATIVE_WRITER_NOT_RELEASED")
+
+# Snapshot material is synthetic; in production encryption keys need
+# separate off-site custody and must NOT be bundled with objects.
+for folder in (snapshot / "objects", snapshot / "journal"):
+    for path in [folder, *folder.rglob("*")]:
+        os.chown(path, uid, gid)
+
+subprocess.run(
+    ["docker", "exec", db, "createdb", "-U", "mb1admin", "mb1realrestore"],
+    check=True, timeout=20
+)
+with (snapshot / "database.dump").open("rb") as input_stream:
+    subprocess.run(
+        ["docker", "exec", "-i", db, "pg_restore",
+         "-U", "mb1admin", "-d", "mb1realrestore", "--no-owner"],
+        stdin=input_stream, check=True, timeout=30
+    )
+row = sql("mb1realrestore",
+          "SELECT storage_key || '|' || sha256 "
+          "FROM mb1_real_attachment")
+if row != key_hex + "|" + expected_sha:
+    raise RuntimeError("RESTORED_METADATA_MISMATCH")
+app("read", snapshot / "objects", snapshot / "journal")
+if copied != {
+    **checksum_tree(snapshot / "objects"),
+    **{"journal/" + k: v for k, v in
+       checksum_tree(snapshot / "journal").items()}
+}:
+    raise RuntimeError("SNAPSHOT_FILES_CHANGED")
+print("MB1_REAL_JOINT_PG17_OBJECT_JOURNAL_RESTORED=OK")
+print("MB1_REAL_JOINT_HASH_AND_DECRYPT_VERIFIED=OK")
 PY
 echo "MB1_JOINT_CAPTURE_LAB=OK"
 echo "MB1_UNIVERSAL_CAPTURE=NOT_VERIFIED"
