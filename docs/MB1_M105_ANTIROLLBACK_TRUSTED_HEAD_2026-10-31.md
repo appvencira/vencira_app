@@ -35,3 +35,19 @@ M1-05 continúa abierto. Se añade una nueva prueba **pura, de datos sintéticos
 - NO_DEPLOY_NO_LIVE_MIGRATION=1
 
 Ningún cambio altera DEV, O5, credenciales reales ni bases persistentes.
+
+
+## Integración física de los tres archivos del paquete — PENDIENTE DE EJECUCIÓN
+
+Se publican `offline_antirollback_package_mb1.py` (commit `c6dde95`) y `test_antirollback_package_mb1.py` (commit `4d148d3`). El adaptador enlaza explícitamente `capture.enc`, `manifest.json` y `manifest.mac` en un descriptor determinista firmado mediante el recibo anti-rollback. Verifica el HMAC del manifiesto con una **clave distinta** y el SHA-256 del contenedor cifrado; después exige que el recibo coincida con la cabeza de confianza suministrada por separado. Comprueba modos privados, tamaño y enlaces simbólicos. Las nuevas pruebas crean **archivos sintéticos con estructura de paquete**: no vuelven a descifrar Fernet ni restaurar PG17 ni acreditan custodia externa. El adaptador exige `VENCIRA_ENV=test` y `MB1_DISPOSABLE_ONLY=1`. No está integrado en O5 ni autorizado para producción.
+
+La cabeza externa de los tests es un valor de entrada en memoria, no una custodia independiente real. Sigue pendiente conectar ambos a la restauración y custodia verdaderas; no cerrar M1-05.
+
+Prueba en VPS sin Docker ni sudo:
+
+    cd ~/vencira-localcheck
+    git pull --ff-only origin feature/c-ficha-independent-attachments
+    PYTHONPATH=backend python3 -m unittest -v renewal_attachments.test_antirollback_head_mb1 renewal_attachments.test_antirollback_package_mb1
+    echo "MB1_ANTIROLLBACK_PACKAGE_EXIT_CODE=$?"
+
+Esperado: **23 tests** (11 previos + 12 nuevos), OK y salida 0. No registrar PASS físico hasta recibir resultados.
