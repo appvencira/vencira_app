@@ -15,6 +15,7 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 - [ ] **M1-02** Pruebas de interrupción real de procesos, pérdidas parciales y recuperación/reconciliación fail-closed: ninguna eliminación automática
 - [ ] **M1-03** Censo completo de escritores y vías externas (API, cron/systemd, scripts, acceso SQL, objetos/diario)
 - [ ] **M1-04** Definir e implantar el corte consistente de DB + archivos bajo concurrencia, primero en laboratorio; exclusión efectiva de nuevos escritores y ausencia de escrituras no cooperativas
+  - Evidencia parcial del operador (31/10): drenaje PG17, bloqueo cooperativo, dump/restore y clases reales de cifrado/diario validados, `MB1_ACTUAL_ENCRYPTED_OBJECT_JOURNAL_CAPTURE=OK`, `MB1_PG17_FENCE_EXIT_CODE=0`; ensayo nuevo de captura única PG17+Fernet+diario en `680ab7f` todavía pendiente. **Sin exclusión universal de escritores: no marcar [x].**
 - [ ] **M1-05** Backup completo con manifiesto, anti-rollback y restauración cruzada, evidencias en segundo host
 - [ ] **M1-06** Custodia **operativa** externa de backup y claves, retención, rotación, custodia independiente y recuperación tras pérdida total del VPS
 - [ ] **M1-07** Gate integrado final, restauración y revisión de seguridad, con decisión explícita de autorización
