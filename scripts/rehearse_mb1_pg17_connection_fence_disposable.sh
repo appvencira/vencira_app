@@ -175,6 +175,7 @@ def app(action):
     subprocess.run([
         "docker","run","--rm","--network","none",
         "-e","VENCIRA_ENV=test","-e","VENCIRA_ATTACHMENT_SPLIT_REHEARSAL=1",
+        "-e","DJANGO_SETTINGS_MODULE=config.settings",
         "-e","DJANGO_SECRET_KEY=mb1-synthetic-private-capture-secret-long",
         "-e","MB1_ACTION="+action,
         "--mount","type=bind,src="+str(root/"objects")+",dst=/lab/objects",
