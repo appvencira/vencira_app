@@ -31,3 +31,10 @@ echo "MB1_NONCOOPERATIVE_EXIT_CODE=$?"
 6. **Gate de liberación**: reproducir en entorno de infraestructura representativa, adversarial y restaurar desde segundo host. Conservar `M1-03`, `M1-04`, `M1-05` y `M1-06` abiertos hasta cumplir sus propios criterios.
 
 **Decisión actual**: `MB1_GLOBAL_FREEZE=NOT_VERIFIED`; `MB1_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Este documento no autoriza una ventana de mantenimiento en DEV.
+
+
+## Ensayo adversarial ejecutado — PASS en la detección de bypasses
+
+Evidencia comunicada por el operador: `MB1_UNCOOPERATIVE_FS_WRITE_BYPASS=CONFIRMED`, `MB1_ORDINARY_LOGIN_DENIED=OK`, `MB1_NONCOOPERATIVE_SQL_ADMIN_WRITE_BYPASS=CONFIRMED`, `MB1_UNIVERSAL_FREEZE_FAIL_CLOSED=OK`, `MB1_NONCOOPERATIVE_BYPASS_RESULT=0`, `MB1_NONCOOPERATIVE_EXIT_CODE=0`. Persisten `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+**Interpretación:** la prueba negativa funcionó correctamente y demuestra la insuficiencia del bloqueo actual; no es un PASS de congelación universal. Requisito siguiente: demostrar exclusión de *todos los procesos autorizados del dominio de escritura* y restringir la disponibilidad del almacén y del acceso a PG17 durante una ventana efímera. Conservamos abierto M1-03/M1-04.
