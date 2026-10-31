@@ -45,3 +45,10 @@ Ejecutar una sola vez:
     echo "MB1_O5_READONLY_EXIT_CODE=$?"
 
 Interpretar `MB1_O5_RESTORE_PIN_MATCHES_LIVE=NO` como diferencia entre la referencia estatica y la migracion DEV leida, no como prueba de fallo de una restauracion remota. El resultado de la consulta no garantiza estado, integridad ni custodia de Drive. Pendiente ejecucion del operador.
+
+
+## Evidencia del operador — auditoría O5 read-only PASS (31/10/2026)
+
+`MB1_O5_LIVE_SCHEMA_QUERY=OK`, `MB1_O5_RESTORE_STATIC_PIN=FOUND`, `MB1_O5_RESTORE_PIN_MATCHES_LIVE=NO`, `MB1_O5_BACKUP_SCOPE=POSTGRESQL_ONLY_IN_VERSIONED_SOURCE`, `MB1_O5_OBJECT_JOURNAL_CAPTURE=NOT_IN_VERSIONED_O5`, `MB1_O5_ANTIROLLBACK_PREFLIGHT=NOT_IN_VERSIONED_O5`, `MB1_O5_SUCCESS_MARKER=RECENT`, `MB1_O5_READONLY_AUDIT_RESULT=0`, `MB1_O5_READONLY_EXIT_CODE=0`. No se imprimió ni registró aquí el nombre de la migración activa; solo su desacuerdo con el pin 0014. El marcador de éxito reciente es local y NO valida la restauración remota. El operador confirma `MB1_O5_REMOTE_RESTORABILITY=NOT_VERIFIED_BY_THIS_AUDIT`, `MB1_O5_EXTERNAL_KEY_CUSTODY=NOT_VERIFIED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+**Acción propuesta:** eliminar únicamente la comparación del *máximo* nombre de migración en el restaurador O5 versionado y comprobar la presencia de una migración base requerida, con las tablas esenciales y tests positivos/negativos. El cambio no debe instalarse automáticamente ni alterar el backup programado. Validar antes de activar.
