@@ -4,7 +4,7 @@
 set -Eeuo pipefail
 umask 077
 cd "$(dirname "$0")/.."
-if [ "\${MB1_QUIESCED_WRITER_LAB:-}" != YES ]; then
+if [ "${MB1_QUIESCED_WRITER_LAB:-}" != YES ]; then
   echo "MB1_QUIESCED_WRITER_OPT_IN=REQUIRED"; exit 2
 fi
 test "$(git branch --show-current)" = feature/c-ficha-independent-attachments
