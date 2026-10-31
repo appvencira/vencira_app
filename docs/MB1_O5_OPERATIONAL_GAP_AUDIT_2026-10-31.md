@@ -71,3 +71,10 @@ Validación local única (SIN sudo, sin Docker, sin acceso a claves o DB):
 Esperado: **10 pruebas**, `OK`, `MB1_O5_SCHEMA_FIX_EXIT_CODE=0`. Código **aún sin validar mediante salida del operador**. No ejecutar en DEV el restaurador O5; para comprobar el código actual basta la prueba pura.
 
 Pendiente para M1-05/M1-06: restauración desde Drive efectiva en clon, custodia externa autenticada, control anti-rollback previo a recuperación, alcance de adjuntos si se activan y separación de escritores. `MB1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## Resultado de validacion de codigo O5 — PASS por operador (31/10/2026)
+
+El operador confirma `OK` y `MB1_O5_SCHEMA_FIX_EXIT_CODE=0` tras ejecutar el contrato de esquema propuesto; la bateria versionada `scripts/test_o5_restore_schema_contract.py` contiene 10 casos. La comprobacion Bash `bash -n` se incluyo en el bloque de ejecucion comunicado. **Subprueba de compatibilidad de schema O5: validada.** El cambio permanece **solo en GitHub**, rama `feature/c-ficha-independent-attachments`, sin despliegue del restaurador instalado ni alteracion de timers, datos persistentes o secretos.
+
+Condiciones pendientes: ensayo de restauracion desde Drive en contenedor temporal con el nuevo contrato, revision de versiones de las copias disponibles, aceptacion de cambio y plan de vuelta atras. Aun sin verificacion de integridad de negocio, anti-rollback operacional, backup de adjuntos ni custodia externa. `MB1_RELEASE_AUTHORIZED=NO`.
