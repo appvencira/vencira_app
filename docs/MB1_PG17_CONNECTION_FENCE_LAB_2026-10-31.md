@@ -54,3 +54,8 @@ Commit `d94154d`: tras la captura PG17/archivos sintéticos ya validada, el mism
 ## Fallo de configuración del subproceso Django — corregido, sin revalidar
 
 El operador confirma PASS de bloqueo SQL, drenaje, captura PG17 y hashes de archivos sintéticos, pero la fase real de Fernet/IntakeJournal abortó antes de escribir por `ImproperlyConfigured: Requested setting LOGGING_CONFIG, but settings are not configured`. El contenedor invocaba `python -c` con `django.setup()` sin `DJANGO_SETTINGS_MODULE`. Commit `cec92ec` agrega `DJANGO_SETTINGS_MODULE=config.settings` solo a ese contenedor efímero. La ejecución finalizó `MB1_PG17_FENCE_RESULT=1`. **No marcar PASS de cifrado ni M1-04 hasta reejecución.**
+
+
+## Segundo fallo del ensayo de almacén real — settings SQL obligatorios
+
+El operador reporta repetición de PASS en las fases `MB1_PG17_*` y `MB1_JOINT_*`, seguida de `ImproperlyConfigured: Variables PostgreSQL ausentes: POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_HOST` dentro del contenedor Django de ensayo. Estado de esa ejecución: `MB1_PG17_FENCE_RESULT=1`, `MB1_PG17_FENCE_EXIT_CODE=1`, **el almacén cifrado no se validó**. Causa verificada en `backend/config/settings.py`: el motor por defecto es PostgreSQL y exige esas cuatro variables al importar la configuración. Commit `628b336` añade cuatro valores sintéticos, sin acceso a ninguna DB, únicamente a los contenedores de comprobación del almacén real; éstos corren con `--network none` y `POSTGRES_HOST=127.0.0.1`, donde no hay servidor SQL. No hay conexión a DEV y no se pasan credenciales reales. Pendiente repetir el script y evaluar también posibles fallos de API/volúmenes. **M1-04 continúa abierto**, no habilitar release.
