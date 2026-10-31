@@ -176,6 +176,12 @@ def app(action):
         "docker","run","--rm","--network","none",
         "-e","VENCIRA_ENV=test","-e","VENCIRA_ATTACHMENT_SPLIT_REHEARSAL=1",
         "-e","DJANGO_SETTINGS_MODULE=config.settings",
+        # Django requires a configured database even though this offline stage
+        # never opens SQL. The sandbox has --network none; loopback has no DB.
+        "-e","POSTGRES_DB=mb1_disconnected",
+        "-e","POSTGRES_USER=mb1_synthetic",
+        "-e","POSTGRES_PASSWORD=mb1-synthetic-not-secret",
+        "-e","POSTGRES_HOST=127.0.0.1",
         "-e","DJANGO_SECRET_KEY=mb1-synthetic-private-capture-secret-long",
         "-e","MB1_ACTION="+action,
         "--mount","type=bind,src="+str(root/"objects")+",dst=/lab/objects",
