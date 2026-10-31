@@ -49,3 +49,8 @@ Se han confirmado `MB1_PG17_EXISTING_WRITER_ACTIVE=OK`, `MB1_PG17_NEW_WRITER_DEN
 ## Extensión: clases reales de cifrado y diario bajo lock (sin validar)
 
 Commit `d94154d`: tras la captura PG17/archivos sintéticos ya validada, el mismo script crea un objeto cifrado Fernet mediante `PrivateQuarantineStore` y una intención mediante `IntakeJournal` en directorios temporales privados, ejecutando la imagen Django de la rama. Una segunda instancia de dicha imagen los descifra y comprueba el SHA-256 dentro de `IsolatedProcessFence.capture`. Se espera `MB1_REAL_ENCRYPTED_STORE_JOURNAL=WRITE`, `MB1_REAL_ENCRYPTED_STORE_JOURNAL=READ` y `MB1_ACTUAL_ENCRYPTED_OBJECT_JOURNAL_CAPTURE=OK`. Esta extensión aún **no une un único snapshot transaccional de PG17 y los objetos reales**; la prueba conjunta previa mantiene archivos sintéticos. Tampoco prueba writers no cooperativos ni administración SQL. No habilitar liberación. Ejecutar el mismo script tras `git pull`; mantener M1-04 sin tachar.
+
+
+## Fallo de configuración del subproceso Django — corregido, sin revalidar
+
+El operador confirma PASS de bloqueo SQL, drenaje, captura PG17 y hashes de archivos sintéticos, pero la fase real de Fernet/IntakeJournal abortó antes de escribir por `ImproperlyConfigured: Requested setting LOGGING_CONFIG, but settings are not configured`. El contenedor invocaba `python -c` con `django.setup()` sin `DJANGO_SETTINGS_MODULE`. Commit `cec92ec` agrega `DJANGO_SETTINGS_MODULE=config.settings` solo a ese contenedor efímero. La ejecución finalizó `MB1_PG17_FENCE_RESULT=1`. **No marcar PASS de cifrado ni M1-04 hasta reejecución.**
