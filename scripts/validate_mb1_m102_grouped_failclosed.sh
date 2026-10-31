@@ -36,8 +36,10 @@ test -z "$(git diff --cached --name-only)"
 test -z "$(git ls-files --others --exclude-standard | grep -vx 'clients/flutter/pubspec.lock' || true)"
 for testfile in \
   backend/reminders/test_mb1_intake_failure_contract.py \
+  backend/reminders/test_attachment_quarantine_intake.py \
   backend/renewal_attachments/test_pending_intent_reconcile_b18l.py \
-  backend/renewal_attachments/test_mb1_partial_io_failclosed.py; do
+  backend/renewal_attachments/test_mb1_partial_io_failclosed.py \
+  backend/renewal_attachments/test_mb1_ambiguous_metadata_commit.py; do
   test -f "$testfile"
 done
 python3 -m py_compile backend/renewal_attachments/test_mb1_partial_io_failclosed.py
@@ -58,12 +60,16 @@ sudo docker run --rm --network none \
   -e DJANGO_ALLOWED_HOSTS=localhost,testserver \
   "$IMAGE" python manage.py test \
     reminders.test_mb1_intake_failure_contract \
+    reminders.test_attachment_quarantine_intake \
     renewal_attachments.test_pending_intent_reconcile_b18l \
     renewal_attachments.test_mb1_partial_io_failclosed \
+    renewal_attachments.test_mb1_ambiguous_metadata_commit \
     --noinput --verbosity 1
 echo "MB1_M102_GROUP_INTAKE_CONTRACTS=OK"
 echo "MB1_M102_GROUP_READONLY_RECONCILIATION=OK"
 echo "MB1_M102_GROUP_PARTIAL_IO_FAIL_CLOSED=OK"
 echo "MB1_M102_GROUP_NO_AUTOMATIC_DELETE_OR_PUBLISH=OK"
+echo "MB1_M102_AMBIGUOUS_COMMIT_CIPHERTEXT_PRESERVED=OK"
+echo "MB1_M102_GROUP_EXPECTED_TESTS=30"
 PHASE=DONE
 echo "MB1_M102_GROUP_DONE=OK"
