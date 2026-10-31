@@ -21,6 +21,7 @@ def main():
     django.setup()
     from datetime import date
     from django.db import connection, transaction, DatabaseError
+    from django.db.migrations.recorder import MigrationRecorder
     from reminders.models import Workspace, WorkspaceInsurer, WorkspaceModality, Renewal
 
     with connection.cursor() as cursor:
@@ -33,6 +34,21 @@ def main():
         assert cursor.fetchone()[0] is False, "APP_CAN_CREATE_SCHEMA_OBJECTS"
     print("MB1_M103_DJANGO_REAL_LIMITED_LOGIN=OK")
 
+    # The historical reminders.RenewalAttachment runtime relation is not
+    # available at migration 0018. Its table requires reminders.0027, which
+    # depends on unapproved MFA migrations 0019..0026. Calling Renewal.delete
+    # would force Django's collector to query a table which MUST NOT be
+    # created in this lab. Explicitly acknowledge the limitation.
+    applied = MigrationRecorder(connection).applied_migrations()
+    assert ("reminders", "0018_draft_reasons") in applied
+    assert ("reminders", "0027_renewal_attachment_metadata") not in applied
+    assert "reminders_renewalattachment" not in connection.introspection.table_names()
+    print("MB1_M103_DJANGO_HISTORICAL_ATTACHMENT_0027=NOT_MIGRATED")
+    print("MB1_M103_DJANGO_RENEWAL_DELETE=BLOCKED_BY_MFA_GATED_SCHEMA")
+
+    # Verify CRUD only where its model graph is known to be complete.
+    # Roll the other fixtures back atomically rather than silently bypassing
+    # Django's collector via _raw_delete or injecting schema stubs.
     with transaction.atomic():
         ws=Workspace.objects.create(name="MB1_SYNTHETIC_RESTRICTED_ORM")
         modality=WorkspaceModality.objects.create(
@@ -50,12 +66,13 @@ def main():
         item.refresh_from_db()
         assert item.notes == "mb1-only-fixture"
         assert Renewal.objects.filter(workspace=ws,customer_reference="MB1_ORM_SYNTHETIC").count()==1
-        item.delete()
+        print("MB1_M103_DJANGO_RENEWAL_CREATE_READ_UPDATE=OK")
         modality.delete()
-        insurer.delete()
-        ws.delete()
+        assert not WorkspaceModality.objects.filter(pk=modality.pk).exists()
+        print("MB1_M103_DJANGO_MODALITY_ORM_DELETE=OK")
+        transaction.set_rollback(True)
     assert not Workspace.objects.filter(name="MB1_SYNTHETIC_RESTRICTED_ORM").exists()
-    print("MB1_M103_DJANGO_ORM_CREATE_READ_UPDATE_DELETE=OK")
+    print("MB1_M103_DJANGO_FIXTURE_ROLLBACK=OK")
 
     # Authorization negative checks use distinct transactions so any SQL
     # privilege error cannot contaminate the preceding legitimate CRUD.
@@ -82,7 +99,8 @@ def main():
         cursor.execute("SELECT has_table_privilege(current_user, 'django_session', 'SELECT')")
         assert cursor.fetchone()[0] is True
     print("MB1_M103_DJANGO_AUTH_SESSION_TABLE_READ=OK")
-    print("MB1_M103_DJANGO_ROLE_SEPARATION_LAB=OK")
+    print("MB1_M103_DJANGO_ROLE_SEPARATION_PARTIAL=OK")
+    print("MB1_M103_DJANGO_FULL_RENEWAL_DELETE=NOT_VERIFIED")
 
 
 if __name__ == "__main__":
