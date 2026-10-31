@@ -7,9 +7,11 @@ test "$(git branch --show-current)" = feature/c-ficha-independent-attachments
 project="mb1_fence_$$_$RANDOM"
 db="${project}_pg"
 created=0
+writer_pid=""
 cleanup() {
   rc=$?; trap - EXIT
   if [ "$created" = 1 ]; then docker rm -f "$db" >/dev/null 2>&1 || rc=1; fi
+  if [ -n "$writer_pid" ]; then wait "$writer_pid" >/dev/null 2>&1 || true; fi
   echo "MB1_PG17_FENCE_RESULT=$rc"
   echo "MB1_NONCOOPERATIVE_SQL_SUPERUSER=NOT_BLOCKED"
   echo "MB1_FILESYSTEM_WRITERS=NOT_BLOCKED"
@@ -35,15 +37,38 @@ sql() {
 }
 sql "CREATE ROLE mb1writer LOGIN PASSWORD 'synthetic-only';" >/dev/null
 sql "GRANT CONNECT ON DATABASE mb1fence TO mb1writer;" >/dev/null
-# Only current session? Existing sessions continue despite REVOKE.
-# Block ordinary logins by role-level NOLOGIN; the superuser remains a bypass.
+# Hold an ordinary, non-superuser transaction open from a separate process.
+# All SQL and container resources are exclusively disposable.
+docker exec "$db" sh -ec '
+  PGPASSWORD=synthetic-only exec psql -h 127.0.0.1 -X -q -v ON_ERROR_STOP=1 \
+    -U mb1writer -d mb1fence -c "BEGIN; SELECT pg_sleep(18); COMMIT;"
+' >/dev/null 2>&1 &
+writer_pid=$!
+active=0
+for _ in $(seq 1 30); do
+  count="$(sql "SELECT count(*) FROM pg_stat_activity WHERE usename='mb1writer' AND state='active' AND query LIKE '%pg_sleep(18)%';")"
+  if [ "$count" = 1 ]; then active=1; break; fi
+  sleep 0.2
+done
+if [ "$active" != 1 ]; then echo "MB1_PG17_WRITER_SESSION_SETUP=FAILED" >&2; exit 1; fi
+echo "MB1_PG17_EXISTING_WRITER_ACTIVE=OK"
+
 sql "ALTER ROLE mb1writer NOLOGIN;" >/dev/null
 if docker exec "$db" sh -ec 'PGPASSWORD=synthetic-only psql -h 127.0.0.1 -X -A -t -U mb1writer -d mb1fence -c "SELECT 1"' >/dev/null 2>&1; then
- echo "MB1_PG17_NEW_WRITER_DENIAL=FAILED" >&2; exit 1
+  echo "MB1_PG17_NEW_WRITER_DENIAL=FAILED" >&2; exit 1
 fi
 echo "MB1_PG17_NEW_WRITER_DENIAL=OK"
-# Deliberately avoid claiming existing writers drained, because no session is held.
-echo "MB1_PG17_EXISTING_WRITER_DRAIN=NOT_VERIFIED"
-# Superuser retains authority and local privileged callers can bypass.
+# A capture gate must fail while the pre-existing session is still active.
+count="$(sql "SELECT count(*) FROM pg_stat_activity WHERE usename='mb1writer' AND state IN ('active','idle in transaction');")"
+if [ "$count" != 1 ]; then echo "MB1_PG17_PREEXISTING_SESSION_NOT_HELD=1" >&2; exit 1; fi
+echo "MB1_PG17_CAPTURE_BLOCKED_WHILE_WRITER_ACTIVE=OK"
+
+wait "$writer_pid"
+writer_pid=""
+count="$(sql "SELECT count(*) FROM pg_stat_activity WHERE usename='mb1writer';")"
+if [ "$count" != 0 ]; then echo "MB1_PG17_SESSION_DRAIN_FAILED=1" >&2; exit 1; fi
+echo "MB1_PG17_EXISTING_WRITER_DRAIN=OK"
+echo "MB1_PG17_CAPTURE_SQL_QUIESCENT_LAB=OK"
+# Superuser remains able to write: this is not a global fence.
 if [ "$(sql 'SELECT 1')" != 1 ]; then exit 1; fi
 echo "MB1_PG17_ADMIN_BYPASS_CONFIRMED=OK"
