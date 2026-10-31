@@ -24,7 +24,7 @@ class StagedQuarantine:
 
 def stage_private_attachment(*, store, filename, content_type, content,
                              create_metadata, journal=None):
-    """Validate and encrypt exact bytes; remove orphan on metadata failure.
+    """Validate and encrypt exact bytes; preserve evidence on uncertain commit.
 
     create_metadata(staged) must enforce workspace/renewal association, audit,
     permissions and database transaction itself. No public endpoint calls this.
@@ -42,13 +42,16 @@ def stage_private_attachment(*, store, filename, content_type, content,
         journal.record_intent(staged.storage_key, staged.sha256)
 
     store.put_quarantine(staged.storage_key, content)
-    try:
-        record = create_metadata(staged)
-        if record is None:
-            raise PrivateStoreError("Metadata not confirmed")
-        return record
-    except BaseException:
-        # Failure must never leave an untracked readable file behind.
-        # Storage implementation must provide a private object cleanup method.
-        store.discard_quarantine(staged.storage_key)
-        raise
+    # A metadata writer may commit its SQL transaction, then lose the
+    # acknowledgement to this process (network error / crash / timeout).
+    # We CANNOT prove rollback from an exception or a missing response.
+    # Never discard the private ciphertext here: that could destroy an
+    # attachment already referenced by committed PostgreSQL metadata.
+    # Quarantine is non-public; recovery inventory must reconcile object,
+    # durable intent (if present) and metadata in read-only mode.
+    # This deliberately prefers an orphan requiring manual review over
+    # irreversible destruction of an ambiguously committed attachment.
+    record = create_metadata(staged)
+    if record is None:
+        raise PrivateStoreError("Metadata not confirmed")
+    return record
