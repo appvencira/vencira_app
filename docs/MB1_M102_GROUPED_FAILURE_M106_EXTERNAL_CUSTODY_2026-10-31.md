@@ -76,3 +76,11 @@ Comando unico:
 Esperado: `Ran 30 tests`, `OK`, `MB1_M102_AMBIGUOUS_COMMIT_CIPHERTEXT_PRESERVED=OK`, `MB1_M102_GROUP_EXPECTED_TESTS=30`, `MB1_M102_GROUP_RESULT=0`, `MB1_M102_GROUP_EXIT_CODE=0`. El ensayador solo usa Docker sin red, datos de prueba y bases SQLite de tests; no modifica DEV ni O5.
 
 **Limites M1-02:** rollback/ACK real en PG17 aun sin validar; caida real de energia no ejecutada; conciliacion operativa de objetos pendientes no implantada. M1-02 y M1-06 siguen abiertos y `MB1_RELEASE_AUTHORIZED=NO`.
+
+## Validación de regresión del commit ambiguo — 30/30 PASS (operador, 31/10/2026)
+
+Ejecución comunicada: `Ran 30 tests in 0.040s`, `OK`, `MB1_M102_GROUP_INTAKE_CONTRACTS=OK`, `MB1_M102_GROUP_READONLY_RECONCILIATION=OK`, `MB1_M102_GROUP_PARTIAL_IO_FAIL_CLOSED=OK`, `MB1_M102_GROUP_NO_AUTOMATIC_DELETE_OR_PUBLISH=OK`, `MB1_M102_AMBIGUOUS_COMMIT_CIPHERTEXT_PRESERVED=OK`, `MB1_M102_GROUP_EXPECTED_TESTS=30`, `MB1_M102_GROUP_DONE=OK`, `MB1_M102_GROUP_PHASE=DONE`, `MB1_M102_GROUP_RESULT=0`, `MB1_M102_GROUP_EXIT_CODE=0`.
+
+El nuevo comportamiento de conservación privada del objeto cuando no llega una respuesta de confirmación supera la batería de 30 casos, incluidos contratos históricos revalidados. El callback de metadatos de esta batería es **simulado**, no una transacción PostgreSQL real. No constituye evidencia de reparación operativa ni de caída de energía. La salida mantiene `MB1_M102_ACTUAL_POWERLOSS=NOT_VERIFIED`, `MB1_M102_AMBIGUOUS_COMMIT_RECOVERY=NOT_VERIFIED`, `MB1_M102_OPERATIONAL_RECONCILIATION=NOT_IMPLEMENTED`, `MB1_M106_EXTERNAL_CUSTODY=NOT_VERIFIED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+El siguiente ensayo útil debe reproducir confirmación y rollback en PostgreSQL 17 **real pero efímero**, usando el flujo Django + Fernet + diario en almacenamiento temporal, sin repetir las 30 pruebas ya superadas. M1-02 permanece [ ].
