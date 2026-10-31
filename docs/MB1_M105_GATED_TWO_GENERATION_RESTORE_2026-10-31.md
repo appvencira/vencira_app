@@ -57,3 +57,10 @@ Decisión hasta cerrar M1-04/M1-05/M1-06:
     NO_DEPLOY_NO_LIVE_MIGRATION=1
 
 **No marcar M1-05 completo solo por PASS de este laboratorio.**
+
+
+## Ejecución integral — PASS confirmado por operador (31/10/2026)
+
+La salida aportada confirma `MB1_TWO_ENCRYPTED_PHYSICAL_GENERATIONS=OK`, `MB1_SYNTHETIC_TRUSTED_HEAD_ADVANCED=OK`, `MB1_STALE_VALID_PACKAGE_REJECTED_BEFORE_RESTORE=OK`, `MB1_CROSS_PACKAGE_RECEIPT_REJECTED=OK`, `MB1_MISSING_EXTERNAL_HEAD_REJECTED=OK`, `MB1_TAMPERED_PACKAGE_REJECTED=OK`, `MB1_LATEST_PACKAGE_PREFLIGHT_VERIFIED=OK`, `MB1_CURRENT_PG17_RESTORE_AFTER_GATE=OK`, `MB1_CURRENT_OBJECT_JOURNAL_RESTORE=OK`, `MB1_ANTIROLLBACK_GATED_E2E_LAB=OK`, `MB1_ANTIROLLBACK_E2E_RESULT=0`, `MB1_ANTIROLLBACK_E2E_EXIT_CODE=0`. **Subprueba de restauración condicionada al anti-rollback: PASS**.
+
+Límites preservados explícitamente por el resultado: `MB1_EXTERNAL_HEAD_CUSTODY=NOT_VERIFIED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_OPERATIONAL_BACKUP_INTEGRATION=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. La cabeza de confianza está simulada en el mismo host; la verificación previa NO está conectada aún a la restauración operativa O5 y no existe exclusión universal de escritores. **M1-05 no se tacha**.
