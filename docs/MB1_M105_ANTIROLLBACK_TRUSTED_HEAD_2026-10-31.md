@@ -51,3 +51,8 @@ Prueba en VPS sin Docker ni sudo:
     echo "MB1_ANTIROLLBACK_PACKAGE_EXIT_CODE=$?"
 
 Esperado: **23 tests** (11 previos + 12 nuevos), OK y salida 0. No registrar PASS físico hasta recibir resultados.
+
+
+## Validación de paquete físico sintético — PASS (operador)
+
+`Ran 23 tests in 0.031s`, `OK`, `MB1_ANTIROLLBACK_PACKAGE_EXIT_CODE=0` (11 pruebas de cabeza independiente y 12 de vínculo a `capture.enc`, `manifest.json` y `manifest.mac`). Quedan validados en modo unitario/sintético la detección de sustitución de cualquiera de las tres piezas, el rechazo de una copia antigua íntegra contra una cabeza más reciente, errores de autenticación y ausencias de archivos. **No** se ha comprobado custodia externa física de la cabeza ni la integración del verificador con la restauración del paquete real del laboratorio en un segundo host. M1-05 permanece abierto.
