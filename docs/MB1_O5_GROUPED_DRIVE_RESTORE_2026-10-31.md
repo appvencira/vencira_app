@@ -3,7 +3,7 @@ Fecha: 31/10/2026. Rama: feature/c-ficha-independent-attachments.
 
 ## Objetivo y limite
 
-El script `scripts/validate_mb1_o5_grouped_remote_restore.sh` (commit `c28aa05`, ajuste `7265e8d`) centraliza **en una sola ejecucion** la siguiente evidencia, que todavia NO ha sido obtenida:
+El script `scripts/validate_mb1_o5_grouped_remote_restore.sh` (commit `c28aa05`, ajuste `7265e8d`) centraliza **en una sola ejecucion** la siguiente evidencia, cuya ejecucion por el operador ya ha sido confirmada (ver evidencia final):
 
 1. Validacion sintactica de los scripts restaurador y auditor read-only.
 2. Diez pruebas unitarias del contrato O5 ya aprobadas previamente, ejecutadas ahora como preflight.
@@ -16,7 +16,7 @@ El estado "ultimo backup" se decide por Restic segun la etiqueta `vencira-postgr
 
 **No esta desplegado ningun cambio en el servicio O5.** La auditoria read-only previa identifico que el codigo O5 de Git era PG-only y que su pin estatico no coincidia con DEV; esa diferencia motivó la correccion candidata del restaurador versionado.
 
-## Ejecucion unica, pendiente de operador
+## Ejecucion realizada por operador — referencia reproducible
 
 ```bash
 cd ~/vencira-localcheck
@@ -43,3 +43,12 @@ MB1_GLOBAL_FREEZE=NOT_VERIFIED
 MB1_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Evidencia definitiva del operador — PASS 31/10/2026
+
+Se recibio `Ran 10 tests in 0.001s`, `OK`, `MB1_O5_GROUP_SCHEMA_TESTS=OK`, `MB1_O5_GROUP_STATIC_BOUNDARY=OK`, `MB1_O5_GROUP_DEV_DB_PRECHECK=OK`, `DRIVE_SNAPSHOT_ACCESIBLE=1`, `PG17_EFIMERO_SIN_RED=OK`, `RESTAURACION_PG17_DESDE_DRIVE=OK`, `O5_RESTORED_BASELINE_SCHEMA=OK`, `O5_RESTORE_SCHEMA_CHECK_IS_MINIMUM_ONLY=1`, `O5_MINIMUM_MIGRATION_PRESENT=0014_renewal_outcomes`, `TABLAS_PUBLIC_RESTAURADAS=25`, `RESTIC_SNAPSHOT_TAG=vencira-postgresql`, `POSTGRES_ORIGINAL_INTACTO=1`, `RESULTADO_GLOBAL=0`, `O5_RESTAURACION_REMOTA_VERIFICADA=1`, `POSTGRES_LOCALCHECK_NO_MODIFICADO=1`, `SIN_DUMP_DESCIFRADO_EN_DISCO=1`, `MB1_O5_GROUP_REMOTE_PG17_RESTORE=OK`, `MB1_O5_GROUP_DEV_CONTAINER_ID_AND_HEALTH_UNCHANGED=OK`, `MB1_O5_GROUP_DONE=OK`, `MB1_O5_GROUP_PHASE=POSTCHECK`, `MB1_O5_GROUP_RESULT=0`, `MB1_O5_GROUP_EXIT_CODE=0`. El log de diagnostico fue generado localmente en `/tmp`; no se adjunta ni expone su contenido.
+
+**Conclusion concreta:** la copia PostgreSQL O5 existente en Drive ha sido restaurada efectivamente en un PG17 temporal sin red, con comprobacion de esquema minimo (25 tablas) y sin cambios detectados de identidad/salud del contenedor DEV. Esto **eleva la evidencia de recuperabilidad operativa de PostgreSQL**, no el cierre M1-05 o M1-06.
+
+**Limitaciones expresas:** `MB1_O5_OPERATIONAL_ANTIROLLBACK=NOT_INTEGRATED`, `MB1_O5_OBJECT_JOURNAL_BACKUP=NOT_INTEGRATED`, `MB1_O5_EXTERNAL_KEY_CUSTODY=NOT_VERIFIED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. La verificacion del schema solo prueba estructura minima, no consistencia completa de registros o freshness/antiguedad real del snapshot. No esta demostrado que el respaldo contenga las ultimas transacciones del sistema ni que un segundo host pueda restaurarlo sin el VPS. El script probado es el candidato de GitHub, no una actualizacion del servicio programado.
