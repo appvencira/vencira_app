@@ -10,7 +10,7 @@ Los casos comprueban: ciphertext truncado; JSON de diario incompleto; hash de di
 
 Ejecutor: scripts/validate_mb1_m102_grouped_failclosed.sh, commit d9fa85f. Construye una sola imagen y ejecuta 22 casos en Django sin red: seis contratos de fallo de intake ya existentes, ocho contratos read-only B18L existentes y ocho nuevos de archivos/diario reales de laboratorio. Se reutiliza el PASS previo de SIGKILL PostgreSQL 17 (codigo 137) sin repetirlo.
 
-**Bloque preparado, sin ejecutar aun.**
+**Bloque ejecutado: PASS comunicado por el operador el 31/10/2026 (ver evidencia final).**
 
 Comando:
 
@@ -47,3 +47,10 @@ Ya se verifico la recuperacion PostgreSQL real cifrada desde Restic/Google Drive
     NO_DEPLOY_NO_LIVE_MIGRATION=1
 
 No instalar, migrar, reiniciar ni tocar O5 o la base persistente DEV.
+
+
+## Evidencia del operador — 22/22 PASS (31/10/2026)
+
+`Ran 22 tests in 0.037s`, `OK`, `MB1_M102_GROUP_INTAKE_CONTRACTS=OK`, `MB1_M102_GROUP_READONLY_RECONCILIATION=OK`, `MB1_M102_GROUP_PARTIAL_IO_FAIL_CLOSED=OK`, `MB1_M102_GROUP_NO_AUTOMATIC_DELETE_OR_PUBLISH=OK`, `MB1_M102_GROUP_DONE=OK`, `MB1_M102_GROUP_PHASE=DONE`, `MB1_M102_GROUP_RESULT=0`, `MB1_M102_GROUP_EXIT_CODE=0`. Verificados los 6 contratos históricos, 8 clasificaciones B18L y 8 fallos físicos de archivos cifrados/diario de laboratorio. No repetiremos esta batería por mera acumulación de pruebas.
+
+Los límites reportados permanecen: `MB1_M102_ACTUAL_POWERLOSS=NOT_VERIFIED`, `MB1_M102_AMBIGUOUS_COMMIT_RECOVERY=NOT_VERIFIED`, `MB1_M102_OPERATIONAL_RECONCILIATION=NOT_IMPLEMENTED`, `MB1_M106_EXTERNAL_CUSTODY=NOT_VERIFIED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. **M1-02 sigue abierto**. Siguiente hueco crítico: decidir qué ocurre si `create_metadata` confirma la transacción PG17 pero falla la respuesta al proceso de intake; evitar que la limpieza del objeto cifrado destruya datos referenciados por metadata ya confirmada.
