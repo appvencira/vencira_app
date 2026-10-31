@@ -15,11 +15,12 @@ test -f scripts/o5_backup_to_drive.sh
 db=vencira_localcheck-db-1
 project="$(docker inspect "$db" --format '{{index .Config.Labels "com.docker.compose.project"}}')"
 [ "$project" = vencira_localcheck ]
-current="$(docker exec "$db" sh -ec '
+current="$(docker exec -i "$db" sh -s <<'MB1SQL'
  PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -A -t -v ON_ERROR_STOP=1 \
  -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
- -c "SELECT name FROM django_migrations WHERE app=\x27reminders\x27 ORDER BY name DESC LIMIT 1;"
-')"
+ -c "SELECT name FROM django_migrations WHERE app='reminders' ORDER BY name DESC LIMIT 1;"
+MB1SQL
+)"
 test -n "$current"
 case "$current" in *[!a-zA-Z0-9_]*)
  echo "MB1_O5_MIGRATION_QUERY=UNEXPECTED_RESULT"; exit 1;; esac
