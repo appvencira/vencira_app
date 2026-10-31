@@ -30,3 +30,18 @@ MB1_OPERATIONAL_BACKUP_INTEGRATION=NOT_VERIFIED
 MB1_EXTERNAL_HEAD_CUSTODY=NOT_VERIFIED
 MB1_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
+
+
+## Una sola auditoria O5 de lectura — PENDIENTE EN VPS
+
+Se ha publicado `scripts/audit_mb1_o5_restore_contract_readonly.sh` (`50d809d`, correccion de SQL heredoc `781a1b1`). Solo consulta en lectura `django_migrations` de `vencira_localcheck-db-1` tras verificar la etiqueta del proyecto; contrasta con el pin estatico `o5_restore_drill.sh`, comprueba la marca local de exito sin imprimir epoch y declara el alcance PG-only de O5 a partir del codigo. No lee archivos de credenciales root, no llama al repositorio remoto, no modifica DB ni detiene temporizadores.
+
+Ejecutar una sola vez:
+
+    cd ~/vencira-localcheck
+    git pull --ff-only origin feature/c-ficha-independent-attachments
+    bash -n scripts/audit_mb1_o5_restore_contract_readonly.sh
+    sudo env MB1_O5_READONLY_AUDIT=YES bash scripts/audit_mb1_o5_restore_contract_readonly.sh
+    echo "MB1_O5_READONLY_EXIT_CODE=$?"
+
+Interpretar `MB1_O5_RESTORE_PIN_MATCHES_LIVE=NO` como diferencia entre la referencia estatica y la migracion DEV leida, no como prueba de fallo de una restauracion remota. El resultado de la consulta no garantiza estado, integridad ni custodia de Drive. Pendiente ejecucion del operador.
