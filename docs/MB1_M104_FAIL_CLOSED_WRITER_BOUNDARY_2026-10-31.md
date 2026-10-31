@@ -38,3 +38,20 @@ echo "MB1_NONCOOPERATIVE_EXIT_CODE=$?"
 Evidencia comunicada por el operador: `MB1_UNCOOPERATIVE_FS_WRITE_BYPASS=CONFIRMED`, `MB1_ORDINARY_LOGIN_DENIED=OK`, `MB1_NONCOOPERATIVE_SQL_ADMIN_WRITE_BYPASS=CONFIRMED`, `MB1_UNIVERSAL_FREEZE_FAIL_CLOSED=OK`, `MB1_NONCOOPERATIVE_BYPASS_RESULT=0`, `MB1_NONCOOPERATIVE_EXIT_CODE=0`. Persisten `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
 
 **Interpretación:** la prueba negativa funcionó correctamente y demuestra la insuficiencia del bloqueo actual; no es un PASS de congelación universal. Requisito siguiente: demostrar exclusión de *todos los procesos autorizados del dominio de escritura* y restringir la disponibilidad del almacén y del acceso a PG17 durante una ventana efímera. Conservamos abierto M1-03/M1-04.
+
+## Próximo ensayo: aislamiento por ciclo de vida del escritor (sin validar)
+
+Script `scripts/rehearse_mb1_quiesced_writer_domain_disposable.sh`, commit `b4c85f5`. **Solo en recursos Docker efímeros** y con opción explícita `MB1_QUIESCED_WRITER_LAB=YES`: crea red Docker interna nueva, PG17 sin puerto publicado, un contenedor escritor que actualiza PostgreSQL y dos archivos sintéticos, y directorios `/tmp` exclusivos. Solicita finalización cooperativa, verifica que el proceso de escritura ha salido con código 0 y ya no acepta `docker exec`, compara secuencias PG17/objeto/diario y prueba desde un contenedor distinto que una montura de objetos de solo lectura rechaza una escritura (incluso bajo root del contenedor). Después vuelca PG17 y copia los archivos, restaura en otra DB temporal y comprueba coincidencia.
+
+**Interpretación:** este ensayo va más allá del `flock`: la ventana de captura no mantiene vivo al escritor controlado y monta la vista de captura como read-only. **No** prueba que un nuevo escritor no pueda levantarse desde el host, ni bloquea administradores SQL, root/Docker privilegiado, aplicaciones ajenas ni scripts O5. La montura `:ro` solo protege esa vista, no convierte los directorios originales en inmutables. La parada cooperativa aislada no equivale a una ventana operativa en DEV. M1-04 debe seguir abierto aunque el ensayo resulte PASS.
+
+Comandos:
+```bash
+cd ~/vencira-localcheck
+git pull --ff-only origin feature/c-ficha-independent-attachments
+bash -n scripts/rehearse_mb1_quiesced_writer_domain_disposable.sh
+sudo env MB1_QUIESCED_WRITER_LAB=YES bash scripts/rehearse_mb1_quiesced_writer_domain_disposable.sh
+echo "MB1_DOMAIN_EXIT_CODE=$?"
+```
+
+Esperado: `MB1_DOMAIN_REAL_SQL_AND_FILE_WRITER=OK`, `MB1_DOMAIN_WRITER_PROCESS_DRAINED=OK`, `MB1_DOMAIN_QUIESCENCE_CROSS_RESOURCE=OK`, `MB1_DOMAIN_READONLY_MOUNT_DENIES_WRITE=OK`, `MB1_DOMAIN_QUIESCED_SNAPSHOT_RESTORE=OK`, `MB1_DOMAIN_ISOLATION_RESULT=0`, `MB1_DOMAIN_EXIT_CODE=0`; siempre `MB1_GLOBAL_FREEZE=NOT_VERIFIED` y `MB1_RELEASE_AUTHORIZED=NO`.
