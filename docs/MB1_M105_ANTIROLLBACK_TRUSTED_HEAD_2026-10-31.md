@@ -56,3 +56,16 @@ Esperado: **23 tests** (11 previos + 12 nuevos), OK y salida 0. No registrar PAS
 ## Validación de paquete físico sintético — PASS (operador)
 
 `Ran 23 tests in 0.031s`, `OK`, `MB1_ANTIROLLBACK_PACKAGE_EXIT_CODE=0` (11 pruebas de cabeza independiente y 12 de vínculo a `capture.enc`, `manifest.json` y `manifest.mac`). Quedan validados en modo unitario/sintético la detección de sustitución de cualquiera de las tres piezas, el rechazo de una copia antigua íntegra contra una cabeza más reciente, errores de autenticación y ausencias de archivos. **No** se ha comprobado custodia externa física de la cabeza ni la integración del verificador con la restauración del paquete real del laboratorio en un segundo host. M1-05 permanece abierto.
+
+
+## Próximo gate de M1-05 (decisión de alcance, no otra repetición de 23 tests)
+
+**El hito aún requiere una integración end-to-end fail-closed antes de restaurar**, con estas etapas verificables:
+
+1. Generar un paquete sintético a partir de la captura consistente de laboratorio, conservando la custodia separada de las claves y evitando claves dentro del paquete. Vincular el recibo anti-rollback a exactamente los archivos publicados y a su snapshot_id.
+2. Crear y promover el nuevo recibo **fuera del dominio recuperable desde el VPS**, bajo autoridad de custodia externa. La promoción debe ser monotónica o inmutable/versionada con protección frente a modificación y borrado; no permitir que el mismo proceso que genera backups sobrescriba el registro confiable. La mera copia en una carpeta distinta del VPS no cuenta.
+3. Transferir paquete, clave de manifiesto/cifrado y recibo de confianza por vías separadas a un segundo host. Antes de ejecutar pg_restore, comprobar HMAC y la coincidencia exacta con la cabeza externa. Verificar que una copia antigua **válida** se rechaza tras promover otra más reciente, y que la copia nueva se restaura integralmente.
+4. Probar la **pérdida del VPS** y el caso de pérdida o indisponibilidad del registro externo; debe abortar con diagnóstico, no tratar la copia anterior como la actual. Una restauración histórica excepcional necesita autorización y procedimiento diferente, auditable.
+5. Acordar retención/rotación de clave, política de recuperación y responsabilidades operativas. No migrar esta lógica a DEV ni habilitar supresión automática de backups antes de su aceptación.
+
+El código pure-Python actual no crea ni protege ese registro externo; no puede sustituir controles de infraestructura/custodia. **Decisión actual:** M1-05 `INTEGRATED_EXTERNAL_ANCHOR=NO`, M1-06 `OPERATIONAL_CUSTODY=NO`, `MB1_RELEASE_AUTHORIZED=NO`.
