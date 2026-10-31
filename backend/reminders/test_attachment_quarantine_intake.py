@@ -31,17 +31,19 @@ class StagedIntakeTests(SimpleTestCase):
         self.assertEqual(self.store.read_quarantine_for_scanner_only(
             staged.storage_key), self.pdf)
 
-    def test_metadata_failure_removes_orphan(self):
+    def test_metadata_failure_preserves_private_orphan_for_review(self):
         def fail(metadata):
             raise ValueError("simulated DB failure")
         with self.assertRaises(ValueError):
             self.stage(fail)
-        self.assertEqual(list(self.root.iterdir()), [])
+        self.assertEqual(len(list(self.root.iterdir())), 1)
+        self.assertNotIn(self.pdf, next(self.root.iterdir()).read_bytes())
 
-    def test_missing_metadata_removes_orphan(self):
+    def test_missing_metadata_preserves_private_object_for_review(self):
         with self.assertRaises(Exception):
             self.stage(lambda metadata: None)
-        self.assertEqual(list(self.root.iterdir()), [])
+        self.assertEqual(len(list(self.root.iterdir())), 1)
+        self.assertNotIn(self.pdf, next(self.root.iterdir()).read_bytes())
 
     def test_invalid_content_never_writes(self):
         with self.assertRaises(ValueError):
