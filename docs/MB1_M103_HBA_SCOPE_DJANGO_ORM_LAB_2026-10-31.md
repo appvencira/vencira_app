@@ -65,3 +65,23 @@ C_FICHA_RELEASE_AUTHORIZED=NO
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+## Resultado del operador — PASS HBA / FAIL Django ORM (31/10/2026)
+
+**HBA PASS** para `vencira_localcheck` y `vencira_preview`: cada DB reporta 2 reglas `LOOPBACK_IPV4`, 2 `LOOPBACK_IPV6`, 0 `NONLOOPBACK`, 0 `UNRESOLVED`, `HOST_TRUST_TOTAL=4`, `RISK=LOOPBACK_ONLY_OBSERVED`, `MB1_M103_TRUST_SCOPE_READONLY=OK`, `MB1_M103_LIVE_HOST_TRUST_SCOPE_READONLY=OK`. No es una prueba de accesibilidad o inaccesibilidad desde otros network namespaces.
+
+**Django ORM FAIL**, a pesar de los PASS previos `MB1_M103_DJANGO_SOURCE_PREFLIGHT=OK`, `MB1_M103_DJANGO_IMAGE_BUILD=OK`, `MB1_M103_DJANGO_PG17_INTERNAL_ONLY=OK`, `MB1_M103_DJANGO_REAL_MIGRATIONS_TEMP_ONLY=OK`, `MB1_M103_DJANGO_LIMITED_ROLE_GRANTED=OK`, `MB1_M103_DJANGO_REAL_LIMITED_LOGIN=OK`. Al ejecutar `Renewal.delete()`, Django intenta consultar `reminders_renewalattachment` y PostgreSQL responde `psycopg.errors.UndefinedTable`. El ensayo terminó `MB1_M103_DJANGO_PG17_PHASE=ORM`, `MB1_M103_DJANGO_PG17_RESULT=1`, `MB1_M103_SCOPE_ORM_PHASE=DJANGO_LAB`, `MB1_M103_SCOPE_ORM_RESULT=1`.
+
+**Diagnóstico documental:** `reminders.0027_renewal_attachment_metadata` crea `reminders_renewalattachment`, pero depende de `reminders.0026_user_mfa_pending_administrative_case`; el laboratorio solo migró `reminders.0018_draft_reasons` y `renewal_attachments.0006_ed25519_signature_length`. La relación histórica sigue presente en el registro de modelos en runtime. Por ello, la eliminación de `Renewal` activa el collector que consulta la tabla histórica ausente, **antes de validar todos los caminos de borrado con el rol limitado**. No es correcto atribuir este error a un GRANT de PostgreSQL.
+
+**Decisión de seguridad:** NO aplicar migraciones 0019–0027 para superar la prueba; siguen gated por MFA. NO crear a mano `reminders_renewalattachment`, ni fabricar un `--fake` para silenciar el fallo. Mantener el FAIL del gate original y diseñar una prueba de alcance reducido, declarando explícitamente que `Renewal.delete` está bloqueado por la dependencia histórica. Registrar cualquier posterior PASS como **CRUD parcial**, nunca compatibilidad completa de borrado o autorización de release.
+
+```text
+MB1_M103_HBA_SCOPE=PASS_LOOPBACK_ONLY_OBSERVED
+MB1_M103_DJANGO_ORM_ORIGINAL=FAIL_MISSING_HISTORICAL_TABLE
+MB1_M103_RENEWAL_DELETE=BLOCKED_BY_GATED_MIGRATION_0027
+MB1_M103_FULL_DJANGO_COMPATIBILITY=NOT_VERIFIED
+MB1_GLOBAL_FREEZE=NOT_VERIFIED
+MB1_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
