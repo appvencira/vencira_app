@@ -31,7 +31,9 @@ for command_name in docker python3 bash git; do command -v "$command_name" >/dev
 test -f scripts/o5_restore_schema_contract.py
 test -f scripts/test_o5_restore_schema_contract.py
 test -f scripts/o5_restore_drill.sh
-bash -n scripts/o5_restore_drill.sh scripts/audit_mb1_o5_restore_contract_readonly.sh
+for syntax_file in scripts/o5_restore_drill.sh scripts/audit_mb1_o5_restore_contract_readonly.sh; do
+  bash -n "$syntax_file"
+done
 echo "MB1_O5_GROUP_BASH_SYNTAX=OK"
 
 PHASE=TESTS
