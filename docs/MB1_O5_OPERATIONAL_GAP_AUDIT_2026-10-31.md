@@ -52,3 +52,22 @@ Interpretar `MB1_O5_RESTORE_PIN_MATCHES_LIVE=NO` como diferencia entre la refere
 `MB1_O5_LIVE_SCHEMA_QUERY=OK`, `MB1_O5_RESTORE_STATIC_PIN=FOUND`, `MB1_O5_RESTORE_PIN_MATCHES_LIVE=NO`, `MB1_O5_BACKUP_SCOPE=POSTGRESQL_ONLY_IN_VERSIONED_SOURCE`, `MB1_O5_OBJECT_JOURNAL_CAPTURE=NOT_IN_VERSIONED_O5`, `MB1_O5_ANTIROLLBACK_PREFLIGHT=NOT_IN_VERSIONED_O5`, `MB1_O5_SUCCESS_MARKER=RECENT`, `MB1_O5_READONLY_AUDIT_RESULT=0`, `MB1_O5_READONLY_EXIT_CODE=0`. No se imprimió ni registró aquí el nombre de la migración activa; solo su desacuerdo con el pin 0014. El marcador de éxito reciente es local y NO valida la restauración remota. El operador confirma `MB1_O5_REMOTE_RESTORABILITY=NOT_VERIFIED_BY_THIS_AUDIT`, `MB1_O5_EXTERNAL_KEY_CUSTODY=NOT_VERIFIED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
 
 **Acción propuesta:** eliminar únicamente la comparación del *máximo* nombre de migración en el restaurador O5 versionado y comprobar la presencia de una migración base requerida, con las tablas esenciales y tests positivos/negativos. El cambio no debe instalarse automáticamente ni alterar el backup programado. Validar antes de activar.
+
+
+## Corrección candidata del verificador O5 (fuentes únicamente, SIN DESPLEGAR)
+
+El desacuerdo `MB1_O5_RESTORE_PIN_MATCHES_LIVE=NO` confirmado por operador motivó sustituir la comparación del nombre de **última** migración con `0014_renewal_outcomes`. En la fuente de `scripts/o5_restore_drill.sh` (commit `82e1fa0`) se recupera en lectura el inventario de migraciones reminders y tablas del **PostgreSQL restaurado temporal**, y se exige, mediante `scripts/o5_restore_schema_contract.py` (`c249f43`), la presencia de `0001_initial`, `0014_renewal_outcomes` y las tablas `django_migrations`, `reminders_workspace`, `reminders_renewal`. Permite versiones posteriores legítimas pero **rechaza inventarios incompletos, duplicados o inválidos**; esto es solo un contrato estructural mínimo, NO confirma compatibilidad de toda la aplicación, frescura, anti-rollback ni integridad de datos de negocio.
+
+Pruebas puras nuevas `scripts/test_o5_restore_schema_contract.py` (`59c646b`, 10 casos): aceptación del baseline y versión posterior, rechazo de baseline/initial/tablas ausentes, inventario duplicado o inválido. Script de auditoría read-only adaptado (`31ebea3`) para identificar el contrato nuevo; **la unidad O5 instalada en `/usr/local/libexec/` no ha sido inspeccionada ni modificada** y las copias diarias permanecen intactas. Este cambio no debe desplegarse sin ejecutar las pruebas y revisar restauración efímera y procedimiento de rollback.
+
+Validación local única (SIN sudo, sin Docker, sin acceso a claves o DB):
+
+    cd ~/vencira-localcheck
+    git pull --ff-only origin feature/c-ficha-independent-attachments
+    bash -n scripts/o5_restore_drill.sh scripts/audit_mb1_o5_restore_contract_readonly.sh
+    python3 -m unittest -v scripts.test_o5_restore_schema_contract
+    echo "MB1_O5_SCHEMA_FIX_EXIT_CODE=$?"
+
+Esperado: **10 pruebas**, `OK`, `MB1_O5_SCHEMA_FIX_EXIT_CODE=0`. Código **aún sin validar mediante salida del operador**. No ejecutar en DEV el restaurador O5; para comprobar el código actual basta la prueba pura.
+
+Pendiente para M1-05/M1-06: restauración desde Drive efectiva en clon, custodia externa autenticada, control anti-rollback previo a recuperación, alcance de adjuntos si se activan y separación de escritores. `MB1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
