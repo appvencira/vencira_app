@@ -1,6 +1,6 @@
 # VENCIRA — M1-03: autenticación real y ensayo de mínimo privilegio PG17
 
-Fecha: 31/10/2026. Rama: `feature/c-ficha-independent-attachments`. **Preparado, pendiente de ejecución**.
+Fecha: 31/10/2026. Rama: `feature/c-ficha-independent-attachments`. **Gate ejecutado con PASS el 31/10/2026 (ver evidencia del operador).**
 
 ## Contexto
 
@@ -70,3 +70,14 @@ MB1_GLOBAL_FREEZE=NOT_VERIFIED
 MB1_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## Evidencia real entregada por el operador — PASS 31/10/2026
+
+`Ran 11 tests in 0.001s`, `OK`, `MB1_M103_DETAIL_TESTS=OK`, `MB1_M103_HBA_IDENTITY_DETAIL=OK`, `MB1_M103_DETAIL_RESULT=0`, `MB1_M103_AUTH_LP_HBA_AND_RUNTIME_IDENTITY=OK`.
+
+**Resultados idénticos en `vencira_localcheck` y `vencira_preview`:** `LOCAL_TRUST=2`, `HOST_TRUST=4`, `BROAD_HOST=1`, `BROAD_HOST_SCRAM=1`, `BROAD_HOST_TRUST=0`, `INVALID_RULES=0`, `API_USES_DB_SUPERUSER=YES`. Cuatro reglas host trust NO prueban que estén disponibles desde fuera del contenedor: hay que clasificar sus direcciones/máscaras. La regla host amplia usa SCRAM, no trust, lo que no elimina el riesgo de contraseña/usuario superusuario en la API.
+
+**Ensayo PG17 limitado:** `MB1_M103_LP_PG17_PRIVATE_NO_NETWORK=OK`, `MB1_M103_LP_ADMIN_AND_APP_ROLES_SEPARATE=OK`, `MB1_M103_LP_RESTRICTED_ROLE_CRUD=OK`, rechazo de `PRIVATE_AUDIT_READ`, `DDL_ALTER`, `DDL_CREATE`, `TABLE_TRUNCATE`, `ROLE_CREATE` y `ADMIN_ROLE_IMPERSONATION` con `MB1_M103_LP_ADMIN_ESCALATION_DENIED=OK`, `MB1_M103_LP_RESTRICTED_ROLE_REMAINS_USABLE=OK`, `MB1_M103_LP_DISPOSABLE_ROLE_SEPARATION=OK`, `MB1_M103_LP_PHASE=DONE`, `MB1_M103_LP_RESULT=0`, `MB1_M103_AUTH_LP_DISPOSABLE_LP_POSTGRES=OK`, `MB1_M103_AUTH_LP_GROUP_DONE=OK`, `MB1_M103_AUTH_LP_PHASE=DONE`, `MB1_M103_AUTH_LP_RESULT=0`. La línea final `MB1_M103_AUTH_LP_EXIT_CODE` no fue incluida, por lo que no se afirma.
+
+**Conclusión:** riesgos de API con superusuario CONFIRMADOS para ambos proyectos; regla host amplia con SCRAM CONFIRMADA; 4 reglas host trust por DB **pendientes de verificar por alcance**. Separar rol limitado es técnicamente viable para un fixture SQL, pero aún no se ha probado Django ORM y esquema real con ese login. Mantener M1-03 abierto y no editar HBA/roles en DEV. `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
