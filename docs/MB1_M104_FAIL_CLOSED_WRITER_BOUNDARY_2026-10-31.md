@@ -55,3 +55,10 @@ echo "MB1_DOMAIN_EXIT_CODE=$?"
 ```
 
 Esperado: `MB1_DOMAIN_REAL_SQL_AND_FILE_WRITER=OK`, `MB1_DOMAIN_WRITER_PROCESS_DRAINED=OK`, `MB1_DOMAIN_QUIESCENCE_CROSS_RESOURCE=OK`, `MB1_DOMAIN_READONLY_MOUNT_DENIES_WRITE=OK`, `MB1_DOMAIN_QUIESCED_SNAPSHOT_RESTORE=OK`, `MB1_DOMAIN_ISOLATION_RESULT=0`, `MB1_DOMAIN_EXIT_CODE=0`; siempre `MB1_GLOBAL_FREEZE=NOT_VERIFIED` y `MB1_RELEASE_AUTHORIZED=NO`.
+
+
+## Ensayo de dominio de escritor drenado — PASS confirmado por operador (31/10)
+
+`MB1_DOMAIN_REAL_SQL_AND_FILE_WRITER=OK`, `MB1_DOMAIN_WRITER_PROCESS_DRAINED=OK`, `MB1_DOMAIN_QUIESCENCE_CROSS_RESOURCE=OK`, `MB1_DOMAIN_READONLY_MOUNT_DENIES_WRITE=OK`, `MB1_DOMAIN_QUIESCED_SNAPSHOT_RESTORE=OK`, `MB1_DOMAIN_OPERATED_ONLY_TEMP_RESOURCES=OK`, `MB1_DOMAIN_ISOLATION_RESULT=0`, `MB1_DOMAIN_EXIT_CODE=0`. La prueba demostró parada con salida 0 de un escritor controlado y coincidencia de secuencias PG17/objeto/diario restaurados, así como denegación de escritura desde una vista bind de solo lectura. **Subprueba de aislamiento de dominio conocido: PASS.**
+
+El operador confirma expresamente `MB1_SQL_SUPERUSER_BYPASS=NOT_BLOCKED`, `MB1_DOCKER_HOST_EXTERNAL_WRITERS=NOT_EXCLUDED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. El host/root o un actor que controla Docker todavía podría afectar al origen, y la vista `:ro` no vuelve inmutable la ruta de origen. No inferir freeze universal; M1-03 y M1-04 continúan abiertos.
