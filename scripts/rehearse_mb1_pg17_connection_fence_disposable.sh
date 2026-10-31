@@ -132,5 +132,61 @@ assert subprocess.run([sys.executable,"-c",writer_script,str(root/"capture.lock"
                       capture_output=True,timeout=5).returncode==0
 print("MB1_JOINT_COOPERATIVE_FENCE_RELEASE=OK")
 PY
+# Second gate: actual VENCIRA encrypted store and intake journal on private,
+# disposable host directories. Retain the same cooperative capture contract.
+# This is intentionally a separate drill, not a universal writer freeze.
+lab_image="vencira-mb1-actual-store:$(git rev-parse --short=12 HEAD)"
+docker build -q -t "$lab_image" ./backend >/dev/null
+uid="$(docker run --rm --network none "$lab_image" id -u)"
+gid="$(docker run --rm --network none "$lab_image" id -g)"
+chown "$uid:$gid" "$LAB_ROOT/objects" "$LAB_ROOT/journal"
+export MB1_FENCE_LAB_IMAGE="$lab_image"
+python3 - <<'PY'
+import os, subprocess, sys
+from pathlib import Path
+from renewal_attachments.offline_multiprocess_fence_mb1 import IsolatedProcessFence
+root=Path(os.environ["MB1_FENCE_LAB_ROOT"])
+script="""
+import hashlib,os,uuid
+from pathlib import Path
+from cryptography.fernet import Fernet
+from django.conf import settings
+from reminders.attachment_private_store import PrivateQuarantineStore
+from renewal_attachments.offline_intake_journal import IntakeJournal
+key=uuid.UUID(hex="b17b17b17b1741178117811781178117")
+objects=Path("/lab/objects")
+journal=Path("/lab/journal")
+keyfile=objects/".synthetic-key"
+if not keyfile.exists():
+    keyfile.write_bytes(Fernet.generate_key())
+    keyfile.chmod(0o600)
+store=PrivateQuarantineStore(objects,keyfile.read_bytes())
+ledger=IntakeJournal(str(journal))
+payload=b"MB1_REAL_ENCRYPTED_CAPTURE_SYNTHETIC"
+if os.environ["MB1_ACTION"]=="write":
+    ledger.record_intent(key,hashlib.sha256(payload).hexdigest())
+    store.put_quarantine(key,payload)
+else:
+    assert store.read_quarantine_for_scanner_only(key)==payload
+    assert ledger.read_intent(key)["sha256"]==hashlib.sha256(payload).hexdigest()
+print("MB1_REAL_ENCRYPTED_STORE_JOURNAL="+os.environ["MB1_ACTION"].upper())
+"""
+def app(action):
+    subprocess.run([
+        "docker","run","--rm","--network","none",
+        "-e","VENCIRA_ENV=test","-e","VENCIRA_ATTACHMENT_SPLIT_REHEARSAL=1",
+        "-e","DJANGO_SECRET_KEY=mb1-synthetic-private-capture-secret-long",
+        "-e","MB1_ACTION="+action,
+        "--mount","type=bind,src="+str(root/"objects")+",dst=/lab/objects",
+        "--mount","type=bind,src="+str(root/"journal")+",dst=/lab/journal",
+        os.environ["MB1_FENCE_LAB_IMAGE"],"python","-c",
+        "import django;django.setup();"+script
+    ],check=True,timeout=45)
+app("write")
+fence=IsolatedProcessFence(root/"capture.lock")
+with fence.capture(timeout=2):
+    app("read")
+    print("MB1_ACTUAL_ENCRYPTED_OBJECT_JOURNAL_CAPTURE=OK",flush=True)
+PY
 echo "MB1_JOINT_CAPTURE_LAB=OK"
 echo "MB1_UNIVERSAL_CAPTURE=NOT_VERIFIED"
