@@ -86,7 +86,7 @@ MB1_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
 
-## Reensayo únicamente Django limitado — pendiente del operador
+## Reensayo únicamente Django limitado — PASS parcial del operador
 
 Tras el fallo, **no volver a ejecutar** `validate_mb1_m103_scope_and_django_orm_grouped.sh`: ese script también repetiría la HBA ya certificada. La corrección de alcance está versionada en `backend/reminders/offline_mb1_m103_limited_orm_lab.py` (`9c054fe`) y `scripts/rehearse_mb1_m103_real_django_limited_pg17.sh` (`63f169f`). No hay cambio de esquema, settings, migraciones ni DEV. El código obliga a que `reminders.0027` siga sin aplicar y a que la tabla histórica falte en este lab; `Renewal.delete()` queda excluido honestamente y reportado como bloqueado. Los inserts/updates de `Renewal`, el `delete()` de modalidad, las denegaciones DDL/roles y el rollback del fixture se realizan en un PG17 **nuevo**.
 
@@ -121,3 +121,12 @@ MB1_M103_DJANGO_PG17_EXIT_CODE=0
 ```
 
 **Criterio de proyecto:** incluso si este subensayo pasa, `M1-03` sigue abierto. Resolver la divergencia entre grafo migrado hasta 0018 y registro de modelos Django que contiene `reminders.RenewalAttachment` exigirá una transición de esquema explícitamente revisada, separada del bloqueo MFA; no crear una tabla histórica ad hoc ni habilitar 0027 para pasar una prueba. No deducir que borrar una renovación en una API sobre esquema 0018 sea seguro.
+
+
+## Resultado del reensayo Django parcial — PASS confirmado (31/10/2026)
+
+El operador ha comunicado: `MB1_M103_DJANGO_SOURCE_PREFLIGHT=OK` (la primera línea llegó con una 'M' omitida, pero posteriores hitos y resultado verifican ejecución), `MB1_M103_DJANGO_IMAGE_BUILD=OK`, `MB1_M103_DJANGO_PG17_INTERNAL_ONLY=OK`, `MB1_M103_DJANGO_REAL_MIGRATIONS_TEMP_ONLY=OK`, `MB1_M103_DJANGO_LIMITED_ROLE_GRANTED=OK`, `MB1_M103_DJANGO_REAL_LIMITED_LOGIN=OK`, `MB1_M103_DJANGO_RENEWAL_CREATE_READ_UPDATE=OK`, `MB1_M103_DJANGO_MODALITY_ORM_DELETE=OK`, `MB1_M103_DJANGO_FIXTURE_ROLLBACK=OK`, `MB1_M103_DJANGO_DENIED_DDL=OK`, `MB1_M103_DJANGO_DENIED_TRUNCATE=OK`, `MB1_M103_DJANGO_DENIED_ROLE_ESCALATION=OK`, `MB1_M103_DJANGO_AUTH_SESSION_TABLE_READ=OK`, `MB1_M103_DJANGO_ROLE_SEPARATION_PARTIAL=OK`, `MB1_M103_DJANGO_LIMITED_PG17_ORM_PARTIAL=OK`, `MB1_M103_DJANGO_PG17_PHASE=DONE`, `MB1_M103_DJANGO_PG17_RESULT=0`.
+
+**Sin falsa cobertura:** `MB1_M103_DJANGO_HISTORICAL_ATTACHMENT_0027=NOT_MIGRATED`, `MB1_M103_DJANGO_RENEWAL_DELETE=BLOCKED_BY_MFA_GATED_SCHEMA`, `MB1_M103_DJANGO_FULL_RENEWAL_DELETE=NOT_VERIFIED`, `MB1_M103_RENEWAL_DELETE=BLOCKED_BY_MFA_GATED_0027`, `MB1_M103_DJANGO_HTTP_COMPATIBILITY=NOT_VERIFIED`, `MB1_M103_LIVE_CREDENTIAL_MIGRATION=NOT_AUTHORIZED`, `MB1_M103_FULL_WRITER_EXCLUSION=NOT_VERIFIED`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. No se facilitó el marcador externo `MB1_M103_DJANGO_PG17_EXIT_CODE`: no se afirma.
+
+La evidencia demuestra viabilidad de **CRU en ORM con rol real no administrador y eliminación de modalidad**, con datos sintéticos y esquema previo a MFA; no de eliminación de `Renewal`, compatibilidad integral de HTTP o congelación universal. No se repetirá el reensayo a menos que cambie el código afectado.
