@@ -24,7 +24,17 @@ def scope(address, mask):
     if mask is not None and not isinstance(mask, str):
         return "UNRESOLVED"
     try:
-        cidr = address if mask in (None, "") else f"{address}/{mask}"
+        # PostgreSQL can display IPv6 netmasks as full hex addresses, while
+        # ipaddress.ip_network only accepts numeric prefix lengths for IPv6.
+        if mask and ":" in address and ":" in mask and "/" not in address:
+            raw = int(ipaddress.IPv6Address(mask))
+            prefix = raw.bit_count()
+            expected = ((1 << prefix) - 1) << (128 - prefix) if prefix else 0
+            if raw != expected:
+                return "UNRESOLVED"
+            cidr = f"{address}/{prefix}"
+        else:
+            cidr = address if mask in (None, "") else f"{address}/{mask}"
         network = ipaddress.ip_network(cidr, strict=False)
     except ValueError:
         return "UNRESOLVED"
