@@ -11,7 +11,7 @@ cleanup() {
   rc=$?
   trap - EXIT
   if [ "$STARTED" = 1 ]; then
-    docker rm -f "$DB" >/dev/null 2>&1 || rc=1
+    docker_cmd rm -f "$DB" >/dev/null 2>&1 || rc=1
   fi
   echo "MB1_M103_LP_PHASE=$PHASE"
   echo "MB1_M103_LP_RESULT=$rc"
@@ -33,19 +33,21 @@ git diff --quiet
 git diff --cached --quiet
 test -z "$(git ls-files --others --exclude-standard | grep -vx 'clients/flutter/pubspec.lock' || true)"
 command -v docker >/dev/null
-docker info >/dev/null
+command -v sudo >/dev/null
+docker_cmd() { sudo docker "$@"; }
+docker_cmd info >/dev/null
 echo "MB1_M103_LP_SOURCE_PREFLIGHT=OK"
 
 PHASE=ISOLATED_DB
 DB="mb1_m103_lp_$$_$RANDOM"
-docker run -d --name "$DB" --network none \
+docker_cmd run -d --name "$DB" --network none \
   -e POSTGRES_USER=mb1 -e POSTGRES_DB=mb1 \
   -e POSTGRES_PASSWORD=synthetic-admin-pg17-only \
   postgres:17-alpine >/dev/null
 STARTED=1
 ready=0
 for _ in $(seq 1 50); do
-  if docker exec "$DB" pg_isready -U mb1 -d mb1 >/dev/null 2>&1; then
+  if docker_cmd exec "$DB" pg_isready -U mb1 -d mb1 >/dev/null 2>&1; then
     ready=1; break
   fi
   sleep 1
@@ -55,7 +57,7 @@ echo "MB1_M103_LP_PG17_PRIVATE_NO_NETWORK=OK"
 
 PHASE=FIXTURE
 # All SQL below operates ONLY on a brand-new disposable database.
-docker exec -i "$DB" psql -X -q -v ON_ERROR_STOP=1 -U mb1 -d mb1 >/dev/null <<'SQL'
+docker_cmd exec -i "$DB" psql -X -q -v ON_ERROR_STOP=1 -U mb1 -d mb1 >/dev/null <<'SQL'
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 CREATE ROLE mb1_app_limited LOGIN PASSWORD 'synthetic-role-only';
 GRANT CONNECT ON DATABASE mb1 TO mb1_app_limited;
@@ -79,7 +81,7 @@ echo "MB1_M103_LP_ADMIN_AND_APP_ROLES_SEPARATE=OK"
 # Connect as the actual restricted login via TCP loopback, not using
 # SET ROLE in a superuser session (which would test the wrong threat model).
 app_sql() {
-  docker exec -e PGPASSWORD=synthetic-role-only "$DB" \
+  docker_cmd exec -e PGPASSWORD=synthetic-role-only "$DB" \
     psql -X -A -t -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate \
     -h 127.0.0.1 -U mb1_app_limited -d mb1 -c "$1"
 }
