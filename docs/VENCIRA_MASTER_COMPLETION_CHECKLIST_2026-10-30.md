@@ -2,6 +2,27 @@
 
 Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-attachments`. Marcar `[x]` únicamente con salida PASS del operador y evidencia documentada. **No confundir ensayos sintéticos con liberación operativa.**
 
+## PANEL DE PROGRESO — actualización 31/10/2026
+
+| Bloque | Hitos cerrados | Total | Cierre por hitos |
+|---|---:|---:|---:|
+| MB1 — Copias y recuperación | **1** | 7 | **14,3 %** |
+| MB2 — MFA y adjuntos | **0** | 4 | **0 %** |
+| MB3 — Producto y comercialización | **0** | 4 | **0 %** |
+| **TOTAL** | **1** | **15** | **6,7 %** |
+
+**Método:** solo cuenta `[x] **M1-01**` y los otros 14 hitos principales del inventario; `[ ]` sigue pendiente aunque tenga diez o cien subpruebas PASS. Esta cifra **mide cierre formal**, no funcionalidad implementada, cobertura de tests, madurez general ni porcentaje de trabajo restante. Todos los hitos pueden tener distinto esfuerzo.
+
+**Último avance confirmado:** validación del corrector O5 del esquema restaurado (batería de diez pruebas, operador `OK`, `MB1_O5_SCHEMA_FIX_EXIT_CODE=0`; evidencia `docs/MB1_O5_OPERATIONAL_GAP_AUDIT_2026-10-31.md`, commit `81e0869`). **Solo en GitHub: no se ha instalado el nuevo restaurador O5.**
+
+**Subpruebas relevantes validadas, sin cierre de hito:** M1-04 captura conjunta PG17/objeto/diario; detección de bypasses SQL/FS; aislamiento de escritor temporal; M1-05 11 tests anti-rollback, 23 tests paquete físico, dos generaciones/restauración protegida; lectura O5 y comparación de migraciones; contrato O5 corregido. Los controles de laboratorio están documentados debajo de sus hitos.
+
+**Bloqueos que impiden cierre:** M1-04 escritores privilegiados/externos; M1-05 verificación y recuperación operativa con ancla externa; M1-06 custodia externa auténtica; MB2 MFA/adjuntos sin autorización; MB3 aceptación comercial. **No despliegue, no migración live.**
+
+**Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
+
+
+
 ## MB1 — Copias y recuperación
 
 - [x] E2E PG17 sintético: pg_dump/restauración y paquete cifrado autenticado; prueba de clave incorrecta/manipulación
@@ -23,7 +44,7 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
   - **Integración física sintética PASS (31/10):** `Ran 23 tests in 0.031s`, `OK`, `MB1_ANTIROLLBACK_PACKAGE_EXIT_CODE=0` (11 tests de cabeza y 12 de los tres archivos `capture.enc`, `manifest.json`, `manifest.mac`), código `c6dde95` y `4d148d3`; evidencia `docs/MB1_M105_ANTIROLLBACK_TRUSTED_HEAD_2026-10-31.md` (`c938efa`). **Sigue sin verificarse custodia externa de cabeza ni integración de la comprobación como preflight obligatorio antes de restaurar**; no marcar [x].
   - **Gate integrado de dos generaciones — PASS (31/10):** script `scripts/rehearse_mb1_antirollback_gated_restore_disposable.py` (`9da9b99`) superado por operador: `MB1_STALE_VALID_PACKAGE_REJECTED_BEFORE_RESTORE=OK`, `MB1_CURRENT_PG17_RESTORE_AFTER_GATE=OK`, `MB1_CURRENT_OBJECT_JOURNAL_RESTORE=OK`, `MB1_ANTIROLLBACK_GATED_E2E_LAB=OK`, `MB1_ANTIROLLBACK_E2E_RESULT=0`, `MB1_ANTIROLLBACK_E2E_EXIT_CODE=0`. Evidencia completa: `docs/MB1_M105_GATED_TWO_GENERATION_RESTORE_2026-10-31.md` (`f86e43c`). **Cabeza simulada en el mismo host, sin custodia externa ni integración O5 ni freeze global.** M1-05 continúa [ ].
   - **Auditoría O5 real solo lectura PASS (31/10):** `MB1_O5_RESTORE_PIN_MATCHES_LIVE=NO`, `MB1_O5_SUCCESS_MARKER=RECENT`, `MB1_O5_READONLY_AUDIT_RESULT=0`, `MB1_O5_READONLY_EXIT_CODE=0`. O5 en Git sigue siendo solo PostgreSQL; no se ha probado restaurabilidad remota. Evidencia `docs/MB1_O5_OPERATIONAL_GAP_AUDIT_2026-10-31.md` (`761c60a`).
-  - **Corrección de pin en el código O5, NO desplegada ni validada:** `o5_restore_drill.sh` (`82e1fa0`) comprueba la presencia de migración base + tablas reales restauradas mediante nuevo validador `scripts/o5_restore_schema_contract.py` (`c249f43`), con 10 pruebas puras (`59c646b`) pendientes de operador. Documento `docs/MB1_O5_OPERATIONAL_GAP_AUDIT_2026-10-31.md` (`5f9423c`). No modifica unidad instalada, clave O5, cron, DB ni servicio; no cerrar M1-05 sin backup integral y custodia externa.
+  - **Corrección de pin O5 — VALIDADA en fuentes (31/10), SIN DESPLEGAR:** `o5_restore_drill.sh` (`82e1fa0`) comprueba base `0014_renewal_outcomes` + tablas restauradas mediante `scripts/o5_restore_schema_contract.py` (`c249f43`); batería versionada de 10 casos (`59c646b`) confirmada por operador con `OK`, `MB1_O5_SCHEMA_FIX_EXIT_CODE=0`. Evidencia `docs/MB1_O5_OPERATIONAL_GAP_AUDIT_2026-10-31.md` (`81e0869`). El instalador/servicio O5 sigue sin cambiar; falta prueba de restauración desde Drive y validación integral. No cerrar M1-05.
 - [ ] **M1-06** Custodia **operativa** externa de backup y claves, retención, rotación, custodia independiente y recuperación tras pérdida total del VPS
 - [ ] **M1-07** Gate integrado final, restauración y revisión de seguridad, con decisión explícita de autorización
 
