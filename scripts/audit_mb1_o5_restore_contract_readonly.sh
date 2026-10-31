@@ -31,12 +31,18 @@ import os,re
 from pathlib import Path
 restore=Path("scripts/o5_restore_drill.sh").read_text()
 backup=Path("scripts/o5_backup_to_drive.sh").read_text()
-match=re.search(r'test "\$schema" = ([A-Za-z0-9_]+)',restore)
-if match is None:
-    raise SystemExit("MB1_O5_RESTORE_PIN_PARSE=FAILED")
-print("MB1_O5_RESTORE_STATIC_PIN=FOUND")
-print("MB1_O5_RESTORE_PIN_MATCHES_LIVE=" +
-      ("YES" if match.group(1)==os.environ["MB1_O5_ACTUAL_SCHEMA"] else "NO"))
+match=re.search(r'test "\\$schema" = ([A-Za-z0-9_]+)',restore)
+if match:
+    print("MB1_O5_VERSIONED_SCHEMA_GATE=LEGACY_EXACT_LATEST")
+    print("MB1_O5_RESTORE_PIN_MATCHES_LIVE=" +
+          ("YES" if match.group(1)==os.environ["MB1_O5_ACTUAL_SCHEMA"] else "NO"))
+elif ("o5_restore_schema_contract.py" in restore and
+      "--migrations \"$migrations\" --tables \"$schema_tables\"" in restore):
+    print("MB1_O5_VERSIONED_SCHEMA_GATE=BASELINE_PRESENCE_AND_ESSENTIAL_TABLES")
+    print("MB1_O5_RESTORE_PIN_MATCHES_LIVE=NOT_APPLICABLE")
+else:
+    raise SystemExit("MB1_O5_RESTORE_GATE_UNRECOGNIZED")
+print("MB1_O5_INSTALLED_RESTORE_SCRIPT=NOT_INSPECTED")
 if ('pg_dump -Fc' not in backup or
         '--stdin-filename vencira-postgres.dump' not in backup):
     raise SystemExit("MB1_O5_BACKUP_SCOPE_PARSE=FAILED")
