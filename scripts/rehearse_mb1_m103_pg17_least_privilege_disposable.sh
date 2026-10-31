@@ -11,7 +11,7 @@ cleanup() {
   rc=$?
   trap - EXIT
   if [ "$STARTED" = 1 ]; then
-    docker_cmd rm -f "$DB" >/dev/null 2>&1 || rc=1
+    docker_cmd rm -fv "$DB" >/dev/null 2>&1 || rc=1
   fi
   echo "MB1_M103_LP_PHASE=$PHASE"
   echo "MB1_M103_LP_RESULT=$rc"
