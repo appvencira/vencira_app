@@ -63,7 +63,7 @@ Cambio del flujo en `backend/reminders/attachment_quarantine_intake.py` (commit 
 
 Tests adaptados `backend/reminders/test_mb1_intake_failure_contract.py` (`eadcb5c`) y `backend/reminders/test_attachment_quarantine_intake.py` (`1f6c011`). Se agregan 4 pruebas con Fernet y diario de verdad sobre ficheros temporales, callback de metadata simulado: commit seguido de timeout, error previo al commit, falta de diario y ausencia de ACK (`backend/renewal_attachments/test_mb1_ambiguous_metadata_commit.py`, `99c9114`). **No son una simulacion de commit real de PG17**; falta probar la condicion con PG17 efimero y confirmar mecanismo de conciliacion operativo.
 
-El script `scripts/validate_mb1_m102_grouped_failclosed.sh` (commit `1299887`) ahora agrupa 6+4+8+8+4 = **30 tests**, incluido el retest de los comportamientos modificados. No se han ejecutado aun desde el VPS, asi que **el PASS de 22 pruebas anterior no se extrapola a este codigo corregido**.
+El script `scripts/validate_mb1_m102_grouped_failclosed.sh` (commit `1299887`) agrupa 6+4+8+8+4 = **30 tests**, incluido el retest de los comportamientos modificados. Esta era una condición pendiente en la publicación original; posteriormente el operador confirmó **30/30 PASS**, como figura en la sección de evidencia inferior. El PASS anterior de 22 no se extrapoló sin ejecutar el código corregido.
 
 Comando unico:
 
