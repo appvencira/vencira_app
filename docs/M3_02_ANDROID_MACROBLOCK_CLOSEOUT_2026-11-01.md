@@ -78,3 +78,9 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 - Commits `92a17e4` y `1edd647`: nueva prueba de widget `detail_expiry_navigation_test.dart` para abrir dos rutas (intermedia e historial), simular `VenciraUnauthorized` durante carga del historial, contar una sola notificación al controlador padre y comprobar el retorno directo al inicio.
 - La firma simulada usa `VenciraOperationalHistory`, coherente con la API declarada.
 - CI del conjunto aún por comprobar. El macrobloque A no se declara completo con una única prueba de navegación.
+
+## A4 — Recuperación de evidencias CI
+
+- Los commits `57c5f7a` y `812bfc6` no mostraron ejecuciones vinculadas a PR mediante la consulta disponible, por lo que **no existe evidencia verificada de PASS** para A4.
+- `770a817`: el workflow M3 ahora también escucha `push` de `feature/m3-android-local-notifications`, y su filtro `pull_request` incluye expresamente ambos archivos del historial. Los jobs siguen siendo tests Django aislados, Flutter y compilación web; no despliegan ni migran persistente.
+- **Limitación del verificador**: la consulta de ejecuciones por commit disponible filtra eventos de pull request. La ausencia de resultados en ella no prueba que no haya ejecuciones por push. Confirmar resultados desde GitHub Actions antes de cerrar A.
