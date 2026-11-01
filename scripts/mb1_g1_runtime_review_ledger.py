@@ -7,8 +7,12 @@ import argparse
 import ast
 import csv
 from pathlib import Path
-from mb1_g1_risk_triage import classify
-from mb1_g1_source_writer_inventory import MUTATION, DYNAMIC
+try:
+    from .mb1_g1_risk_triage import classify
+    from .mb1_g1_source_writer_inventory import MUTATION, DYNAMIC
+except ImportError:
+    from mb1_g1_risk_triage import classify
+    from mb1_g1_source_writer_inventory import MUTATION, DYNAMIC
 
 SQL = {"execute","executemany","commit","rollback"}
 FS = {"put_quarantine","discard_quarantine","write_bytes","write_text",
