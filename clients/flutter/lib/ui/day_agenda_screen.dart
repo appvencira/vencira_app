@@ -6,6 +6,7 @@ import '../api/vencira_api.dart';
 import '../l10n/app_localizations.dart';
 import 'vencira_pagination_bar.dart';
 import 'month_agenda_screen.dart';
+import 'operational_inbox_screen.dart';
 import 'renewal_detail_screen.dart';
 import 'renewal_editor.dart';
 import 'modality_labels.dart';
@@ -38,6 +39,10 @@ class VenciraDayAgendaScreen extends StatefulWidget {
 class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
   late DateTime _selectedDay;
   VenciraAgendaDayPage? _agenda;
+  VenciraOperationalInbox? _todayInbox;
+  bool _todayInboxLoading = false;
+  bool _todayInboxFailed = false;
+  int _todayInboxGeneration = 0;
   int _page = 1;
   int _generation = 0;
   bool _loading = false;
@@ -71,12 +76,14 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
     _loadModalities();
     _loadDay(1);
     _loadWeek();
+    _loadTodayInbox();
   }
 
   @override
   void dispose() {
     _generation++;
     _weekGeneration++;
+    _todayInboxGeneration++;
     super.dispose();
   }
 
@@ -167,6 +174,110 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
     }
   }
 
+  bool get _isToday {
+    final now = DateTime.now();
+    return _selectedDay.year == now.year &&
+        _selectedDay.month == now.month &&
+        _selectedDay.day == now.day;
+  }
+
+  Future<void> _loadTodayInbox() async {
+    final requestId = ++_todayInboxGeneration;
+    if (!_isToday) {
+      if (mounted) setState(() {
+        _todayInbox = null;
+        _todayInboxLoading = false;
+        _todayInboxFailed = false;
+      });
+      return;
+    }
+    setState(() {
+      _todayInboxLoading = true;
+      _todayInboxFailed = false;
+      // Never show a stale count while refreshing.
+      _todayInbox = null;
+    });
+    try {
+      final inbox = await widget.api.fetchOperationalInbox(
+        widget.workspace.id, _selectedDay, scope: 'due',
+      );
+      if (!mounted || requestId != _todayInboxGeneration || !_isToday) return;
+      setState(() {
+        _todayInbox = inbox;
+        _todayInboxLoading = false;
+      });
+    } on VenciraUnauthorized {
+      if (!mounted || requestId != _todayInboxGeneration) return;
+      setState(() {
+        _todayInbox = null;
+        _todayInboxLoading = false;
+        _todayInboxFailed = true;
+        _unauthorized = true;
+      });
+    } catch (_) {
+      if (!mounted || requestId != _todayInboxGeneration) return;
+      setState(() {
+        _todayInbox = null;
+        _todayInboxLoading = false;
+        _todayInboxFailed = true;
+      });
+    }
+  }
+
+  Future<void> _openTodayInbox() async {
+    await Navigator.of(context).push<void>(MaterialPageRoute(
+      builder: (_) => VenciraOperationalInboxScreen(
+        api: widget.api, workspace: widget.workspace),
+    ));
+    if (mounted) {
+      _loadDay(_page);
+      _loadTodayInbox();
+    }
+  }
+
+  Widget _todayInboxShortcut() {
+    if (!_isToday || _unauthorized) return const SizedBox.shrink();
+    final count = _todayInbox == null
+        ? null : _todayInbox!.today + _todayInbox!.overdue;
+    return Card.outlined(
+      key: const ValueKey('agenda-today-inbox-shortcut'),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(children: [
+          const Icon(Icons.notifications_active_outlined),
+          const SizedBox(width: 12),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_t.agendaInternalInbox,
+                style: Theme.of(context).textTheme.titleSmall),
+              Text(_todayInboxFailed
+                  ? _t.agendaInternalInboxUnavailable
+                  : _t.agendaInternalInboxDescription,
+                style: Theme.of(context).textTheme.bodySmall),
+            ],
+          )),
+          if (_todayInboxLoading)
+            const SizedBox(width: 22, height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2))
+          else if (count != null) ...[
+            Text('$count', key: const ValueKey('agenda-due-count'),
+              style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(width: 8),
+          ],
+          IconButton(
+            key: const ValueKey('agenda-inbox-open'),
+            tooltip: _todayInboxFailed ? _t.retry : _t.inboxShortcut,
+            onPressed: _todayInboxLoading ? null :
+                _todayInboxFailed ? _loadTodayInbox : _openTodayInbox,
+            icon: Icon(_todayInboxFailed ? Icons.refresh :
+                Icons.arrow_forward_ios_rounded, size: 18),
+          ),
+        ]),
+      ),
+    );
+  }
+
   static DateTime _weekBeginning(DateTime day) => DateTime(
     day.year, day.month, day.day - (day.weekday - DateTime.monday),
   );
@@ -225,6 +336,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
   void _refreshAll() {
     _loadDay(_page);
     _loadWeek(force: true);
+    _loadTodayInbox();
   }
 
   void _chooseDay(DateTime day) {
@@ -236,6 +348,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
     setState(() => _selectedDay = civil);
     _loadDay(1);
     _loadWeek();
+    _loadTodayInbox();
   }
 
   void _stepDay(int offset) {
@@ -786,7 +899,9 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
                         Text(_t.agendaWeekUnavailable,
                             style: Theme.of(context).textTheme.bodySmall),
                       ],
-                      const SizedBox(height: 22),
+                      const SizedBox(height: 14),
+                      _todayInboxShortcut(),
+                      const SizedBox(height: 10),
                       _dayContents(locale),
                       const SizedBox(height: 12),
                       Text(_t.agendaForecastDisclaimer,
