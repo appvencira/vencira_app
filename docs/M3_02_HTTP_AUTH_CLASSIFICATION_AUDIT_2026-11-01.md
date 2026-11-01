@@ -67,3 +67,12 @@ M3_02_GLOBAL_HTTP_INTEGRATION=NOT_IMPLEMENTED
 M3_02_OS_SCHEDULING_ENABLED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+## Primer adaptador integrado para GET — 01/11/2026
+
+- Commits `41d6214` y `ea25d11`: el método común `HttpVenciraApi._fetch` comprueba una vez `/api/v1/me/` después de una respuesta 401/403. El sondeo se hace con el mismo cliente HTTP, sin recursión.
+- Si la sonda de identidad devuelve 401/403, se genera `VenciraUnauthorized`; si confirma 200 con ID entero válido o falla por red/formato, **no se declara sesión caducada**, y se genera error de API genérico.
+- Tests de integración con cliente HTTP simulado cubren ambos códigos, identidad válida, identidad denegada y pérdida de red.
+- Alcance limitado deliberadamente a solicitudes GET del helper `_fetch`. Las escrituras manuales POST/PATCH y las pantallas secundarias no están homologadas; el clasificador de estados puro está separado y aún no orquesta globalmente la UI.
+- Posible mejora posterior: verificar pertenencia del workspace cuando se deniega una solicitud pero la sesión permanece válida; no usar solamente el resultado `/me/` para tomar decisiones sobre alarmas del workspace.
+- **CI de esta revisión pendiente**; compilación APK no equivale a entrega real en dispositivo Android.
