@@ -97,7 +97,10 @@ void main() {
     expect(api.requested.length, 2);
     api.requested.last.complete(fakeInbox(overdue: 1, today: 0));
     await tester.pumpAndSettle();
-    expect(find.text('1'), findsOneWidget);
+    expect(find.descendant(
+      of: find.byKey(const ValueKey('agenda-due-count')),
+      matching: find.text('1'),
+    ), findsOneWidget);
   });
 
   testWidgets('Late inbox reply cannot display count for another day',
