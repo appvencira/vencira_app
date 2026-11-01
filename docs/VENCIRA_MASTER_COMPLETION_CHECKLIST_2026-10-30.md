@@ -35,6 +35,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **Plan de aceleración consolidado (01/11/2026):** `docs/VENCIRA_ACCELERATED_CLOSURE_PLAN_2026-11-01.md` (`762c851`) agrupa trabajo pendiente en A: transición+HTTP+rol SQL; B: escritores+captura+backup; C: custodia externa y recuperación en segundo host; D: producto+E2E. Se reusan PASS anteriores, sin repetir fases ya validadas y sin modificar DEV. Es un plan, **no** un PASS de nuevos gates. Hitos 1/15 (6,7 %).
 
+**Paquete A, nuevo gate HTTP en laboratorio (01/11/2026):** código y runner publicados en `backend/renewal_attachments/offline_mb1_package_a_http.py` y `scripts/rehearse_mb1_package_a_http_disposable.sh`; documento `docs/MB1_PACKAGE_A_HTTP_DISPOSABLE_2026-11-01.md`. **NO EJECUTADO**. Usa PG17 efímero y middleware real con tablas MFA sintéticas locales a ese laboratorio, sin migraciones MFA; no cubre coexistencia histórica, integridad de objetos ni rol SQL no superusuario HTTP. No es cierre M1-03/M2-03 ni autorización; 1/15 (6,7 %).
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
