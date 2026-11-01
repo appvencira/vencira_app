@@ -1,0 +1,56 @@
+name: MB1 static security gates
+on:
+  push:
+    branches:
+      - main
+      - feature/mb1-m104-transition-contract-batch
+    paths:
+      - 'backend/**'
+      - 'scripts/mb1_g1_*'
+      - 'scripts/mb1_g123_*'
+      - 'scripts/test_mb1_g1_*'
+      - 'scripts/test_mb1_g123_*'
+      - 'scripts/validate_mb1_g1_*'
+      - 'scripts/validate_mb1_g123_*'
+      - '.github/workflows/mb1-audit.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'scripts/mb1_g1_*'
+      - 'scripts/mb1_g123_*'
+      - 'scripts/test_mb1_g1_*'
+      - 'scripts/test_mb1_g123_*'
+      - 'scripts/validate_mb1_g1_*'
+      - 'scripts/validate_mb1_g123_*'
+      - '.github/workflows/mb1-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mb1-audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  g1-g3:
+    name: G1 source + runtime ledger + G1-G3 fail-closed
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: G1 source inventory
+        run: python3 scripts/mb1_g1_source_writer_inventory.py --source backend
+      - name: G1 risk classification
+        run: python3 scripts/mb1_g1_risk_triage.py --source backend
+      - name: G1 runtime ledger tests and scan
+        run: bash scripts/validate_mb1_g1_runtime_review_ledger.sh
+      - name: G1-G3 evidence gate contract tests
+        run: bash scripts/validate_mb1_g123_evidence_gate.sh
+      - name: Safety boundary
+        run: |
+          echo 'MB1_GLOBAL_FREEZE=NOT_VERIFIED'
+          echo 'MB1_RELEASE_AUTHORIZED=NO'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
