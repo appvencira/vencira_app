@@ -332,6 +332,7 @@
   "inboxToday": "Hoy",
   "inboxUpcoming": "Próximos",
   "inboxDue": "Por atender",
+  "inboxControlRepeatUnavailable": "No se puede aplazar este control antes del límite. Revisa la anotación.",
   "inboxEmpty": "No hay avisos internos en este apartado.",
   "inboxOpenDetail": "Ver anotación",
   "inboxShortcut": "Avisos",
