@@ -623,10 +623,39 @@ class VenciraReminderDraft {
   }
 }
 
+class VenciraResultsUser {
+  const VenciraResultsUser({
+    required this.userId, required this.name, required this.won,
+    required this.declined, required this.discarded, required this.pending,
+  });
+  final String? userId, name;
+  final int won, declined, discarded, pending;
+
+  factory VenciraResultsUser.fromJson(Map<String, dynamic> json) {
+    final id = json['user_id'], name = json['name'];
+    final counters = [json['won'], json['declined'],
+      json['discarded'], json['pending']];
+    if ((id != null && (id is! String ||
+            !RegExp(r'^[0-9]{1,20}$').hasMatch(id))) ||
+        (id == null && name != null) ||
+        (id != null && (name is! String ||
+            name.trim().isEmpty || name.length > 150)) ||
+        counters.any((v) => v is! int || v < 0)) {
+      throw const FormatException('Invalid per-user results');
+    }
+    return VenciraResultsUser(
+      userId: id as String?, name: name as String?,
+      won: json['won'] as int, declined: json['declined'] as int,
+      discarded: json['discarded'] as int, pending: json['pending'] as int,
+    );
+  }
+}
+
 class VenciraResultsSummary {
   const VenciraResultsSummary({
     required this.period, required this.won, required this.declined,
     required this.discarded, required this.pending,
+    this.byUser = const [],
   });
 
   final String period;
@@ -634,14 +663,35 @@ class VenciraResultsSummary {
   final int declined;
   final int discarded;
   final int pending;
+  final List<VenciraResultsUser> byUser;
 
   factory VenciraResultsSummary.fromJson(Map<String, dynamic> json) {
     final period = json['period'];
     final keys = [json['won'], json['declined'], json['discarded'], json['pending']];
+    final rawRows = json['by_user'];
     if (!const ['month','quarter','year'].contains(period) ||
         keys.any((x) => x is! int || x < 0) ||
-        json['from'] is! String || json['to_exclusive'] is! String) {
+        json['from'] is! String || json['to_exclusive'] is! String ||
+        rawRows is! List || rawRows.length > 1000) {
       throw const FormatException('Invalid results summary');
+    }
+    final rows = rawRows.map((row) {
+      if (row is! Map<String, dynamic>) {
+        throw const FormatException('Invalid results row');
+      }
+      return VenciraResultsUser.fromJson(row);
+    }).toList(growable: false);
+    final ids = <String?>{};
+    for (final row in rows) {
+      if (!ids.add(row.userId)) {
+        throw const FormatException('Duplicated results user');
+      }
+    }
+    if (rows.fold<int>(0, (n, row) => n + row.won) != json['won'] ||
+        rows.fold<int>(0, (n, row) => n + row.declined) != json['declined'] ||
+        rows.fold<int>(0, (n, row) => n + row.discarded) != json['discarded'] ||
+        rows.fold<int>(0, (n, row) => n + row.pending) != json['pending']) {
+      throw const FormatException('Unreconciled results totals');
     }
     return VenciraResultsSummary(
       period: period as String,
@@ -649,6 +699,7 @@ class VenciraResultsSummary {
       declined: json['declined'] as int,
       discarded: json['discarded'] as int,
       pending: json['pending'] as int,
+      byUser: rows,
     );
   }
 }
