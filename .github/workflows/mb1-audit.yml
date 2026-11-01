@@ -47,6 +47,12 @@ jobs:
         run: python3 scripts/mb1_g1_risk_triage.py --source backend
       - name: G1 runtime ledger tests and scan
         run: bash scripts/validate_mb1_g1_runtime_review_ledger.sh
+      - name: G1 critical callsite audit
+        run: |
+          REPORT=$(mktemp)
+          rm -f "$REPORT"
+          trap 'rm -f "$REPORT"' EXIT
+          python3 scripts/mb1_g1_critical_callsite_audit.py --source backend --out "$REPORT"
       - name: G1-G3 evidence gate contract tests
         run: bash scripts/validate_mb1_g123_evidence_gate.sh
       - name: Safety boundary
