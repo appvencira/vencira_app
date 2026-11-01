@@ -38,8 +38,7 @@ class FakeInboxApi implements VenciraApi {
 
   @override
   Future<VenciraOperationalInbox> fetchOperationalInbox(
-    String workspaceId, DateTime day, {String scope = 'due', int page = 1},
-  ) {
+    String workspaceId, DateTime day, {String scope = 'due', int page = 1}) {
     final pending = Completer<VenciraOperationalInbox>();
     requests.add(pending);
     return pending.future;
@@ -48,8 +47,7 @@ class FakeInboxApi implements VenciraApi {
   @override
   Future<VenciraOperationalReminder> updateOperationalReminder(
     String workspaceId, String renewalId, VenciraOperationalReminder reminder,
-    String action, String idempotencyKey, {int? daysLater},
-  ) async {
+    String action, String idempotencyKey, {int? daysLater}) async {
     actionCalls++;
     throw const VenciraApiException(); // Ambiguous server result.
   }
@@ -110,6 +108,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(item, findsNothing);
     expect(actions, findsNothing);
+    expect(find.byKey(const ValueKey('inbox-summary')), findsNothing);
 
     await tester.tap(find.byType(TextButton).first);
     await tester.pump();
