@@ -442,6 +442,31 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     }
   }
 
+  Future<void> _clearLocalDeviceNotices() async {
+    final cleanup = widget.beforeSessionBoundary;
+    if (_saving || cleanup == null) return;
+    setState(() => _saving = true);
+    final ca = Localizations.localeOf(context).languageCode == 'ca';
+    try {
+      await cleanup();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(ca
+            ? 'S’han cancel·lat els avisos locals del dispositiu.'
+            : 'Se han cancelado los avisos locales del dispositivo.'),
+      ));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(ca
+            ? 'No s’han pogut cancel·lar els avisos locals. Torna-ho a provar.'
+            : 'No se han podido cancelar los avisos locales. Reinténtalo.'),
+      ));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   /// Ajustes agrupados y táctiles, sin menú emergente Material de pantalla
   /// completa. Accesibles también en escritorio y con textos localizados.
   Future<void> _openSettingsSheet() async {
@@ -541,6 +566,27 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                           builder: (_) => MfaSetupScreen(api: _api,
                             catalan: preferences.locale.languageCode == 'ca'),
                         ));
+                      },
+                    ),
+                  // This is a meaningful opt-OUT only. No UI action can
+                  // enable OS notifications until the release gate is opened.
+                  if (!kIsWeb &&
+                      defaultTargetPlatform == TargetPlatform.android &&
+                      widget.beforeSessionBoundary != null)
+                    ListTile(
+                      key: const ValueKey('settings-clear-local-notices'),
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.notifications_off_outlined),
+                      title: Text(preferences.locale.languageCode == 'ca'
+                        ? 'Cancel·lar avisos locals del dispositiu'
+                        : 'Cancelar avisos locales del dispositivo'),
+                      subtitle: Text(preferences.locale.languageCode == 'ca'
+                        ? 'No s’activen nous avisos automàticament.'
+                        : 'No se activan nuevos avisos automáticamente.'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: _saving ? null : () {
+                        Navigator.of(sheetContext).pop();
+                        _clearLocalDeviceNotices();
                       },
                     ),
                   ListTile(
