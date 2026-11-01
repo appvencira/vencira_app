@@ -85,6 +85,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
         });
       }
       await _loadManualFollowUp(token);
+      if (!mounted || token != _generation || _unauthorized) return;
       try {
         final insurers = await widget.api.fetchInsurers(widget.workspace.id);
         if (mounted && token == _generation) {
