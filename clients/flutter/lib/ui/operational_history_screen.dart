@@ -56,7 +56,7 @@ class _HistoryState extends State<VenciraOperationalHistoryScreen> {
       _loading = false;
     });
     await widget.onSessionExpired?.call();
-    if (mounted && widget.onSessionExpired != null) Navigator.of(context).pop();
+    if (mounted && widget.onSessionExpired != null) Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   Future<void> _load({bool reload = false}) async {
