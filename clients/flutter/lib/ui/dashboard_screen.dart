@@ -280,6 +280,10 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       final result = await _api.fetchModalities(selected.id);
       if (!mounted || _selected?.id != selected.id) return;
       setState(() => _modalities = result);
+    } on VenciraUnauthorized {
+      if (mounted && _selected?.id == selected.id) {
+        await _handleExpiredSession();
+      }
     } catch (_) {
       // La página de catálogo informa del fallo y permite reintentar.
     }
@@ -292,6 +296,10 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       final results = await _api.fetchInsurers(workspace.id);
       if (!mounted || _selected?.id != workspace.id) return;
       setState(() => _insurers = results);
+    } on VenciraUnauthorized {
+      if (mounted && _selected?.id == workspace.id) {
+        await _handleExpiredSession();
+      }
     } catch (_) {
       // No mostrar resultados de otra cuenta si falla una recarga.
       if (mounted && _selected?.id == workspace.id) {
