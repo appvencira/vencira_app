@@ -1857,6 +1857,27 @@ class HttpVenciraApi implements VenciraApi {
   final bool _ownsClient;
   final Uri _baseUri;
 
+  /// null = unavailable or malformed; never classify a failed probe as logout.
+  Future<bool?> _probeIdentityAfterDenial() async {
+    try {
+      final response = await _client.get(
+        _baseUri.resolve('/api/v1/me/'),
+        headers: const {'Accept': 'application/json'},
+      );
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        return false;
+      }
+      if (response.statusCode != 200) return null;
+      final json = jsonDecode(utf8.decode(response.bodyBytes));
+      if (json is! Map<String, dynamic>) return null;
+      final id = json['id'];
+      return id is int && id > 0 && id <= 9007199254740991
+          ? true : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// No sigue URLs next suministradas por el servidor ni orígenes externos.
   /// El path y los UUID proceden de los valores seleccionados en la app.
   Future<Object?> _fetch(String path) async {
@@ -1870,7 +1891,12 @@ class HttpVenciraApi implements VenciraApi {
       throw const VenciraApiException();
     }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      // SessionAuthentication can return 403 for anonymous requests and
+      // for authenticated users with insufficient permissions. Probe identity
+      // once, without recursion; network failures remain indeterminate.
+      final identity = await _probeIdentityAfterDenial();
+      if (identity == false) throw const VenciraUnauthorized();
+      throw const VenciraApiException();
     }
     if (response.statusCode != 200) {
       throw const VenciraApiException();
