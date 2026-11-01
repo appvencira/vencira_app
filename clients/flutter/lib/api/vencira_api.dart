@@ -1290,7 +1290,9 @@ class VenciraDeviceNoticeCandidate {
     final start = DateTime(from.year, from.month, from.day);
     final end = DateTime(through.year, through.month, through.day);
     if (!_validUuid(workspaceId) || start.year < 2000 || end.year > 2100 ||
-        end.isBefore(start) || end.difference(start).inDays > 30 ||
+        end.isBefore(start) ||
+        DateTime.utc(end.year, end.month, end.day)
+          .difference(DateTime.utc(start.year, start.month, start.day)).inDays > 30 ||
         page < 1 || page > 100000) {
       throw const VenciraApiException();
     }
@@ -2540,7 +2542,9 @@ class VenciraDeviceNoticePreview {
     final from = DateTime.tryParse(fromText), through = DateTime.tryParse(throughText);
     if (from == null || through == null ||
         _civilDayIso(from) != fromText || _civilDayIso(through) != throughText ||
-        through.isBefore(from) || through.difference(from).inDays > 30) {
+        through.isBefore(from) ||
+        DateTime.utc(through.year, through.month, through.day)
+          .difference(DateTime.utc(from.year, from.month, from.day)).inDays > 30) {
       throw const FormatException('Invalid preview window');
     }
     final ids = <String>{};
