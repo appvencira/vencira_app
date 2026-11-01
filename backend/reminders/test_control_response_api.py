@@ -8,7 +8,7 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from .models import Renewal, RenewalControlResponse, Workspace, WorkspaceMember
+from .models import OperationalReminder, Renewal, RenewalControlResponse, Workspace, WorkspaceMember
 
 
 class ManualControlApiTests(TestCase):
@@ -101,3 +101,74 @@ class ManualControlApiTests(TestCase):
             self.url(), self.payload(), format="json",
         ).status_code, 409)
         self.assertFalse(RenewalControlResponse.objects.exists())
+
+    @patch("reminders.control_response_api.timezone.localdate",
+           return_value=date(2027, 1, 10))
+    def test_idempotency_conflict_and_revision_fail_closed(self, _):
+        initial = self.payload()
+        self.assertEqual(
+            self.client.post(self.url(), initial, format="json").status_code, 201)
+        changed = dict(initial, yes_option="notified_by_mediator")
+        self.assertEqual(
+            self.client.post(self.url(), changed, format="json").status_code, 409)
+        stale = self.payload(revision=0)
+        response = self.client.post(self.url(), stale, format="json")
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.data["current_revision"], 1)
+        self.assertEqual(RenewalControlResponse.objects.count(), 1)
+
+    @patch("reminders.control_response_api.timezone.localdate",
+           return_value=date(2027, 1, 10))
+    def test_strict_payload_and_life_review_write_nothing(self, _):
+        for changes in (
+            {"origin": "automatic"},
+            {"revision": True},
+            {"yes_option": "invented"},
+            {"answer": "no", "yes_option": "notified_by_client", "days_later": 1},
+            {"idempotency_key": "not-a-uuid"},
+        ):
+            with self.subTest(changes=changes):
+                response = self.client.post(
+                    self.url(), self.payload(**changes), format="json")
+                self.assertEqual(response.status_code, 400, response.data)
+        self.assertFalse(RenewalControlResponse.objects.exists())
+        self.renewal.modality = "vida"
+        self.renewal.save(update_fields=["modality"])
+        response = self.client.post(self.url(), self.payload(), format="json")
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertFalse(RenewalControlResponse.objects.exists())
+
+    @patch("django.utils.timezone.now",
+           return_value=datetime(2027, 2, 25, 12, 0, tzinfo=timezone.utc))
+    @patch("reminders.control_response_api.timezone.localdate",
+           return_value=date(2027, 2, 25))
+    def test_no_creates_one_internal_repeat_visible_in_inbox(
+            self, _localdate, _now):
+        payload = self.payload(answer="no", yes_option=None, days_later=2)
+        accepted = self.client.post(self.url(), payload, format="json")
+        self.assertEqual(accepted.status_code, 201, accepted.data)
+        self.assertTrue(accepted.data["notice_scheduled"])
+        self.assertFalse(accepted.data["notice_delivered"])
+        reminder = OperationalReminder.objects.get()
+        self.assertEqual(reminder.scheduled_for, date(2027, 2, 27))
+        self.assertEqual(reminder.kind, OperationalReminder.Kind.CONTROL_REPEAT)
+        self.assertTrue(reminder.control_question)
+        self.assertEqual(reminder.created_by_response_id,
+                         RenewalControlResponse.objects.get().pk)
+
+        inbox = reverse("api-operational-inbox",
+                        kwargs={"workspace_id": self.ws.pk})
+        before = self.client.get(inbox, {"day": "2027-02-26", "scope": "today"})
+        self.assertEqual(before.status_code, 200, before.data)
+        self.assertEqual(before.data["counts"]["today"], 0)
+        due = self.client.get(inbox, {"day": "2027-02-27", "scope": "today"})
+        self.assertEqual(due.status_code, 200, due.data)
+        self.assertEqual(due.data["counts"]["today"], 1)
+        self.assertEqual(due.data["results"][0]["id"], str(reminder.pk))
+        self.assertEqual(due.data["results"][0]["delivery_status"],
+                         "not_implemented")
+
+        again = self.client.post(self.url(), payload, format="json")
+        self.assertEqual(again.status_code, 200, again.data)
+        self.assertEqual(OperationalReminder.objects.count(), 1)
+        self.assertEqual(RenewalControlResponse.objects.count(), 1)

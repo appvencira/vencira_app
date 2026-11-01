@@ -92,6 +92,42 @@ class OperationalInboxTests(TestCase):
         data = self.client.get(self.url, {"day": "2027-03-10"}).json()
         self.assertEqual(data["counts"]["overdue"], 0)
 
+    def test_control_repeat_limit_visible_only_for_authorized_nonlife(self):
+        self.mine.expires_on = date(2027, 3, 31)
+        self.mine.modality = "hogar"
+        self.mine.save(update_fields=["expires_on", "modality"])
+        control = self.add(self.mine, date(2027, 2, 5), "control")
+        control.control_question = True
+        control.save(update_fields=["control_question"])
+        ordinary = self.add(self.owner_only, date(2027, 2, 5), "ordinary")
+        foreign = self.add(self.foreign_renewal, date(2027, 2, 5), "secret")
+        foreign.control_question = True
+        foreign.save(update_fields=["control_question"])
+        self.client.force_login(self.owner)
+        response = self.client.get(self.url, {
+            "day": "2027-02-04", "scope": "upcoming"})
+        self.assertEqual(response.status_code, 200)
+        rows = {r["id"]: r for r in response.json()["results"]}
+        self.assertEqual(
+            rows[str(control.pk)]["latest_control_repeat_on"], "2027-02-27")
+        self.assertIsNone(rows[str(ordinary.pk)]["latest_control_repeat_on"])
+        self.assertNotIn(str(foreign.pk), rows)
+        self.assertEqual(response["Cache-Control"], "no-store")
+
+        self.client.force_login(self.member)
+        response = self.client.get(self.url, {
+            "day": "2027-02-04", "scope": "upcoming"})
+        self.assertEqual([r["id"] for r in response.json()["results"]],
+                         [str(control.pk)])
+        self.assertEqual(response.json()["results"][0][
+            "latest_control_repeat_on"], "2027-02-27")
+        self.mine.modality = "vida"
+        self.mine.save(update_fields=["modality"])
+        response = self.client.get(self.url, {
+            "day": "2027-02-04", "scope": "upcoming"})
+        self.assertIsNone(response.json()["results"][0][
+            "latest_control_repeat_on"])
+
     def test_validation_and_methods(self):
         self.client.force_login(self.owner)
         for params in ({}, {"day": "2027-2-3"}, {"day": "2027-02-30"},

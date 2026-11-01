@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APITestCase
 
-from .models import ReminderCandidate, ReminderPolicy, Renewal, Workspace, WorkspaceMember
+from .models import ReminderCandidate, ReminderPolicy, Renewal, Workspace, WorkspaceMember, OperationalReminder
 
 
 class DayAgendaTests(APITestCase):
@@ -72,6 +72,66 @@ class DayAgendaTests(APITestCase):
             kwargs={"workspace_id": (workspace or self.workspace).id},
         )
         return route + f"?day={day}"
+
+    def test_operational_occurrences_include_reasons_without_leaking_tenants(self):
+        first = OperationalReminder.objects.create(
+            renewal=self.alice_reminder, kind="expiry",
+            source_key="expiry:60", generation=1,
+            scheduled_for=self.day, original_scheduled_for=self.day,
+            reason="Llamar para preparar alternativa", state="pending",
+        )
+        second = OperationalReminder.objects.create(
+            renewal=self.alice_reminder, kind="control_repeat",
+            source_key="control_repeat:1", generation=1,
+            scheduled_for=self.day, original_scheduled_for=self.day,
+            reason="Confirmar comunicación", state="snoozed",
+            control_question=True,
+        )
+        OperationalReminder.objects.create(
+            renewal=self.alice_reminder, kind="expiry",
+            source_key="expiry:disabled", generation=1,
+            scheduled_for=self.day, original_scheduled_for=self.day,
+            reason="NO_VISIBLE", state="completed",
+        )
+        OperationalReminder.objects.create(
+            renewal=self.bob_expiry, kind="expiry",
+            source_key="expiry:bob", generation=1,
+            scheduled_for=self.day, original_scheduled_for=self.day,
+            reason="SECRETO_BOB", state="planned",
+        )
+        OperationalReminder.objects.create(
+            renewal=self.foreign_item, kind="expiry",
+            source_key="expiry:foreign", generation=1,
+            scheduled_for=self.day, original_scheduled_for=self.day,
+            reason="SECRETO_AJENO", state="planned",
+        )
+        self.client.force_authenticate(user=self.alice)
+        response = self.client.get(self.url())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 2)
+        row = next(row for row in response.data["results"]
+                   if row["renewal"]["id"] == str(self.alice_reminder.pk))
+        internal = [event for event in row["events"]
+                    if event["kind"] == "operational_reminder"]
+        self.assertEqual(internal, [
+            {"kind": "operational_reminder", "reminder_id": str(first.pk),
+             "reason": first.reason, "state": "pending",
+             "delivery_status": "not_implemented"},
+            {"kind": "operational_reminder", "reminder_id": str(second.pk),
+             "reason": second.reason, "state": "snoozed",
+             "delivery_status": "not_implemented"},
+        ] if str(first.pk) < str(second.pk) else [
+            {"kind": "operational_reminder", "reminder_id": str(second.pk),
+             "reason": second.reason, "state": "snoozed",
+             "delivery_status": "not_implemented"},
+            {"kind": "operational_reminder", "reminder_id": str(first.pk),
+             "reason": first.reason, "state": "pending",
+             "delivery_status": "not_implemented"},
+        ])
+        self.assertNotIn("NO_VISIBLE", str(response.data))
+        self.assertNotIn("SECRETO_BOB", str(response.data))
+        self.assertNotIn("SECRETO_AJENO", str(response.data))
+        self.assertEqual(response["Cache-Control"], "no-store")
 
     def test_member_only_sees_expiry_and_reminder_assigned_to_self(self):
         self.client.force_authenticate(user=self.alice)

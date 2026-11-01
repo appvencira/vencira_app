@@ -86,7 +86,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
 
   Future<void> _action(VenciraInboxItem item, String action,
       {int? daysLater}) async {
-    if (_acting || _loading) return;
+    if (_acting || _loading || _failed || _unauthorized) return;
     setState(() => _acting = true);
     try {
       await widget.api.updateOperationalReminder(widget.workspace.id,
@@ -99,26 +99,57 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
           SnackBar(content: Text(t.opConflict)));
         await _load(page: _page);
       }
+    } on VenciraUnauthorized {
+      if (mounted) setState(() {
+        _unauthorized = true;
+        _inbox = null;
+      });
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.opActionError)));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(t.opActionError)));
+        // The server might have committed before the connection failed.
+        // Never enable a second action against the unverified old state.
+        await _load(page: _page);
+      }
     } finally {
       if (mounted) setState(() => _acting = false);
     }
   }
 
-  Future<void> _otherDay(VenciraInboxItem item) async {
+  // Civil-date arithmetic avoids DST shifts when selecting a future day.
+  DateTime _inDays(int count) {
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    return DateTime(now.year, now.month, now.day + count);
+  }
+
+  bool _canPostpone(VenciraInboxItem item, int days) {
+    if (!item.reminder.controlQuestion) return true;
+    final bound = item.reminder.latestControlRepeatOn;
+    // No confirmed date from the server (or Vida): fail closed in the UI.
+    return bound != null && !_inDays(days).isAfter(bound);
+  }
+
+  Future<void> _otherDay(VenciraInboxItem item) async {
+    if (!_canPostpone(item, 2)) return;
+    final first = _inDays(2);
+    final normalLast = _inDays(365);
+    final bound = item.reminder.controlQuestion
+        ? item.reminder.latestControlRepeatOn : null;
+    final last = bound != null && bound.isBefore(normalLast)
+        ? bound : normalLast;
+    final proposed = _inDays(7);
+    final initial = proposed.isAfter(last) ? last : proposed;
     final selected = await showDatePicker(
       context: context,
-      initialDate: today.add(const Duration(days: 7)),
-      firstDate: today.add(const Duration(days: 2)),
-      lastDate: today.add(const Duration(days: 365)),
+      initialDate: initial,
+      firstDate: first,
+      lastDate: last,
     );
     if (!mounted || selected == null) return;
+    final today = _inDays(0);
     final offset = DateTime.utc(selected.year, selected.month, selected.day)
-      .difference(DateTime.utc(today.year, today.month, today.day)).inDays;
+        .difference(DateTime.utc(today.year, today.month, today.day)).inDays;
     await _action(item, 'another_day', daysLater: offset);
   }
 
@@ -142,11 +173,13 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
 
   /// Igual que Preferencias: fila táctil, sin flechas ni botones repetidos.
   Widget _sheetRow(BuildContext sheetContext, String label,
-      IconData icon, VoidCallback onTap) {
+      IconData icon, VoidCallback? onTap) {
     final colors = Theme.of(sheetContext).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Material(
+      child: Opacity(
+        opacity: onTap == null ? 0.45 : 1,
+        child: Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
@@ -162,12 +195,13 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
             ]),
           ),
         ),
+        ),
       ),
     );
   }
 
   Future<void> _showActions(VenciraInboxItem item) async {
-    if (_acting || _loading) return;
+    if (_acting || _loading || _failed || _unauthorized) return;
     final colors = Theme.of(context).colorScheme;
     final chosen = await showModalBottomSheet<String>(
       context: context,
@@ -202,10 +236,19 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
                   () => Navigator.pop(sheetContext, 'complete')),
                 _sheetRow(sheetContext, t.opTomorrow,
                   Icons.wb_twilight_outlined,
-                  () => Navigator.pop(sheetContext, 'tomorrow')),
+                  _canPostpone(item, 1)
+                      ? () => Navigator.pop(sheetContext, 'tomorrow') : null),
                 _sheetRow(sheetContext, t.opChoose,
                   Icons.event_outlined,
-                  () => Navigator.pop(sheetContext, 'another_day')),
+                  _canPostpone(item, 2)
+                      ? () => Navigator.pop(sheetContext, 'another_day') : null),
+                if (item.reminder.controlQuestion && !_canPostpone(item, 1))
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(15, 8, 15, 2),
+                    child: Text(t.inboxControlRepeatUnavailable,
+                      style: Theme.of(sheetContext).textTheme.bodySmall
+                        ?.copyWith(color: colors.error)),
+                  ),
               ],
             ),
           ),
@@ -251,6 +294,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
   Widget _summary(VenciraOperationalInbox inbox) {
     final colors = Theme.of(context).colorScheme;
     return Container(
+      key: const ValueKey('inbox-summary'),
       decoration: BoxDecoration(
         color: colors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(20)),
@@ -320,6 +364,13 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
     );
   }
 
+  String _internalStateLabel(String state) => switch (state) {
+    'planned' => t.opStatePlanned,
+    'pending' => t.opStatePending,
+    'snoozed' => t.opStateSnoozed,
+    _ => t.opStateUnknown,
+  };
+
   Widget _item(VenciraInboxItem item) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
@@ -340,7 +391,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(color: colors.outlineVariant)),
       child: InkWell(
-        onTap: _acting || _loading ? null : () => _openDetail(item),
+        onTap: _acting || _loading || _failed || _unauthorized ? null : () => _openDetail(item),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(17, 15, 8, 16),
           child: Row(
@@ -369,6 +420,18 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
                             color: colors.onSurfaceVariant)),
                       ]),
                       Container(
+                        key: ValueKey('inbox-state-' + item.reminder.id),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9, vertical: 4),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: colors.outlineVariant),
+                          borderRadius: BorderRadius.circular(9)),
+                        child: Text(_internalStateLabel(item.reminder.state),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                            fontWeight: FontWeight.w600)),
+                      ),
+                      Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 9, vertical: 4),
                         decoration: BoxDecoration(
@@ -384,7 +447,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
               )),
               IconButton(
                 key: ValueKey('inbox-more-' + item.reminder.id),
-                onPressed: _acting || _loading ? null : () => _showActions(item),
+                onPressed: _acting || _loading || _failed || _unauthorized ? null : () => _showActions(item),
                 tooltip: t.opActions,
                 icon: const Icon(Icons.more_vert_rounded),
               ),
@@ -408,7 +471,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
         child: ListView(padding: const EdgeInsets.all(16), children: [
           Text(t.inboxDescription, style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 16),
-          if (inbox != null) ...[
+          if (inbox != null && !_failed && !_unauthorized) ...[
             _summary(inbox),
             const SizedBox(height: 18),
           ],
@@ -441,7 +504,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
           if (_failed) TextButton.icon(
             onPressed: () => _load(),
             icon: const Icon(Icons.refresh), label: Text(t.retry)),
-          if (inbox != null && !_unauthorized) ...[
+          if (inbox != null && !_unauthorized && !_failed) ...[
             if (inbox.items.isEmpty) Padding(
               padding: const EdgeInsets.symmetric(vertical: 28),
               child: Text(t.inboxEmpty)),

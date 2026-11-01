@@ -795,16 +795,23 @@ class VenciraHistoryPage {
 
 /// Evento tipado de la proyección diaria; los valores son códigos de la API.
 class VenciraAgendaEvent {
-  const VenciraAgendaEvent({required this.kind, this.basis, this.candidateId});
+  const VenciraAgendaEvent({
+    required this.kind, this.basis, this.candidateId,
+    this.operationalReminderId, this.operationalReason, this.operationalState,
+  });
 
   final String kind;
   final String? basis;
   final String? candidateId;
+  final String? operationalReminderId;
+  final String? operationalReason;
+  final String? operationalState;
 
   factory VenciraAgendaEvent.fromJson(Map<String, dynamic> json) {
     final kind = json['kind'];
     if (kind != 'expiry' && kind != 'notice_deadline' &&
-        kind != 'reminder' && kind != 'follow_up') {
+        kind != 'reminder' && kind != 'follow_up' &&
+        kind != 'operational_reminder') {
       throw const FormatException('Unsupported agenda event');
     }
     final candidateId = json['candidate_id'];
@@ -813,6 +820,30 @@ class VenciraAgendaEvent {
         (candidateId is! String ||
          (basis != 'expiry' && basis != 'notice_deadline'))) {
       throw const FormatException('Invalid reminder event');
+    }
+    if (kind == 'operational_reminder') {
+      final id = json['reminder_id'];
+      final reason = json['reason'];
+      final state = json['state'];
+      final uuid = RegExp(
+        r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
+        r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+      );
+      if (id is! String || !uuid.hasMatch(id) ||
+          reason is! String || reason.trim().isEmpty ||
+          reason.length > 160 ||
+          state is! String ||
+          !const {'planned', 'pending', 'snoozed'}.contains(state) ||
+          json['delivery_status'] != 'not_implemented' ||
+          candidateId != null || basis != null) {
+        throw const FormatException('Invalid operational agenda event');
+      }
+      return VenciraAgendaEvent(
+        kind: kind as String,
+        operationalReminderId: id,
+        operationalReason: reason,
+        operationalState: state,
+      );
     }
     return VenciraAgendaEvent(
       kind: kind as String,
@@ -985,23 +1016,49 @@ class VenciraControlResponse {
 class VenciraOperationalReminder {
   const VenciraOperationalReminder({
     required this.id, required this.state, required this.day,
-    required this.reason, required this.controlQuestion});
+    required this.reason, required this.controlQuestion,
+    this.latestControlRepeatOn,
+  });
   final String id, state, reason;
   final DateTime day;
   final bool controlQuestion;
 
+  /// Last civil day for a control-question snooze, strictly before cutoff.
+  /// Null for ordinary tasks, Vida, or an API without verified bounds.
+  /// This is advisory: Django always revalidates on write.
+  final DateTime? latestControlRepeatOn;
+
   factory VenciraOperationalReminder.fromJson(Map<String, dynamic> raw) {
+    const validStates = {'planned', 'pending', 'snoozed', 'completed', 'cancelled'};
     if (raw['id'] is! String || raw['state'] is! String ||
+        !validStates.contains(raw['state']) ||
         raw['scheduled_for'] is! String || raw['reason'] is! String ||
         raw['control_question'] is! bool ||
         raw['delivery_status'] != 'not_implemented') {
       throw const FormatException('Invalid internal reminder');
+    }
+    final rawBound = raw['latest_control_repeat_on'];
+    DateTime? bound;
+    if (rawBound != null) {
+      if (rawBound is! String || rawBound.length != 10 ||
+          raw['control_question'] != true) {
+        throw const FormatException('Invalid control bound');
+      }
+      try {
+        bound = DateTime.parse(rawBound);
+      } on FormatException {
+        throw const FormatException('Invalid control bound');
+      }
+      if (_civilDayIso(bound) != rawBound) {
+        throw const FormatException('Noncanonical control bound');
+      }
     }
     return VenciraOperationalReminder(
       id: raw['id'] as String, state: raw['state'] as String,
       day: DateTime.parse(raw['scheduled_for'] as String),
       reason: raw['reason'] as String,
       controlQuestion: raw['control_question'] as bool,
+      latestControlRepeatOn: bound,
     );
   }
 }
@@ -1306,10 +1363,22 @@ class HttpVenciraApi implements VenciraApi {
     try {
       final raw = jsonDecode(utf8.decode(response.bodyBytes))
           as Map<String, dynamic>;
+      const states = {'planned', 'pending', 'snoozed', 'completed', 'cancelled'};
+      final id = raw['id'], state = raw['state'];
+      final dayText = raw['scheduled_for'];
+      if (id != reminder.id || state is! String ||
+          !states.contains(state) || dayText is! String ||
+          raw['delivery_status'] != 'not_implemented') {
+        throw const VenciraApiException();
+      }
+      final day = DateTime.parse(dayText);
+      if (_civilDayIso(day) != dayText) {
+        throw const VenciraApiException();
+      }
       return VenciraOperationalReminder(
-        id: raw['id'] as String, state: raw['state'] as String,
-        day: DateTime.parse(raw['scheduled_for'] as String),
-        reason: reminder.reason, controlQuestion:reminder.controlQuestion);
+        id: id as String, state: state, day: day,
+        reason: reminder.reason, controlQuestion: reminder.controlQuestion,
+        latestControlRepeatOn: reminder.latestControlRepeatOn);
     } catch (_) { throw const VenciraApiException(); }
   }
 
