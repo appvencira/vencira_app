@@ -25,6 +25,14 @@ Workflow `41308720526` en commit `ca9bfe79` (antes de añadir `device_notice_syn
   - Flutter job `124855372098`: **flutter analyze PASS**, **75/75 tests PASS**, **Flutter Web compilado correctamente**.
 - El workflow de diagnóstico Android `41308949634` es independiente y no está incluido en esta afirmación de éxito; el build APK sigue sujeto a verificación de su propio resultado.
 
+### Diagnóstico de compilación Android (runner efímero)
+
+- Workflow `m3-android-diagnostic.yml`, run **41308795853**, job **124854647521**, conclusión **success**.
+- Salida: `✓ Built build/app/outputs/flutter-apk/app-debug.apk`, `ANDROID_SCAFFOLD_TEMPORARY_BUILD=PASS`.
+- Los marcadores del propio workflow establecen `NATIVE_NOTIFICATIONS_IMPLEMENTED=NO` y `OFFLINE_ENCRYPTED_STORE_IMPLEMENTED=NO`.
+- El scaffold Android se generó con `flutter create --platforms=android` solo en el runner; **no se ha versionado** ni distribuido APK. No es aceptación Android física ni una compilación de un adaptador de notificaciones.
+- Run posterior **41308949634** contiene el sincronizador nuevo; su diagnóstico independiente sigue pendiente de concluir en esta revisión. El primer PASS no se atribuye a ese commit posterior.
+
 ## Pasos necesarios para operar en Android
 
 - Crear y versionar el scaffold Android real, configurar Gradle, SDK, permisos Android 13+, restricciones Android 12+ y política de alarmas exactas/optimizaciones de batería.
