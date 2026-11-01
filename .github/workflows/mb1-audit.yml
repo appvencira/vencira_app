@@ -49,12 +49,18 @@ jobs:
         run: bash scripts/validate_mb1_g1_runtime_review_ledger.sh
       - name: G1 critical callsite unit tests
         run: python3 -m unittest -v scripts.test_mb1_g1_critical_callsite_audit
-      - name: G1 critical callsite audit
+      - name: G1 review reports
         run: |
-          REPORT=$(mktemp)
-          rm -f "$REPORT"
-          trap 'rm -f "$REPORT"' EXIT
-          python3 scripts/mb1_g1_critical_callsite_audit.py --source backend --out "$REPORT"
+          mkdir -p audit-output
+          python3 scripts/mb1_g1_runtime_review_ledger.py --source backend --out audit-output/runtime-review.csv
+          python3 scripts/mb1_g1_critical_callsite_audit.py --source backend --out audit-output/critical-review.csv
+      - name: Upload G1 review evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: g1-review-${{ github.sha }}
+          path: audit-output/*.csv
+          if-no-files-found: error
+          retention-days: 7
       - name: G1-G3 evidence gate contract tests
         run: bash scripts/validate_mb1_g123_evidence_gate.sh
       - name: Safety boundary
