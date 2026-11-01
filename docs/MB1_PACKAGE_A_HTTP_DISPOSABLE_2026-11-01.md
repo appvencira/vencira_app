@@ -15,4 +15,8 @@ Antes de intentar el siguiente gate de convivencia histórica/independiente, rev
 ## Comando de ejecución previsto
 Utilizar una copia temporal del HEAD de la rama en GitHub, nunca cambiar el checkout del VPS o actualizar servicios. El script requiere `MB1_PACKAGE_A_OPT_IN=YES` y `sudo docker` local para contenedores efímeros. No ejecuta `docker compose up`, no solicita credenciales de DEV y no requiere claves reales.
 
-Estado: NO EJECUTADO. `MB1_GLOBAL_FREEZE=NOT_VERIFIED`; `MB1_RELEASE_AUTHORIZED=NO`; `MFA_RELEASE_AUTHORIZED=NO`; `C_FICHA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+Estado: PASS confirmado del alcance HTTP aislado; coexistencia histórica NO EJECUTADA. `MB1_GLOBAL_FREEZE=NOT_VERIFIED`; `MB1_RELEASE_AUTHORIZED=NO`; `MFA_RELEASE_AUTHORIZED=NO`; `C_FICHA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## Ejecución real confirmada por operador — 01/11/2026
+
+`MB1_PA_SOURCE_PREFLIGHT=OK`, `MB1_PA_INTERNAL_PG17=OK`, `MB1_PA_MFA_TABLES_SYNTHETIC_ONLY=OK`, `MB1_PA_HTTP_NONADMIN_ROLE=OK`, `MB1_PA_REAL_HTTP_MIDDLEWARE_METADATA_ONLY=OK`, `MB1_PA_REAL_HTTP_CROSS_TENANT_DENIED=OK`, `MB1_PA_MFA_MIGRATIONS=NOT_APPLIED`, `MB1_PA_FULL_HTTP_NEW_ONLY=OK`, `MB1_PA_PHASE=DONE`, `MB1_PA_RESULT=0`, `MB1_PA_NONADMIN_HTTP=OK`. Límites expresos: `MB1_PA_HISTORICAL_BOTH_SCHEMAS=NOT_RUN`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, release `NO`, sin migraciones live. No hay medición independiente postensayo de salud DEV; el runner no apunta a DEV.
