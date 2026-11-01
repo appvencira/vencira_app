@@ -1226,6 +1226,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     await Navigator.of(context).push<void>(MaterialPageRoute(
       builder: (_) => VenciraRenewalDetailScreen(
         api: _api, workspace: selected, renewalId: item.id,
+        onSessionExpired: _handleExpiredSession,
       ),
     ));
     if (mounted && _selected?.id == selected.id) _loadRenewals(1);
