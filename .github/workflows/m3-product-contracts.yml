@@ -16,6 +16,8 @@ on:
       - 'clients/flutter/test/device_notice_preview_test.dart'
       - 'clients/flutter/lib/notifications/device_notice_reconciliation.dart'
       - 'clients/flutter/test/device_notice_reconciliation_test.dart'
+      - 'clients/flutter/lib/notifications/device_notice_sync.dart'
+      - 'clients/flutter/test/device_notice_sync_test.dart'
       - 'clients/flutter/test/operational_inbox_widget_test.dart'
       - 'backend/reminders/operational_inbox.py'
       - 'backend/reminders/device_notice_preview.py'
@@ -59,6 +61,8 @@ on:
       - 'clients/flutter/test/device_notice_preview_test.dart'
       - 'clients/flutter/lib/notifications/device_notice_reconciliation.dart'
       - 'clients/flutter/test/device_notice_reconciliation_test.dart'
+      - 'clients/flutter/lib/notifications/device_notice_sync.dart'
+      - 'clients/flutter/test/device_notice_sync_test.dart'
       - 'clients/flutter/test/operational_inbox_widget_test.dart'
       - 'backend/reminders/operational_inbox.py'
       - 'backend/reminders/device_notice_preview.py'
@@ -190,6 +194,6 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter analyze
-      - run: flutter test test/operational_inbox_test.dart test/operational_inbox_widget_test.dart test/operational_action_http_test.dart test/results_test.dart test/device_notice_preview_test.dart test/device_notice_reconciliation_test.dart test/day_agenda_test.dart test/agenda_operational_event_test.dart test/agenda_today_inbox_test.dart
+      - run: flutter test test/operational_inbox_test.dart test/operational_inbox_widget_test.dart test/operational_action_http_test.dart test/results_test.dart test/device_notice_preview_test.dart test/device_notice_reconciliation_test.dart test/device_notice_sync_test.dart test/day_agenda_test.dart test/agenda_operational_event_test.dart test/agenda_today_inbox_test.dart
       - name: Compile Flutter Web without publishing
         run: flutter build web --release --pwa-strategy=none
