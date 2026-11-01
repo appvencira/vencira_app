@@ -23,6 +23,8 @@ class FakeApi implements VenciraApi {
   int logoutCalls = 0;
   bool unauthorizedWorkspaces = false;
   bool membershipRemoved = false;
+  bool unauthorizedModalities = false;
+  bool unauthorizedInsurers = false;
 
   @override
   Future<List<VenciraWorkspace>> fetchWorkspaces() async {
@@ -38,11 +40,16 @@ class FakeApi implements VenciraApi {
       const VenciraRenewalPage(total: 0, items: [], hasNext: false);
 
   @override
-  Future<List<VenciraModalityOption>> fetchModalities(String id) async =>
-      VenciraModalityOption.defaults;
+  Future<List<VenciraModalityOption>> fetchModalities(String id) async {
+    if (unauthorizedModalities) throw const VenciraUnauthorized();
+    return VenciraModalityOption.defaults;
+  }
   @override
   Future<List<VenciraInsurer>> fetchInsurers(
-      String id, {String search = ''}) async => const [];
+      String id, {String search = ''}) async {
+    if (unauthorizedInsurers) throw const VenciraUnauthorized();
+    return const [];
+  }
 
   @override
   Future<void> logout() async { logoutCalls++; }
@@ -167,6 +174,24 @@ void main() {
       debugDefaultTargetPlatformOverride = null;
     }
   });
+
+  for (final endpoint in ['modalities', 'insurers']) {
+    testWidgets('401 from $endpoint hides customer data and revokes alarms',
+        (tester) async {
+      final api = FakeApi();
+      if (endpoint == 'modalities') {
+        api.unauthorizedModalities = true;
+      } else {
+        api.unauthorizedInsurers = true;
+      }
+      var revoked = 0;
+      await tester.pumpWidget(shell(api, () async { revoked++; }));
+      await tester.pumpAndSettle();
+      expect(revoked, greaterThanOrEqualTo(1));
+      expect(find.text('Equipo de pruebas'), findsNothing);
+      expect(api.logoutCalls, 0);
+    });
+  }
 
   testWidgets('Server logout waits for Android alarm cancellation',
       (tester) async {
