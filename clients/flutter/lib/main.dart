@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api/vencira_api.dart';
+import 'notifications/device_notice_revocation.dart';
 import 'l10n/app_localizations.dart';
 import 'ui/dashboard_screen.dart';
 import 'ui/vencira_theme.dart';
@@ -114,6 +115,10 @@ class _VenciraAppState extends State<VenciraApp> {
         home: VenciraDashboardScreen(
           api: widget.api,
           openTodayOnLoad: widget.api == null,
+          // Real Android application revokes, but does not program, local
+          // alarms automatically. Fake test APIs never call native plugins.
+          beforeSessionBoundary: widget.api == null
+              ? revokePersistedAndroidAlarms : null,
         ),
       ),
     );
