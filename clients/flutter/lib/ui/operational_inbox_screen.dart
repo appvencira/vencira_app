@@ -63,9 +63,10 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
   }
 
   Future<void> _load({int page = 1}) async {
+    if (_unauthorized) return;
     final generation = ++_generation;
     setState(() {
-      _loading = true; _failed = false; _unauthorized = false;
+      _loading = true; _failed = false;
       // Mantener la lista durante recargas para evitar saltos de scroll.
       // El estado de carga bloquea sus acciones hasta recibir el nuevo filtro.
       _page = page;
