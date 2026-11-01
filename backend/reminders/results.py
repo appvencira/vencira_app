@@ -71,21 +71,54 @@ def results_summary(request, workspace_id):
     end = datetime.combine(following, time.min, tzinfo=tz)
 
     visible = _visible_renewals(membership)
+    # Report actions by their recorded actor, rather than today's assignee.
+    # Work still pending belongs to the currently assigned user.
+    members = WorkspaceMember.objects.filter(
+        workspace_id=membership.workspace_id,
+    ).select_related("user").order_by("user__username", "user_id")
+    per_user = {
+        row.user_id: {
+            "user_id": str(row.user_id),
+            "name": row.user.get_username(),
+            "won": 0, "declined": 0, "discarded": 0, "pending": 0,
+        }
+        for row in members
+    }
+    # Keep totals reconciled if a former user or an unassigned task exists;
+    # do not leak usernames from accounts without current membership.
+    remainder = {
+        "user_id": None, "name": None,
+        "won": 0, "declined": 0, "discarded": 0, "pending": 0,
+    }
     outcomes = (
         RenewalOutcome.objects.filter(
             renewal_id__in=visible.values("pk"),
             kind__in=("won", "declined", "discarded"),
             created_at__gte=start, created_at__lt=end,
         )
-        .values("kind").annotate(total=Count("pk")).order_by()
+        .values("kind", "actor_id").annotate(total=Count("pk")).order_by()
     )
     counts = {"won": 0, "declined": 0, "discarded": 0}
     for item in outcomes:
-        counts[item["kind"]] = item["total"]
-    pending = visible.filter(
-        expires_on__gte=first, expires_on__lt=following,
-        archived_at__isnull=True,
-    ).exclude(status=Renewal.Status.CLOSED).count()
+        kind, total = item["kind"], item["total"]
+        counts[kind] += total
+        per_user.get(item["actor_id"], remainder)[kind] += total
+
+    pending_groups = (
+        visible.filter(
+            expires_on__gte=first, expires_on__lt=following,
+            archived_at__isnull=True,
+        ).exclude(status=Renewal.Status.CLOSED)
+        .values("assigned_to_id").annotate(total=Count("pk")).order_by()
+    )
+    pending = 0
+    for item in pending_groups:
+        total = item["total"]
+        pending += total
+        per_user.get(item["assigned_to_id"], remainder)["pending"] += total
+    by_user = list(per_user.values())
+    if any(remainder[key] for key in ("won", "declined", "discarded", "pending")):
+        by_user.append(remainder)
     response = Response({
         "period": period,
         "from": first.isoformat(),
@@ -94,6 +127,7 @@ def results_summary(request, workspace_id):
         "declined": counts["declined"],
         "discarded": counts["discarded"],
         "pending": pending,
+        "by_user": by_user,
     })
     response["Cache-Control"] = "no-store"
     return response
