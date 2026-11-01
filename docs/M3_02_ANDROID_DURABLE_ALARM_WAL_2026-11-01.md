@@ -25,6 +25,13 @@ En la rama `feature/m3-android-local-notifications` (PR #17, **borrador**) se ha
 - `android_local_alarm_port_test.dart`: registro de IDs y cancelación idempotente.
 - CI M3 ejecuta pruebas en SQLite, PG17 efímero, Flutter y Web; CI Android adicional intenta build APK debug sin distribuir. Guardar **los resultados exactos solo después de comprobar cada job**.
 
+## Evidencia GitHub Actions verificada
+
+- Último commit **de código y pruebas** comprobado: `4cfa1920dabf25ee75cc3c4324a0932969762524`.
+- Workflow M3 `41312615800`: **Django SQLite PASS (73 tests), Django PostgreSQL17 efímero PASS (73 tests), Flutter analyze PASS, 92/92 pruebas Flutter PASS y build Flutter Web PASS**. Tres jobs con conclusión `success`.
+- Compilaciones Android previas de la PR #17: `41312191218` y `41312383897` con conclusión `success` (código previo a las últimas correcciones). La compilación Android **`41312615826` del código más reciente no ha terminado** a la hora de esta verificación y no debe calificarse como PASS.
+- Manifest Android base y su guard estático: M3 `41311838684` y MB1 `41311838677` con resultado `success`.
+
 ## Pendientes que bloquean activación
 
 1. Implementar el coordinador **único** del ciclo de sesión autenticada (login, selección de workspace, logout, revocación), serialización de transacciones y cambio de cuenta sin pérdidas ni colisiones; resolver el caso de almacenamiento recuperable de un usuario anterior.
