@@ -138,9 +138,12 @@ class ManualControlApiTests(TestCase):
         self.assertEqual(response.status_code, 400, response.data)
         self.assertFalse(RenewalControlResponse.objects.exists())
 
+    @patch("django.utils.timezone.now",
+           return_value=datetime(2027, 2, 25, 12, 0, tzinfo=timezone.utc))
     @patch("reminders.control_response_api.timezone.localdate",
            return_value=date(2027, 2, 25))
-    def test_no_creates_one_internal_repeat_visible_in_inbox(self, _):
+    def test_no_creates_one_internal_repeat_visible_in_inbox(
+            self, _localdate, _now):
         payload = self.payload(answer="no", yes_option=None, days_later=2)
         accepted = self.client.post(self.url(), payload, format="json")
         self.assertEqual(accepted.status_code, 201, accepted.data)
