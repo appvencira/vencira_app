@@ -23,6 +23,7 @@ class VenciraDayAgendaScreen extends StatefulWidget {
     this.initialEntry = '',
     this.initialModality = '',
     this.initialInsurer = '',
+    this.onSessionExpired,
   });
 
   final VenciraApi api;
@@ -31,6 +32,7 @@ class VenciraDayAgendaScreen extends StatefulWidget {
   final String initialEntry;
   final String initialModality;
   final String initialInsurer;
+  final Future<void> Function()? onSessionExpired;
 
   @override
   State<VenciraDayAgendaScreen> createState() => _VenciraDayAgendaScreenState();
@@ -64,6 +66,22 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
 
   static DateTime _civilDate(DateTime day) =>
       DateTime(day.year, day.month, day.day);
+
+  Future<void> _expire() async {
+    if (!mounted || _unauthorized) return;
+    setState(() {
+      _generation++;
+      _todayInboxGeneration++;
+      _weekGeneration++;
+      _agenda = null;
+      _todayInbox = null;
+      _weekActivity = null;
+      _unauthorized = true;
+      _loading = false;
+    });
+    await widget.onSessionExpired?.call();
+    if (mounted && widget.onSessionExpired != null) Navigator.of(context).pop();
+  }
 
   @override
   void initState() {
@@ -157,13 +175,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
       });
     } on VenciraUnauthorized {
       if (!mounted || sequence != _generation) return;
-      _weekGeneration++;
-      setState(() {
-        _agenda = null;
-        _weekActivity = null;
-        _loading = false;
-        _unauthorized = true;
-      });
+      await _expire();
     } catch (_) {
       if (!mounted || sequence != _generation) return;
       setState(() {
@@ -208,12 +220,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
       });
     } on VenciraUnauthorized {
       if (!mounted || requestId != _todayInboxGeneration) return;
-      setState(() {
-        _todayInbox = null;
-        _todayInboxLoading = false;
-        _todayInboxFailed = true;
-        _unauthorized = true;
-      });
+      await _expire();
     } catch (_) {
       if (!mounted || requestId != _todayInboxGeneration) return;
       setState(() {
@@ -227,7 +234,8 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
   Future<void> _openTodayInbox() async {
     await Navigator.of(context).push<void>(MaterialPageRoute(
       builder: (_) => VenciraOperationalInboxScreen(
-        api: widget.api, workspace: widget.workspace),
+        api: widget.api, workspace: widget.workspace,
+        onSessionExpired: _expire),
     ));
     if (mounted) {
       _loadDay(_page);
@@ -387,6 +395,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
     await Navigator.of(context).push<void>(MaterialPageRoute(
       builder: (_) => VenciraRenewalDetailScreen(
         api: widget.api, workspace: widget.workspace, renewalId: renewalId,
+        onSessionExpired: _expire,
       ),
     ));
     if (mounted) {
