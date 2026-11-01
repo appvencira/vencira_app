@@ -39,6 +39,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **Paquete A HTTP + rol limitado: PASS operador (01/11/2026):** `MB1_PA_PHASE=DONE`, `MB1_PA_RESULT=0`, `MB1_PA_HTTP_NONADMIN_ROLE=OK`, `MB1_PA_REAL_HTTP_MIDDLEWARE_METADATA_ONLY=OK`, `MB1_PA_REAL_HTTP_CROSS_TENANT_DENIED=OK`, `MB1_PA_MFA_MIGRATIONS=NOT_APPLIED`. Laboratorio PG17 y tablas auxiliares MFA sintéticas; `MB1_PA_HISTORICAL_BOTH_SCHEMAS=NOT_RUN`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`. Evidencia `docs/MB1_PACKAGE_A_HTTP_DISPOSABLE_2026-11-01.md`. No cerrar M1-03/M2-03; 1/15 (6,7%).
 
+**Integridad de objetos — PASS unitario (01/11/2026):** `Ran 11 tests in 0.001s`, `OK`, `MB1_PA_OBJECT_CONTRACT=OK`. Se validó exclusivamente el nuevo contrato de decisión fail-closed. `MB1_PA_OBJECT_REAL_STORE=NOT_RUN`, `MB1_PA_HISTORICAL_BOTH_SCHEMAS=NOT_RUN`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`. Documento `docs/MB1_PA_OBJECT_INTEGRITY_CONTRACT_2026-11-01.md`; M1-03, M2-02 y M2-03 continúan abiertos; 1/15 (6,7 %).
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
