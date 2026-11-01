@@ -43,3 +43,10 @@ M3_02_RELEASE_AUTHORIZED=NO
 GLOBAL_PROGRESS=2/15
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+## A1 — Consolidación de escrituras de ficha (01/11/2026)
+
+- Commit `5a127a0`: cinco manejadores de `VenciraUnauthorized` en las escrituras de la ficha (seguimiento y operaciones de anotaciones) dejan de limitarse a una bandera local; pasan por `_invalidateSession()`, que invalida datos, notifica al dashboard y solicita revocación nativa antes de cerrar la ruta.
+- La integración sustituye solo manejadores con excepción de sesión **confirmada**; no convierte un simple 403 de permisos en cierre de sesión, porque la capa HTTP ya distingue identidad.
+- La prueba `detail_expiry_navigation_test.dart` y el gate de Flutter permanecen en el workflow M3; aun así el flujo específico de escritura denegada requiere prueba de regresión antes del cierre del macrobloque A.
+- `SESSION_CROSS_ROUTE=OPEN`: bandeja, agenda, catálogo, editor e historial necesitan revisión; no se declara finalización por este cambio.
