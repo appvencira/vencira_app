@@ -87,6 +87,8 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       _selected = null;
       _renewals = null;
       _workspaces = [];
+      _modalities = VenciraModalityOption.defaults;
+      _insurers = [];
       _loadingWorkspaces = false;
       _loadingRenewals = false;
     });
@@ -281,7 +283,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       if (!mounted || _selected?.id != selected.id) return;
       setState(() => _modalities = result);
     } on VenciraUnauthorized {
-      if (mounted && _selected?.id == selected.id) {
+      if (mounted && _selected?.id == selected.id && !_unauthorized) {
         await _handleExpiredSession();
       }
     } catch (_) {
@@ -297,7 +299,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       if (!mounted || _selected?.id != workspace.id) return;
       setState(() => _insurers = results);
     } on VenciraUnauthorized {
-      if (mounted && _selected?.id == workspace.id) {
+      if (mounted && _selected?.id == workspace.id && !_unauthorized) {
         await _handleExpiredSession();
       }
     } catch (_) {
