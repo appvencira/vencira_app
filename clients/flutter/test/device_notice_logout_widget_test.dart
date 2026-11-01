@@ -13,14 +13,20 @@ const workspace = VenciraWorkspace(
   role: 'owner',
 );
 
+const otherWorkspace = VenciraWorkspace(
+  id: '99999999-9999-4999-8999-999999999999', name: 'Equipo nuevo',
+  role: 'member',
+);
+
 class FakeApi implements VenciraApi {
   int logoutCalls = 0;
   bool unauthorizedWorkspaces = false;
+  bool membershipRemoved = false;
 
   @override
   Future<List<VenciraWorkspace>> fetchWorkspaces() async {
     if (unauthorizedWorkspaces) throw const VenciraUnauthorized();
-    return [workspace];
+    return membershipRemoved ? [otherWorkspace] : [workspace];
   }
 
   @override
@@ -98,6 +104,43 @@ void main() {
     await tester.pumpAndSettle();
     expect(attempts, 2);
     expect(find.text('Equipo de pruebas'), findsWidgets);
+  });
+
+  testWidgets('Remote membership loss revokes old alarms before auto-switch',
+      (tester) async {
+    final api = FakeApi();
+    var revoked = 0;
+    await tester.pumpWidget(shell(api, () async { revoked++; }));
+    await tester.pumpAndSettle();
+    expect(find.text('Equipo de pruebas'), findsWidgets);
+    api.membershipRemoved = true;
+    await tester.tap(find.byIcon(Icons.refresh));
+    await tester.pumpAndSettle();
+    expect(revoked, 1);
+    expect(find.text('Equipo de pruebas'), findsNothing);
+    expect(find.text('Equipo nuevo'), findsWidgets);
+  });
+
+  testWidgets('Membership loss and failed cancel never shows new workspace',
+      (tester) async {
+    final api = FakeApi();
+    var fail = true;
+    var attempts = 0;
+    await tester.pumpWidget(shell(api, () async {
+      attempts++;
+      if (fail) throw StateError('OS cancellation not acknowledged');
+    }));
+    await tester.pumpAndSettle();
+    api.membershipRemoved = true;
+    await tester.tap(find.byIcon(Icons.refresh));
+    await tester.pumpAndSettle();
+    expect(attempts, 1);
+    expect(find.text('Equipo nuevo'), findsNothing);
+    fail = false;
+    await tester.tap(find.byIcon(Icons.refresh));
+    await tester.pumpAndSettle();
+    expect(attempts, 2);
+    expect(find.text('Equipo nuevo'), findsWidgets);
   });
 
   testWidgets('Server logout waits for Android alarm cancellation',
