@@ -23,6 +23,8 @@ on:
       - 'clients/flutter/test/device_notice_transaction_test.dart'
       - 'clients/flutter/lib/notifications/device_alarm_scope.dart'
       - 'clients/flutter/lib/notifications/device_notice_revocation.dart'
+      - 'clients/flutter/lib/notifications/device_notice_startup_gate.dart'
+      - 'clients/flutter/test/device_notice_startup_gate_test.dart'
       - 'clients/flutter/lib/ui/dashboard_screen.dart'
       - 'clients/flutter/lib/main.dart'
       - 'clients/flutter/test/device_notice_logout_widget_test.dart'
@@ -85,6 +87,8 @@ on:
       - 'clients/flutter/test/device_notice_transaction_test.dart'
       - 'clients/flutter/lib/notifications/device_alarm_scope.dart'
       - 'clients/flutter/lib/notifications/device_notice_revocation.dart'
+      - 'clients/flutter/lib/notifications/device_notice_startup_gate.dart'
+      - 'clients/flutter/test/device_notice_startup_gate_test.dart'
       - 'clients/flutter/lib/ui/dashboard_screen.dart'
       - 'clients/flutter/lib/main.dart'
       - 'clients/flutter/test/device_notice_logout_widget_test.dart'
@@ -228,6 +232,6 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter analyze
-      - run: flutter test test/operational_inbox_test.dart test/operational_inbox_widget_test.dart test/operational_action_http_test.dart test/results_test.dart test/device_notice_preview_test.dart test/device_notice_reconciliation_test.dart test/device_notice_sync_test.dart test/device_notice_inventory_test.dart test/android_local_alarm_port_test.dart test/device_notice_transaction_test.dart test/device_notice_session_coordinator_test.dart test/device_notice_auth_identity_test.dart test/device_notice_consent_test.dart test/device_notice_logout_widget_test.dart test/day_agenda_test.dart test/agenda_operational_event_test.dart test/agenda_today_inbox_test.dart
+      - run: flutter test test/operational_inbox_test.dart test/operational_inbox_widget_test.dart test/operational_action_http_test.dart test/results_test.dart test/device_notice_preview_test.dart test/device_notice_reconciliation_test.dart test/device_notice_sync_test.dart test/device_notice_inventory_test.dart test/android_local_alarm_port_test.dart test/device_notice_transaction_test.dart test/device_notice_session_coordinator_test.dart test/device_notice_auth_identity_test.dart test/device_notice_consent_test.dart test/device_notice_logout_widget_test.dart test/device_notice_startup_gate_test.dart test/day_agenda_test.dart test/agenda_operational_event_test.dart test/agenda_today_inbox_test.dart
       - name: Compile Flutter Web without publishing
         run: flutter build web --release --pwa-strategy=none
