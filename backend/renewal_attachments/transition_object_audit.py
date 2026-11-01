@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 from reminders.attachment_private_store import PrivateStoreError
 from .transition_reconciliation import inspect_reconciliation, Independent, Legacy
+from .transition_object_contract import object_audit_acceptable
 
 MAX_VERIFY_OBJECTS = 100_000
 
@@ -21,6 +22,7 @@ class EncryptedObjectAudit:
     digest_mismatches: int
     size_mismatches: int
     release_authorized: bool = False
+    objects_acceptable: bool = False
 
 
 def verify_encrypted_objects_readonly(*, store):
@@ -58,5 +60,11 @@ def verify_encrypted_objects_readonly(*, store):
     after_rows = tuple(Independent.objects.order_by().values_list(
         "storage_key", "sha256", "byte_size")[:MAX_VERIFY_OBJECTS + 1])
     stable = after == reconciliation and before_rows == after_rows
+    accepted = object_audit_acceptable(
+        metadata_aligned=stable, checked=len(metadata),
+        expected=reconciliation.independent_count,
+        unreadable=bad_read, digest_mismatches=bad_hash,
+        size_mismatches=bad_size)
     return EncryptedObjectAudit(
-        stable, len(metadata), bad_read, bad_hash, bad_size)
+        stable, len(metadata), bad_read, bad_hash, bad_size,
+        objects_acceptable=accepted)
