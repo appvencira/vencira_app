@@ -4,6 +4,7 @@ on:
     branches:
       - main
       - feature/mb1-m104-transition-contract-batch
+      - feature/m3-02-agenda-operational-validation
     paths:
       - 'clients/flutter/lib/ui/operational_inbox_screen.dart'
       - 'clients/flutter/lib/ui/day_agenda_screen.dart'
