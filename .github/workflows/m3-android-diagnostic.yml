@@ -1,0 +1,56 @@
+name: Android scaffold diagnostic (no delivery)
+on:
+  push:
+    branches:
+      - feature/mb1-m104-transition-contract-batch
+    paths:
+      - 'clients/flutter/lib/notifications/**'
+      - 'clients/flutter/test/device_notice_reconciliation_test.dart'
+      - 'clients/flutter/pubspec.yaml'
+      - '.github/workflows/m3-android-diagnostic.yml'
+  pull_request:
+    paths:
+      - 'clients/flutter/lib/notifications/**'
+      - 'clients/flutter/test/device_notice_reconciliation_test.dart'
+      - 'clients/flutter/pubspec.yaml'
+      - '.github/workflows/m3-android-diagnostic.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ephemeral-android-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: clients/flutter
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Confirm native Android scaffold is not in the repository
+        run: |
+          if test -e android/app/src/main/AndroidManifest.xml; then
+            echo 'Native Android scaffold is now checked in; review this diagnostic.'
+            exit 1
+          fi
+      - name: Generate temporary Android scaffold, never commit
+        run: flutter create --platforms=android --project-name vencira .
+      - name: Compile synthetic Android debug APK without distributing
+        run: flutter build apk --debug
+      - name: Explicit non-release evidence
+        run: |
+          test -f build/app/outputs/flutter-apk/app-debug.apk
+          echo 'ANDROID_SCAFFOLD_TEMPORARY_BUILD=PASS'
+          echo 'NATIVE_NOTIFICATIONS_IMPLEMENTED=NO'
+          echo 'OFFLINE_ENCRYPTED_STORE_IMPLEMENTED=NO'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
