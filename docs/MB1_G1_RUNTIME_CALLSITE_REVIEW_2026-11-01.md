@@ -13,3 +13,7 @@ G1=OPEN; G2=OPEN; G3=OPEN; MB1_GLOBAL_FREEZE=NOT_VERIFIED; MB1_RELEASE_AUTHORIZE
 ## Primer ensayo: FAIL corregido en fuentes
 
 El operador ejecutó el runner y obtuvo `Ran 1 test`, `FAILED (errors=1)` por `ModuleNotFoundError` en `scripts/mb1_g1_risk_triage.py`: el import absoluto de `mb1_g1_source_writer_inventory` no funcionaba al cargar `scripts.test_mb1_g1_runtime_review_ledger` como paquete. Se corrigió el import para admitir tanto ejecución como paquete, commit `bbf5f3f`. **Pendiente reejecutar y obtener PASS; el fallo anterior no debe contarse como validación.** No se cambió DEV.
+
+## Reensayo corregido — PASS comunicado por operador (01/11/2026)
+
+`OK`, `MB1_G1_LEDGER_UNIT=OK`, `MB1_G1_LEDGER_FILES_PARSED=330`, `MB1_G1_LEDGER_RUNTIME_CALLS=146`, `MB1_G1_LEDGER_SQL_REVIEW=3`, `MB1_G1_LEDGER_FS_REVIEW=9`, `MB1_G1_LEDGER_ORM_REVIEW=100`, `MB1_G1_LEDGER_DYNAMIC_REVIEW=34`, `MB1_G1_LEDGER_ALL_PENDING=YES`, `MB1_G1_LEDGER_SEMANTICALLY_REVIEWED=NO`, `MB1_G1_LEDGER_CSV_CREATED=OK`, `MB1_G1_LEDGER_CSV_LOCATION=TEMPORARY_REMOVED_ON_EXIT`. Reensayo unitario PASS, no implica análisis semántico ni freeze. `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
