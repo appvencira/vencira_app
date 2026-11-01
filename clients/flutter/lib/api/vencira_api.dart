@@ -5,6 +5,10 @@ import 'package:http/http.dart' as http;
 /// La API usa cookies de sesión y solo funciona en web bajo el MISMO origen
 /// que Django. No transportamos ni guardamos contraseñas, tokens o cookies.
 abstract class VenciraApi {
+  /// Identity must come from the authenticated server session, never UI state.
+  Future<String> fetchAuthenticatedUserId() async =>
+      throw const VenciraApiException();
+
   Future<List<VenciraWorkspace>> fetchWorkspaces();
 
   /// Estadísticas agregadas del §11; solo web escritorio y propietarios.
@@ -1873,6 +1877,25 @@ class HttpVenciraApi implements VenciraApi {
     }
     try {
       return jsonDecode(utf8.decode(response.bodyBytes));
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<String> fetchAuthenticatedUserId() async {
+    try {
+      final payload = await _fetch('/api/v1/me/') as Map<String, dynamic>;
+      final id = payload['id'];
+      // User PK is always an integer in this Django installation. Do not
+      // accept usernames, arbitrary strings, booleans or values outside the
+      // representable identity range.
+      if (id is! int || id < 1 || id > 9007199254740991) {
+        throw const VenciraApiException();
+      }
+      return id.toString();
+    } on VenciraUnauthorized {
+      rethrow;
     } catch (_) {
       throw const VenciraApiException();
     }
