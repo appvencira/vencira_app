@@ -9,3 +9,7 @@ Nuevo runner `scripts/validate_mb1_g1_runtime_review_ledger.sh`: tres tests unit
 Para revisión humana posterior se deberá producir una matriz versionada de rutas operativas, criticidad, permisos, consumidores, procedimientos de bloqueo, evidencia de ejecución y responsable, sin subir a GitHub información sensible de infraestructura.
 
 G1=OPEN; G2=OPEN; G3=OPEN; MB1_GLOBAL_FREEZE=NOT_VERIFIED; MB1_RELEASE_AUTHORIZED=NO; NO_DEPLOY_NO_LIVE_MIGRATION=1. Hitos formales 1/15 (6,7%).
+
+## Primer ensayo: FAIL corregido en fuentes
+
+El operador ejecutó el runner y obtuvo `Ran 1 test`, `FAILED (errors=1)` por `ModuleNotFoundError` en `scripts/mb1_g1_risk_triage.py`: el import absoluto de `mb1_g1_source_writer_inventory` no funcionaba al cargar `scripts.test_mb1_g1_runtime_review_ledger` como paquete. Se corrigió el import para admitir tanto ejecución como paquete, commit `bbf5f3f`. **Pendiente reejecutar y obtener PASS; el fallo anterior no debe contarse como validación.** No se cambió DEV.
