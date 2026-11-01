@@ -45,6 +45,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **Paquete A coexistencia sintética PG17 — PASS (01/11/2026):** `MB1_PA_COEXIST_METADATA_RECONCILED=OK`, `MB1_PA_COEXIST_SYNTHETIC_OBJECT_HASH_FAILCLOSED=OK`, `MB1_PA_COEXIST_METADATA_DIVERGENCE_DENIED=OK`, `MB1_PA_COEXIST_NO_AUTOMATIC_DELETION=OK`, `MB1_PA_COEXIST_PHASE=DONE`, `MB1_PA_COEXIST_RESULT=0`. Esquema Legacy creado mediante `schema_editor` únicamente en PG17 desechable; objeto simulado, NO migración histórica real 0027 ni almacén cifrado real. Documento `docs/MB1_PA_COEXIST_SYNTHETIC_PG17_2026-11-01.md`. Freeze no verificado, release NO. M1-03/M2-03 abiertos; 1/15 (6,7 %).
 
+**PB almacenamiento Fernet cifrado + PostgreSQL 17 efímero — PASS (01/11/2026):** `MB1_PB_REAL_FERNET_DISK_PG17_ALIGNMENT=OK`, `MB1_PB_MISSING_OBJECT_FAILCLOSED=OK`, `MB1_PB_TAMPERED_CIPHERTEXT_FAILCLOSED=OK`, `MB1_PB_SQL_METADATA_DIVERGENCE_FAILCLOSED=OK`, `MB1_PB_NO_AUTOMATIC_DELETION=OK`, `MB1_PB_TEMPORARY_OBJECTS_CLEANED=OK`, `MB1_PB_CRYPTO_PHASE=DONE`, `MB1_PB_CRYPTO_RESULT=0`. Solo datos y claves sintéticos con tabla Legacy creada temporalmente, sin migración 0027/MFA. `MB1_GLOBAL_FREEZE=NOT_VERIFIED`; no prueba restauración/custodia externa ni autorización. Evidencia `docs/MB1_PB_FERNET_PG17_DISPOSABLE_2026-11-01.md`. Hitos 1/15 (6,7 %).
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
