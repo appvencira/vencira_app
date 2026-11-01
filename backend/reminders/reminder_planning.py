@@ -95,7 +95,13 @@ def validate_control_repeat_day(expires_on: date, *, as_of: date, days_later: in
     _civil_day(as_of)
     if type(days_later) is not int or not 1 <= days_later <= 365:
         raise ValueError("Intervalo inválido")
-    scheduled = as_of + timedelta(days=days_later)
-    if as_of >= one_month_before(expires_on) or scheduled > one_month_before(expires_on):
-        raise ValueError("No se permite avisar después del límite")
+    cutoff = one_month_before(expires_on)
+    if as_of >= cutoff:
+        raise ValueError("El límite civil está alcanzado")
+    try:
+        scheduled = as_of + timedelta(days=days_later)
+    except OverflowError:
+        raise ValueError("Fecha de repetición no representable") from None
+    if scheduled >= cutoff:
+        raise ValueError("No se permite repetir en el límite civil ni después")
     return scheduled
