@@ -24,6 +24,13 @@ La última modificación de un test de recuperación de propietario y de comenta
 
 La compilación Android del último commit está siendo comprobada en un workflow separado. La compilación APK de un commit anterior **no prueba** que los cambios de UI o revocación de este bloque hayan sido instalados en un teléfono.
 
+## Validación ampliada posterior
+
+- Código con prueba adicional de propietario cifrado tras reinicio: commit `431ebe71b250e644928150a7584eed6ae3ee9d70`.
+- Run M3 `41315796528`: **los tres jobs PASS** (SQLite **73/73**, PostgreSQL17 efímero **73/73**, `flutter analyze` **PASS**, **109/109 pruebas Flutter PASS**, compilación Flutter Web **PASS**).
+- Compilación Android APK de este lote: workflow `41315796567` aún **en progreso** al registrar la evidencia; no atribuirle PASS sin comprobar su conclusión.
+- Cambios posteriores solo de documentación requieren distinguir el commit verificado del HEAD.
+
 ## Riesgos y trabajo pendiente
 
 - Conectar una pantalla de consentimiento y ajustes nativos, incluida solicitud de permiso OS solo por acción explícita, y un único punto de inicialización tras login. **No activarlo** hasta tener garantía de serialización a través de todo el proceso y ausencia de tareas concurrentes en otros isolates.
