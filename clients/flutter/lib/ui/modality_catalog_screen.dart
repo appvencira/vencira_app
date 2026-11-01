@@ -39,7 +39,12 @@ class _CatalogState extends State<VenciraModalityCatalogScreen> {
   Future<void> _revoke() async {
     if (!mounted) return;
     setState(() { _seq++; _items = null; _loading = false; _failed = true; });
-    await widget.onSessionExpired?.call();
+    try {
+      await widget.onSessionExpired?.call();
+    } catch (_) {
+      // Preserve the revoked, data-free route while native cleanup is unacknowledged.
+      return;
+    }
     if (mounted && widget.onSessionExpired != null) Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
