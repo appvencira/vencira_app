@@ -107,6 +107,15 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     }
   }
 
+  /// Child routes must not navigate away if OS alarm revocation fails.
+  /// The dashboard still owns the retry barrier and never erases its journal.
+  Future<void> _handleExpiredSessionFromChild() async {
+    await _handleExpiredSession();
+    if (_nativeCleanupFailed) {
+      throw StateError('native alarm cleanup remains unacknowledged');
+    }
+  }
+
   Future<void> _loadWorkspaces() async {
     if (_nativeCleanupFailed) {
       try {
@@ -348,7 +357,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     await Navigator.of(context).push<void>(MaterialPageRoute(
       builder: (_) => VenciraModalityCatalogScreen(
         api: _api, workspace: selected,
-        onSessionExpired: _handleExpiredSession,
+        onSessionExpired: _handleExpiredSessionFromChild,
       ),
     ));
     if (!mounted || _selected?.id != selected.id) return;
@@ -877,7 +886,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => VenciraOperationalInboxScreen(
         api: _api, workspace: workspace,
-        onSessionExpired: _handleExpiredSession),
+        onSessionExpired: _handleExpiredSessionFromChild),
     ));
   }
 
@@ -891,7 +900,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         initialEntry: _entryFilter,
         initialModality: _modalityFilter,
         initialInsurer: _insurerFilter,
-        onSessionExpired: _handleExpiredSession,
+        onSessionExpired: _handleExpiredSessionFromChild,
       ),
     ));
   }
@@ -1229,7 +1238,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     await Navigator.of(context).push<void>(MaterialPageRoute(
       builder: (_) => VenciraRenewalDetailScreen(
         api: _api, workspace: selected, renewalId: item.id,
-        onSessionExpired: _handleExpiredSession,
+        onSessionExpired: _handleExpiredSessionFromChild,
       ),
     ));
     if (mounted && _selected?.id == selected.id) _loadRenewals(1);
