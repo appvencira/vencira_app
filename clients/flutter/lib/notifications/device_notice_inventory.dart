@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'device_notice_reconciliation.dart';
+import 'device_alarm_scope.dart';
 import 'device_notice_transaction.dart';
 
 const _maxInventory = 500;
@@ -114,6 +115,30 @@ void verifyAlarmInventoryOwnership(
     encryptedRecord, workspaceId: workspaceId, userId: userId);
 }
 
+/// Read authenticated scope metadata from a verified secure-storage record,
+/// never from an untrusted UI preference. The stored payload is still checked
+/// against itself with the strict inventory decoder before use.
+DeviceAlarmScope? decodeStoredAlarmScope(String? encoded) {
+  if (encoded == null) return null;
+  dynamic raw;
+  try {
+    raw = jsonDecode(encoded);
+  } on FormatException {
+    throw const FormatException('Corrupt stored alarm scope');
+  }
+  if (raw is! Map<String, dynamic> ||
+      raw['workspace_id'] is! String || raw['user_id'] is! String) {
+    throw const FormatException('Invalid stored alarm scope');
+  }
+  final scope = DeviceAlarmScope(
+    workspaceId: raw['workspace_id'] as String,
+    userId: raw['user_id'] as String,
+  );
+  decodeAlarmInventory(encoded,
+    workspaceId: scope.workspaceId, userId: scope.userId);
+  return scope;
+}
+
 /// Explicitly scoped encrypted store. No preference, JSON cache, or backup
 /// fallback. Callers must revoke native OS alarms before clearing on logout.
 class EncryptedAlarmInventory implements DeviceAlarmLedger {
@@ -128,6 +153,18 @@ class EncryptedAlarmInventory implements DeviceAlarmLedger {
   );
 
   final FlutterSecureStorage _storage;
+
+  Future<DeviceAlarmScope?> readStoredScope() async {
+    final committed = decodeStoredAlarmScope(
+      await _storage.read(key: _storageKey));
+    final pending = decodeStoredAlarmScope(
+      await _storage.read(key: _pendingKey));
+    if (committed != null && pending != null && committed != pending) {
+      throw const FormatException('Cross-account alarm journal conflict');
+    }
+    return pending ?? committed;
+  }
+
 
   Future<List<DeviceNoticeSlot>> read({
     required String workspaceId, required String userId,
