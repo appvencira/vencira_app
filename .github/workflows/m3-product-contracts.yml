@@ -6,6 +6,7 @@ on:
       - feature/mb1-m104-transition-contract-batch
     paths:
       - 'clients/flutter/lib/ui/operational_inbox_screen.dart'
+      - 'clients/flutter/lib/api/vencira_api.dart'
       - 'clients/flutter/test/operational_inbox_test.dart'
       - 'clients/flutter/test/operational_inbox_widget_test.dart'
       - 'backend/reminders/control_intent.py'
