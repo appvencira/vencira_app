@@ -81,6 +81,45 @@ void main() {
     expect(find.text('Inicio'), findsOneWidget);
   });
 
+  testWidgets('Failed cleanup keeps revoked history mounted without sensitive events',
+      (tester) async {
+    var calls = 0;
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('es'),
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      home: Builder(builder: (context) => Scaffold(
+        body: FilledButton(
+          key: const ValueKey('open-failed-history'),
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+            builder: (_) => VenciraOperationalHistoryScreen(
+              api: ExpiredHistoryApi(),
+              workspaceId: workspace.id,
+              renewalId: '22222222-2222-4222-8222-222222222222',
+              reminderId: '33333333-3333-4333-8333-333333333333',
+              reason: 'Control',
+              onSessionExpired: () async {
+                calls++;
+                throw StateError('native cancellation refused');
+              },
+            ),
+          )),
+          child: const Text('Inicio'),
+        ),
+      )),
+    ));
+    await tester.tap(find.byKey(const ValueKey('open-failed-history')));
+    await tester.pumpAndSettle();
+    expect(calls, 1);
+    expect(find.byType(VenciraOperationalHistoryScreen), findsOneWidget);
+    expect(find.byType(Card), findsNothing);
+  });
+
   testWidgets('Nested history revocation returns directly to root',
       (tester) async {
     var expired = 0;
