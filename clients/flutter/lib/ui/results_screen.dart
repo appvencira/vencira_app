@@ -114,6 +114,45 @@ class _ResultsState extends State<VenciraResultsScreen> {
     );
   }
 
+  Widget _perUserTable(VenciraResultsSummary summary) {
+    final t = _t;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 24),
+        Text(t.resultsByUser,
+            style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 6),
+        Text(t.resultsByUserExplanation,
+            style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height: 10),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            columnSpacing: 26,
+            columns: [
+              DataColumn(label: Text(t.resultsUser)),
+              DataColumn(label: Text(t.resultsWon), numeric: true),
+              DataColumn(label: Text(t.resultsDeclined), numeric: true),
+              DataColumn(label: Text(t.resultsDiscarded), numeric: true),
+              DataColumn(label: Text(t.resultsPending), numeric: true),
+            ],
+            rows: [
+              for (final user in summary.byUser)
+                DataRow(cells: [
+                  DataCell(Text(user.name ?? t.resultsOtherUser)),
+                  DataCell(Text('${user.won}')),
+                  DataCell(Text('${user.declined}')),
+                  DataCell(Text('${user.discarded}')),
+                  DataCell(Text('${user.pending}')),
+                ]),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final summary = _summary;
@@ -175,7 +214,7 @@ class _ResultsState extends State<VenciraResultsScreen> {
             Text(_t.loadError),
             TextButton(onPressed: _load, child: Text(_t.retry)),
           ],
-          if (summary != null && !_unauthorized)
+          if (summary != null && !_unauthorized && !_error)
             LayoutBuilder(builder: (context, dimensions) {
               final wide = dimensions.maxWidth >= 520;
               final width = wide ? (dimensions.maxWidth - 12) / 2
@@ -191,6 +230,9 @@ class _ResultsState extends State<VenciraResultsScreen> {
                     _t.resultsPending, summary.pending, Icons.schedule_outlined)),
               ]);
             }),
+          if (summary != null && !_unauthorized && !_error &&
+              summary.byUser.isNotEmpty)
+            _perUserTable(summary),
         ]),
       ))),
     );
