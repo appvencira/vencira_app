@@ -107,6 +107,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **M3-02 validación civil O8b/O9b (01/11/2026):** corregida discrepancia de la vista previa que admitía repetición de control en el propio día límite, prohibida por O9b/operación. Pruebas de año normal y bisiesto en `backend/reminders/test_reminder_planning.py`, integradas en CI M3 de SQLite y PG17 temporal; **PASS de esta corrección pendiente de observar**, commit de workflow `d89d042`. Evidencia `docs/M3_02_O8B_O9B_STRICT_CIVIL_CUTOFF_2026-11-01.md`. El último PASS confirmado previo sigue siendo 62/62 SQLite, 62/62 PG17 y 49/49 Flutter; no extrapolarlo al commit nuevo. **M3-02 abierto, 2/15 (13,3 %)**.
 
+**M3-02 desglose de resultados Equipo (01/11/2026):** agregado `by_user` al informe de propietarios de cuenta: desenlaces por actor histórico, pendientes por responsable actual y fila anónima para bajas/sin asignación, total conciliado. Vista Flutter Web en ES/CA y parser fail-closed. Commit probado `e74be67`: workflow M3 `41308100174` (**SQLite 73/73 PASS, PostgreSQL17 efímero 73/73 PASS, Flutter 62/62 PASS, analyze y build Web PASS**); MB1 estático `41308100084` PASS. Documentado en `docs/M3_02_TEAM_RESULTS_BY_USER_2026-11-01.md`. Avisos nativos offline, decisiones §18, permisos operativos y aceptación Android pendientes; **M3-02 [ ]**, total **2/15 = 13,3 %**. Sin merge/deploy/migraciones.
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
