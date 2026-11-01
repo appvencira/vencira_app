@@ -1,0 +1,57 @@
+name: M3 product contracts
+on:
+  push:
+    branches:
+      - main
+      - feature/mb1-m104-transition-contract-batch
+    paths:
+      - 'backend/reminders/control_intent.py'
+      - 'backend/reminders/test_control_intent.py'
+      - 'backend/reminders/reminder_planning.py'
+      - 'backend/reminders/person_suggestions.py'
+      - 'backend/reminders/test_person_suggestions_ranking.py'
+      - '.github/workflows/m3-product-contracts.yml'
+  pull_request:
+    paths:
+      - 'backend/reminders/control_intent.py'
+      - 'backend/reminders/test_control_intent.py'
+      - 'backend/reminders/reminder_planning.py'
+      - 'backend/reminders/person_suggestions.py'
+      - 'backend/reminders/test_person_suggestions_ranking.py'
+      - '.github/workflows/m3-product-contracts.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: m3-contracts-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  django-product:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      VENCIRA_ENV: test
+      DJANGO_DEBUG: '1'
+      DJANGO_SECRET_KEY: 'ci-only-local-test-not-a-production-secret'
+      DJANGO_ALLOWED_HOSTS: 'localhost,127.0.0.1,testserver'
+      VENCIRA_DB_ENGINE: sqlite
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - name: Check Django project
+        run: python manage.py check
+      - name: Product control and suggestion tests
+        run: python manage.py test reminders.test_control_intent reminders.test_person_suggestions_ranking
+      - name: No operational release
+        run: |
+          echo 'M3_02_DELIVERY=NOT_IMPLEMENTED'
+          echo 'MB1_RELEASE_AUTHORIZED=NO'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
