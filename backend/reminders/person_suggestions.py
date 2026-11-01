@@ -2,7 +2,7 @@
 
 No existe entidad Persona/CRM ni sincronización entre registros.
 """
-from django.db.models import Q
+from django.db.models import Case, IntegerField, Value, When
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -49,7 +49,7 @@ def person_suggestions(request, workspace_id):
                             status=status.HTTP_400_BAD_REQUEST)
         scoped = scoped.filter(phone__icontains=query).exclude(phone="")
 
-    matches = scoped.order_by("full_name", "id")[:5]
+    # Preferir coincidencias ya clasificadas como Clientes sin ampliar el\n    # alcance de visibilidad; el limite se aplica despues de priorizar.\n    matches = scoped.annotate(\n        _client_first=Case(\n            When(entry="clients", then=Value(0)),\n            default=Value(1), output_field=IntegerField(),\n        )\n    ).order_by("_client_first", "full_name", "id")[:5]
     response = Response([{
         "source_id": str(item.pk),
         "full_name": item.full_name,
