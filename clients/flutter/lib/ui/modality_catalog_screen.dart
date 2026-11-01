@@ -21,6 +21,7 @@ class _CatalogState extends State<VenciraModalityCatalogScreen> {
   bool _loading = true;
   bool _saving = false;
   bool _failed = false;
+  bool _unauthorized = false;
   int _seq = 0;
   AppLocalizations get _t => AppLocalizations.of(context)!;
 
@@ -37,8 +38,8 @@ class _CatalogState extends State<VenciraModalityCatalogScreen> {
   }
 
   Future<void> _revoke() async {
-    if (!mounted) return;
-    setState(() { _seq++; _items = null; _loading = false; _failed = true; });
+    if (!mounted || _unauthorized) return;
+    setState(() { _seq++; _unauthorized = true; _items = null; _loading = false; _failed = true; });
     try {
       await widget.onSessionExpired?.call();
     } catch (_) {
@@ -49,6 +50,7 @@ class _CatalogState extends State<VenciraModalityCatalogScreen> {
   }
 
   Future<void> _load() async {
+    if (_unauthorized) return;
     final token = ++_seq;
     setState(() { _loading = true; _failed = false; });
     try {
@@ -113,7 +115,7 @@ class _CatalogState extends State<VenciraModalityCatalogScreen> {
   }
 
   Future<void> _act(Future<void> Function() callback) async {
-    if (_saving) return;
+    if (_saving || _unauthorized) return;
     setState(() => _saving = true);
     try {
       await callback();
