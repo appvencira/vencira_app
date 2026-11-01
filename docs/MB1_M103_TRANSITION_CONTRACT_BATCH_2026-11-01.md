@@ -9,7 +9,7 @@ Base: `docs/HANDOFF_VENCIRA_MB1_M103_2026-11-01.md` y `docs/VENCIRA_MASTER_COMPL
 - `scripts/validate_mb1_transition_contract_batch.sh`: único runner de ese subgrupo, sin servicios ni operaciones persistentes.
 
 ## Advertencia importante
-**La comparación nueva todavía NO está integrada en `transition_reconciliation.py`.** El intento de reemplazar ese archivo devolvió CONFLICT 409 del conector; no se forzó la escritura. Por ello NO afirmar que la ruta de reconciliación existente detecta estos casos, ni que hay un gate PG17/HTTP listo. Es desarrollo parcial de defensa y especificación; falta integración y ensayo conjunto.
+**Comparador integrado** en `transition_reconciliation.py` mediante commit `b4153a5`, con el SHA exacto del archivo. El conflicto 409 previo se debió a una referencia SHA incorrecta; no se forzó la escritura. Esta integración sigue sin probarse sobre un esquema PG17 histórico/independiente, y NO valida el gate HTTP. En modo split que omite el modelo histórico, esta ruta NO debe importarse: requiere ambos modelos registrados.
 
 ## Validación
 Estado: **NO EJECUTADO por el operador**. No hay PASS ni exit code conocido. No se reejecutaron M103, MFA, HBA, O5, ClamAV ni DR.
@@ -20,7 +20,7 @@ bash scripts/validate_mb1_transition_contract_batch.sh
 ```
 
 ## Siguiente integración necesaria
-1. Integrar comparador en `transition_reconciliation.py` con protección de concurrencia explícita y comprobar esquema histórico, especialmente `created_at`, en clon; un conflicto de escritura debe resolverse sin sobrescribir.
+1. Verificar integración del comparador y compatibilidad de `created_at` contra ambas tablas en clon con ambos modelos; `transaction.atomic` bajo READ COMMITTED no equivale a freeze ni snapshot global.
 2. Componer un **solo** gate PG17 sintético con coexistencia histórica test-only, grafo sin MFA para el split, prueba HTTP mediante cliente real y middleware, rol no superusuario y fallos de objetos, con datos exclusivamente sintéticos.
 3. Mantener historial/objetos cifrados intactos en cualquier fallo; no declarar transición completa sin reconciliación/verificación cruzada, freeze universal y custodia externa.
 4. Publicar evidencia real, actualizar checklist solo tras PASS efectivo; no marcar hito cerrado por tests unitarios.
