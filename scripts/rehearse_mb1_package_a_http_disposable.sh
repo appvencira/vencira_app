@@ -15,7 +15,7 @@ finish() {
   echo "MB1_PA_PHASE=$PHASE"
   echo "MB1_PA_RESULT=$rc"
   echo "MB1_PA_HISTORICAL_BOTH_SCHEMAS=NOT_RUN"
-  echo "MB1_PA_NONADMIN_HTTP=NOT_RUN"
+  echo "MB1_PA_NONADMIN_HTTP=$([ "$PHASE" = DONE ] && echo OK || echo NOT_VERIFIED)"
   echo "MB1_GLOBAL_FREEZE=NOT_VERIFIED"
   echo "MB1_RELEASE_AUTHORIZED=NO"
   echo "MFA_RELEASE_AUTHORIZED=NO"
@@ -46,20 +46,39 @@ done
 [ "$ready" = 1 ]
 echo "MB1_PA_INTERNAL_PG17=OK"
 app() {
+ local app_user="$1" app_password="$2"
+ shift 2
  docker_cmd run --rm --network "$NET" -e VENCIRA_ENV=test \
   -e VENCIRA_DB_ENGINE=postgresql -e VENCIRA_ATTACHMENT_SPLIT_REHEARSAL=1 \
   -e VENCIRA_M103_SPLIT_DELETE_LAB=1 \
   -e DJANGO_SECRET_KEY=synthetic-pa-django-secret-long-enough-12345 \
   -e DJANGO_ALLOWED_HOSTS=localhost,testserver \
-  -e POSTGRES_HOST="$DB" -e POSTGRES_DB=mb1 -e POSTGRES_USER=mb1 \
-  -e POSTGRES_PASSWORD=synthetic-pa-admin "$IMG" python "$@"
+  -e POSTGRES_HOST="$DB" -e POSTGRES_DB=mb1 -e POSTGRES_USER="$app_user" \
+  -e POSTGRES_PASSWORD="$app_password" "$IMG" python "$@"
 }
 PHASE=SCHEMA
-app manage.py migrate reminders 0018_draft_reasons --noinput >/dev/null
-app manage.py migrate renewal_attachments 0006_ed25519_signature_length --noinput >/dev/null
-app manage.py migrate auth --noinput >/dev/null
-app manage.py migrate sessions --noinput >/dev/null
+app mb1 synthetic-pa-admin manage.py migrate reminders 0018_draft_reasons --noinput >/dev/null
+app mb1 synthetic-pa-admin manage.py migrate renewal_attachments 0006_ed25519_signature_length --noinput >/dev/null
+app mb1 synthetic-pa-admin manage.py migrate auth --noinput >/dev/null
+app mb1 synthetic-pa-admin manage.py migrate sessions --noinput >/dev/null
+PHASE=BOOTSTRAP
+docker_cmd run --rm --network "$NET" \
+  -e MB1_PA_SCHEMA_BOOTSTRAP=1 -e VENCIRA_ENV=test -e VENCIRA_DB_ENGINE=postgresql \
+  -e VENCIRA_ATTACHMENT_SPLIT_REHEARSAL=1 -e VENCIRA_M103_SPLIT_DELETE_LAB=1 \
+  -e DJANGO_SECRET_KEY=synthetic-pa-django-secret-long-enough-12345 \
+  -e DJANGO_ALLOWED_HOSTS=localhost,testserver \
+  -e POSTGRES_HOST="$DB" -e POSTGRES_DB=mb1 -e POSTGRES_USER=mb1 \
+  -e POSTGRES_PASSWORD=synthetic-pa-admin "$IMG" python -m renewal_attachments.offline_mb1_package_a_http
+PHASE=ROLES
+docker_cmd exec -i "$DB" psql -X -q -v ON_ERROR_STOP=1 -U mb1 -d mb1 >/dev/null <<'SQL'
+REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+CREATE ROLE mb1_pa_limited LOGIN PASSWORD 'synthetic-pa-limited';
+GRANT CONNECT ON DATABASE mb1 TO mb1_pa_limited;
+GRANT USAGE ON SCHEMA public TO mb1_pa_limited;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO mb1_pa_limited;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO mb1_pa_limited;
+SQL
 PHASE=HTTP
-app -m renewal_attachments.offline_mb1_package_a_http
+app mb1_pa_limited synthetic-pa-limited -m renewal_attachments.offline_mb1_package_a_http
 PHASE=DONE
 echo "MB1_PA_FULL_HTTP_NEW_ONLY=OK"
