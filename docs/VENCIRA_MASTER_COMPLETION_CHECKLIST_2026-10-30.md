@@ -31,6 +31,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **TRASPASO PARA NUEVO CHAT (01/11/2026):** `docs/HANDOFF_VENCIRA_MB1_M103_2026-11-01.md` (`1d793d9`) centraliza arquitectura, evidencia exacta del último PASS M1-03, fallos corregidos, avances M1-02/M1-04/M1-05/M1-06, bloqueos, archivos de código relevantes y siguiente bloque compuesto seguro. Leerlo primero; no repetir HBA/O5/DRF split tests que ya tienen evidencia; no inferir que M1-03 o MB2 están cerrados. **1/15 = 6,7 %.**
 
+**Validación nueva (01/11/2026, rama aislada `feature/mb1-m104-transition-contract-batch`):** contrato puro de transición de adjuntos con 11/11 pruebas sintéticas PASS (`Ran 11 tests in 0.002s`, `OK`, `MB1_TRANSITION_CONTRACT_UNIT=OK`). La integración en `transition_reconciliation.py` está publicada en esa rama pero **NO se ha ejecutado** sobre ambos esquemas. `MB1_TRANSITION_PG17_HTTP=NOT_RUN`, `MB1_TRANSITION_LEGACY_INTEGRATION=NOT_RUN`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`; no existe autorización de despliegue. Evidencia `docs/MB1_M103_TRANSITION_CONTRACT_BATCH_2026-11-01.md`. M1-03 y M2-03 siguen [ ]; cierre 1/15 (6,7 %).
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
