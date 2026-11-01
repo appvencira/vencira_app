@@ -16,6 +16,15 @@ En el repositorio actual **no existe** `clients/flutter/android/app/src/main/And
 
 Workflow `41308720526` en commit `ca9bfe79` (antes de añadir `device_notice_sync.dart`): Django SQLite **73/73 PASS**, Django PG17 efímero **73/73 PASS**, Flutter analyze **PASS**, Flutter **71/71 PASS**, compilación Flutter Web **PASS**. Auditoría estática MB1 `41308720533` PASS. La nueva batería de sincronización y el diagnóstico Android necesitan registrar sus resultados por separado; **no atribuir el primer PASS a código posterior al commit probado**.
 
+## Validación del bloque de sincronización (GitHub Actions)
+
+- Commit ejecutado: `ff4d9d33f17d1d548942d8f4527300e5d6898a68`.
+- Run M3 `41308949614`, resultado de los **tres jobs = success**:
+  - SQLite job `124855371863`: **73/73 PASS**.
+  - PostgreSQL17 efímero job `124855372027`: **73/73 PASS**.
+  - Flutter job `124855372098`: **flutter analyze PASS**, **75/75 tests PASS**, **Flutter Web compilado correctamente**.
+- El workflow de diagnóstico Android `41308949634` es independiente y no está incluido en esta afirmación de éxito; el build APK sigue sujeto a verificación de su propio resultado.
+
 ## Pasos necesarios para operar en Android
 
 - Crear y versionar el scaffold Android real, configurar Gradle, SDK, permisos Android 13+, restricciones Android 12+ y política de alarmas exactas/optimizaciones de batería.
