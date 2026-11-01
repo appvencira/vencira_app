@@ -10,7 +10,7 @@ Se inspeccionó `transition_object_audit.py`: el informe distinguía metadatos a
 
 Nuevo comparador puro en `transition_object_contract.py`, pruebas adversariales en `test_transition_object_contract.py` y comando unitario `scripts/validate_mb1_pa_object_contract.sh`. Casos: inventarios vacíos/iguales, divergencias, objetos perdidos, ilegibles, hash y tamaño alterados, recuentos negativos, booleanos inesperados y alineación malformada. Sin DB, secretos ni disco de datos.
 
-**Estado de las nuevas pruebas: NO EJECUTADAS.** No afirmar PASS antes de la salida del operador.
+**PASS confirmado por el operador el 01/11/2026:** `Ran 11 tests in 0.001s`, `OK`, `MB1_PA_OBJECT_CONTRACT=OK`. Límites confirmados: `MB1_PA_OBJECT_REAL_STORE=NOT_RUN`, `MB1_PA_HISTORICAL_BOTH_SCHEMAS=NOT_RUN`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`; autorizaciones MB1, MFA, C-FICHA siguen `NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Solo contrato unitario: NO es prueba con archivos reales ni hito completo.
 
 ## Alcance pendiente esencial
 El informe es asesor: no verifica todavía un objeto real, no asegura un snapshot coherente sin freeze y no prueba coexistencia de tablas históricas en PG17. La importación de `transition_reconciliation` exige el modelo Legacy registrado, ausente intencionalmente en el gate HTTP split anterior. No habilitar migración 0027 ni ejecutar `migrate` sin objetivo.
