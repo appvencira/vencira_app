@@ -55,3 +55,9 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 
 - `3e12f2f` y `8c1ec79`: las consultas y escrituras del catálogo que confirman `VenciraUnauthorized` borran los datos locales y propagan la invalidación al dashboard, incluyendo solicitud de cancelación nativa y salida de la ruta secundaria.
 - Quedan sin cerrar agenda, bandeja y demás superficies, y falta CI del último head. El macrobloque A continúa OPEN. No despliegue ni avisos reales.
+
+## A3 — Agenda y bandeja (01/11/2026)
+
+- Commits `6f2194e`, `b87216e` y `dd3f6d8`: propagan la pérdida confirmada de identidad desde las pantallas de agenda y bandeja al dashboard y sus barreras de cancelación, invalidan generaciones de consultas, vacían datos sensibles y cierran rutas tras el callback. Las aperturas de detalle desde agenda/bandeja conservan la cadena de revocación.
+- El historial y sus rutas anidadas continúan bajo auditoría; no declarar macrobloque A completo.
+- CI de la revisión pendiente; no activación de avisos ni despliegue.
