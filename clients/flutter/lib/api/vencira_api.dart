@@ -1332,10 +1332,22 @@ class HttpVenciraApi implements VenciraApi {
     try {
       final raw = jsonDecode(utf8.decode(response.bodyBytes))
           as Map<String, dynamic>;
+      const states = {'planned', 'pending', 'snoozed', 'completed', 'cancelled'};
+      final id = raw['id'], state = raw['state'];
+      final dayText = raw['scheduled_for'];
+      if (id != reminder.id || state is! String ||
+          !states.contains(state) || dayText is! String ||
+          raw['delivery_status'] != 'not_implemented') {
+        throw const VenciraApiException();
+      }
+      final day = DateTime.parse(dayText);
+      if (_civilDayIso(day) != dayText) {
+        throw const VenciraApiException();
+      }
       return VenciraOperationalReminder(
-        id: raw['id'] as String, state: raw['state'] as String,
-        day: DateTime.parse(raw['scheduled_for'] as String),
-        reason: reminder.reason, controlQuestion:reminder.controlQuestion);
+        id: id as String, state: state, day: day,
+        reason: reminder.reason, controlQuestion: reminder.controlQuestion,
+        latestControlRepeatOn: reminder.latestControlRepeatOn);
     } catch (_) { throw const VenciraApiException(); }
   }
 
