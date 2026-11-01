@@ -18,11 +18,12 @@ import 'vencira_select.dart';
 class VenciraRenewalDetailScreen extends StatefulWidget {
   const VenciraRenewalDetailScreen({super.key, required this.api,
       required this.workspace, required this.renewalId,
-      this.openEditorOnLoad = false});
+      this.openEditorOnLoad = false, this.onSessionExpired});
   final VenciraApi api;
   final VenciraWorkspace workspace;
   final String renewalId;
   final bool openEditorOnLoad;
+  final Future<void> Function()? onSessionExpired;
 
   @override
   State<VenciraRenewalDetailScreen> createState() => _DetailState();
@@ -69,6 +70,21 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
     ));
   }
 
+  Future<void> _invalidateSession() async {
+    if (!mounted || _unauthorized) return;
+    setState(() {
+      _generation++;
+      _unauthorized = true;
+      _loading = false;
+      _renewal = null;
+      _manualFollowUp = null;
+      _history = null;
+      _insurers = [];
+      _followUpLoading = false;
+    });
+    await widget.onSessionExpired?.call();
+  }
+
   Future<void> _refresh() async {
     final token = ++_generation;
     // Mantener los campos montados durante la recarga de la misma ficha.
@@ -99,15 +115,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       }
     } on VenciraUnauthorized {
       if (!mounted || token != _generation) return;
-      setState(() {
-        _generation++;
-        _loading = false;
-        _unauthorized = true;
-        _renewal = null;
-        _manualFollowUp = null;
-        _history = null;
-        _insurers = [];
-      });
+      await _invalidateSession();
     } catch (_) {
       if (!mounted || token != _generation) return;
       setState(() { _loading = false; _error = true; });
@@ -125,15 +133,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       setState(() { _manualFollowUp = value; _followUpLoaded = true; _followUpLoading = false; });
     } on VenciraUnauthorized {
       if (!mounted || token != _generation) return;
-      setState(() {
-        _generation++;
-        _unauthorized = true;
-        _renewal = null;
-        _manualFollowUp = null;
-        _history = null;
-        _insurers = [];
-        _followUpLoading = false;
-      });
+      await _invalidateSession();
     } catch (_) {
       if (!mounted || token != _generation) return;
       setState(() { _followUpError = true; _followUpLoading = false; });
