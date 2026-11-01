@@ -12,7 +12,7 @@ Base: `docs/HANDOFF_VENCIRA_MB1_M103_2026-11-01.md` y `docs/VENCIRA_MASTER_COMPL
 **Comparador integrado** en `transition_reconciliation.py` mediante commit `b4153a5`, con el SHA exacto del archivo. El conflicto 409 previo se debió a una referencia SHA incorrecta; no se forzó la escritura. Esta integración sigue sin probarse sobre un esquema PG17 histórico/independiente, y NO valida el gate HTTP. En modo split que omite el modelo histórico, esta ruta NO debe importarse: requiere ambos modelos registrados.
 
 ## Validación
-Estado: **NO EJECUTADO por el operador**. No hay PASS ni exit code conocido. No se reejecutaron M103, MFA, HBA, O5, ClamAV ni DR.
+**PASS reportado por el operador (01/11/2026):** `Ran 11 tests in 0.002s`, `OK`, `MB1_TRANSITION_CONTRACT_UNIT=OK`. Límites explícitos: `MB1_TRANSITION_PG17_HTTP=NOT_RUN`, `MB1_TRANSITION_LEGACY_INTEGRATION=NOT_RUN`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Sin marcador independiente de exit code. No se repitieron otros gates.
 
 Para comprobar únicamente el subgrupo nuevo sobre una copia local de esta rama:
 ```bash
