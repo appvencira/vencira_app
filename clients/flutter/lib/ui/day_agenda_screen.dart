@@ -111,6 +111,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
   }
 
   Future<void> _loadModalities() async {
+    if (_unauthorized) return;
     try {
       final options = await widget.api.fetchModalities(widget.workspace.id);
       if (mounted) setState(() => _modalities = options);
@@ -120,6 +121,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
   }
 
   Future<void> _loadInsurers() async {
+    if (_unauthorized) return;
     try {
       final companies = await widget.api.fetchInsurers(widget.workspace.id);
       if (mounted) setState(() => _insurers = companies);
@@ -150,6 +152,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
   }
 
   Future<void> _loadDay(int page) async {
+    if (_unauthorized) return;
     final sequence = ++_generation;
     final requestedDay = _selectedDay;
     setState(() {
@@ -199,6 +202,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
   }
 
   Future<void> _loadTodayInbox() async {
+    if (_unauthorized) return;
     final requestId = ++_todayInboxGeneration;
     if (!_isToday) {
       if (mounted) setState(() {
@@ -300,6 +304,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
   /// La semana puede abarcar dos meses: una o dos consultas agregadas,
   /// nunca siete listados de pólizas ni datos ajenos a la sesión.
   Future<void> _loadWeek({bool force = false}) async {
+    if (_unauthorized) return;
     final monday = _weekBeginning(_selectedDay);
     if (!force && _weekMonday == monday) return;
     final requestId = ++_weekGeneration;
