@@ -59,7 +59,8 @@ jobs:
             flutter create --platforms=android --org es --project-name vencira .
           fi
           test -f android/app/src/main/AndroidManifest.xml
-          test -f android/gradlew
+          # Flutter's generated .gitignore excludes gradlew, which is recreated
+          # by flutter build; it must not be required in git.
           test -f android/gradle/wrapper/gradle-wrapper.jar
       - name: Verify Android debug APK; never distribute
         working-directory: clients/flutter
