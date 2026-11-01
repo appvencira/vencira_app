@@ -41,7 +41,12 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
       _loading = false;
       _inbox = null;
     });
-    await widget.onSessionExpired?.call();
+    try {
+      await widget.onSessionExpired?.call();
+    } catch (_) {
+      // Preserve the revoked, data-free route while native cleanup is unacknowledged.
+      return;
+    }
     if (mounted && widget.onSessionExpired != null) Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
