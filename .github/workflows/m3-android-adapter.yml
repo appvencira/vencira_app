@@ -6,6 +6,7 @@ on:
       - 'clients/flutter/android/app/build.gradle.kts'
       - 'clients/flutter/lib/notifications/**'
       - 'clients/flutter/test/device_notice_inventory_test.dart'
+      - 'clients/flutter/test/device_notice_transaction_test.dart'
       - 'clients/flutter/test/android_local_alarm_port_test.dart'
       - '.github/workflows/m3-android-adapter.yml'
 permissions:
