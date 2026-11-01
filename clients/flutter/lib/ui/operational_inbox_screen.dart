@@ -261,6 +261,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
   Widget _summary(VenciraOperationalInbox inbox) {
     final colors = Theme.of(context).colorScheme;
     return Container(
+      key: const ValueKey('inbox-summary'),
       decoration: BoxDecoration(
         color: colors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(20)),
@@ -437,7 +438,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
         child: ListView(padding: const EdgeInsets.all(16), children: [
           Text(t.inboxDescription, style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 16),
-          if (inbox != null) ...[
+          if (inbox != null && !_failed && !_unauthorized) ...[
             _summary(inbox),
             const SizedBox(height: 18),
           ],
