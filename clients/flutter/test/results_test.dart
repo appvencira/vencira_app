@@ -18,6 +18,7 @@ class FakeResultsApi extends VenciraApi {
   int year = 0;
   int fetches = 0;
   bool deny = false;
+  bool includeBreakdown = false;
 
   @override
   Future<VenciraResultsSummary> fetchResults(
@@ -32,6 +33,10 @@ class FakeResultsApi extends VenciraApi {
     fetches++;
     return VenciraResultsSummary(
       period: period, won: 3, declined: 2, discarded: 1, pending: 4,
+      byUser: includeBreakdown ? const [
+        VenciraResultsUser(userId: '17', name: 'Mediador de prueba',
+          won: 3, declined: 2, discarded: 1, pending: 4),
+      ] : const [],
     );
   }
   @override
@@ -80,6 +85,10 @@ void main() {
       'period': 'month', 'from': '2027-03-01',
       'to_exclusive': '2027-04-01',
       'won': 3, 'declined': 0, 'discarded': 1, 'pending': 4,
+      'by_user': [
+        {'user_id': '17', 'name': 'Mediador de prueba',
+         'won': 3, 'declined': 0, 'discarded': 1, 'pending': 4},
+      ],
     };
     final result = VenciraResultsSummary.fromJson(base);
     expect(result.won, 3);
@@ -91,6 +100,51 @@ void main() {
     expect(() => VenciraResultsSummary.fromJson({...base, 'period': 'week'}),
         throwsFormatException);
   });
+
+  test('M3 results rejects nonreconciled, duplicate or invalid users', () {
+    const base = <String, dynamic>{
+      'period': 'month', 'from': '2027-03-01',
+      'to_exclusive': '2027-04-01',
+      'won': 1, 'declined': 0, 'discarded': 0, 'pending': 0,
+      'by_user': [
+        {'user_id': '9', 'name': 'Operador',
+         'won': 1, 'declined': 0, 'discarded': 0, 'pending': 0},
+      ],
+    };
+    expect(VenciraResultsSummary.fromJson(base).byUser.single.name,
+        'Operador');
+    expect(() => VenciraResultsSummary.fromJson({
+      ...base, 'won': 2,
+    }), throwsFormatException);
+    expect(() => VenciraResultsSummary.fromJson({
+      ...base,
+      'by_user': [...(base['by_user'] as List), ...(base['by_user'] as List)],
+    }), throwsFormatException);
+    expect(() => VenciraResultsSummary.fromJson({
+      ...base,
+      'by_user': [
+        {'user_id': null, 'name': 'Someone',
+         'won': 1, 'declined': 0, 'discarded': 0, 'pending': 0},
+      ],
+    }), throwsFormatException);
+  });
+
+  for (final lang in ['es', 'ca']) {
+    testWidgets('M3 owner sees per-user results table $lang', (tester) async {
+      tester.view.physicalSize = const Size(1100, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final api = FakeResultsApi()..includeBreakdown = true;
+      await tester.pumpWidget(shell(VenciraResultsScreen(
+        api: api, workspace: work), lang));
+      await tester.pumpAndSettle();
+      expect(find.text('Mediador de prueba'), findsOneWidget);
+      expect(find.byType(DataTable), findsOneWidget);
+      expect(find.text(lang == 'es'
+        ? 'Resultados por usuario' : 'Resultats per usuari'), findsOneWidget);
+    });
+  }
 
   for (final lang in ['es', 'ca']) {
     testWidgets('O7 resultados agregados desktop y cambios de periodo $lang',
