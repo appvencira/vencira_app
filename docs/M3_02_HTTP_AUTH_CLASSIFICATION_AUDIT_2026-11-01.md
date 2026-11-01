@@ -76,3 +76,11 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 - Alcance limitado deliberadamente a solicitudes GET del helper `_fetch`. Las escrituras manuales POST/PATCH y las pantallas secundarias no están homologadas; el clasificador de estados puro está separado y aún no orquesta globalmente la UI.
 - Posible mejora posterior: verificar pertenencia del workspace cuando se deniega una solicitud pero la sesión permanece válida; no usar solamente el resultado `/me/` para tomar decisiones sobre alarmas del workspace.
 - **CI de esta revisión pendiente**; compilación APK no equivale a entrega real en dispositivo Android.
+
+## Tratamiento de escrituras POST/PATCH — 01/11/2026
+
+- Commit `aac9ef7`: doce bloques existentes de respuesta HTTP 401/403 en `HttpVenciraApi` pasan a usar un helper de comprobación de identidad. No reenvía ni repite la escritura denegada.
+- Si `GET /api/v1/me/` responde 401/403, la escritura comunica `VenciraUnauthorized`; identidad válida o sonda indeterminada comunica `VenciraApiException`. Así no se interpreta una denegación de rol/CSRF como logout confirmado.
+- Commit `b361726`: pruebas HTTP de denegación en escrituras con identidad válida (403 y 401), manteniendo la prueba de sesión rechazada.
+- Alcance: clasificación HTTP y prevención de revocación global falsa. **Pendiente** tratar pérdidas concretas de membresía y respuesta de las pantallas secundarias. No significa recuperación ni reintento automático de operaciones parcialmente ejecutadas.
+- Bloque funcional en revisión: no atribuir PASS sin ejecución Actions exitosa del commit correspondiente. Sin activar avisos.
