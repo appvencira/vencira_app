@@ -88,3 +88,10 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 - `214785d`: prueba de regresión que mantiene pendiente la carga de modalidades, cierra sesión y después entrega un error de autenticación antiguo; no debe provocar una segunda revocación ni mostrar el workspace anterior.
 - Esta protección se limita a los cargadores del dashboard; no demuestra seguridad universal en pantallas secundarias ni revocación completa a través de todas las rutas.
 - **Pendiente CI de esta revisión.** No habilitar avisos, fusionar, desplegar ni ejecutar migraciones persistentes.
+
+## Ficha secundaria: aislamiento de datos revocados (01/11/2026)
+
+- Commits `a26042a` y `a6c9588`: en `renewal_detail_screen.dart`, una denegación de autenticación al consultar aseguradoras ya no se oculta como error genérico; se propaga al controlador y se vacían anotación, historial, seguimiento y lista de aseguradoras. Si el seguimiento invalida la sesión, se descarta la generación actual y no se inicia la siguiente consulta.
+- `c2c5a85`: se incorpora la ficha de anotación a los disparadores de M3 product contracts. Sin modificar el backend ni los permisos Android.
+- **Límite importante:** la ficha aún no dispone de notificación centralizada al dashboard ni de cierre automático de otras rutas abiertas. Esta corrección impide conservar los datos del estado local afectado, no demuestra revocación universal de la aplicación.
+- Se espera nueva validación CI; no atribuir PASS de revisiones anteriores a estos cambios. Continúan `M3_02_OS_SCHEDULING_ENABLED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` y autorizaciones MB1/MFA/C-FICHA en NO.
