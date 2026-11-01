@@ -38,6 +38,20 @@ void main() {
         json, workspaceId: ws, userId: '18'), throwsFormatException);
   });
 
+  test('Stored encrypted scope cannot be silently replaced by another account',
+      () {
+    final encoded = encodeAlarmInventory(
+        workspaceId: ws, userId: '17', slots: [slot()]);
+    expect(() => verifyAlarmInventoryOwnership(
+      encoded, workspaceId: ws, userId: '17'), returnsNormally);
+    expect(() => verifyAlarmInventoryOwnership(
+      encoded, workspaceId: ws, userId: '18'), throwsFormatException);
+    expect(() => verifyAlarmInventoryOwnership(
+      encoded, workspaceId: otherWs, userId: '17'), throwsFormatException);
+    expect(() => verifyAlarmInventoryOwnership(
+      null, workspaceId: ws, userId: '17'), returnsNormally);
+  });
+
   test('Duplicate, cross-tenant or invalid generation cannot persist', () {
     expect(() => encodeAlarmInventory(
       workspaceId: ws, userId: '17', slots: [slot(), slot()],
