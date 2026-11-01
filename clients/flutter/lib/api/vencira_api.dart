@@ -985,10 +985,17 @@ class VenciraControlResponse {
 class VenciraOperationalReminder {
   const VenciraOperationalReminder({
     required this.id, required this.state, required this.day,
-    required this.reason, required this.controlQuestion});
+    required this.reason, required this.controlQuestion,
+    this.latestControlRepeatOn,
+  });
   final String id, state, reason;
   final DateTime day;
   final bool controlQuestion;
+
+  /// Last civil day for a control-question snooze, strictly before cutoff.
+  /// Null for ordinary tasks, Vida, or an API without verified bounds.
+  /// This is advisory: Django always revalidates on write.
+  final DateTime? latestControlRepeatOn;
 
   factory VenciraOperationalReminder.fromJson(Map<String, dynamic> raw) {
     const validStates = {'planned', 'pending', 'snoozed', 'completed', 'cancelled'};
@@ -999,11 +1006,28 @@ class VenciraOperationalReminder {
         raw['delivery_status'] != 'not_implemented') {
       throw const FormatException('Invalid internal reminder');
     }
+    final rawBound = raw['latest_control_repeat_on'];
+    DateTime? bound;
+    if (rawBound != null) {
+      if (rawBound is! String || rawBound.length != 10 ||
+          raw['control_question'] != true) {
+        throw const FormatException('Invalid control bound');
+      }
+      try {
+        bound = DateTime.parse(rawBound);
+      } on FormatException {
+        throw const FormatException('Invalid control bound');
+      }
+      if (_civilDayIso(bound) != rawBound) {
+        throw const FormatException('Noncanonical control bound');
+      }
+    }
     return VenciraOperationalReminder(
       id: raw['id'] as String, state: raw['state'] as String,
       day: DateTime.parse(raw['scheduled_for'] as String),
       reason: raw['reason'] as String,
       controlQuestion: raw['control_question'] as bool,
+      latestControlRepeatOn: bound,
     );
   }
 }
