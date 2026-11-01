@@ -127,6 +127,29 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     try {
       final loaded = await _api.fetchWorkspaces();
       if (!mounted || sequence != _sequence) return;
+      // Membership can disappear while the app is open. Automatic selection
+      // of a different workspace must also revoke the previous OS alarms;
+      // otherwise a user could receive notifications from a lost workspace.
+      final previousId = _selected?.id;
+      final retained = loaded.any((w) => w.id == previousId);
+      if (previousId != null && !retained) {
+        try {
+          await widget.beforeSessionBoundary?.call();
+        } catch (_) {
+          if (!mounted || sequence != _sequence) return;
+          setState(() {
+            _nativeCleanupFailed = true;
+            _failed = true;
+            _loadingWorkspaces = false;
+            _loadingRenewals = false;
+            _selected = null;
+            _renewals = null;
+            _workspaces = [];
+          });
+          return;
+        }
+        if (!mounted || sequence != _sequence) return;
+      }
       setState(() {
         _workspaces = loaded;
         final previouslySelected = _selected?.id;
