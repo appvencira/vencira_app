@@ -3,7 +3,10 @@ import argparse
 import ast
 from collections import Counter
 from pathlib import Path
-from mb1_g1_source_writer_inventory import analyze_source
+try:
+    from .mb1_g1_source_writer_inventory import analyze_source
+except ImportError:
+    from mb1_g1_source_writer_inventory import analyze_source
 
 def classify(path):
     parts=path.parts
