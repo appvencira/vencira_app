@@ -29,7 +29,7 @@ En la rama `feature/m3-android-local-notifications` (PR #17, **borrador**) se ha
 
 - Último commit **de código y pruebas** comprobado: `4cfa1920dabf25ee75cc3c4324a0932969762524`.
 - Workflow M3 `41312615800`: **Django SQLite PASS (73 tests), Django PostgreSQL17 efímero PASS (73 tests), Flutter analyze PASS, 92/92 pruebas Flutter PASS y build Flutter Web PASS**. Tres jobs con conclusión `success`.
-- Compilaciones Android previas de la PR #17: `41312191218` y `41312383897` con conclusión `success` (código previo a las últimas correcciones). La compilación Android **`41312615826` del código más reciente no ha terminado** a la hora de esta verificación y no debe calificarse como PASS.
+- Compilaciones Android previas de la PR #17: `41312191218` y `41312383897` con conclusión `success` (código previo a las últimas correcciones). **Compilación Android confirmada PASS** para el último código probado: run `41312615826`, job `124865979285`: `No issues found!`, `✓ Built build/app/outputs/flutter-apk/app-debug.apk`, `ANDROID_ADAPTER_COMPILES=YES` y **`ANDROID_LOCAL_NOTIFICATIONS_ENABLED=NO`**. No se distribuyó ni instaló el APK.
 - Manifest Android base y su guard estático: M3 `41311838684` y MB1 `41311838677` con resultado `success`.
 
 ## Pendientes que bloquean activación
