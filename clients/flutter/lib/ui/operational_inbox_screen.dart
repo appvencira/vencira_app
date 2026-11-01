@@ -42,7 +42,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
       _inbox = null;
     });
     await widget.onSessionExpired?.call();
-    if (mounted && widget.onSessionExpired != null) Navigator.of(context).pop();
+    if (mounted && widget.onSessionExpired != null) Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   @override
