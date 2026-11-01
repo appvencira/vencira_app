@@ -125,6 +125,13 @@ def agenda_day(request, workspace_id):
             ),
             to_attr="agenda_due_candidates",
         ),
+        Prefetch(
+            "operational_reminders",
+            queryset=OperationalReminder.objects.filter(
+                scheduled_for=day, state__in=["planned", "pending", "snoozed"],
+            ).order_by("id"),
+            to_attr="agenda_operational_due",
+        ),
     )
     results = []
     for renewal in page:
@@ -142,9 +149,14 @@ def agenda_day(request, workspace_id):
             })
         if renewal.agenda_has_manual:
             events.append({"kind": "follow_up"})
-        if renewal.agenda_has_operational:
-            events.append({"kind": "operational_reminder",
-                           "delivery_status": "not_implemented"})
+        for reminder in renewal.agenda_operational_due:
+            events.append({
+                "kind": "operational_reminder",
+                "reminder_id": str(reminder.pk),
+                "reason": reminder.reason,
+                "state": reminder.state,
+                "delivery_status": "not_implemented",
+            })
         results.append({
             "renewal": RenewalSerializer(renewal).data,
             "events": events,
