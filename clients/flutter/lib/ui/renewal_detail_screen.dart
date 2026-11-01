@@ -90,12 +90,22 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
         if (mounted && token == _generation) {
           setState(() => _insurers = insurers);
         }
+      } on VenciraUnauthorized {
+        rethrow;
       } catch (_) {
         // No inventar nombre de aseguradora si falla la consulta.
       }
     } on VenciraUnauthorized {
       if (!mounted || token != _generation) return;
-      setState(() { _loading = false; _unauthorized = true; _renewal = null; });
+      setState(() {
+        _generation++;
+        _loading = false;
+        _unauthorized = true;
+        _renewal = null;
+        _manualFollowUp = null;
+        _history = null;
+        _insurers = [];
+      });
     } catch (_) {
       if (!mounted || token != _generation) return;
       setState(() { _loading = false; _error = true; });
@@ -113,7 +123,15 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       setState(() { _manualFollowUp = value; _followUpLoaded = true; _followUpLoading = false; });
     } on VenciraUnauthorized {
       if (!mounted || token != _generation) return;
-      setState(() { _unauthorized = true; _followUpLoading = false; });
+      setState(() {
+        _generation++;
+        _unauthorized = true;
+        _renewal = null;
+        _manualFollowUp = null;
+        _history = null;
+        _insurers = [];
+        _followUpLoading = false;
+      });
     } catch (_) {
       if (!mounted || token != _generation) return;
       setState(() { _followUpError = true; _followUpLoading = false; });
