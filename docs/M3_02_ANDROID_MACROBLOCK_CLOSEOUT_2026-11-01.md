@@ -50,3 +50,8 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 - La integración sustituye solo manejadores con excepción de sesión **confirmada**; no convierte un simple 403 de permisos en cierre de sesión, porque la capa HTTP ya distingue identidad.
 - La prueba `detail_expiry_navigation_test.dart` y el gate de Flutter permanecen en el workflow M3; aun así el flujo específico de escritura denegada requiere prueba de regresión antes del cierre del macrobloque A.
 - `SESSION_CROSS_ROUTE=OPEN`: bandeja, agenda, catálogo, editor e historial necesitan revisión; no se declara finalización por este cambio.
+
+## A2 — Catálogo de modalidades
+
+- `3e12f2f` y `8c1ec79`: las consultas y escrituras del catálogo que confirman `VenciraUnauthorized` borran los datos locales y propagan la invalidación al dashboard, incluyendo solicitud de cancelación nativa y salida de la ruta secundaria.
+- Quedan sin cerrar agenda, bandeja y demás superficies, y falta CI del último head. El macrobloque A continúa OPEN. No despliegue ni avisos reales.
