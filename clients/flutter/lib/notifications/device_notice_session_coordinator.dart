@@ -145,6 +145,11 @@ class DeviceNoticeSessionCoordinator {
     if (preview.hasNext || preview.total != preview.items.length) {
       throw StateError('Incomplete authorized notice snapshot');
     }
+    // The session could have been revoked while awaiting the HTTP response.
+    // Revalidate its identity and membership immediately before OS mutations.
+    if (await _verify(scope.workspaceId) != scope) {
+      throw StateError('Session changed during notice preview');
+    }
     // If a previous transaction was interrupted, first cancel all touched
     // OS IDs before deriving the new complete snapshot.
     final knownBefore = await _knownAlarms(scope);
