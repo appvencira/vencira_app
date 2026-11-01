@@ -55,8 +55,16 @@ class _OperationalHistoryIndexState
       _loading = false;
       _unauthorized = true;
     });
-    await widget.onSessionExpired?.call();
-    if (mounted && widget.onSessionExpired != null) Navigator.of(context).popUntil((route) => route.isFirst);
+    try {
+      await widget.onSessionExpired?.call();
+    } catch (_) {
+      // The parent cleanup barrier failed. Keep the revoked route data-free
+      // and do not navigate past an unacknowledged native cancellation.
+      return;
+    }
+    if (mounted && widget.onSessionExpired != null) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
   }
 
   Future<void> _load() async {
