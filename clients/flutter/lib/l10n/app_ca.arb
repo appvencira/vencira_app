@@ -93,6 +93,7 @@
   "agendaMonthOpen": "Veure mes",
   "agendaPreviousMonth": "Mes anterior",
   "agendaNextMonth": "Mes següent",
+  "agendaInternalReminder": "Avís intern",
   "agendaMonthReminder": "Avís previst",
   "agendaMonthStatusLegend": "Punt ple: pendent · Cercle buit: contactat (no tancat)",
   "agendaMonthHelp": "Selecciona un dia per obrir-ne les anotacions. Els avisos previstos no són notificacions enviades.",
