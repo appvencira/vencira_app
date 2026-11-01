@@ -6,12 +6,14 @@ on:
     paths:
       - 'clients/flutter/lib/notifications/**'
       - 'clients/flutter/test/device_notice_reconciliation_test.dart'
+      - 'clients/flutter/test/device_notice_sync_test.dart'
       - 'clients/flutter/pubspec.yaml'
       - '.github/workflows/m3-android-diagnostic.yml'
   pull_request:
     paths:
       - 'clients/flutter/lib/notifications/**'
       - 'clients/flutter/test/device_notice_reconciliation_test.dart'
+      - 'clients/flutter/test/device_notice_sync_test.dart'
       - 'clients/flutter/pubspec.yaml'
       - '.github/workflows/m3-android-diagnostic.yml'
   workflow_dispatch:
