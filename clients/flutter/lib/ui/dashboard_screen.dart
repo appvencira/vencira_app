@@ -20,9 +20,15 @@ import 'vencira_select.dart';
 import 'mfa_setup_screen.dart';
 
 class VenciraDashboardScreen extends StatefulWidget {
-  const VenciraDashboardScreen({super.key, this.api, this.openTodayOnLoad = false});
+  const VenciraDashboardScreen({
+    super.key, this.api, this.openTodayOnLoad = false,
+    this.beforeSessionBoundary,
+  });
 
   final VenciraApi? api;
+  /// Cancellation-only native alarm barrier before account switch/logout.
+  /// Failure aborts the user action rather than discarding encrypted identity.
+  final Future<void> Function()? beforeSessionBoundary;
   /// En la aplicación real, tras autenticarse se abre HOY (§5).
   final bool openTodayOnLoad;
 
@@ -137,7 +143,23 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
   }
 
   Future<void> _selectWorkspace(VenciraWorkspace? workspace) async {
-    if (workspace == null) return;
+    if (workspace == null || _saving) return;
+    if (workspace.id != _selected?.id && widget.beforeSessionBoundary != null) {
+      setState(() => _saving = true);
+      try {
+        await widget.beforeSessionBoundary!();
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(_t.saveError)),
+          );
+        }
+        return;
+      } finally {
+        if (mounted) setState(() => _saving = false);
+      }
+      if (!mounted) return;
+    }
     setState(() {
       _selected = workspace;
       _renewals = null;
@@ -349,6 +371,10 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     if (_saving) return;
     setState(() => _saving = true);
     try {
+      // Never terminate the authenticated session while native alarms
+      // remain recoverable only under the current encrypted account scope.
+      await widget.beforeSessionBoundary?.call();
+      if (!mounted) return;
       await _api.logout();
       if (!mounted) return;
       setState(() {
