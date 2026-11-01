@@ -93,6 +93,7 @@
   "agendaMonthOpen": "Ver mes",
   "agendaPreviousMonth": "Mes anterior",
   "agendaNextMonth": "Mes siguiente",
+  "agendaInternalReminder": "Aviso interno",
   "agendaMonthReminder": "Aviso previsto",
   "agendaMonthStatusLegend": "Punto lleno: pendiente · Círculo vacío: contactado (no cerrado)",
   "agendaMonthHelp": "Selecciona un día para abrir sus anotaciones. Los avisos previstos no son notificaciones enviadas.",
