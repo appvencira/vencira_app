@@ -52,6 +52,41 @@ void main() {
     expect(find.text('Authorized customer dashboard'), findsOneWidget);
   });
 
+  testWidgets('Changing security callback invalidates stale success',
+      (tester) async {
+    final previous = Completer<void>();
+    final next = Completer<void>();
+    Future<void> oldCleanup() => previous.future;
+    Future<void> newCleanup() => next.future;
+    await tester.pumpWidget(app(oldCleanup));
+    await tester.pump();
+    expect(find.text('Authorized customer dashboard'), findsNothing);
+
+    await tester.pumpWidget(app(newCleanup));
+    await tester.pump();
+    previous.complete();
+    await tester.pump();
+    expect(find.text('Authorized customer dashboard'), findsNothing);
+
+    next.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('Authorized customer dashboard'), findsOneWidget);
+  });
+
+  testWidgets('Enabling security after an exempt session blocks dashboard',
+      (tester) async {
+    final cleanup = Completer<void>();
+    Future<void> revoke() => cleanup.future;
+    await tester.pumpWidget(app(revoke, enabled: false));
+    expect(find.text('Authorized customer dashboard'), findsOneWidget);
+    await tester.pumpWidget(app(revoke));
+    await tester.pump();
+    expect(find.text('Authorized customer dashboard'), findsNothing);
+    cleanup.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('Authorized customer dashboard'), findsOneWidget);
+  });
+
   testWidgets('Injected test client skips native Android operations',
       (tester) async {
     var called = false;
