@@ -7,6 +7,7 @@ on:
     paths:
       - 'clients/flutter/lib/ui/operational_inbox_screen.dart'
       - 'clients/flutter/test/operational_inbox_test.dart'
+      - 'clients/flutter/test/operational_inbox_widget_test.dart'
       - 'backend/reminders/control_intent.py'
       - 'backend/reminders/operational_transitions.py'
       - 'backend/reminders/test_operational_transitions.py'
@@ -80,4 +81,4 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter analyze
-      - run: flutter test test/operational_inbox_test.dart
+      - run: flutter test test/operational_inbox_test.dart test/operational_inbox_widget_test.dart
