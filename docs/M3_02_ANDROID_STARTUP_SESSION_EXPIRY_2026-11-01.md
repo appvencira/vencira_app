@@ -38,3 +38,20 @@ En run `41317117956` Django SQLite y PG17 finalizaron PASS. Flutter obtuvo **117
 - La revocación por 401 está conectada a tres flujos del dashboard; otros subflujos de API podrían requerir interceptación global. No afirmar revocación universal del proceso.
 - La cancelación nativa tras fallo OS requiere reintento; no se permite saltar la recuperación.
 - M3-02 sigue abierto. **2/15 = 13,3 %**; `MB1_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Sin merge ni despliegue.
+
+## Endurecimiento posterior: transición dinámica de barrera (01/11/2026)
+
+- Commits `aebf1b0` y `0167467`: el widget de arranque invalida comprobaciones anteriores si cambia la función de revocación o el indicador de habilitación. Un resultado asíncrono obsoleto no puede dar acceso al dashboard.
+- Nuevos widget tests: sustitución de callback durante cancelación pendiente y transición de modo exento a modo protegido.
+- CI para `0167467` lanzado: **M3 product contracts** run `41323071904` (pending), **Android scaffold verification** run `41323071886` (in progress), **Android adapter compile** run `41323071814` (queued) en la comprobación inicial. No atribuir PASS hasta que GitHub registre conclusión exitosa del commit.
+- Continúa pendiente la intercepción universal de 401, consentimiento UX y entrega real en dispositivo. No se modifica la autorización de release.
+
+```text
+M3_02_DYNAMIC_STARTUP_GATE=IMPLEMENTED_AWAITING_CI
+M3_02_DEVICE_DELIVERY_EVIDENCE=NO
+M3_02_OS_SCHEDULING_ENABLED=NO
+MB1_RELEASE_AUTHORIZED=NO
+MFA_RELEASE_AUTHORIZED=NO
+C_FICHA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
