@@ -151,6 +151,26 @@ void main() {
     expect(find.text('Equipo nuevo'), findsWidgets);
   });
 
+  testWidgets('Failed membership revocation clears cached workspace and blocks late data',
+      (tester) async {
+    final api = FakeApi();
+    var fail = true;
+    await tester.pumpWidget(shell(api, () async {
+      if (fail) throw StateError('OS cancellation not acknowledged');
+    }));
+    await tester.pumpAndSettle();
+    expect(find.text('Equipo de pruebas'), findsWidgets);
+    api.membershipRemoved = true;
+    await tester.tap(find.byIcon(Icons.refresh));
+    await tester.pumpAndSettle();
+    expect(find.text('Equipo de pruebas'), findsNothing);
+    expect(find.text('Equipo nuevo'), findsNothing);
+    fail = false;
+    await tester.tap(find.byIcon(Icons.refresh));
+    await tester.pumpAndSettle();
+    expect(find.text('Equipo nuevo'), findsWidgets);
+  });
+
   testWidgets('Android privacy settings offer a real cancellation-only action',
       (tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
