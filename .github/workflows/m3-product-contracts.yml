@@ -29,6 +29,8 @@ on:
       - 'clients/flutter/test/device_notice_startup_gate_test.dart'
       - 'clients/flutter/lib/ui/dashboard_screen.dart'
       - 'clients/flutter/lib/ui/renewal_detail_screen.dart'
+      - 'clients/flutter/lib/ui/day_agenda_screen.dart'
+      - 'clients/flutter/lib/ui/operational_inbox_screen.dart'
       - 'clients/flutter/test/detail_expiry_navigation_test.dart'
       - 'clients/flutter/lib/main.dart'
       - 'clients/flutter/test/device_notice_logout_widget_test.dart'
