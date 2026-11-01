@@ -12,9 +12,11 @@ import 'operational_history_screen.dart';
 class VenciraOperationalInboxScreen extends StatefulWidget {
   const VenciraOperationalInboxScreen({
     super.key, required this.api, required this.workspace,
+    this.onSessionExpired,
   });
   final VenciraApi api;
   final VenciraWorkspace workspace;
+  final Future<void> Function()? onSessionExpired;
 
   @override
   State<VenciraOperationalInboxScreen> createState() => _InboxState();
@@ -30,6 +32,18 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
   int _page = 1;
   int _generation = 0;
   AppLocalizations get t => AppLocalizations.of(context)!;
+
+  Future<void> _expire() async {
+    if (!mounted || _unauthorized) return;
+    setState(() {
+      _generation++;
+      _unauthorized = true;
+      _loading = false;
+      _inbox = null;
+    });
+    await widget.onSessionExpired?.call();
+    if (mounted && widget.onSessionExpired != null) Navigator.of(context).pop();
+  }
 
   @override
   void initState() {
@@ -60,9 +74,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
       if (!mounted || generation != _generation) return;
       setState(() { _inbox = data; _loading = false; });
     } on VenciraUnauthorized {
-      if (mounted && generation == _generation) setState(() {
-        _unauthorized = true; _loading = false; _inbox = null;
-      });
+      if (mounted && generation == _generation) await _expire();
     } catch (_) {
       if (mounted && generation == _generation) setState(() {
         _failed = true; _loading = false;
@@ -100,10 +112,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
         await _load(page: _page);
       }
     } on VenciraUnauthorized {
-      if (mounted) setState(() {
-        _unauthorized = true;
-        _inbox = null;
-      });
+      await _expire();
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -157,7 +166,8 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
     await Navigator.of(context).push<void>(MaterialPageRoute(
       builder: (_) => VenciraRenewalDetailScreen(
         api: widget.api, workspace: widget.workspace,
-        renewalId: item.renewalId),
+        renewalId: item.renewalId,
+        onSessionExpired: _expire),
     ));
     if (mounted) _load(page: _page);
   }
