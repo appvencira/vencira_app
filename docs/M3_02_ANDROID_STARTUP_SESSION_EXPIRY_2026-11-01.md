@@ -101,3 +101,10 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 - Commit `522aa6c`: la apertura automática del editor de una ficha mediante callback post-frame exige que la generación de sesión siga vigente, la ficha coincida con la anotación cargada y que no haya revocación. Evita abrir el editor sobre un resultado ya invalidado por otro flujo de la pantalla.
 - El CI del bloque anterior `f590a11` seguía pendiente en M3 y APK al realizar la comprobación; MB1 static registró PASS y scaffold fue SKIPPED. No atribuir PASS a esta corrección hasta ver el workflow específico.
 - Falta aún centralizar propagación de invalidez desde subpantallas al dashboard, probar una sesión revocada con un Android físico y verificar entrega, reinicio, modo avión y Doze. No habilitar notificaciones ni fusionar la PR.
+
+## Propagación de invalidación de ficha al dashboard
+
+- `7445768`: la ficha de anotación dispone de callback opcional `onSessionExpired`. Cuando una consulta de seguimiento o aseguradora detecta `VenciraUnauthorized`, la ficha invalida su generación, borra sus datos locales y notifica al propietario.
+- `e860c77`: el dashboard conecta el callback al manejador existente de sesión caducada, que borra datos globales y solicita revocación nativa. El callback es opcional para conservar compatibilidad con usos aislados y tests.
+- La propagación es **de ficha a dashboard**, no un coordinador universal: otras subpantallas siguen pendientes de auditoría. La comprobación `/me/` en el cliente HTTP distingue permisos de pérdida confirmada de identidad.
+- CI de estos commits pendiente; no afirmar que el nuevo flujo ha superado pruebas antes de verificar Actions. Sin merge, despliegue, migración persistente ni programación de avisos.
