@@ -117,18 +117,39 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
     }
   }
 
-  Future<void> _otherDay(VenciraInboxItem item) async {
+  // Civil-date arithmetic avoids DST shifts when selecting a future day.
+  DateTime _inDays(int count) {
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    return DateTime(now.year, now.month, now.day + count);
+  }
+
+  bool _canPostpone(VenciraInboxItem item, int days) {
+    if (!item.reminder.controlQuestion) return true;
+    final bound = item.reminder.latestControlRepeatOn;
+    // No confirmed date from the server (or Vida): fail closed in the UI.
+    return bound != null && !_inDays(days).isAfter(bound);
+  }
+
+  Future<void> _otherDay(VenciraInboxItem item) async {
+    if (!_canPostpone(item, 2)) return;
+    final first = _inDays(2);
+    final normalLast = _inDays(365);
+    final bound = item.reminder.controlQuestion
+        ? item.reminder.latestControlRepeatOn : null;
+    final last = bound != null && bound.isBefore(normalLast)
+        ? bound : normalLast;
+    final proposed = _inDays(7);
+    final initial = proposed.isAfter(last) ? last : proposed;
     final selected = await showDatePicker(
       context: context,
-      initialDate: today.add(const Duration(days: 7)),
-      firstDate: today.add(const Duration(days: 2)),
-      lastDate: today.add(const Duration(days: 365)),
+      initialDate: initial,
+      firstDate: first,
+      lastDate: last,
     );
     if (!mounted || selected == null) return;
+    final today = _inDays(0);
     final offset = DateTime.utc(selected.year, selected.month, selected.day)
-      .difference(DateTime.utc(today.year, today.month, today.day)).inDays;
+        .difference(DateTime.utc(today.year, today.month, today.day)).inDays;
     await _action(item, 'another_day', daysLater: offset);
   }
 
@@ -152,11 +173,13 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
 
   /// Igual que Preferencias: fila táctil, sin flechas ni botones repetidos.
   Widget _sheetRow(BuildContext sheetContext, String label,
-      IconData icon, VoidCallback onTap) {
+      IconData icon, VoidCallback? onTap) {
     final colors = Theme.of(sheetContext).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Material(
+      child: Opacity(
+        opacity: onTap == null ? 0.45 : 1,
+        child: Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
@@ -171,6 +194,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
                 style: Theme.of(sheetContext).textTheme.bodyLarge)),
             ]),
           ),
+        ),
         ),
       ),
     );
@@ -212,10 +236,19 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
                   () => Navigator.pop(sheetContext, 'complete')),
                 _sheetRow(sheetContext, t.opTomorrow,
                   Icons.wb_twilight_outlined,
-                  () => Navigator.pop(sheetContext, 'tomorrow')),
+                  _canPostpone(item, 1)
+                      ? () => Navigator.pop(sheetContext, 'tomorrow') : null),
                 _sheetRow(sheetContext, t.opChoose,
                   Icons.event_outlined,
-                  () => Navigator.pop(sheetContext, 'another_day')),
+                  _canPostpone(item, 2)
+                      ? () => Navigator.pop(sheetContext, 'another_day') : null),
+                if (item.reminder.controlQuestion && !_canPostpone(item, 1))
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(15, 8, 15, 2),
+                    child: Text(t.inboxControlRepeatUnavailable,
+                      style: Theme.of(sheetContext).textTheme.bodySmall
+                        ?.copyWith(color: colors.error)),
+                  ),
               ],
             ),
           ),
