@@ -67,6 +67,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **G1 SQL/FS/dinámicas críticas (01/11/2026):** publicado `scripts/mb1_g1_critical_callsite_audit.py`, dos tests nuevos y CI `.github/workflows/mb1-audit.yml` actualizada. Clasificación conservadora de sentencias SQL y llamadas indirectas, sin ejecutar código; CI **pendiente de verificar**. Documento `docs/MB1_G1_CRITICAL_CALLSITE_AUDIT_2026-11-01.md`. G1–G3 abiertos; 1/15.
 
+**CI G1 artefactos revisables (01/11/2026):** `.github/workflows/mb1-audit.yml` ahora guarda dos inventarios CSV de callsites (runtime/critical) como artefactos durante 7 días. No incluyen contenido del código ni credenciales; sirven para revisión semántica manual. Ejecución CI aún sin PASS verificado; documento `docs/MB1_GITHUB_ACTIONS_STATIC_GATES_2026-11-01.md`. G1–G3 abiertos; 1/15.
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
