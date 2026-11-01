@@ -200,7 +200,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
         _t.detailText07)));
       if (_history != null) await _loadHistory(1);
     } on VenciraUnauthorized {
-      if (mounted) setState(() => _unauthorized = true);
+      await _invalidateSession();
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t.saveError)));
@@ -240,7 +240,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
           : _t.detailText13)));
       if (_history != null) await _loadHistory(1);
     } on VenciraUnauthorized {
-      if (mounted) setState(() => _unauthorized = true);
+      await _invalidateSession();
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t.saveError)));
@@ -359,7 +359,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       // No se reconstruye un historial si no se ha solicitado.
       if (mounted && _history != null) await _loadHistory(1);
     } on VenciraUnauthorized {
-      if (mounted) setState(() { _renewal = null; _unauthorized = true; });
+      await _invalidateSession();
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t.saveError)));
@@ -414,7 +414,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       await _refresh();
       if (mounted && _history != null) await _loadHistory(1);
     } on VenciraUnauthorized {
-      if (mounted) setState(() { _renewal = null; _unauthorized = true; });
+      await _invalidateSession();
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t.saveError)));
@@ -540,10 +540,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       await _refresh();
       if (mounted && _history != null) await _loadHistory(1);
     } on VenciraUnauthorized {
-      if (mounted) setState(() {
-        _renewal = null;
-        _unauthorized = true;
-      });
+      await _invalidateSession();
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t.saveError)));
