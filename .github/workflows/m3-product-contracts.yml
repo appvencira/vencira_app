@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - feature/m3-device-notice-preview-ci
     paths:
       - 'clients/flutter/lib/ui/operational_inbox_screen.dart'
       - 'clients/flutter/lib/ui/day_agenda_screen.dart'
