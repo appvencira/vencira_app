@@ -6,6 +6,8 @@ on:
       - feature/mb1-m104-transition-contract-batch
     paths:
       - 'backend/reminders/control_intent.py'
+      - 'backend/reminders/operational_transitions.py'
+      - 'backend/reminders/test_operational_transitions.py'
       - 'backend/reminders/control_response_api.py'
       - 'backend/reminders/control_responses.py'
       - 'backend/reminders/test_control_response_api.py'
@@ -53,7 +55,7 @@ jobs:
       - name: Check Django project
         run: python manage.py check
       - name: Product control and suggestion tests
-        run: python manage.py test reminders.test_control_intent reminders.test_person_suggestions_ranking reminders.test_control_responses reminders.test_control_response_api
+        run: python manage.py test reminders.test_control_intent reminders.test_person_suggestions_ranking reminders.test_control_responses reminders.test_control_response_api reminders.test_operational_transitions reminders.test_operational_inbox
       - name: No operational release
         run: |
           echo 'M3_02_DELIVERY=NOT_IMPLEMENTED'
