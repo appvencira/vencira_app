@@ -99,6 +99,36 @@ class AndroidLocalAlarmPort implements DeviceNoticeAlarmPort {
     return AndroidLocalAlarmPort._(notifications, location, registry);
   }
 
+  /// Cancellation-only path for logout, revoked notification permission or
+  /// revoked account membership. Must be supplied a verified encrypted
+  /// inventory (including pending journal keys) from the previous session.
+  /// It never asks for a notification permission and cannot schedule on its
+  /// own: callers must only pass this port to a revocation operation.
+  static Future<AndroidLocalAlarmPort> prepareForRevocation({
+    required bool encryptedInventoryVerified,
+    required List<DeviceNoticeSlot> installedAndPending,
+    FlutterLocalNotificationsPlugin? plugin,
+  }) async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android ||
+        !encryptedInventoryVerified) {
+      throw StateError('Android alarm revocation inventory not verified');
+    }
+    tzdata.initializeTimeZones();
+    final location = tz.getLocation('Europe/Madrid');
+    final notifications = plugin ?? FlutterLocalNotificationsPlugin();
+    final initialized = await notifications.initialize(
+      settings: const InitializationSettings(
+        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      ),
+    );
+    if (initialized != true) {
+      throw StateError('Android alarm cancellation service unavailable');
+    }
+    return AndroidLocalAlarmPort._(
+      notifications, location, AndroidNoticeIdRegistry(installedAndPending),
+    );
+  }
+
   @override
   Future<void> cancel(DeviceNoticeSlot slot) async {
     final id = _registry.authorizedCancelId(slot);
