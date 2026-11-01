@@ -58,6 +58,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
   int _page = 1;
   int _sequence = 0;
   bool _initialTodayOpened = false;
+  bool _nativeCleanupFailed = false;
 
   @override
   void initState() {
@@ -76,7 +77,43 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     super.dispose();
   }
 
+  Future<void> _handleExpiredSession() async {
+    if (!mounted) return;
+    // Clear customer data and stale requests immediately on authentication
+    // failure, even when native OS cancellation subsequently fails.
+    setState(() {
+      _sequence++;
+      _unauthorized = true;
+      _selected = null;
+      _renewals = null;
+      _workspaces = [];
+      _loadingWorkspaces = false;
+      _loadingRenewals = false;
+    });
+    try {
+      await widget.beforeSessionBoundary?.call();
+      if (mounted) setState(() => _nativeCleanupFailed = false);
+    } catch (_) {
+      // Never claim cleanup succeeded or erase the encrypted alarm journal.
+      // Future workspace loading must pass the cleanup barrier again.
+      if (mounted) setState(() {
+        _nativeCleanupFailed = true;
+        _failed = true;
+      });
+    }
+  }
+
   Future<void> _loadWorkspaces() async {
+    if (_nativeCleanupFailed) {
+      try {
+        await widget.beforeSessionBoundary?.call();
+        if (!mounted) return;
+        _nativeCleanupFailed = false;
+      } catch (_) {
+        if (mounted) setState(() => _failed = true);
+        return;
+      }
+    }
     final sequence = ++_sequence;
     // En una recarga manual conservar la organización y sus resultados.
     // Sólo se descartan si el servidor confirma cambio de pertenencia.
@@ -126,13 +163,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       }
     } on VenciraUnauthorized {
       if (!mounted || sequence != _sequence) return;
-      setState(() {
-        _loadingWorkspaces = false;
-        _unauthorized = true;
-        _selected = null;
-        _renewals = null;
-        _workspaces = [];
-      });
+      await _handleExpiredSession();
     } catch (_) {
       if (!mounted || sequence != _sequence) return;
       setState(() {
@@ -209,11 +240,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       });
     } on VenciraUnauthorized {
       if (!mounted || sequence != _sequence) return;
-      setState(() {
-        _loadingRenewals = false;
-        _renewals = null;
-        _unauthorized = true;
-      });
+      await _handleExpiredSession();
     } catch (_) {
       if (!mounted || sequence != _sequence) return;
       setState(() {
@@ -353,10 +380,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       await _loadRenewals(1);
     } on VenciraUnauthorized {
       if (!mounted) return;
-      setState(() {
-        _unauthorized = true;
-        _renewals = null;
-      });
+      await _handleExpiredSession();
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
