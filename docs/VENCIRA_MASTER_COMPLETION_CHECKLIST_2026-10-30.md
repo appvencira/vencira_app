@@ -89,6 +89,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **M3-02 aplazamiento de control (01/11/2026):** unificada prohibición de programación **en** fecha límite civil, tanto en `control_responses.py` como en `operational_transitions.py`; prueba negativa de aplazamiento a límite y positiva el día anterior; CI M3 ampliada a tests de transiciones e inbox. `docs/M3_02_STRICT_CONTROL_SNOOZE_CUTOFF_2026-11-01.md`. Pendiente PASS CI y aceptación UX; M3-02 [ ]; 2/15 (13,3 %).
 
+**M3-02 bandeja móvil (01/11/2026):** bloqueadas acciones sobre datos obsoletos después de fallo de recarga, y ocultada lista mientras `_failed` o `_unauthorized`; CI M3 añade `flutter analyze` y test de contrato de bandeja. Documento `docs/M3_02_INBOX_STALE_DATA_GUARD_2026-11-01.md`. CI sin PASS observado; M3-02 sigue abierto; 2/15 (13,3 %).
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
