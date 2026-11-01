@@ -86,7 +86,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
 
   Future<void> _action(VenciraInboxItem item, String action,
       {int? daysLater}) async {
-    if (_acting || _loading) return;
+    if (_acting || _loading || _failed || _unauthorized) return;
     setState(() => _acting = true);
     try {
       await widget.api.updateOperationalReminder(widget.workspace.id,
@@ -167,7 +167,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
   }
 
   Future<void> _showActions(VenciraInboxItem item) async {
-    if (_acting || _loading) return;
+    if (_acting || _loading || _failed || _unauthorized) return;
     final colors = Theme.of(context).colorScheme;
     final chosen = await showModalBottomSheet<String>(
       context: context,
@@ -340,7 +340,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(color: colors.outlineVariant)),
       child: InkWell(
-        onTap: _acting || _loading ? null : () => _openDetail(item),
+        onTap: _acting || _loading || _failed || _unauthorized ? null : () => _openDetail(item),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(17, 15, 8, 16),
           child: Row(
@@ -384,7 +384,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
               )),
               IconButton(
                 key: ValueKey('inbox-more-' + item.reminder.id),
-                onPressed: _acting || _loading ? null : () => _showActions(item),
+                onPressed: _acting || _loading || _failed || _unauthorized ? null : () => _showActions(item),
                 tooltip: t.opActions,
                 icon: const Icon(Icons.more_vert_rounded),
               ),
@@ -441,7 +441,7 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
           if (_failed) TextButton.icon(
             onPressed: () => _load(),
             icon: const Icon(Icons.refresh), label: Text(t.retry)),
-          if (inbox != null && !_unauthorized) ...[
+          if (inbox != null && !_unauthorized && !_failed) ...[
             if (inbox.items.isEmpty) Padding(
               padding: const EdgeInsets.symmetric(vertical: 28),
               child: Text(t.inboxEmpty)),
