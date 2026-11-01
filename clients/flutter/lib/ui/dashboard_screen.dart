@@ -57,6 +57,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
   bool _saving = false;
   int _page = 1;
   int _sequence = 0;
+  int _sessionGeneration = 0;
   bool _initialTodayOpened = false;
   bool _nativeCleanupFailed = false;
 
@@ -83,6 +84,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     // failure, even when native OS cancellation subsequently fails.
     setState(() {
       _sequence++;
+      _sessionGeneration++;
       _unauthorized = true;
       _selected = null;
       _renewals = null;
@@ -150,6 +152,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
             _modalities = VenciraModalityOption.defaults;
             _insurers = [];
             _sequence++;
+            _sessionGeneration++;
           });
           return;
         }
@@ -162,6 +165,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         _selected = preserved.isNotEmpty
             ? preserved.first : (loaded.isEmpty ? null : loaded.first);
         if (_selected?.id != previouslySelected) {
+          _sessionGeneration++;
           _renewals = null;
           _searchController.clear();
           _appliedSearch = '';
@@ -220,6 +224,8 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       if (!mounted) return;
     }
     setState(() {
+      _sessionGeneration++;
+      _sequence++;
       _selected = workspace;
       _renewals = null;
       _page = 1;
@@ -280,13 +286,18 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
 
   Future<void> _loadModalities() async {
     final selected = _selected;
-    if (selected == null) return;
+    if (selected == null || _unauthorized || _nativeCleanupFailed) return;
+    final generation = _sessionGeneration;
     try {
       final result = await _api.fetchModalities(selected.id);
-      if (!mounted || _selected?.id != selected.id) return;
+      if (!mounted || _selected?.id != selected.id ||
+          generation != _sessionGeneration || _unauthorized ||
+          _nativeCleanupFailed) return;
       setState(() => _modalities = result);
     } on VenciraUnauthorized {
-      if (mounted && _selected?.id == selected.id && !_unauthorized) {
+      if (mounted && _selected?.id == selected.id &&
+          generation == _sessionGeneration && !_unauthorized &&
+          !_nativeCleanupFailed) {
         await _handleExpiredSession();
       }
     } catch (_) {
@@ -296,13 +307,18 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
 
   Future<void> _loadInsurers() async {
     final workspace = _selected;
-    if (workspace == null) return;
+    if (workspace == null || _unauthorized || _nativeCleanupFailed) return;
+    final generation = _sessionGeneration;
     try {
       final results = await _api.fetchInsurers(workspace.id);
-      if (!mounted || _selected?.id != workspace.id) return;
+      if (!mounted || _selected?.id != workspace.id ||
+          generation != _sessionGeneration || _unauthorized ||
+          _nativeCleanupFailed) return;
       setState(() => _insurers = results);
     } on VenciraUnauthorized {
-      if (mounted && _selected?.id == workspace.id && !_unauthorized) {
+      if (mounted && _selected?.id == workspace.id &&
+          generation == _sessionGeneration && !_unauthorized &&
+          !_nativeCleanupFailed) {
         await _handleExpiredSession();
       }
     } catch (_) {
@@ -439,9 +455,12 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       if (!mounted) return;
       setState(() {
         _sequence++;
+        _sessionGeneration++;
         _selected = null;
         _workspaces = [];
         _renewals = null;
+        _modalities = VenciraModalityOption.defaults;
+        _insurers = [];
         _unauthorized = true;
         _failed = false;
       });
