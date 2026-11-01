@@ -161,6 +161,45 @@ void main() {
     expect(ledger.pending, isNull);
   });
 
+  test('Logout revokes all verified alarms before returning empty inventory',
+      () async {
+    final ledger = Ledger()..inventory = [slot(idA, 12), slot(idB, 13)];
+    final port = Port(ledger.events)
+      ..active.addAll(ledger.inventory.map((alarm) => alarm.key));
+    await revokeAllDeviceNotices(
+      ledger: ledger, revocationPort: port,
+      workspaceId: ws, userId: user,
+    );
+    expect(ledger.inventory, isEmpty);
+    expect(ledger.pending, isNull);
+    expect(port.active, isEmpty);
+    expect(ledger.events, [
+      'journal', 'cancel', 'cancel', 'commit', 'clear',
+    ]);
+  });
+
+  test('Revocation cancellation error preserves journal; retry recovers',
+      () async {
+    final ledger = Ledger()..inventory = [slot(idA, 12)];
+    final port = Port(ledger.events)
+      ..active.add(slot(idA, 12).key)
+      ..failCancel = true;
+    await expectLater(revokeAllDeviceNotices(
+      ledger: ledger, revocationPort: port,
+      workspaceId: ws, userId: user,
+    ), throwsStateError);
+    expect(ledger.inventory, hasLength(1));
+    expect(ledger.pending, isNotNull);
+    port.failCancel = false;
+    await revokeAllDeviceNotices(
+      ledger: ledger, revocationPort: port,
+      workspaceId: ws, userId: user,
+    );
+    expect(ledger.inventory, isEmpty);
+    expect(ledger.pending, isNull);
+    expect(port.active, isEmpty);
+  });
+
   test('Refuses stale cancellation, cross-account insertion and conflicting IDs',
       () async {
     final ledger = Ledger()..inventory = [slot(idA, 12)];
