@@ -103,6 +103,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **M3-02 agenda operativa (01/11/2026):** corregida incompatibilidad entre evento Django `operational_reminder` y parser Flutter: la agenda diaria ahora muestra por anotación los motivos reales de las ocurrencias internas activas, con id, estado, no-entrega y precarga sin N+1; soporte ES/CA. Tests Django/Flutter añadidos y CI M3 ampliada. Primer run `41307322694`: Django SQLite y PG17 PASS, Flutter 48 PASS/1 FAIL por selector de test de contador, corregido `3a876f1`; segundo run `41307454540` cancelado por nuevo push. Reejecución nueva disparada con `3124c52`, resultado por verificar. Evidencia `docs/M3_02_AGENDA_OPERATIONAL_EVENT_FIX_2026-11-01.md`. M3-02 sigue [ ], **2/15 (13,3 %)**. No deployment ni migraciones.
 
+**CI REAL M3-02 «Hoy» (01/11/2026):** commit `0b6b9aa`, run `41307549429` **PASS en tres jobs**: Django/SQLite 62/62, Django/PostgreSQL17 efímero 62/62, Flutter analyze sin errores, 49/49 pruebas Flutter de UI/contrato y build Web release OK. Tras cancelaciones previas y fallo en selector de prueba, corregido y reejecutado con éxito. Informe `docs/M3_02_TODAY_AGENDA_INTERNAL_INBOX_2026-11-01.md`. No Android físico ni notificaciones externas. **M3-02 [ ], 2/15 (13,3 %)**. PR #14 sin fusión ni despliegue.
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
