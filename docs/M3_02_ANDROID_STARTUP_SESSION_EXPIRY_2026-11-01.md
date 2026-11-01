@@ -55,3 +55,21 @@ MFA_RELEASE_AUTHORIZED=NO
 C_FICHA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+## Bloque ampliado — revocación de catálogos y evidencia CI
+
+- GitHub Actions para commit `5ace851`: run M3 `41323281334` con los tres jobs `success` (Flutter, Django SQLite, Django PostgreSQL17); Android debug run `41323281277` `success`. La verificación de scaffold se omitió (`skipped`); no contabilizarla como PASS.
+- Los flujos de carga de modalidades y aseguradoras ahora distinguen `VenciraUnauthorized` de errores genéricos y solicitan revocación local de alarmas al perder sesión. Tests widget añadidos para ambos endpoints.
+- Commit `f3dbc69`: al detectar sesión caducada, se descartan también las cachés de modalidades y aseguradoras; respuestas asíncronas de los dos catálogos no repiten la revocación si ya se invalidó la sesión.
+- Estos cambios posteriores a `5ace851` requieren su propio CI; **no extender los PASS previos al HEAD**.
+- Se mantienen pendientes los subflujos de pantallas secundarias y una estrategia global para autentificación que evite pérdida accidental de errores `401`. Un `403` puede representar denegación de permisos sin caducidad; distinguir correctamente ambos códigos antes de modificar el contrato HTTP.
+
+```text
+M3_02_CATALOG_AUTH_REVOCATION=IMPLEMENTED_AWAITING_NEW_CI
+M3_02_DEVICE_DELIVERY_EVIDENCE=NO
+M3_02_OS_SCHEDULING_ENABLED=NO
+MB1_RELEASE_AUTHORIZED=NO
+MFA_RELEASE_AUTHORIZED=NO
+C_FICHA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
