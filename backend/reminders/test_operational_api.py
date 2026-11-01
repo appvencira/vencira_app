@@ -46,6 +46,30 @@ class OperationalApiTests(TestCase):
         self.assertEqual(self.client.get(url).status_code, 404)
         self.assertEqual(self.client.get(reverse("api-me")).status_code, 200)
 
+    def test_anonymous_identity_and_membership_are_not_authenticated(self):
+        self.client.logout()
+        identity = self.client.get(reverse("api-me"))
+        membership = self.client.get(reverse("api-workspace-members",
+            kwargs={"workspace_id": self.ws.pk}))
+        # DRF SessionAuthentication may report 403 without a WWW-Authenticate
+        # challenge. Record actual denial, not an invented universal 401.
+        self.assertIn(identity.status_code, (401, 403))
+        self.assertIn(membership.status_code, (401, 403))
+        self.assertNotEqual(identity.status_code, 200)
+        self.assertNotEqual(membership.status_code, 200)
+
+    def test_logout_invalidates_identity_while_role_denial_does_not(self):
+        WorkspaceMember.objects.create(
+            workspace=self.ws, user=self.other, role="member")
+        self.client.force_login(self.other)
+        members_url = reverse("api-workspace-members",
+            kwargs={"workspace_id": self.ws.pk})
+        self.assertEqual(self.client.get(members_url).status_code, 403)
+        self.assertEqual(self.client.get(reverse("api-me")).status_code, 200)
+        self.client.logout()
+        self.assertIn(self.client.get(reverse("api-me")).status_code,
+                      (401, 403))
+
     def test_authorized_owner_reads_only_internal_occurrences(self):
         self.client.force_login(self.owner)
         result = self.client.get(self.url)
