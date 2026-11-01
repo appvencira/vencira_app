@@ -85,6 +85,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **M3-02 regresión API O9b (01/11/2026):** dos tests nuevos en `backend/reminders/test_control_response_api.py` para conflicto idempotente/revisión y denegación de payload inválido/Vida; workflow `.github/workflows/m3-product-contracts.yml` ampliado a pruebas persistentes API y contratos puros. CI pendiente de validar, sin modificar modelo, endpoint ni DEV. Doc `docs/M3_02_CONTROL_INTENT_PROGRESS_2026-11-01.md`; M3-02 abierto, 2/15 (13,3 %).
 
+**M3-02 API→bandeja (01/11/2026):** regresión integrada nueva `test_no_creates_one_internal_repeat_visible_in_inbox` verifica respuesta No, asociación de ocurrencia, fecha civil, bandeja autorizada e idempotencia sin marcar entrega. Test en `backend/reminders/test_control_response_api.py`; informe `docs/M3_02_CONTROL_INTENT_PROGRESS_2026-11-01.md`. CI pendiente de confirmación; M3-02 [ ], avance formal 2/15 (13,3 %).
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
