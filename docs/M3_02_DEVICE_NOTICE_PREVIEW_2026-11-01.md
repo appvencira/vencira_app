@@ -29,3 +29,18 @@ El documento original, sección 4 (§4) y §7, exige que Android e iOS disparen 
 - Correo resumen diario sigue opcional/desactivado por defecto; no implementarlo como sustitución.
 
 Estado formal: M3-02 **abierto**, 2/15 hitos (13,3 %). MB1 release NO, MFA release NO, C-FICHA release NO, NO_DEPLOY_NO_LIVE_MIGRATION=1. Rama aislada para evitar cancelaciones de CI por actividad concurrente.
+
+
+## Evidencia real posterior de CI — 01/11/2026
+
+GitHub Actions **run 41308154085**, sobre commit `340fb8a18cdd0171692259ed91f39dceb8dae205` de la rama aislada:
+
+| Job | Log verificado | Resultado |
+|---|---|---|
+| Django SQLite `124852908591` | `Ran 73 tests`, `OK` | PASS |
+| Django PostgreSQL17 temporal `124852908464` | `Ran 73 tests`, `OK` | PASS |
+| Flutter `124852908690` | `No issues found!`, `62 tests passed`, `Built build/web` | PASS |
+
+Estas son **baterías agrupadas**, no 73+62 tests exclusivos de este endpoint. La primera ejecución Flutter de esta rama falló por una expansión accidental de `vencira_api.dart` al insertar una expresión regular; reparada de forma quirúrgica en rama aislada (`0b35d59`) y en la rama compartida (`e74be67`) sin sustituir cambios concurrentes. También se sincronizaron las cuatro cadenas de resultados por usuario ES/CA que otra contribución simultánea requería.
+
+**CI validada para ese commit**, no se ha aplicado ninguna migración ni desplegado DEV, no se ha programado ninguna alarma local y no se ha emitido ningún aviso. Sigue sin existir sincronización offline ni notificación con la app cerrada. No cerrar M3-02. PR [#15](https://github.com/appvencira/vencira_app/pull/15) permanece en borrador para revisión/CI; PR #14 sigue siendo la rama principal de integración.
