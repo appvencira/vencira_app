@@ -83,6 +83,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **M3-02 integración O9b (01/11/2026):** lectura directa confirmó que `control_response_api.py`, `RenewalControlResponse` y programación interna **ya estaban implementados**; se eliminó la divergencia de `control_intent.py` delegando en `validate_control_response` y su regla de repetición estrictamente anterior al límite. Tests ajustados; documento `docs/M3_02_CONTROL_INTENT_PROGRESS_2026-11-01.md` actualizado. CI pendiente de verificar, envíos reales NO habilitados. M3-02 sigue [ ]; progreso 2/15 (13,3 %).
 
+**M3-02 regresión API O9b (01/11/2026):** dos tests nuevos en `backend/reminders/test_control_response_api.py` para conflicto idempotente/revisión y denegación de payload inválido/Vida; workflow `.github/workflows/m3-product-contracts.yml` ampliado a pruebas persistentes API y contratos puros. CI pendiente de validar, sin modificar modelo, endpoint ni DEV. Doc `docs/M3_02_CONTROL_INTENT_PROGRESS_2026-11-01.md`; M3-02 abierto, 2/15 (13,3 %).
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
