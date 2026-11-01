@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - main
-      - feature/mb1-m104-transition-contract-batch
     paths:
       - 'clients/flutter/lib/ui/operational_inbox_screen.dart'
       - 'clients/flutter/lib/ui/day_agenda_screen.dart'
@@ -72,7 +71,7 @@ permissions:
   contents: read
 concurrency:
   group: m3-contracts-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   django-product:
     runs-on: ubuntu-24.04
