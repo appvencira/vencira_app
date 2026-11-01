@@ -35,6 +35,21 @@ class _DeviceNoticeStartupGateState extends State<DeviceNoticeStartupGate> {
     if (widget.enabled) _run();
   }
 
+  @override
+  void didUpdateWidget(covariant DeviceNoticeStartupGate oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A new security scope or callback invalidates an earlier successful
+    // check. Ignore completions from the obsolete asynchronous operation.
+    if (oldWidget.enabled != widget.enabled ||
+        oldWidget.cancelPreviousAlarms != widget.cancelPreviousAlarms) {
+      _generation++;
+      _busy = false;
+      _failed = false;
+      _ready = !widget.enabled;
+      if (widget.enabled) _run();
+    }
+  }
+
   Future<void> _run() async {
     if (_busy || _ready) return;
     final current = ++_generation;
