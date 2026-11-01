@@ -7,3 +7,7 @@ Nuevo `scripts/mb1_g1_risk_triage.py`: usa el AST anterior y separa `RUNTIME_CAN
 Este instrumento está publicado, aún sin ejecución confirmada. No reejecutar tests previos. Después del conteo deberá hacerse revisión por callsite de los candidatos runtime, imports/callers reales y de las 106 llamadas dinámicas, más Bash, cron, systemd, SQL externos y permisos de Docker.
 
 G1 sigue sin certificarse, G2/G3 bloqueados. MB1_GLOBAL_FREEZE=NOT_VERIFIED; MB1_RELEASE_AUTHORIZED=NO; NO_DEPLOY_NO_LIVE_MIGRATION=1. Progreso 1/15.
+
+## Ejecución confirmada — 01/11/2026
+
+`MB1_G1_TRIAGE_PYTHON_FILES=330`, `MB1_G1_TRIAGE_ERRORS=0`; runtime: 112 `WRITE_CANDIDATE`, 34 `DYNAMIC_REVIEW`, 3 `SQL_REVIEW`, 5 `FS_REVIEW`; laboratorio: 74, 48, 13, 7; tests: 707, 24, 23, 77; migraciones: 0 en todas las categorías. Total 893 candidatos y 106 dinámicas. `MB1_G1_TRIAGE_SCOPE=HEURISTIC_PATH_CLASSIFICATION`, `MB1_G1_RUNTIME_PROVEN=NO`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`. Este PASS es solo de la ejecución del clasificador; no confirma ninguna escritura real ni completitud del inventario.
