@@ -108,3 +108,10 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 - `e860c77`: el dashboard conecta el callback al manejador existente de sesión caducada, que borra datos globales y solicita revocación nativa. El callback es opcional para conservar compatibilidad con usos aislados y tests.
 - La propagación es **de ficha a dashboard**, no un coordinador universal: otras subpantallas siguen pendientes de auditoría. La comprobación `/me/` en el cliente HTTP distingue permisos de pérdida confirmada de identidad.
 - CI de estos commits pendiente; no afirmar que el nuevo flujo ha superado pruebas antes de verificar Actions. Sin merge, despliegue, migración persistente ni programación de avisos.
+
+## Navegación secundaria tras invalidación (01/11/2026)
+
+- CI del commit `9f8aea5` confirmado: M3 `41331403900`, Android debug `41331403856` y MB1 `41331403857` **success**. Scaffold `41331403864` **skipped**.
+- Commit `ac60e8d`: después de limpiar el estado local y esperar al callback de invalidación del dashboard, la ficha secundaria cierra su propia ruta si existe un controlador padre. Se evita que quede sobre el dashboard como pantalla secundaria abierta tras logout.
+- El cambio no constituye un coordinador universal ni se ha probado todavía en dispositivo físico. Es necesario añadir prueba widget específica y obtener CI verde del nuevo commit antes de cerrar el bloque.
+- M3-02 permanece abierto; no deploy, no migración persistente, no merge y avisos reales desactivados.
