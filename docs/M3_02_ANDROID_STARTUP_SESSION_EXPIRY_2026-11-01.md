@@ -25,6 +25,13 @@ La última revisión de esta fase incorpora el manejo de cambios automáticos de
 
 En run `41317117956` Django SQLite y PG17 finalizaron PASS. Flutter obtuvo **117 PASS / 1 FAIL** por no restablecer `debugDefaultTargetPlatformOverride` antes del final del test de ajustes. **No fue una excepción del adaptador de notificaciones ni una alarma real**, pero el job completo fue FAIL. La corrección está en commit `1a20c8c7` y se está revalidando en workflow `41317331030`; no asumir PASS hasta ver los tres jobs finales.
 
+## Resultado final de contratos y corrección de la incidencia
+
+- **Commit funcional verificado:** `1a20c8c7fd3e8073016aa094c827e99c6dde4001` (corrección del test que restaura la plataforma simulada antes de finalizar).
+- Workflow **M3 product contracts**, run **41317331030**: tres jobs `success`. Django SQLite **73/73 PASS**, Django PostgreSQL 17 efímero **73/73 PASS**, Flutter `analyze` **PASS**, **118/118 tests Flutter PASS**, `flutter build web` **PASS**.
+- La ejecución anterior `41317117956` conserva su resultado real: **117 pruebas PASS y una FAIL**, sin build Web de ese job; se corrigió el test y se ejecutó la batería íntegra, no se omitió ningún caso.
+- Workflow de compilación APK Android de este commit: `41317331055`, **todavía en ejecución** al registrar este resultado. Una compilación anterior `41317117946` sí terminó `success` (código anterior). No extrapolar al commit posterior.
+
 ## Bloqueos que no deben levantarse
 
 - La programación nativa sigue sin usarse desde la UI, no se solicita consentimiento de activación y no hay prueba de alarmas entregadas ni tras reboot/Doze/DST.
