@@ -95,6 +95,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **CI REAL VERIFICADA 01/11/2026 (PR borrador #14):** commit de código `b4075e5`, workflow M3 run `41304458288`: 35/35 pruebas Django SQLite PASS, `flutter analyze` PASS, 8/8 pruebas Flutter PASS. Workflow MB1 estático run `41304458277` PASS. Fallos iniciales de test (reloj ficticio Django y sintaxis Dart) corregidos. Evidencia y límites en `docs/M3_02_MB1_REAL_CI_EVIDENCE_2026-11-01.md`. **No** cubre PG17 operativo/Android físico/entrega de avisos; M3-02 [ ], G1–G3 operativos pendientes, **2/15 (13,3 %)**. PR permanece en borrador, sin merge ni deploy.
 
+**M3-02 API + Flutter calendario de control validado (01/11/2026, PR #14):** API bandeja devuelve `latest_control_repeat_on` autorizado/solo lectura para preguntas de control no Vida, estrictamente anterior al límite civil. Flutter limita «Mañana» y «Otro día», rechaza fechas no canónicas, muestra aviso ES/CA y nunca equipara programación con entrega. En run `41305433400` sobre commit `8eb90746`: **Django SQLite 36/36 PASS, Django PostgreSQL17 efímero 36/36 PASS, Flutter analyze PASS, 12/12 tests Flutter PASS y build web release PASS**. Evidencia y límites en `docs/M3_02_CONTROL_DEADLINE_MOBILE_API_2026-11-01.md`. No Android físico ni notificaciones reales; MB1 operacional intacto, PR en borrador; **M3-02 [ ] y total 2/15 = 13,3 %**.
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
