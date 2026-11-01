@@ -13,7 +13,7 @@ const workspace = VenciraWorkspace(
   name: 'Pruebas', role: 'owner',
 );
 
-VenciraOperationalInbox sampleInbox() => VenciraOperationalInbox.fromJson({
+VenciraOperationalInbox sampleInbox({String state = 'planned'}) => VenciraOperationalInbox.fromJson({
   'day': '2027-03-10', 'scope': 'due', 'count': 1,
   'next': null, 'previous': null,
   'counts': {'overdue': 0, 'today': 1, 'upcoming': 0},
@@ -24,7 +24,7 @@ VenciraOperationalInbox sampleInbox() => VenciraOperationalInbox.fromJson({
     'kind': 'expiry',
     'scheduled_for': '2027-03-10',
     'original_scheduled_for': '2027-03-10',
-    'state': 'planned',
+    'state': state,
     'reason': 'Tarea interna de prueba',
     'control_question': false,
     'overdue': false,
@@ -70,8 +70,8 @@ Widget app(FakeInboxApi api) => MaterialApp(
   home: VenciraOperationalInboxScreen(api: api, workspace: workspace),
 );
 
-Finder get item => find.byKey(const ValueKey('inbox-item-' + reminderId));
-Finder get actions => find.byKey(const ValueKey('inbox-more-' + reminderId));
+Finder get item => find.byKey(ValueKey('inbox-item-$reminderId'));
+Finder get actions => find.byKey(ValueKey('inbox-more-$reminderId'));
 
 Future<void> loadFirst(WidgetTester tester, FakeInboxApi api) async {
   await tester.pumpWidget(app(api));
@@ -82,6 +82,18 @@ Future<void> loadFirst(WidgetTester tester, FakeInboxApi api) async {
 }
 
 void main() {
+  testWidgets('Snoozed item is visibly labeled as postponed',
+      (tester) async {
+    final api = FakeInboxApi();
+    await tester.pumpWidget(app(api));
+    api.requests.single.complete(sampleInbox(state: 'snoozed'));
+    await tester.pumpAndSettle();
+    expect(item, findsOneWidget);
+    expect(find.byKey(ValueKey('inbox-state-$reminderId')), findsOneWidget);
+    expect(find.text('Aplazado'), findsOneWidget);
+    expect(find.text('Tarea interna de prueba'), findsOneWidget);
+  });
+
   testWidgets('Failed refresh hides stale items, retry restores list',
       (tester) async {
     final api = FakeInboxApi();
