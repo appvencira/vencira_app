@@ -61,6 +61,8 @@ jobs:
           path: audit-output/*.csv
           if-no-files-found: error
           retention-days: 7
+      - name: G1 private store callers across repository
+        run: python3 scripts/mb1_g1_private_store_callers.py --source .
       - name: G1-G3 evidence gate contract tests
         run: bash scripts/validate_mb1_g123_evidence_gate.sh
       - name: Safety boundary
