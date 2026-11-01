@@ -8,10 +8,10 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 |---|---:|---:|---:|
 | MB1 — Copias y recuperación | **1** | 7 | **14,3 %** |
 | MB2 — MFA y adjuntos | **0** | 4 | **0 %** |
-| MB3 — Producto y comercialización | **0** | 4 | **0 %** |
-| **TOTAL** | **1** | **15** | **6,7 %** |
+| MB3 — Producto y comercialización | **1** | 4 | **25 %** |
+| **TOTAL** | **2** | **15** | **13,3 %** |
 
-**Método:** solo cuenta `[x] **M1-01**` y los otros 14 hitos principales del inventario; `[ ]` sigue pendiente aunque tenga diez o cien subpruebas PASS. Esta cifra **mide cierre formal**, no funcionalidad implementada, cobertura de tests, madurez general ni porcentaje de trabajo restante. Todos los hitos pueden tener distinto esfuerzo.
+**Método:** solo cuentan los hitos principales marcados `[x]` (M1-01 y M3-01); `[ ]` sigue pendiente aunque tenga diez o cien subpruebas PASS. Esta cifra **mide cierre formal**, no funcionalidad implementada, cobertura de tests, madurez general ni porcentaje de trabajo restante. Todos los hitos pueden tener distinto esfuerzo.
 
 **Último avance confirmado (31/10): restauración PostgreSQL real desde la copia cifrada O5 de Google Drive en PG17 temporal, sin red.** 10 pruebas del validador `OK`, 25 tablas restauradas, `O5_RESTORED_BASELINE_SCHEMA=OK`, `MB1_O5_GROUP_DEV_CONTAINER_ID_AND_HEALTH_UNCHANGED=OK`, `MB1_O5_GROUP_RESULT=0`, `MB1_O5_GROUP_EXIT_CODE=0`. Documento `docs/MB1_O5_GROUPED_DRIVE_RESTORE_2026-10-31.md`, commit `04cc24d`. El ensayo ejecutó el restaurador candidato versionado; el O5 instalado y su planificador no fueron sustituidos.
 
@@ -75,6 +75,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **G1–G3 fase agrupada CI y límites de privilegios (01/11/2026):** `scripts/mb1_g23_role_boundary_contract.py` y nueve tests nuevos publicados; CI de G1 y G2/G3 en `.github/workflows/mb1-audit.yml` preparada. La condición positiva autodeclarada no autoriza release. Documento `docs/MB1_G123_GROUPED_CI_AND_ROLE_BOUNDARY_2026-11-01.md`. **CI no validada todavía; G1/G2/G3 operativos abiertos; hitos 1/15.**
 
+**CIERRE FORMAL M3-01 (01/11/2026):** reconciliación de las 23 páginas/18 secciones del whitepaper y revisión delta en HEAD completadas, con discrepancias aún abiertas documentadas en `docs/M3_01_WHITEPAPER_RECONCILIATION_CLOSURE_2026-11-01.md` (`f5282f1`). **M3-01 [x]**, porque el criterio era auditoría y registro de diferencias, no su implementación. MB1 1/7, MB2 0/4, MB3 1/4; **total 2/15 = 13,3 %**. No cambia ningún gate de seguridad ni autoriza despliegue.
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
@@ -126,7 +128,7 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 ## MB3 — Producto V1 y salida comercial
 
-- [ ] **M3-01** Reconciliar funciones actuales con el whitepaper y registrar diferencias verificadas
+- [x] **M3-01** Reconciliar funciones actuales con el whitepaper y registrar diferencias verificadas. Auditoría de las 23 páginas y 18 secciones en `docs/AUDITORIA_ALINEACION_WHITEPAPER_2026-10-25.md`, revisada frente a la rama actual en `docs/M3_01_WHITEPAPER_RECONCILIATION_CLOSURE_2026-11-01.md`: hallazgos y pendientes verificados; **solo cierra la auditoría**, no la conformidad V1 ni el despliegue.
 - [ ] **M3-02** Completar flujos y UX móvil premium, recordatorios y reglas de vencimiento
 - [ ] **M3-03** Pruebas E2E, accesibilidad, rendimiento y documentación de uso
 - [ ] **M3-04** Preparar despliegue gradual, backup, observabilidad y validación de aceptación
