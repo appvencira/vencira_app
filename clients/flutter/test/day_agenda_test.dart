@@ -9,9 +9,10 @@ import 'package:vencira/main.dart';
 import 'package:vencira/ui/day_agenda_screen.dart';
 
 class DemoAgendaApi extends VenciraApi {
-  DemoAgendaApi({this.waitForMarch});
+  DemoAgendaApi({this.waitForMarch, this.includeOperational = false});
 
   final Completer<VenciraAgendaDayPage>? waitForMarch;
+  final bool includeOperational;
   final requests = <String>[];
   final monthRequests = <String>[];
   static const workspaceId = '11111111-1111-4111-8111-111111111111';
@@ -75,11 +76,17 @@ class DemoAgendaApi extends VenciraApi {
               expiresOn: DateTime(2027, 5, 1),
               status: 'pending',
             ),
-            events: const [
-              VenciraAgendaEvent(
+            events: [
+              const VenciraAgendaEvent(
                 kind: 'reminder',
                 basis: 'notice_deadline',
                 candidateId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+              ),
+              if (includeOperational) const VenciraAgendaEvent(
+                kind: 'operational_reminder',
+                operationalReminderId: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+                operationalReason: 'Verificar alternativa externa',
+                operationalState: 'planned',
               ),
             ],
           ),
@@ -166,6 +173,24 @@ Widget _screen(
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  for (final language in ['es', 'ca']) {
+    testWidgets('agenda muestra motivo real de aviso interno en $language',
+        (tester) async {
+      tester.view.physicalSize = const Size(375, 850);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(_screen(
+          DemoAgendaApi(includeOperational: true), locale: language));
+      await tester.pumpAndSettle();
+      expect(find.text(language == 'es'
+        ? 'Aviso interno: Verificar alternativa externa'
+        : 'Avís intern: Verificar alternativa externa'), findsOneWidget);
+      expect(find.text('AVISO-FICTICIO-DE-PRUEBA'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('agenda presenta avisos previstos sin llamarlos entregados',
       (tester) async {
