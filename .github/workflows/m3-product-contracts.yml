@@ -5,6 +5,8 @@ on:
       - main
       - feature/mb1-m104-transition-contract-batch
     paths:
+      - 'clients/flutter/lib/ui/operational_inbox_screen.dart'
+      - 'clients/flutter/test/operational_inbox_test.dart'
       - 'backend/reminders/control_intent.py'
       - 'backend/reminders/operational_transitions.py'
       - 'backend/reminders/test_operational_transitions.py'
@@ -61,3 +63,21 @@ jobs:
           echo 'M3_02_DELIVERY=NOT_IMPLEMENTED'
           echo 'MB1_RELEASE_AUTHORIZED=NO'
           echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
+
+  flutter-inbox:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: clients/flutter
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test test/operational_inbox_test.dart
