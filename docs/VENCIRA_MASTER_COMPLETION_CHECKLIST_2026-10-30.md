@@ -105,6 +105,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **CI REAL M3-02 «Hoy» (01/11/2026):** commit `0b6b9aa`, run `41307549429` **PASS en tres jobs**: Django/SQLite 62/62, Django/PostgreSQL17 efímero 62/62, Flutter analyze sin errores, 49/49 pruebas Flutter de UI/contrato y build Web release OK. Tras cancelaciones previas y fallo en selector de prueba, corregido y reejecutado con éxito. Informe `docs/M3_02_TODAY_AGENDA_INTERNAL_INBOX_2026-11-01.md`. No Android físico ni notificaciones externas. **M3-02 [ ], 2/15 (13,3 %)**. PR #14 sin fusión ni despliegue.
 
+**M3-02 validación civil O8b/O9b (01/11/2026):** corregida discrepancia de la vista previa que admitía repetición de control en el propio día límite, prohibida por O9b/operación. Pruebas de año normal y bisiesto en `backend/reminders/test_reminder_planning.py`, integradas en CI M3 de SQLite y PG17 temporal; **PASS de esta corrección pendiente de observar**, commit de workflow `d89d042`. Evidencia `docs/M3_02_O8B_O9B_STRICT_CIVIL_CUTOFF_2026-11-01.md`. El último PASS confirmado previo sigue siendo 62/62 SQLite, 62/62 PG17 y 49/49 Flutter; no extrapolarlo al commit nuevo. **M3-02 abierto, 2/15 (13,3 %)**.
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
