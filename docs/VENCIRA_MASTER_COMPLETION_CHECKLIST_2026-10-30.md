@@ -99,6 +99,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **M3-02 acciones HTTP auditadas (01/11/2026, PR #14):** `HttpVenciraApi.updateOperationalReminder` valida identidad/estado/fecha civil/ausencia de entrega; tests HTTP reales Django verifican mañana, calendario de control, bandeja, idempotencia y cierres; Flutter MockClient cubre CSRF, CAS 409, 403 y respuestas manipuladas. CI commit `a20785b`, run M3 `41306535920`: **SQLite 48/48 PASS, PostgreSQL 17 temporal 48/48 PASS, Flutter analyze PASS, 16/16 Flutter PASS, build Flutter Web PASS**. Auditoría estática MB1 `41306536025` PASS. Evidencia `docs/M3_02_OPERATIONAL_ACTION_HTTP_INTEGRATION_2026-11-01.md`. Permanece pendiente M3-02 (notificaciones reales, aceptación y Android físico); **2/15 = 13,3 %**, sin merge/deploy/migraciones.
 
+**M3-02 acceso «Hoy» a bandeja (01/11/2026):** Flutter agrega contador y acceso a avisos internos hoy+atrasados desde agenda de HOY, solo lectura autorizada, contador de toda la cuenta explícito, fallos con reintento, descarte de respuestas tardías y cadenas ES/CA. Tres tests widget añadidos, CI M3 ajustada contra duplicación/cancelación de push+PR. Evidencia `docs/M3_02_TODAY_AGENDA_INTERNAL_INBOX_2026-11-01.md`. **CI de widget nueva pendiente** (run `41307338491` aún sin jobs al documentar), MB1 estático PASS; no envío real, no deploy. **M3-02 [ ], total 2/15 (13,3 %)**.
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
