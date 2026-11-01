@@ -163,6 +163,7 @@ def agenda_day(request, workspace_id):
         })
     response = paginator.get_paginated_response(results)
     response.data["day"] = day.isoformat()
+    response["Cache-Control"] = "no-store"
     return response
 
 
