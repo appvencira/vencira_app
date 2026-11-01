@@ -18,15 +18,15 @@ class ControlIntentContractTests(SimpleTestCase):
     def test_no_repeats_before_civil_month_cutoff(self):
         r=validate_control_intent(
             expires_on=date(2027,3,31), as_of=date(2027,2,20),
-            answer="no",days_later=8)
-        self.assertEqual(r.repeat_on,date(2027,2,28))
+            answer="no",days_later=7)
+        self.assertEqual(r.repeat_on,date(2027,2,27))
         self.assertFalse(r.verified_delivery)
 
     def test_no_cannot_exceed_cutoff(self):
         with self.assertRaises(ValueError):
             validate_control_intent(
                 expires_on=date(2027,3,31),as_of=date(2027,2,20),
-                answer="no",days_later=9)
+                answer="no",days_later=8)
 
     def test_no_after_cutoff_rejected(self):
         with self.assertRaises(ValueError):
