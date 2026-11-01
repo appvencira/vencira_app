@@ -7,9 +7,11 @@ import 'modality_labels.dart';
 class VenciraModalityCatalogScreen extends StatefulWidget {
   const VenciraModalityCatalogScreen({
     super.key, required this.api, required this.workspace,
+    this.onSessionExpired,
   });
   final VenciraApi api;
   final VenciraWorkspace workspace;
+  final Future<void> Function()? onSessionExpired;
   @override
   State<VenciraModalityCatalogScreen> createState() => _CatalogState();
 }
@@ -34,6 +36,13 @@ class _CatalogState extends State<VenciraModalityCatalogScreen> {
     super.dispose();
   }
 
+  Future<void> _revoke() async {
+    if (!mounted) return;
+    setState(() { _seq++; _items = null; _loading = false; _failed = true; });
+    await widget.onSessionExpired?.call();
+    if (mounted && widget.onSessionExpired != null) Navigator.of(context).pop();
+  }
+
   Future<void> _load() async {
     final token = ++_seq;
     setState(() { _loading = true; _failed = false; });
@@ -43,7 +52,7 @@ class _CatalogState extends State<VenciraModalityCatalogScreen> {
       setState(() { _items = options; _loading = false; });
     } on VenciraUnauthorized {
       if (!mounted || token != _seq) return;
-      setState(() { _items = null; _loading = false; _failed = true; });
+      await _revoke();
     } catch (_) {
       if (!mounted || token != _seq) return;
       setState(() { _loading = false; _failed = true; });
@@ -104,6 +113,8 @@ class _CatalogState extends State<VenciraModalityCatalogScreen> {
     try {
       await callback();
       if (mounted) await _load();
+    } on VenciraUnauthorized {
+      await _revoke();
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t.modalityChangeFailed)));
