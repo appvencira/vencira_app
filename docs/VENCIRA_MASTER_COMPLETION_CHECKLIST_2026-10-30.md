@@ -79,6 +79,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **M3-02 avance funcional (01/11/2026):** priorización de sugerencias de anotaciones Clientes previamente visibles en `backend/reminders/person_suggestions.py`, con prueba específica `backend/reminders/test_person_suggestions_ranking.py` y documento `docs/M3_02_CLIENT_SUGGESTIONS_BATCH_2026-11-01.md`. Prueba pendiente de PASS CI; sin desplegar, sin nuevos permisos y sin cierre M3-02. Total 2/15 = 13,3 %.
 
+**M3-02 control Sí/No (01/11/2026):** lógica pura `backend/reminders/control_intent.py` para opciones aprobadas, repetición antes del tope civil y ausencia explícita de entrega/cierre; tests en `backend/reminders/test_control_intent.py`, CI `.github/workflows/m3-product-contracts.yml` y documento `docs/M3_02_CONTROL_INTENT_PROGRESS_2026-11-01.md`. CI pendiente; persistencia/HTTP/notificaciones no implementadas. **M3-02 permanece abierto**, progreso 2/15 (13,3 %).
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
