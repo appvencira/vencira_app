@@ -127,7 +127,7 @@ Fuente: \`docs/VENCIRA_MASTER_COMPLETION_CHECKLIST_2026-10-30.md\`. **Solo 1 de 
 
 **Advertencia arquitectónica:** la omisión condicional del modelo histórico en \`reminders/models.py\` es una técnica de **laboratorio**. No se convierte automáticamente en transición válida con registros existentes; la metadata vieja y el \`on_delete\` histórico exigen reconciliación, preservación de objetos cifrados y aceptación del plan de migraciones. Separación de identidades SQL para API/admin/backup también requiere ensayos en clon con matriz de grants y rollback.
 
-**Primer paso del nuevo chat:** leer este archivo y la checklist maestra desde GitHub, revisar el código de transición ya existente (ver \`renewal_attachments/transition_preflight.py\`, \`transition_reconciliation.py\`, \`transition_object_audit.py\`) antes de crear código, y desarrollar/commitizar las comprobaciones nuevas. **No solicitar al operador repetir los 15 gates ya probados; si se necesita shell, dar UN comando seguro.**
+**Primer paso del nuevo chat:** leer este archivo y la checklist maestra desde GitHub, revisar el código de transición ya existente (ver \`renewal_attachments/transition_preflight.py\`, \`transition_reconciliation.py\`, \`transition_object_audit.py\`) antes de crear código, y desarrollar/commitizar las comprobaciones nuevas. **No solicitar al operador repetir los ensayos previos que ya tienen PASS documentado; los 15 son hitos de cierre y solo uno está cerrado. Si se necesita shell, dar UN comando seguro.**
 
 ## 6. Operación de continuación sugerida
 
