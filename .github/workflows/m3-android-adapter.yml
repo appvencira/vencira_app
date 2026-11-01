@@ -1,0 +1,44 @@
+name: M3 Android adapter compile (no release)
+on:
+  pull_request:
+    paths:
+      - 'clients/flutter/pubspec.yaml'
+      - 'clients/flutter/lib/notifications/**'
+      - 'clients/flutter/test/device_notice_inventory_test.dart'
+      - 'clients/flutter/test/android_local_alarm_port_test.dart'
+      - '.github/workflows/m3-android-adapter.yml'
+permissions:
+  contents: read
+jobs:
+  android-adapter-debug:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: clients/flutter
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Verify versioned Android platform exists
+        run: |
+          test -f android/app/src/main/AndroidManifest.xml
+          test -f android/gradle/wrapper/gradle-wrapper.jar
+      - run: flutter pub get
+      - run: flutter analyze
+      - name: Compile Android APK without distributing
+        run: flutter build apk --debug
+      - name: Non-release status
+        run: |
+          test -f build/app/outputs/flutter-apk/app-debug.apk
+          echo 'ANDROID_ADAPTER_COMPILES=YES'
+          echo 'ANDROID_LOCAL_NOTIFICATIONS_ENABLED=NO'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
