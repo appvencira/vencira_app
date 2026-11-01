@@ -63,6 +63,12 @@ class ResultsSummaryTests(APITestCase):
             "period": "month", "from": "2027-03-01",
             "to_exclusive": "2027-04-01", "won": 1, "declined": 1,
             "discarded": 1, "pending": 2,
+            "by_user": [
+                {"user_id": str(self.member.pk), "name": "results-member",
+                 "won": 0, "declined": 0, "discarded": 0, "pending": 1},
+                {"user_id": str(self.owner.pk), "name": "results-owner",
+                 "won": 1, "declined": 1, "discarded": 1, "pending": 1},
+            ],
         })
         self.assertEqual(response["Cache-Control"], "no-store")
         self.assertNotIn("FICTICIO", str(response.data))
@@ -77,6 +83,42 @@ class ResultsSummaryTests(APITestCase):
         self.assertEqual(y.status_code, 200)
         self.assertEqual(y.data["won"], 2)
         self.assertEqual(y.data["pending"], 3)
+
+
+    def test_results_by_user_follow_actor_and_current_assignee(self):
+        # Member records an outcome; owner is still assigned a different task.
+        event = RenewalOutcome.objects.create(
+            renewal=self.pending_a, actor=self.member, kind="won")
+        RenewalOutcome.objects.filter(pk=event.pk).update(
+            created_at=datetime(2027, 3, 10, 11, tzinfo=ZoneInfo("Europe/Madrid")))
+        self.client.force_authenticate(user=self.owner)
+        response = self.client.get(self.url(), {
+            "period": "month", "year": "2027", "month": "3"})
+        self.assertEqual(response.status_code, 200)
+        rows = {row["user_id"]: row for row in response.data["by_user"]}
+        self.assertEqual(rows[str(self.member.pk)]["won"], 1)
+        self.assertEqual(rows[str(self.owner.pk)]["won"], 1)
+        self.assertEqual(rows[str(self.member.pk)]["pending"], 1)
+        for key in ("won", "declined", "discarded", "pending"):
+            self.assertEqual(sum(row[key] for row in rows.values()),
+                             response.data[key])
+
+    def test_departed_user_and_unassigned_are_aggregated_without_name(self):
+        WorkspaceMember.objects.filter(
+            workspace=self.ws, user=self.member).delete()
+        self.client.force_authenticate(user=self.owner)
+        response = self.client.get(self.url(), {
+            "period": "month", "year": "2027", "month": "3"})
+        self.assertEqual(response.status_code, 200)
+        rows = response.data["by_user"]
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0]["user_id"], str(self.owner.pk))
+        self.assertIsNone(rows[1]["user_id"])
+        self.assertIsNone(rows[1]["name"])
+        self.assertEqual(rows[1]["pending"], 1)
+        self.assertEqual(rows[0]["pending"], 1)
+        self.assertEqual(sum(row["pending"] for row in rows),
+                         response.data["pending"])
 
     def test_reject_invalid_duplicate_and_extra_params(self):
         self.client.force_authenticate(user=self.owner)

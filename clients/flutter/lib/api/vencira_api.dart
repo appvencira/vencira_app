@@ -46,6 +46,11 @@ abstract class VenciraApi {
       DateTime day, {String scope = 'due', int page = 1}) async =>
       throw const VenciraApiException();
 
+  /// Candidate notices for a future native device adapter: NEVER actual alarms.
+  Future<VenciraDeviceNoticePreview> fetchDeviceNoticePreview(
+      String workspaceId, DateTime from, DateTime through,
+      {int page = 1}) async => throw const VenciraApiException();
+
   /// Historial de cambios internos de una ocurrencia (nunca envíos).
   Future<VenciraOperationalHistory> fetchOperationalHistory(
       String workspaceId, String renewalId, String reminderId,
@@ -618,10 +623,39 @@ class VenciraReminderDraft {
   }
 }
 
+class VenciraResultsUser {
+  const VenciraResultsUser({
+    required this.userId, required this.name, required this.won,
+    required this.declined, required this.discarded, required this.pending,
+  });
+  final String? userId, name;
+  final int won, declined, discarded, pending;
+
+  factory VenciraResultsUser.fromJson(Map<String, dynamic> json) {
+    final id = json['user_id'], name = json['name'];
+    final counters = [json['won'], json['declined'],
+      json['discarded'], json['pending']];
+    if ((id != null && (id is! String ||
+            !RegExp(r'^[0-9]{1,20}$').hasMatch(id))) ||
+        (id == null && name != null) ||
+        (id != null && (name is! String ||
+            name.trim().isEmpty || name.length > 150)) ||
+        counters.any((v) => v is! int || v < 0)) {
+      throw const FormatException('Invalid per-user results');
+    }
+    return VenciraResultsUser(
+      userId: id as String?, name: name as String?,
+      won: json['won'] as int, declined: json['declined'] as int,
+      discarded: json['discarded'] as int, pending: json['pending'] as int,
+    );
+  }
+}
+
 class VenciraResultsSummary {
   const VenciraResultsSummary({
     required this.period, required this.won, required this.declined,
     required this.discarded, required this.pending,
+    this.byUser = const [],
   });
 
   final String period;
@@ -629,14 +663,35 @@ class VenciraResultsSummary {
   final int declined;
   final int discarded;
   final int pending;
+  final List<VenciraResultsUser> byUser;
 
   factory VenciraResultsSummary.fromJson(Map<String, dynamic> json) {
     final period = json['period'];
     final keys = [json['won'], json['declined'], json['discarded'], json['pending']];
+    final rawRows = json['by_user'];
     if (!const ['month','quarter','year'].contains(period) ||
         keys.any((x) => x is! int || x < 0) ||
-        json['from'] is! String || json['to_exclusive'] is! String) {
+        json['from'] is! String || json['to_exclusive'] is! String ||
+        rawRows is! List || rawRows.length > 1000) {
       throw const FormatException('Invalid results summary');
+    }
+    final rows = rawRows.map((row) {
+      if (row is! Map<String, dynamic>) {
+        throw const FormatException('Invalid results row');
+      }
+      return VenciraResultsUser.fromJson(row);
+    }).toList(growable: false);
+    final ids = <String?>{};
+    for (final row in rows) {
+      if (!ids.add(row.userId)) {
+        throw const FormatException('Duplicated results user');
+      }
+    }
+    if (rows.fold<int>(0, (n, row) => n + row.won) != json['won'] ||
+        rows.fold<int>(0, (n, row) => n + row.declined) != json['declined'] ||
+        rows.fold<int>(0, (n, row) => n + row.discarded) != json['discarded'] ||
+        rows.fold<int>(0, (n, row) => n + row.pending) != json['pending']) {
+      throw const FormatException('Unreconciled results totals');
     }
     return VenciraResultsSummary(
       period: period as String,
@@ -644,6 +699,7 @@ class VenciraResultsSummary {
       declined: json['declined'] as int,
       discarded: json['discarded'] as int,
       pending: json['pending'] as int,
+      byUser: rows,
     );
   }
 }
@@ -795,16 +851,23 @@ class VenciraHistoryPage {
 
 /// Evento tipado de la proyección diaria; los valores son códigos de la API.
 class VenciraAgendaEvent {
-  const VenciraAgendaEvent({required this.kind, this.basis, this.candidateId});
+  const VenciraAgendaEvent({
+    required this.kind, this.basis, this.candidateId,
+    this.operationalReminderId, this.operationalReason, this.operationalState,
+  });
 
   final String kind;
   final String? basis;
   final String? candidateId;
+  final String? operationalReminderId;
+  final String? operationalReason;
+  final String? operationalState;
 
   factory VenciraAgendaEvent.fromJson(Map<String, dynamic> json) {
     final kind = json['kind'];
     if (kind != 'expiry' && kind != 'notice_deadline' &&
-        kind != 'reminder' && kind != 'follow_up') {
+        kind != 'reminder' && kind != 'follow_up' &&
+        kind != 'operational_reminder') {
       throw const FormatException('Unsupported agenda event');
     }
     final candidateId = json['candidate_id'];
@@ -813,6 +876,30 @@ class VenciraAgendaEvent {
         (candidateId is! String ||
          (basis != 'expiry' && basis != 'notice_deadline'))) {
       throw const FormatException('Invalid reminder event');
+    }
+    if (kind == 'operational_reminder') {
+      final id = json['reminder_id'];
+      final reason = json['reason'];
+      final state = json['state'];
+      final uuid = RegExp(
+        r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
+        r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+      );
+      if (id is! String || !uuid.hasMatch(id) ||
+          reason is! String || reason.trim().isEmpty ||
+          reason.length > 160 ||
+          state is! String ||
+          !const {'planned', 'pending', 'snoozed'}.contains(state) ||
+          json['delivery_status'] != 'not_implemented' ||
+          candidateId != null || basis != null) {
+        throw const FormatException('Invalid operational agenda event');
+      }
+      return VenciraAgendaEvent(
+        kind: kind as String,
+        operationalReminderId: id,
+        operationalReason: reason,
+        operationalState: state,
+      );
     }
     return VenciraAgendaEvent(
       kind: kind as String,
@@ -985,23 +1072,49 @@ class VenciraControlResponse {
 class VenciraOperationalReminder {
   const VenciraOperationalReminder({
     required this.id, required this.state, required this.day,
-    required this.reason, required this.controlQuestion});
+    required this.reason, required this.controlQuestion,
+    this.latestControlRepeatOn,
+  });
   final String id, state, reason;
   final DateTime day;
   final bool controlQuestion;
 
+  /// Last civil day for a control-question snooze, strictly before cutoff.
+  /// Null for ordinary tasks, Vida, or an API without verified bounds.
+  /// This is advisory: Django always revalidates on write.
+  final DateTime? latestControlRepeatOn;
+
   factory VenciraOperationalReminder.fromJson(Map<String, dynamic> raw) {
+    const validStates = {'planned', 'pending', 'snoozed', 'completed', 'cancelled'};
     if (raw['id'] is! String || raw['state'] is! String ||
+        !validStates.contains(raw['state']) ||
         raw['scheduled_for'] is! String || raw['reason'] is! String ||
         raw['control_question'] is! bool ||
         raw['delivery_status'] != 'not_implemented') {
       throw const FormatException('Invalid internal reminder');
+    }
+    final rawBound = raw['latest_control_repeat_on'];
+    DateTime? bound;
+    if (rawBound != null) {
+      if (rawBound is! String || rawBound.length != 10 ||
+          raw['control_question'] != true) {
+        throw const FormatException('Invalid control bound');
+      }
+      try {
+        bound = DateTime.parse(rawBound);
+      } on FormatException {
+        throw const FormatException('Invalid control bound');
+      }
+      if (_civilDayIso(bound) != rawBound) {
+        throw const FormatException('Noncanonical control bound');
+      }
     }
     return VenciraOperationalReminder(
       id: raw['id'] as String, state: raw['state'] as String,
       day: DateTime.parse(raw['scheduled_for'] as String),
       reason: raw['reason'] as String,
       controlQuestion: raw['control_question'] as bool,
+      latestControlRepeatOn: bound,
     );
   }
 }
@@ -1134,6 +1247,102 @@ class VenciraOperationalInbox {
   }
 }
 
+/// One authorized occurrence, not a delivered or scheduled OS notification.
+class VenciraDeviceNoticeCandidate {
+  const VenciraDeviceNoticeCandidate({
+    required this.id, required this.renewalId, required this.scheduledFor,
+    required this.state, required this.reason, required this.controlQuestion,
+    required this.generation,
+  });
+  final String id, renewalId, state, reason;
+  final DateTime scheduledFor;
+  final bool controlQuestion;
+  final int generation;
+
+  factory VenciraDeviceNoticeCandidate.fromJson(Map<String, dynamic> raw) {
+    final id = raw['id'], renewal = raw['renewal_id'];
+    final day = raw['scheduled_for'], state = raw['state'];
+    final reason = raw['reason'], generation = raw['generation'];
+    if (id is! String || renewal is! String || day is! String ||
+        state is! String ||
+        !const {'planned', 'pending', 'snoozed'}.contains(state) ||
+        reason is! String || reason.trim().isEmpty || reason.length > 160 ||
+        generation is! int || generation < 1 ||
+        raw['control_question'] is! bool ||
+        raw['delivery_status'] != 'not_implemented') {
+      throw const FormatException('Invalid device notice candidate');
+    }
+    final uuid = RegExp(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-"
+        r"[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
+    if (!uuid.hasMatch(id) || !uuid.hasMatch(renewal)) {
+      throw const FormatException('Invalid occurrence identity');
+    }
+    final civil = DateTime.tryParse(day);
+    if (civil == null || _civilDayIso(civil) != day) {
+      throw const FormatException('Invalid device notice civil date');
+    }
+    return VenciraDeviceNoticeCandidate(
+      id: id, renewalId: renewal, scheduledFor: civil,
+      state: state, reason: reason,
+      controlQuestion: raw['control_question'] as bool,
+      generation: generation,
+    );
+  }
+}
+
+/// A page of read-only candidate occurrences. Not an offline-ready snapshot.
+class VenciraDeviceNoticePreview {
+  const VenciraDeviceNoticePreview({
+    required this.from, required this.through,
+    required this.total, required this.hasNext, required this.items,
+  });
+  final DateTime from, through;
+  final int total;
+  final bool hasNext;
+  final List<VenciraDeviceNoticeCandidate> items;
+
+  factory VenciraDeviceNoticePreview.fromJson(Map<String, dynamic> raw) {
+    final fromText = raw['from'], throughText = raw['through'];
+    final caps = raw['capabilities'], results = raw['results'];
+    final total = raw['count'], next = raw['next'];
+    if (fromText is! String || throughText is! String ||
+        raw['timezone'] != 'Europe/Madrid' ||
+        caps is! Map<String, dynamic> ||
+        caps['native_alarm_scheduling'] != false ||
+        caps['offline_storage'] != false || caps['delivery'] != false ||
+        total is! int || total < 0 || results is! List ||
+        results.length > 50 || total < results.length ||
+        (next != null && next is! String)) {
+      throw const FormatException('Invalid device notice preview');
+    }
+    final from = DateTime.tryParse(fromText), through = DateTime.tryParse(throughText);
+    if (from == null || through == null ||
+        _civilDayIso(from) != fromText || _civilDayIso(through) != throughText ||
+        through.isBefore(from) ||
+        DateTime.utc(through.year, through.month, through.day)
+          .difference(DateTime.utc(from.year, from.month, from.day)).inDays > 30) {
+      throw const FormatException('Invalid preview window');
+    }
+    final ids = <String>{};
+    final items = <VenciraDeviceNoticeCandidate>[];
+    for (final value in results) {
+      if (value is! Map<String, dynamic>) {
+        throw const FormatException('Invalid device notice row');
+      }
+      final item = VenciraDeviceNoticeCandidate.fromJson(value);
+      if (!ids.add(item.id) ||
+          item.scheduledFor.isBefore(from) || item.scheduledFor.isAfter(through)) {
+        throw const FormatException('Duplicate or out-of-range occurrence');
+      }
+      items.add(item);
+    }
+    return VenciraDeviceNoticePreview(
+      from: from, through: through, total: total, hasNext: next != null,
+      items: List.unmodifiable(items),
+    );
+  }
+}
+
 class HttpVenciraApi implements VenciraApi {
   @override
   Future<Map<String, dynamic>> fetchAttachmentManifest(
@@ -1191,6 +1400,37 @@ class HttpVenciraApi implements VenciraApi {
         if (caps[key] is! bool) throw const VenciraApiException();
       }
       return caps;
+    } on VenciraUnauthorized { rethrow; }
+    catch (_) { throw const VenciraApiException(); }
+  }
+
+  @override
+  Future<VenciraDeviceNoticePreview> fetchDeviceNoticePreview(
+      String workspaceId, DateTime from, DateTime through,
+      {int page = 1}) async {
+    final start = DateTime(from.year, from.month, from.day);
+    final end = DateTime(through.year, through.month, through.day);
+    if (!_validUuid(workspaceId) || start.year < 2000 || end.year > 2100 ||
+        end.isBefore(start) ||
+        DateTime.utc(end.year, end.month, end.day)
+          .difference(DateTime.utc(start.year, start.month, start.day)).inDays > 30 ||
+        page < 1 || page > 100000) {
+      throw const VenciraApiException();
+    }
+    final path = Uri(path: '/api/v1/workspaces/$workspaceId/device-notice-preview/',
+      queryParameters: {
+        'from': _civilDayIso(start),
+        'through': _civilDayIso(end),
+        'page': '$page',
+      }).toString();
+    try {
+      final result = VenciraDeviceNoticePreview.fromJson(
+          await _fetch(path) as Map<String, dynamic>);
+      if (_civilDayIso(result.from) != _civilDayIso(start) ||
+          _civilDayIso(result.through) != _civilDayIso(end)) {
+        throw const VenciraApiException();
+      }
+      return result;
     } on VenciraUnauthorized { rethrow; }
     catch (_) { throw const VenciraApiException(); }
   }
@@ -1306,10 +1546,22 @@ class HttpVenciraApi implements VenciraApi {
     try {
       final raw = jsonDecode(utf8.decode(response.bodyBytes))
           as Map<String, dynamic>;
+      const states = {'planned', 'pending', 'snoozed', 'completed', 'cancelled'};
+      final id = raw['id'], state = raw['state'];
+      final dayText = raw['scheduled_for'];
+      if (id != reminder.id || state is! String ||
+          !states.contains(state) || dayText is! String ||
+          raw['delivery_status'] != 'not_implemented') {
+        throw const VenciraApiException();
+      }
+      final day = DateTime.parse(dayText);
+      if (_civilDayIso(day) != dayText) {
+        throw const VenciraApiException();
+      }
       return VenciraOperationalReminder(
-        id: raw['id'] as String, state: raw['state'] as String,
-        day: DateTime.parse(raw['scheduled_for'] as String),
-        reason: reminder.reason, controlQuestion:reminder.controlQuestion);
+        id: id as String, state: state, day: day,
+        reason: reminder.reason, controlQuestion: reminder.controlQuestion,
+        latestControlRepeatOn: reminder.latestControlRepeatOn);
     } catch (_) { throw const VenciraApiException(); }
   }
 

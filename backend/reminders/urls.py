@@ -17,6 +17,7 @@ from .control_response_api import control_responses
 from .explicit_control_api import explicit_control_notice
 from .operational_api import operational_reminders, operational_reminder_action
 from .operational_inbox import operational_inbox
+from .device_notice_preview import device_notice_preview
 from .operational_history import operational_reminder_history
 from .attachment_api import renewal_attachments, renewal_attachment_detail
 
@@ -35,6 +36,7 @@ urlpatterns = [
     path("workspaces/<uuid:workspace_id>/modalities/<str:code>/", modality_detail, name="api-modality-detail"),
     path("workspaces/<uuid:workspace_id>/agenda/", views.agenda_day, name="api-agenda-day"),
     path("workspaces/<uuid:workspace_id>/operational-inbox/", operational_inbox, name="api-operational-inbox"),
+    path("workspaces/<uuid:workspace_id>/device-notice-preview/", device_notice_preview, name="api-device-notice-preview"),
     path("workspaces/<uuid:workspace_id>/agenda/month/", agenda_month, name="api-agenda-month"),
     path("workspaces/<uuid:workspace_id>/renewals/suggestions/", person_suggestions, name="api-person-suggestions"),
     path("workspaces/<uuid:workspace_id>/renewals/", views.renewals, name="api-renewals"),

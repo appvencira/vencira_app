@@ -3,13 +3,14 @@
 Fecha civil explícita del cliente. Una lectura nunca reconcilia, envía, marca
 como pendiente ni crea eventos. Solo ocurrencias internas realmente guardadas.
 """
-from datetime import date
+from datetime import date, timedelta
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
+from .legal_deadlines import one_month_before
 from .models import OperationalReminder, Renewal
 from .views import _membership, _visible_renewals
 
@@ -86,6 +87,12 @@ def operational_inbox(request, workspace_id):
         "reason": r.reason,
         "state": r.state,
         "control_question": r.control_question,
+        # Advisory calendar bound only, never permission to send or postpone.
+        # Vida and ordinary tasks have no approved control-repeat deadline.
+        "latest_control_repeat_on": (
+            (one_month_before(r.renewal.expires_on) - timedelta(days=1)).isoformat()
+            if r.control_question and r.renewal.modality != "vida" else None
+        ),
         "overdue": r.scheduled_for < day,
         "delivery_status": "not_implemented",
     } for r in page]

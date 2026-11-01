@@ -36,6 +36,50 @@ void main() {
       throwsFormatException);
   });
 
+  test('B: unknown internal state rejected before actions', () {
+    final invalid = <String, dynamic>{
+      ...sample, 'results': [
+        {...((sample['results'] as List).first as Map<String, dynamic>),
+         'state': 'sent'}
+      ],
+    };
+    expect(() => VenciraOperationalInbox.fromJson(invalid),
+      throwsFormatException);
+  });
+
+  test('M3: control repeat bound parses canonical civil day', () {
+    final source = Map<String, dynamic>.from(
+        (sample['results'] as List).first as Map<String, dynamic>);
+    source['control_question'] = true;
+    source['latest_control_repeat_on'] = '2027-02-27';
+    final parsed = VenciraOperationalInbox.fromJson({
+      ...sample, 'results': [source],
+    });
+    expect(parsed.items.single.reminder.latestControlRepeatOn,
+        DateTime(2027, 2, 27));
+  });
+
+  test('M3: malformed and noncontrol repeat bounds fail closed', () {
+    final source = Map<String, dynamic>.from(
+        (sample['results'] as List).first as Map<String, dynamic>);
+    for (final bound in ['2027-02-30', '2027-2-3', 42]) {
+      final invalid = {
+        ...sample, 'results': [{
+          ...source, 'control_question': true,
+          'latest_control_repeat_on': bound,
+        }],
+      };
+      expect(() => VenciraOperationalInbox.fromJson(invalid),
+          throwsFormatException);
+    }
+    expect(() => VenciraOperationalInbox.fromJson({
+      ...sample, 'results': [{
+        ...source, 'control_question': false,
+        'latest_control_repeat_on': '2027-02-27',
+      }],
+    }), throwsFormatException);
+  });
+
   test('B: delivery cannot be represented as implemented', () {
     final invalid = <String, dynamic>{
       ...sample, 'results': [

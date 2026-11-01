@@ -1,0 +1,76 @@
+name: MB1 static security gates
+on:
+  push:
+    branches:
+      - main
+      - feature/mb1-m104-transition-contract-batch
+    paths:
+      - 'backend/**'
+      - 'scripts/mb1_g1_*'
+      - 'scripts/mb1_g123_*'
+      - 'scripts/mb1_g23_*'
+      - 'scripts/test_mb1_g23_*'
+      - 'scripts/test_mb1_g1_*'
+      - 'scripts/test_mb1_g123_*'
+      - 'scripts/validate_mb1_g1_*'
+      - 'scripts/validate_mb1_g123_*'
+      - '.github/workflows/mb1-audit.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'scripts/mb1_g1_*'
+      - 'scripts/mb1_g123_*'
+      - 'scripts/test_mb1_g1_*'
+      - 'scripts/test_mb1_g123_*'
+      - 'scripts/validate_mb1_g1_*'
+      - 'scripts/validate_mb1_g123_*'
+      - '.github/workflows/mb1-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mb1-audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  g1-g3:
+    name: G1 source + runtime ledger + G1-G3 fail-closed
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: G1 source inventory
+        run: python3 scripts/mb1_g1_source_writer_inventory.py --source backend
+      - name: G1 risk classification
+        run: python3 scripts/mb1_g1_risk_triage.py --source backend
+      - name: G1 runtime ledger tests and scan
+        run: bash scripts/validate_mb1_g1_runtime_review_ledger.sh
+      - name: G1 critical callsite unit tests
+        run: python3 -m unittest -v scripts.test_mb1_g1_critical_callsite_audit
+      - name: G1 review reports
+        run: |
+          mkdir -p audit-output
+          python3 scripts/mb1_g1_runtime_review_ledger.py --source backend --out audit-output/runtime-review.csv
+          python3 scripts/mb1_g1_critical_callsite_audit.py --source backend --out audit-output/critical-review.csv
+      - name: Upload G1 review evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: g1-review-${{ github.sha }}
+          path: audit-output/*.csv
+          if-no-files-found: error
+          retention-days: 7
+      - name: G1 private store callers across repository
+        run: python3 scripts/mb1_g1_private_store_callers.py --source .
+      - name: G1-G3 evidence gate contract tests
+        run: bash scripts/validate_mb1_g123_evidence_gate.sh
+      - name: G2-G3 role and writer boundary contract
+        run: python3 -m unittest -v scripts.test_mb1_g23_role_boundary_contract
+      - name: Safety boundary
+        run: |
+          echo 'MB1_GLOBAL_FREEZE=NOT_VERIFIED'
+          echo 'MB1_RELEASE_AUTHORIZED=NO'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'

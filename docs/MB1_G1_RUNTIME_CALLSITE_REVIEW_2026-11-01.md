@@ -1,0 +1,19 @@
+# VENCIRA — G1 revisión por callsite runtime (01/11/2026)
+
+La auditoría previa contabilizó 112 candidatos de escritura y 34 llamadas dinámicas en archivos etiquetados `RUNTIME_CANDIDATE`. Son etiquetas heurísticas, no rutas operativas confirmadas.
+
+Se publicó `scripts/mb1_g1_runtime_review_ledger.py`, que genera un CSV con ruta relativa del repositorio, línea, función/clase contenedora, clase SQL/FS/ORM/dinámica y estado PENDING. No ejecuta ni importa el código que inspecciona. La detección SQL no analiza aún la sentencia: cualquier `execute` se clasifica como revisión pendiente y puede ser SELECT. Las funciones de acceso indirecto y los escritores no Python requieren auditoría separada.
+
+Nuevo runner `scripts/validate_mb1_g1_runtime_review_ledger.sh`: tres tests unitarios y auditoría temporal del código de la rama, borrando el CSV al salir. No requiere Docker, acceso a DEV ni secretos. **NO EJECUTADO; no afirmar PASS**.
+
+Para revisión humana posterior se deberá producir una matriz versionada de rutas operativas, criticidad, permisos, consumidores, procedimientos de bloqueo, evidencia de ejecución y responsable, sin subir a GitHub información sensible de infraestructura.
+
+G1=OPEN; G2=OPEN; G3=OPEN; MB1_GLOBAL_FREEZE=NOT_VERIFIED; MB1_RELEASE_AUTHORIZED=NO; NO_DEPLOY_NO_LIVE_MIGRATION=1. Hitos formales 1/15 (6,7%).
+
+## Primer ensayo: FAIL corregido en fuentes
+
+El operador ejecutó el runner y obtuvo `Ran 1 test`, `FAILED (errors=1)` por `ModuleNotFoundError` en `scripts/mb1_g1_risk_triage.py`: el import absoluto de `mb1_g1_source_writer_inventory` no funcionaba al cargar `scripts.test_mb1_g1_runtime_review_ledger` como paquete. Se corrigió el import para admitir tanto ejecución como paquete, commit `bbf5f3f`. **Pendiente reejecutar y obtener PASS; el fallo anterior no debe contarse como validación.** No se cambió DEV.
+
+## Reensayo corregido — PASS comunicado por operador (01/11/2026)
+
+`OK`, `MB1_G1_LEDGER_UNIT=OK`, `MB1_G1_LEDGER_FILES_PARSED=330`, `MB1_G1_LEDGER_RUNTIME_CALLS=146`, `MB1_G1_LEDGER_SQL_REVIEW=3`, `MB1_G1_LEDGER_FS_REVIEW=9`, `MB1_G1_LEDGER_ORM_REVIEW=100`, `MB1_G1_LEDGER_DYNAMIC_REVIEW=34`, `MB1_G1_LEDGER_ALL_PENDING=YES`, `MB1_G1_LEDGER_SEMANTICALLY_REVIEWED=NO`, `MB1_G1_LEDGER_CSV_CREATED=OK`, `MB1_G1_LEDGER_CSV_LOCATION=TEMPORARY_REMOVED_ON_EXIT`. Reensayo unitario PASS, no implica análisis semántico ni freeze. `MB1_GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.

@@ -2,13 +2,23 @@
 
 No existe entidad Persona/CRM ni sincronización entre registros.
 """
-from django.db.models import Q
+from django.db.models import Case, IntegerField, Value, When
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .views import _membership, _visible_renewals
+
+
+def _prioritized_visible_matches(scoped):
+    """Rank only an already authorized queryset; never widen membership."""
+    return scoped.annotate(
+        _client_first=Case(
+            When(entry="clients", then=Value(0)),
+            default=Value(1), output_field=IntegerField(),
+        )
+    ).order_by("_client_first", "full_name", "id")[:5]
 
 
 @api_view(["GET"])
@@ -49,7 +59,8 @@ def person_suggestions(request, workspace_id):
                             status=status.HTTP_400_BAD_REQUEST)
         scoped = scoped.filter(phone__icontains=query).exclude(phone="")
 
-    matches = scoped.order_by("full_name", "id")[:5]
+    # Prioritize visible clients before applying the five-result limit.
+    matches = _prioritized_visible_matches(scoped)
     response = Response([{
         "source_id": str(item.pk),
         "full_name": item.full_name,

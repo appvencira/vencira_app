@@ -72,10 +72,19 @@ class OperationalTransitionTests(TestCase):
         self.assertEqual(self.reminder.state, "planned")
         self.assertEqual(OperationalReminderEvent.objects.count(), 0)
 
-    def test_control_can_be_postponed_to_cutoff(self):
-        self.act("another_day", days_later=7)
+    def test_control_cannot_be_postponed_onto_cutoff(self):
+        with self.assertRaises(ValueError):
+            self.act("another_day", days_later=7)
         self.reminder.refresh_from_db()
-        self.assertEqual(self.reminder.scheduled_for, date(2027, 2, 15))
+        self.assertEqual(self.reminder.scheduled_for, date(2027, 2, 8))
+        self.assertEqual(OperationalReminderEvent.objects.count(), 0)
+
+    def test_control_can_be_postponed_before_cutoff(self):
+        self.act("another_day", days_later=6)
+        self.reminder.refresh_from_db()
+        self.assertEqual(self.reminder.scheduled_for, date(2027, 2, 14))
+        self.assertEqual(self.reminder.state, "snoozed")
+        self.assertEqual(OperationalReminderEvent.objects.count(), 1)
 
     def test_unauthorized_actions_must_be_rejected_upstream(self):
         # This domain service is not an authorization boundary.

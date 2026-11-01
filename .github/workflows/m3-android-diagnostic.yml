@@ -1,0 +1,93 @@
+name: Android scaffold verification and feature-branch versioning
+on:
+  push:
+    branches:
+      - feature/mb1-m104-transition-contract-batch
+    paths:
+      - 'clients/flutter/lib/notifications/**'
+      - 'clients/flutter/test/device_notice_reconciliation_test.dart'
+      - 'clients/flutter/test/device_notice_sync_test.dart'
+      - 'clients/flutter/pubspec.yaml'
+      - '.github/workflows/m3-android-diagnostic.yml'
+  pull_request:
+    paths:
+      - 'clients/flutter/lib/notifications/**'
+      - 'clients/flutter/test/device_notice_reconciliation_test.dart'
+      - 'clients/flutter/test/device_notice_sync_test.dart'
+      - 'clients/flutter/pubspec.yaml'
+      - '.github/workflows/m3-android-diagnostic.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: vencira-android-scaffold-feature
+  cancel-in-progress: false
+jobs:
+  android-build:
+    if: >-
+      github.repository == 'appvencira/vencira_app' &&
+      github.ref != 'refs/heads/main' &&
+      (github.event_name != 'pull_request' ||
+       (github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event.pull_request.head.ref == 'feature/mb1-m104-transition-contract-batch'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/mb1-m104-transition-contract-batch
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve Flutter dependencies
+        working-directory: clients/flutter
+        run: flutter pub get
+      - name: Create Android project only when absent
+        working-directory: clients/flutter
+        run: |
+          set -eu
+          if test -f android/app/src/main/AndroidManifest.xml; then
+            echo 'Using versioned Android scaffold'
+          else
+            flutter create --platforms=android --org es --project-name vencira .
+          fi
+          test -f android/app/src/main/AndroidManifest.xml
+          # Flutter's generated .gitignore excludes gradlew, which is recreated
+          # by flutter build; it must not be required in git.
+          test -f android/gradle/wrapper/gradle-wrapper.jar
+      - name: Verify Android debug APK; never distribute
+        working-directory: clients/flutter
+        run: flutter build apk --debug
+      - name: Commit only safe Android scaffold, never secrets
+        run: |
+          set -eu
+          test -f clients/flutter/build/app/outputs/flutter-apk/app-debug.apk
+          test "$(git branch --show-current)" = 'feature/mb1-m104-transition-contract-batch'
+          git add -A clients/flutter/android
+          git add -f clients/flutter/android/gradle/wrapper/gradle-wrapper.jar
+          if git diff --cached --name-only | grep -E '(^|/)(local\.properties|key\.properties|.*\.keystore|.*\.jks)$'; then
+            echo 'Rejected local or signing file'
+            exit 1
+          fi
+          if git diff --cached --quiet; then
+            echo 'ANDROID_SCAFFOLD_ALREADY_VERSIONED=YES'
+          else
+            git config user.name 'vencira-ci[bot]'
+            git config user.email 'appvencira@users.noreply.github.com'
+            git commit -m 'chore(android): version tested scaffold in isolated branch'
+            git push origin HEAD:feature/mb1-m104-transition-contract-batch
+          fi
+      - name: State explicit release restrictions
+        run: |
+          echo 'ANDROID_DEBUG_BUILD=PASS'
+          echo 'NATIVE_NOTIFICATIONS_IMPLEMENTED=NO'
+          echo 'OFFLINE_ENCRYPTED_STORE_IMPLEMENTED=NO'
+          echo 'MB1_RELEASE_AUTHORIZED=NO'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'

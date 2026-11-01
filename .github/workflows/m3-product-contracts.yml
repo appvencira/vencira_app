@@ -1,0 +1,207 @@
+name: M3 product contracts
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'clients/flutter/lib/ui/operational_inbox_screen.dart'
+      - 'clients/flutter/android/app/build.gradle.kts'
+      - 'clients/flutter/android/app/src/main/AndroidManifest.xml'
+      - 'scripts/check_android_platform_security.py'
+      - 'clients/flutter/lib/ui/day_agenda_screen.dart'
+      - 'clients/flutter/test/day_agenda_test.dart'
+      - 'clients/flutter/test/agenda_operational_event_test.dart'
+      - 'clients/flutter/lib/ui/day_agenda_screen.dart'
+      - 'clients/flutter/test/agenda_today_inbox_test.dart'
+      - 'clients/flutter/lib/api/vencira_api.dart'
+      - 'clients/flutter/test/operational_inbox_test.dart'
+      - 'clients/flutter/test/operational_action_http_test.dart'
+      - 'clients/flutter/test/device_notice_preview_test.dart'
+      - 'clients/flutter/lib/notifications/device_notice_reconciliation.dart'
+      - 'clients/flutter/test/device_notice_reconciliation_test.dart'
+      - 'clients/flutter/lib/notifications/device_notice_sync.dart'
+      - 'clients/flutter/test/device_notice_sync_test.dart'
+      - 'clients/flutter/test/operational_inbox_widget_test.dart'
+      - 'backend/reminders/operational_inbox.py'
+      - 'backend/reminders/device_notice_preview.py'
+      - 'backend/reminders/test_device_notice_preview.py'
+      - 'backend/reminders/urls.py'
+      - 'backend/reminders/views.py'
+      - 'backend/reminders/test_agenda.py'
+      - 'backend/reminders/test_operational_inbox.py'
+      - 'backend/reminders/test_operational_api.py'
+      - 'backend/reminders/results.py'
+      - 'backend/reminders/test_results.py'
+      - 'clients/flutter/lib/ui/results_screen.dart'
+      - 'clients/flutter/test/results_test.dart'
+      - 'backend/reminders/operational_api.py'
+      - 'clients/flutter/lib/l10n/app_es.arb'
+      - 'clients/flutter/lib/l10n/app_ca.arb'
+      - 'backend/reminders/control_intent.py'
+      - 'backend/reminders/operational_transitions.py'
+      - 'backend/reminders/test_operational_transitions.py'
+      - 'backend/reminders/control_response_api.py'
+      - 'backend/reminders/control_responses.py'
+      - 'backend/reminders/test_control_response_api.py'
+      - 'backend/reminders/test_control_responses.py'
+      - 'backend/reminders/test_control_intent.py'
+      - 'backend/reminders/reminder_planning.py'
+      - 'backend/reminders/test_reminder_planning.py'
+      - 'backend/reminders/person_suggestions.py'
+      - 'backend/reminders/test_person_suggestions_ranking.py'
+      - '.github/workflows/m3-product-contracts.yml'
+  pull_request:
+    paths:
+      - 'clients/flutter/lib/ui/operational_inbox_screen.dart'
+      - 'clients/flutter/android/app/build.gradle.kts'
+      - 'clients/flutter/android/app/src/main/AndroidManifest.xml'
+      - 'scripts/check_android_platform_security.py'
+      - 'clients/flutter/lib/ui/day_agenda_screen.dart'
+      - 'clients/flutter/test/day_agenda_test.dart'
+      - 'clients/flutter/test/agenda_operational_event_test.dart'
+      - 'clients/flutter/lib/ui/day_agenda_screen.dart'
+      - 'clients/flutter/test/agenda_today_inbox_test.dart'
+      - 'clients/flutter/lib/api/vencira_api.dart'
+      - 'clients/flutter/test/operational_inbox_test.dart'
+      - 'clients/flutter/test/operational_action_http_test.dart'
+      - 'clients/flutter/test/device_notice_preview_test.dart'
+      - 'clients/flutter/lib/notifications/device_notice_reconciliation.dart'
+      - 'clients/flutter/test/device_notice_reconciliation_test.dart'
+      - 'clients/flutter/lib/notifications/device_notice_sync.dart'
+      - 'clients/flutter/test/device_notice_sync_test.dart'
+      - 'clients/flutter/test/operational_inbox_widget_test.dart'
+      - 'backend/reminders/operational_inbox.py'
+      - 'backend/reminders/device_notice_preview.py'
+      - 'backend/reminders/test_device_notice_preview.py'
+      - 'backend/reminders/urls.py'
+      - 'backend/reminders/views.py'
+      - 'backend/reminders/test_agenda.py'
+      - 'backend/reminders/test_operational_inbox.py'
+      - 'backend/reminders/test_operational_api.py'
+      - 'backend/reminders/results.py'
+      - 'backend/reminders/test_results.py'
+      - 'clients/flutter/lib/ui/results_screen.dart'
+      - 'clients/flutter/test/results_test.dart'
+      - 'backend/reminders/operational_api.py'
+      - 'clients/flutter/lib/l10n/app_es.arb'
+      - 'clients/flutter/lib/l10n/app_ca.arb'
+      - 'backend/reminders/control_intent.py'
+      - 'backend/reminders/operational_transitions.py'
+      - 'backend/reminders/test_operational_transitions.py'
+      - 'backend/reminders/control_response_api.py'
+      - 'backend/reminders/control_responses.py'
+      - 'backend/reminders/test_control_response_api.py'
+      - 'backend/reminders/test_control_responses.py'
+      - 'backend/reminders/test_control_intent.py'
+      - 'backend/reminders/reminder_planning.py'
+      - 'backend/reminders/test_reminder_planning.py'
+      - 'backend/reminders/person_suggestions.py'
+      - 'backend/reminders/test_person_suggestions_ranking.py'
+      - '.github/workflows/m3-product-contracts.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: m3-contracts-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  django-product:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      VENCIRA_ENV: test
+      DJANGO_DEBUG: '1'
+      DJANGO_SECRET_KEY: 'ci-only-local-test-not-a-production-secret'
+      DJANGO_ALLOWED_HOSTS: 'localhost,127.0.0.1,testserver'
+      VENCIRA_DB_ENGINE: sqlite
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - name: Check Django project
+        run: python manage.py check
+      - name: Guard native release signing and privacy defaults
+        run: python ../scripts/check_android_platform_security.py
+      - name: Product control and suggestion tests
+        run: python manage.py test reminders.test_reminder_planning reminders.test_control_intent reminders.test_person_suggestions_ranking reminders.test_control_responses reminders.test_control_response_api reminders.test_operational_transitions reminders.test_operational_inbox reminders.test_operational_api reminders.test_results reminders.test_device_notice_preview reminders.test_agenda
+      - name: No operational release
+        run: |
+          echo 'M3_02_DELIVERY=NOT_IMPLEMENTED'
+          echo 'MB1_RELEASE_AUTHORIZED=NO'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
+
+
+  django-postgres17:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: vencira_m3_ci
+          POSTGRES_USER: vencira_m3_ci
+          POSTGRES_PASSWORD: ci-test-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vencira_m3_ci -d vencira_m3_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 15
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      VENCIRA_ENV: test
+      DJANGO_DEBUG: '1'
+      DJANGO_SECRET_KEY: 'ci-only-local-test-not-a-production-secret'
+      DJANGO_ALLOWED_HOSTS: 'localhost,127.0.0.1,testserver'
+      VENCIRA_DB_ENGINE: postgresql
+      POSTGRES_DB: vencira_m3_ci
+      POSTGRES_USER: vencira_m3_ci
+      POSTGRES_PASSWORD: ci-test-only
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: '5432'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - name: Check Django with PG17 configuration
+        run: python manage.py check
+      - name: Run O9b and operational inbox regressions on isolated PG17
+        run: python manage.py test reminders.test_reminder_planning reminders.test_control_intent reminders.test_person_suggestions_ranking reminders.test_control_responses reminders.test_control_response_api reminders.test_operational_transitions reminders.test_operational_inbox reminders.test_operational_api reminders.test_results reminders.test_device_notice_preview reminders.test_agenda
+      - name: Keep release blocked
+        run: |
+          echo 'M3_02_PG17_EPHEMERAL_ONLY=1'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
+
+  flutter-inbox:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: clients/flutter
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test test/operational_inbox_test.dart test/operational_inbox_widget_test.dart test/operational_action_http_test.dart test/results_test.dart test/device_notice_preview_test.dart test/device_notice_reconciliation_test.dart test/device_notice_sync_test.dart test/day_agenda_test.dart test/agenda_operational_event_test.dart test/agenda_today_inbox_test.dart
+      - name: Compile Flutter Web without publishing
+        run: flutter build web --release --pwa-strategy=none
