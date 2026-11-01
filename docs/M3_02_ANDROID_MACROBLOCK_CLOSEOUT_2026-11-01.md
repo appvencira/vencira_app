@@ -84,3 +84,9 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 - Los commits `57c5f7a` y `812bfc6` no mostraron ejecuciones vinculadas a PR mediante la consulta disponible, por lo que **no existe evidencia verificada de PASS** para A4.
 - `770a817`: el workflow M3 ahora también escucha `push` de `feature/m3-android-local-notifications`, y su filtro `pull_request` incluye expresamente ambos archivos del historial. Los jobs siguen siendo tests Django aislados, Flutter y compilación web; no despliegan ni migran persistente.
 - **Limitación del verificador**: la consulta de ejecuciones por commit disponible filtra eventos de pull request. La ausencia de resultados en ella no prueba que no haya ejecuciones por push. Confirmar resultados desde GitHub Actions antes de cerrar A.
+
+## A4 — Barrera de limpieza y verificación de PR
+
+- PR #17 comprobada abierta en borrador, head `ed8d4d1`, base `feature/mb1-m104-transition-contract-batch` antes de esta tanda.
+- Commit `0b62541`: test widget adicional con `Completer` que obliga a mantener abierta la ruta de historial mientras la cancelación en el controlador padre está pendiente, y solo permite volver a la raíz al completar la barrera. Verifica notificación única.
+- La consulta de ejecuciones por commit sigue sin mostrar resultados PR del head anterior. **No hay PASS verificable** de esta tanda en esta comprobación. El workflow habilita `push` para la rama M3, pero el conector consultado muestra únicamente runs PR; revisar Actions directamente antes de autorizar el cierre.
