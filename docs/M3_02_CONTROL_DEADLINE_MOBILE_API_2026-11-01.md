@@ -17,6 +17,20 @@
 
 Se agregan pruebas de contrato civil (28/02 y Vida), usuario autorizado/tenant, parser de fechas canónicas, calendario acotado y acciones deshabilitadas.
 
+
+## Validación ampliada con PostgreSQL17 y compilación Web (misma fecha)
+
+La CI M3 se ha extendido con un contenedor **PostgreSQL 17 Alpine efímero**, independiente de DEV, y un paso `flutter build web --release --pwa-strategy=none`. Los filtros de `pull_request` se han sincronizado con los de `push` para que cambios en la API y widgets no se queden sin ejecutar en futuras revisiones.
+
+- Commit probado: `8eb90746c7273698a46ef846b14edfaf1efd7f14`.
+- GitHub Actions run `41305433400`:
+  - Job SQLite `124844753066`: **36/36 PASS**, Django check OK.
+  - Job PostgreSQL 17 `124844753246`: **36/36 PASS**, Django check OK.
+  - Job Flutter `124844753225`: `flutter analyze` **sin problemas**, **12/12 PASS**, `flutter build web --release --pwa-strategy=none` **Built build/web**.
+- Todos los jobs finalizaron con `conclusion=success`.
+
+**Límites de esta evidencia:** PostgreSQL de CI utiliza un rol temporal de test, no demuestra separación de roles efectiva en DEV, permisos de producción, congelación universal de escritores ni restauración física; Flutter Web compilado no equivale a publicación ni a aceptación Android/iOS. M3-02 permanece abierto.
+
 ## Pendientes y bloqueos
 
 El calendario mejora la experiencia de uso y evita elecciones inviables; **no habilita canales de envío ni acredita cumplimiento legal de pólizas particulares**. Pendiente: CI/PostgreSQL17 representativa, Android físico, pruebas de accesibilidad/UX de múltiples tamaños, permisos operativos, entrega push/email, decisiones excepcionales del whitepaper y aceptación completa M3-02.
