@@ -330,6 +330,13 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
     );
   }
 
+  String _internalStateLabel(String state) => switch (state) {
+    'planned' => t.opStatePlanned,
+    'pending' => t.opStatePending,
+    'snoozed' => t.opStateSnoozed,
+    _ => t.opStateUnknown,
+  };
+
   Widget _item(VenciraInboxItem item) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
@@ -378,6 +385,18 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colors.onSurfaceVariant)),
                       ]),
+                      Container(
+                        key: ValueKey('inbox-state-' + item.reminder.id),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9, vertical: 4),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: colors.outlineVariant),
+                          borderRadius: BorderRadius.circular(9)),
+                        child: Text(_internalStateLabel(item.reminder.state),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                            fontWeight: FontWeight.w600)),
+                      ),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 9, vertical: 4),
