@@ -83,6 +83,11 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       _followUpLoading = false;
     });
     await widget.onSessionExpired?.call();
+    // The parent dashboard now owns the expired-session screen. Leaving this
+    // route mounted would keep a secondary navigation surface alive.
+    if (mounted && widget.onSessionExpired != null) {
+      Navigator.of(context).pop();
+    }
   }
 
   Future<void> _refresh() async {
