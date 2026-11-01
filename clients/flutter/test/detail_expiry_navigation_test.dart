@@ -26,7 +26,7 @@ class ExpiredDetailApi implements VenciraApi {
 
 class ExpiredHistoryApi implements VenciraApi {
   @override
-  Future<VenciraOperationalHistoryPage> fetchOperationalHistory(
+  Future<VenciraOperationalHistory> fetchOperationalHistory(
       String workspaceId, String renewalId, String reminderId,
       {int page = 1}) async {
     throw const VenciraUnauthorized();
