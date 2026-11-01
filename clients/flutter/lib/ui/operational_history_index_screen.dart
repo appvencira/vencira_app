@@ -13,10 +13,12 @@ class VenciraOperationalHistoryIndexScreen extends StatefulWidget {
     required this.api,
     required this.workspaceId,
     required this.renewalId,
+    this.onSessionExpired,
   });
 
   final VenciraApi api;
   final String workspaceId, renewalId;
+  final Future<void> Function()? onSessionExpired;
 
   @override
   State<VenciraOperationalHistoryIndexScreen> createState() =>
@@ -45,6 +47,18 @@ class _OperationalHistoryIndexState
     super.dispose();
   }
 
+  Future<void> _expire() async {
+    if (!mounted || _unauthorized) return;
+    setState(() {
+      _generation++;
+      _rows = null;
+      _loading = false;
+      _unauthorized = true;
+    });
+    await widget.onSessionExpired?.call();
+    if (mounted && widget.onSessionExpired != null) Navigator.of(context).pop();
+  }
+
   Future<void> _load() async {
     final generation = ++_generation;
     setState(() { _loading = true; _failed = false; });
@@ -59,11 +73,7 @@ class _OperationalHistoryIndexState
       });
     } on VenciraUnauthorized {
       if (!mounted || _generation != generation) return;
-      setState(() {
-        _rows = null;
-        _loading = false;
-        _unauthorized = true;
-      });
+      await _expire();
     } catch (_) {
       if (!mounted || _generation != generation) return;
       setState(() { _failed = true; _loading = false; });
@@ -86,7 +96,8 @@ class _OperationalHistoryIndexState
         workspaceId: widget.workspaceId,
         renewalId: widget.renewalId,
         reminderId: reminder.id,
-        reason: reminder.reason),
+        reason: reminder.reason,
+        onSessionExpired: _expire),
     ));
   }
 
