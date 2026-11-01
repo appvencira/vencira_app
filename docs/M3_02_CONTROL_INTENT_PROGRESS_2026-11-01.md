@@ -11,3 +11,7 @@ La inspección del backend confirmó que **ya existían** `RenewalControlRespons
 ## Fase agrupada de regresión HTTP (01/11)
 
 Ampliado `backend/reminders/test_control_response_api.py` con dos pruebas nuevas: la misma clave idempotente con contenido cambiado se rechaza, las revisiones obsoletas producen conflicto y las solicitudes inválidas o de póliza Vida no persisten respuestas. Integradas en `.github/workflows/m3-product-contracts.yml` junto a las baterías de validación pura O9b. Son pruebas de cliente DRF con base de datos de test, no E2E con Caddy/Android; el PASS de Actions sigue sin confirmar. No se ha modificado endpoint ni esquema. M3-02 continúa abierto y el porcentaje formal queda 2/15.
+
+## Integración API → agenda operativa (01/11)
+
+Prueba añadida a `backend/reminders/test_control_response_api.py`: el POST manual «No» crea una sola ocurrencia `CONTROL_REPEAT` enlazada por `created_by_response`, la consulta a `operational-inbox/` para el día anterior no la incluye y la del día programado sí, `delivery_status` permanece `not_implemented`, y el mismo POST idempotente no duplica respuesta ni recordatorio. El workflow `m3-product-contracts.yml` ya ejecuta este módulo junto al resto de pruebas. Se verifica en base temporal de test, no en DEV ni por Flutter o proxy. **No hay resultado PASS confirmado aún**. Es avance funcional de trazabilidad, no cierre M3-02.
