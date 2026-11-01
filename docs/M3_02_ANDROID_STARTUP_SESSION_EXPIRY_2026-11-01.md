@@ -73,3 +73,10 @@ MFA_RELEASE_AUTHORIZED=NO
 C_FICHA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+## Bloque adicional de pertenencia remota — 01/11/2026
+
+- CI previo en commit `04ad55e`: M3 contracts run `41328965010` **success**, Android debug run `41328965055` **success**, MB1 static run `41328965024` **success**; scaffold run `41328965072` **skipped**.
+- Commit `abc5b0e`: si el servidor elimina el workspace activo y falla la cancelación nativa, el dashboard oculta también las cachés de modalidades y aseguradoras e invalida peticiones pendientes. Conserva el estado de fallo para bloquear recargas hasta reintentar la cancelación.
+- Commit `d82c27f`: test widget de denegación de pertenencia con cancelación fallida, ocultación de espacios anterior y nuevo, y recuperación posterior.
+- Los cambios de este bloque **requieren nuevo CI**; no inferir resultado desde el commit previo. M3-02 abierto, sin avisos Android reales ni autorización de despliegue.
