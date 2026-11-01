@@ -30,7 +30,14 @@ DeviceAlarmScope? decodeDeviceNoticeConsent(String? raw) {
 
 /// Requires explicit UI action after OS permission approval. Not invoked by
 /// app startup. Persisted only in Android secure storage, never preferences.
-class EncryptedDeviceNoticeConsent {
+abstract class DeviceNoticeConsentPort {
+  Future<DeviceAlarmScope?> readScope();
+  Future<bool> isEnabled(DeviceAlarmScope scope);
+  Future<void> grant(DeviceAlarmScope scope);
+  Future<void> revoke(DeviceAlarmScope scope);
+}
+
+class EncryptedDeviceNoticeConsent implements DeviceNoticeConsentPort {
   EncryptedDeviceNoticeConsent({FlutterSecureStorage? storage})
       : _storage = storage ?? const FlutterSecureStorage(
           aOptions: AndroidOptions(
