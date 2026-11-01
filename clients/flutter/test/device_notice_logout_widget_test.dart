@@ -25,6 +25,7 @@ class FakeApi implements VenciraApi {
   bool membershipRemoved = false;
   bool unauthorizedModalities = false;
   bool unauthorizedInsurers = false;
+  Completer<List<VenciraModalityOption>>? delayedModalities;
 
   @override
   Future<List<VenciraWorkspace>> fetchWorkspaces() async {
@@ -41,6 +42,7 @@ class FakeApi implements VenciraApi {
 
   @override
   Future<List<VenciraModalityOption>> fetchModalities(String id) async {
+    if (delayedModalities != null) return delayedModalities!.future;
     if (unauthorizedModalities) throw const VenciraUnauthorized();
     return VenciraModalityOption.defaults;
   }
@@ -212,6 +214,23 @@ void main() {
       expect(api.logoutCalls, 0);
     });
   }
+
+  testWidgets('Late catalog 401 after logout cannot trigger another revocation',
+      (tester) async {
+    final api = FakeApi()
+      ..delayedModalities = Completer<List<VenciraModalityOption>>();
+    var revocations = 0;
+    await tester.pumpWidget(shell(api, () async { revocations++; }));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.logout));
+    await tester.pumpAndSettle();
+    expect(api.logoutCalls, 1);
+    expect(revocations, 1);
+    api.delayedModalities!.completeError(const VenciraUnauthorized());
+    await tester.pumpAndSettle();
+    expect(revocations, 1);
+    expect(find.text('Equipo de pruebas'), findsNothing);
+  });
 
   testWidgets('Server logout waits for Android alarm cancellation',
       (tester) async {
