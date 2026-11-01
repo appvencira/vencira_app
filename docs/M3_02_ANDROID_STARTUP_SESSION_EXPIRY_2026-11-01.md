@@ -95,3 +95,9 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 - `c2c5a85`: se incorpora la ficha de anotación a los disparadores de M3 product contracts. Sin modificar el backend ni los permisos Android.
 - **Límite importante:** la ficha aún no dispone de notificación centralizada al dashboard ni de cierre automático de otras rutas abiertas. Esta corrección impide conservar los datos del estado local afectado, no demuestra revocación universal de la aplicación.
 - Se espera nueva validación CI; no atribuir PASS de revisiones anteriores a estos cambios. Continúan `M3_02_OS_SCHEDULING_ENABLED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` y autorizaciones MB1/MFA/C-FICHA en NO.
+
+## Protección del editor pospuesto — revisión posterior
+
+- Commit `522aa6c`: la apertura automática del editor de una ficha mediante callback post-frame exige que la generación de sesión siga vigente, la ficha coincida con la anotación cargada y que no haya revocación. Evita abrir el editor sobre un resultado ya invalidado por otro flujo de la pantalla.
+- El CI del bloque anterior `f590a11` seguía pendiente en M3 y APK al realizar la comprobación; MB1 static registró PASS y scaffold fue SKIPPED. No atribuir PASS a esta corrección hasta ver el workflow específico.
+- Falta aún centralizar propagación de invalidez desde subpantallas al dashboard, probar una sesión revocada con un Android físico y verificar entrega, reinicio, modo avión y Doze. No habilitar notificaciones ni fusionar la PR.
