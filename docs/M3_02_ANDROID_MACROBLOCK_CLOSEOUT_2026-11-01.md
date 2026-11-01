@@ -90,3 +90,9 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 - PR #17 comprobada abierta en borrador, head `ed8d4d1`, base `feature/mb1-m104-transition-contract-batch` antes de esta tanda.
 - Commit `0b62541`: test widget adicional con `Completer` que obliga a mantener abierta la ruta de historial mientras la cancelación en el controlador padre está pendiente, y solo permite volver a la raíz al completar la barrera. Verifica notificación única.
 - La consulta de ejecuciones por commit sigue sin mostrar resultados PR del head anterior. **No hay PASS verificable** de esta tanda en esta comprobación. El workflow habilita `push` para la rama M3, pero el conector consultado muestra únicamente runs PR; revisar Actions directamente antes de autorizar el cierre.
+
+## A4 — Fallo de cancelación nativa (01/11/2026)
+
+- `8184416` y `41605de`: si el callback de limpieza del padre falla, las vistas de historial conservan la ruta con los eventos/filas sensibles ya borrados y no ejecutan salida de navegación. El bloqueo persistente y el reintento de la barrera corresponden al controlador principal.
+- `68615e8`: prueba widget de fallo de la barrera: una excepción simulada en la cancelación no debe devolver automáticamente al usuario a la raíz ni reintroducir eventos.
+- Queda pendiente CI de estos cambios y una auditoría de reentrada para otras pantallas. Macrobloque A **NO cerrado**.
