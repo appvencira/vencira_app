@@ -81,7 +81,8 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
           value.archiveOutcome.isEmpty) {
         _initialEditTriggered = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _edit();
+          if (mounted && token == _generation && !_unauthorized &&
+              _renewal?.id == value.id) _edit();
         });
       }
       await _loadManualFollowUp(token);
