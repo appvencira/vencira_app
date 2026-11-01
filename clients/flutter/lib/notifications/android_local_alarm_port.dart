@@ -106,6 +106,10 @@ class AndroidLocalAlarmPort implements DeviceNoticeAlarmPort {
         local.day != slot.at.day || local.hour != slot.at.hour) {
       throw StateError('Alarm day or civil time is not valid');
     }
+    // Reserve ownership BEFORE the OS call: an alarm may be installed even
+    // when the platform response is lost. The caller can then compensate by
+    // cancelling this exact slot instead of leaving a stray notification.
+    _idOwners[id] = slot.key;
     await _plugin.zonedSchedule(
       id: id, scheduledDate: local,
       title: 'VENCIRA',
@@ -122,6 +126,5 @@ class AndroidLocalAlarmPort implements DeviceNoticeAlarmPort {
       ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
     );
-    _idOwners[id] = slot.key;
   }
 }
