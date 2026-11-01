@@ -174,6 +174,42 @@ void main() {
     expect(find.text('Ruta intermedia'), findsNothing);
   });
 
+  testWidgets('Failed cleanup retains revoked detail route without data',
+      (tester) async {
+    var attempts = 0;
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('es'),
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      home: Builder(builder: (context) => Scaffold(
+        body: FilledButton(
+          key: const ValueKey('open-failed-detail'),
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+            builder: (_) => VenciraRenewalDetailScreen(
+              api: ExpiredDetailApi(),
+              workspace: workspace,
+              renewalId: '22222222-2222-4222-8222-222222222222',
+              onSessionExpired: () async {
+                attempts++;
+                throw StateError('cancellation not acknowledged');
+              },
+            ),
+          )),
+          child: const Text('Inicio'),
+        ),
+      )),
+    ));
+    await tester.tap(find.byKey(const ValueKey('open-failed-detail')));
+    await tester.pumpAndSettle();
+    expect(attempts, 1);
+    expect(find.byType(VenciraRenewalDetailScreen), findsOneWidget);
+  });
+
   testWidgets('Revoked detail notifies parent then dismisses secondary route',
       (tester) async {
     var expired = 0;
