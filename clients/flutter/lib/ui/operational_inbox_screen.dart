@@ -99,9 +99,19 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
           SnackBar(content: Text(t.opConflict)));
         await _load(page: _page);
       }
+    } on VenciraUnauthorized {
+      if (mounted) setState(() {
+        _unauthorized = true;
+        _inbox = null;
+      });
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.opActionError)));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(t.opActionError)));
+        // The server might have committed before the connection failed.
+        // Never enable a second action against the unverified old state.
+        await _load(page: _page);
+      }
     } finally {
       if (mounted) setState(() => _acting = false);
     }
