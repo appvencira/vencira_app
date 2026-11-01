@@ -59,6 +59,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **G1 triage ejecutado (01/11/2026):** 330 archivos sin errores; 893 candidatos repartidos runtime 112, laboratorio 74, tests 707 y migraciones 0; 106 llamadas dinámicas (runtime 34, laboratorio 48, tests 24). La clasificación por ruta es heurística y no prueba cobertura de escritores. Evidencia `docs/MB1_G1_RISK_TRIAGE_2026-11-01.md`. G1–G3 siguen abiertos; 1/15 (6,7 %).
 
+**G1 callsites runtime (01/11/2026):** publicado ledger AST por archivo/línea/función en `scripts/mb1_g1_runtime_review_ledger.py`, 3 pruebas nuevas y ejecutor agrupado `scripts/validate_mb1_g1_runtime_review_ledger.sh`, con CSV temporal. **No ejecutado todavía.** Clasificación solo heurística, revisión humana pendiente; documentación `docs/MB1_G1_RUNTIME_CALLSITE_REVIEW_2026-11-01.md`. G1–G3 abiertos; total 1/15 (6,7 %).
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
