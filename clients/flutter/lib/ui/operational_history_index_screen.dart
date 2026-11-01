@@ -68,6 +68,7 @@ class _OperationalHistoryIndexState
   }
 
   Future<void> _load() async {
+    if (_unauthorized) return;
     final generation = ++_generation;
     setState(() { _loading = true; _failed = false; });
     try {
