@@ -1514,7 +1514,7 @@ class HttpVenciraApi implements VenciraApi {
       }, body:jsonEncode({'expected_revision':expectedRevision}));
     } catch (_) { throw const VenciraApiException(); }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode == 409) throw const VenciraConflictException();
     if (response.statusCode != 200) throw const VenciraApiException();
@@ -1543,7 +1543,7 @@ class HttpVenciraApi implements VenciraApi {
       }));
     } catch (_) { throw const VenciraApiException(); }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode == 409) throw const VenciraConflictException();
     if (response.statusCode != 200) throw const VenciraApiException();
@@ -1619,7 +1619,7 @@ class HttpVenciraApi implements VenciraApi {
       }));
     } catch (_) { throw const VenciraApiException(); }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode == 409) {
       throw const VenciraConflictException();
@@ -1660,7 +1660,7 @@ class HttpVenciraApi implements VenciraApi {
       );
     } catch (_) { throw const VenciraApiException(); }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode == 409) {
       throw const VenciraConflictException();
@@ -1748,7 +1748,7 @@ class HttpVenciraApi implements VenciraApi {
       throw const VenciraApiException();
     }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode == 409) {
       throw const VenciraConflictException();
@@ -1856,6 +1856,14 @@ class HttpVenciraApi implements VenciraApi {
   final http.Client _client;
   final bool _ownsClient;
   final Uri _baseUri;
+
+  /// Never replay writes after 401/403: a valid session may lack permission
+  /// or CSRF; only a separately denied /me/ confirms session revocation.
+  Future<void> _rejectDeniedResponse(http.Response response) async {
+    final identity = await _probeIdentityAfterDenial();
+    if (identity == false) throw const VenciraUnauthorized();
+    throw const VenciraApiException();
+  }
 
   /// null = unavailable or malformed; never classify a failed probe as logout.
   Future<bool?> _probeIdentityAfterDenial() async {
@@ -2068,7 +2076,7 @@ class HttpVenciraApi implements VenciraApi {
       throw const VenciraApiException();
     }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     final expected = method == 'POST' ? 201 : method == 'DELETE' ? 204 : 200;
     if (response.statusCode != expected) throw const VenciraApiException();
@@ -2234,7 +2242,7 @@ class HttpVenciraApi implements VenciraApi {
       response = await http.Response.fromStream(await _client.send(request));
     } catch (_) { throw const VenciraApiException(); }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     final code = method == 'POST' ? 201 : method == 'DELETE' ? 204 : 200;
     if (response.statusCode != code) throw const VenciraApiException();
@@ -2314,7 +2322,7 @@ class HttpVenciraApi implements VenciraApi {
       throw const VenciraApiException();
     }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode != (renewalId == null ? 201 : 200)) {
       throw const VenciraApiException();
@@ -2406,7 +2414,7 @@ class HttpVenciraApi implements VenciraApi {
       throw const VenciraApiException();
     }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode != 200) {
       throw const VenciraApiException();
@@ -2456,7 +2464,7 @@ class HttpVenciraApi implements VenciraApi {
       throw const VenciraApiException();
     }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode != 201) {
       throw const VenciraApiException();
@@ -2513,7 +2521,7 @@ class HttpVenciraApi implements VenciraApi {
       throw const VenciraApiException();
     }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode != 201 && response.statusCode != 200) {
       throw const VenciraApiException();
@@ -2549,7 +2557,7 @@ class HttpVenciraApi implements VenciraApi {
       throw const VenciraApiException();
     }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode != 200) {
       throw const VenciraApiException();
