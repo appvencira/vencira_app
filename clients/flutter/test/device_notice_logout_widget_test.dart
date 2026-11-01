@@ -147,7 +147,7 @@ void main() {
   testWidgets('Android privacy settings offer a real cancellation-only action',
       (tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
-    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    try {
     final api = FakeApi();
     var cancellations = 0;
     await tester.pumpWidget(shell(api, () async { cancellations++; }));
@@ -162,6 +162,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(cancellations, 1);
     expect(api.logoutCalls, 0);
+    } finally {
+      // Flutter asserts that foundation globals are reset by test body end.
+      debugDefaultTargetPlatformOverride = null;
+    }
   });
 
   testWidgets('Server logout waits for Android alarm cancellation',
