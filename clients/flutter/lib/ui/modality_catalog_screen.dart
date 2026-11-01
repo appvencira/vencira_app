@@ -40,7 +40,7 @@ class _CatalogState extends State<VenciraModalityCatalogScreen> {
     if (!mounted) return;
     setState(() { _seq++; _items = null; _loading = false; _failed = true; });
     await widget.onSessionExpired?.call();
-    if (mounted && widget.onSessionExpired != null) Navigator.of(context).pop();
+    if (mounted && widget.onSessionExpired != null) Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   Future<void> _load() async {
