@@ -9,6 +9,10 @@ on:
       - 'clients/flutter/lib/api/vencira_api.dart'
       - 'clients/flutter/test/operational_inbox_test.dart'
       - 'clients/flutter/test/operational_inbox_widget_test.dart'
+      - 'backend/reminders/operational_inbox.py'
+      - 'backend/reminders/test_operational_inbox.py'
+      - 'clients/flutter/lib/l10n/app_es.arb'
+      - 'clients/flutter/lib/l10n/app_ca.arb'
       - 'backend/reminders/control_intent.py'
       - 'backend/reminders/operational_transitions.py'
       - 'backend/reminders/test_operational_transitions.py'
@@ -23,6 +27,10 @@ on:
       - '.github/workflows/m3-product-contracts.yml'
   pull_request:
     paths:
+      - 'backend/reminders/operational_inbox.py'
+      - 'backend/reminders/test_operational_inbox.py'
+      - 'clients/flutter/lib/l10n/app_es.arb'
+      - 'clients/flutter/lib/l10n/app_ca.arb'
       - 'backend/reminders/control_intent.py'
       - 'backend/reminders/test_control_intent.py'
       - 'backend/reminders/reminder_planning.py'
