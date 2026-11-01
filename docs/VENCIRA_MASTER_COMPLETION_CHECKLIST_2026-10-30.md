@@ -73,6 +73,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **G1 callers almacén privado (01/11/2026):** `scripts/mb1_g1_private_store_callers.py` publicado e integrado en `.github/workflows/mb1-audit.yml`, localiza imports/llamadas explícitas de Fernet/quarantine en checkout Python. **Ejecución y revisión pendientes**, no cubre alias dinámicos ni código no Python; documentado en `docs/MB1_G1_PRIVATE_STORE_CALLERS_2026-11-01.md`. G1–G3 no cerrados; 1/15.
 
+**G1–G3 fase agrupada CI y límites de privilegios (01/11/2026):** `scripts/mb1_g23_role_boundary_contract.py` y nueve tests nuevos publicados; CI de G1 y G2/G3 en `.github/workflows/mb1-audit.yml` preparada. La condición positiva autodeclarada no autoriza release. Documento `docs/MB1_G123_GROUPED_CI_AND_ROLE_BOUNDARY_2026-11-01.md`. **CI no validada todavía; G1/G2/G3 operativos abiertos; hitos 1/15.**
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
