@@ -147,6 +147,9 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
             _selected = null;
             _renewals = null;
             _workspaces = [];
+            _modalities = VenciraModalityOption.defaults;
+            _insurers = [];
+            _sequence++;
           });
           return;
         }
