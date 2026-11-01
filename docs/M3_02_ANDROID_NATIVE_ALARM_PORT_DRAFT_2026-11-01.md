@@ -16,6 +16,15 @@ The adapter is present but **never wired to runtime startup, login or screen act
 
 The first Android adapter CI run `41310530123` detected `flutter_local_notifications` requiring Java core-library desugaring in the Android project. The *versioned parent feature branch* now includes `isCoreLibraryDesugaringEnabled=true`, multidex and `desugar_jdk_libs:2.1.4` at commit `5a05197`; a refreshed Android debug build is required to verify the correction. Never represent the original failed run as PASS.
 
+## Validated native build and regression evidence
+
+- **Android plugin debug build PASS**: workflow `M3 Android adapter compile (no release)`, run **41311041099**, job **124861283810**. Log: `No issues found!`, `✓ Built build/app/outputs/flutter-apk/app-debug.apk`, `ANDROID_ADAPTER_COMPILES=YES`, `ANDROID_LOCAL_NOTIFICATIONS_ENABLED=NO`.
+- Initial Android build `41310530123` failed exactly on missing desugaring; correction applied to versioned parent scaffold, validated by the later run. Do not discard this failure from history.
+- M3 contracts run `41310676239` for the native adapter test branch: SQLite, PG17 and Flutter all **success**. The suites cover **73 Django tests per database**, **81 Flutter tests**, static analyzer and Flutter Web release compilation.
+- Parent feature branch additionally runs the `check_android_platform_security.py` static gate, rejecting debug release signing, automatic cloud backup, cleartext HTTP and unapproved exact-alarm permissions. This is a static policy check, not OS notification acceptance.
+
+The plugin is included in debug-build dependencies but **not invoked from VENCIRA app startup or screens**. No notification is delivered by this work.
+
 ## Remaining blockers before device activation
 
 1. Add versioned Android `POST_NOTIFICATIONS` permission, `RECEIVE_BOOT_COMPLETED` and plugin receiver declarations **after the native scaffold branch is reconciled**; no exact-alarm privilege without explicit product approval. Reinstate scheduled notifications after reboot and verify Android 13–16 permission and Doze handling. The existing inexact schedule may occur later than 09:00.
