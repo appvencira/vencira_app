@@ -66,7 +66,8 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       builder: (_) => VenciraOperationalHistoryIndexScreen(
         api: widget.api,
         workspaceId: widget.workspace.id,
-        renewalId: widget.renewalId),
+        renewalId: widget.renewalId,
+        onSessionExpired: _invalidateSession),
     ));
   }
 
