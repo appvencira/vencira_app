@@ -80,7 +80,7 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
       _loading = false;
     });
     await widget.onSessionExpired?.call();
-    if (mounted && widget.onSessionExpired != null) Navigator.of(context).pop();
+    if (mounted && widget.onSessionExpired != null) Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   @override
