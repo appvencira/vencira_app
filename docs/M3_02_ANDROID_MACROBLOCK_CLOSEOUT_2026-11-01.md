@@ -61,3 +61,9 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 - Commits `6f2194e`, `b87216e` y `dd3f6d8`: propagan la pérdida confirmada de identidad desde las pantallas de agenda y bandeja al dashboard y sus barreras de cancelación, invalidan generaciones de consultas, vacían datos sensibles y cierran rutas tras el callback. Las aperturas de detalle desde agenda/bandeja conservan la cadena de revocación.
 - El historial y sus rutas anidadas continúan bajo auditoría; no declarar macrobloque A completo.
 - CI de la revisión pendiente; no activación de avisos ni despliegue.
+
+## A4 — Historial y rutas anidadas
+
+- Baseline `ef15e1b`: M3 contracts `41335397190` PASS, Android debug `41335397115` PASS, MB1 static `41335397151` PASS; scaffold `41335397147` SKIPPED.
+- Historial operativo e índice eliminan eventos y filas cuando hay `VenciraUnauthorized`, notifican mediante callback opcional y cierran la ruta secundaria. Ficha y bandeja transmiten el callback a los historiales anidados.
+- CI de esta revisión no confirmado; no se declara cierre de A ni entrega de notificaciones Android. Debe revisarse con tests la navegación anidada y el alcance de otras pantallas.
