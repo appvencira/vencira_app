@@ -49,6 +49,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **Revisión de bloqueos operativos (01/11/2026):** `docs/MB1_OPERATIONAL_BLOCKER_MATRIX_2026-11-01.md` consolida G1 inventario completo de escritores, G2 segregación SQL, G3 freeze universal, G4 O5 integral, G5 custodia/host externo y G6 migración histórica. Los PASS de laboratorio anteriores no se repiten. Documento de análisis, sin gate nuevo ni cambio de autorizaciones. Progreso 1/15 (6,7 %).
 
+**G1–G3 control agrupado de evidencia (01/11/2026):** nuevos `scripts/mb1_g123_evidence_gate.py`, `scripts/test_mb1_g123_evidence_gate.py` y `scripts/validate_mb1_g123_evidence_gate.sh`; ocho pruebas propuestas para denegar inventarios incompletos y evidencias autodeclaradas. **NO EJECUTADO.** No verifica freeze operativo, no modifica roles ni DEV; evidencia en `docs/MB1_G123_FAILCLOSED_EVIDENCE_GATE_2026-11-01.md`. Cierre formal 1/15 (6,7%).
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
