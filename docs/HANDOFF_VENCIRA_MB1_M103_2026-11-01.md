@@ -1,6 +1,6 @@
 # VENCIRA — HANDOFF integral al nuevo chat (01/11/2026)
 
-**Fuente de verdad:** repositorio GitHub `appvencira/vencira_app`, rama `feature/c-ficha-independent-attachments`. Checklist maestra: `docs/VENCIRA_MASTER_COMPLETION_CHECKLIST_2026-10-30.md` (actualización del 01/11, commit `27ad503`). Evidencia más reciente: `docs/MB1_M103_SPLIT_DELETE_API_GROUPED_2026-10-31.md` (commit `17143ab`).
+**Fuente de verdad:** repositorio GitHub `appvencira/vencira_app`, rama `feature/c-ficha-independent-attachments`. Checklist maestra: `docs/VENCIRA_MASTER_COMPLETION_CHECKLIST_2026-10-30.md` (actualizada el 01/11/2026; consultar siempre la versión HEAD de la rama). Evidencia más reciente: `docs/MB1_M103_SPLIT_DELETE_API_GROUPED_2026-10-31.md` (commit `17143ab`).
 
 Este documento está pensado para que un asistente nuevo retome el trabajo sin dar por completados gates no ejecutados, sin solicitar al operador repetir salidas previamente confirmadas y **sin aplicar cambios a DEV ni a la base persistente**.
 
