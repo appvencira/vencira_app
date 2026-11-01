@@ -53,6 +53,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **G1–G3 contrato fail-closed — PASS unitario (01/11/2026):** `Ran 8 tests in 0.001s`, `OK`, `MB1_G123_UNIT_CONTRACT=OK`, `MB1_G123_DEFAULT_FAILCLOSED=OK`, `MB1_G123_UNVERIFIED_COUNT=14`, `MB1_G123_OPERATIONAL_EVIDENCE=NOT_VERIFIED`. Las 14 condiciones operativas siguen sin acreditar, freeze no verificado y release NO. Evidencia `docs/MB1_G123_FAILCLOSED_EVIDENCE_GATE_2026-11-01.md`. Sin cierre de hitos: 1/15 (6,7 %).
 
+**G1 inventario AST de escritores (01/11/2026):** herramienta read-only `scripts/mb1_g1_source_writer_inventory.py` y alcance en `docs/MB1_G1_WRITER_SOURCE_INVENTORY_2026-11-01.md` (`1046dbc`). **PENDIENTE de ejecutar**; detección heurística, no prueba todas las rutas ni cierra G1/G2/G3. Próximo paso: contrastar con inventario P0 existente y auditar caminos dinámicos sin tocar DEV. Hitos 1/15 (6,7 %).
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
