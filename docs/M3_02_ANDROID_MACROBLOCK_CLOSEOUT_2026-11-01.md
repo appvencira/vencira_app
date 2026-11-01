@@ -114,3 +114,10 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 
 - Commits `d20eabb` y `4213ccd`: workflow M3 configurado para ejecutar contratos en **todas** las actualizaciones de PR y disponible para `workflow_dispatch`. El evento `push` de la rama M3 se mantiene; se eliminan filtros de rutas para `pull_request` que podían dejar nuevas revisiones sin cobertura.
 - Esta configuración no confiere permisos de despliegue ni migraciones. Los resultados de los nuevos runs deben verificarse antes de considerar A cerrado. El conector usado para consultar ejecuciones por commit solo devuelve runs de PR; no debe inferirse que un push sin resultado esté fallando o pasando.
+
+## A7 — Verificación de CI y cobertura de eventos
+
+- PR #17 permanece en borrador, base `feature/mb1-m104-transition-contract-batch`.
+- El conector `fetch_commit_workflow_runs` no devolvió ejecuciones del commit `e9bdeb2`; `get_commit_combined_status` tampoco devolvió estados. Esto **no acredita ni PASS ni fallo** (los checks de Actions pueden no figurar como estados clásicos y la consulta de runs está limitada a PR).
+- Commit `13aecf5`: el workflow M3 se dispara por cualquier `push` a `feature/m3-android-local-notifications`, cualquier actualización de PR y `workflow_dispatch`; se eliminó el filtro de rutas para eventos `push` de esa rama. No se modifican jobs de despliegue ni se activan migraciones persistentes.
+- Gate `M3_02_CI_VERIFIED=NO` hasta comprobar explícitamente todos los jobs y las pruebas de navegación anidada. Progreso formal 2/15; no autorizar activar alarmas Android reales.
