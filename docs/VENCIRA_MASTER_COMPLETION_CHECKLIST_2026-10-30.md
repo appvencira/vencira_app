@@ -69,6 +69,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **CI G1 artefactos revisables (01/11/2026):** `.github/workflows/mb1-audit.yml` ahora guarda dos inventarios CSV de callsites (runtime/critical) como artefactos durante 7 días. No incluyen contenido del código ni credenciales; sirven para revisión semántica manual. Ejecución CI aún sin PASS verificado; documento `docs/MB1_GITHUB_ACTIONS_STATIC_GATES_2026-11-01.md`. G1–G3 abiertos; 1/15.
 
+**G1 revisión semántica parcial (01/11/2026):** verificados directamente cuatro módulos de adjuntos en GitHub: handlers HTTP deniegan POST/DELETE/descarga; `may_download_attachment` devuelve `False`; el almacén interno mantiene métodos de escritura y `discard_quarantine` con borrado físico que requiere auditoría de llamadores; conciliación de metadatos es de solo lectura pero no snapshot global. Documento `docs/MB1_G1_ATTACHMENT_CALLPATH_SEMANTIC_REVIEW_2026-11-01.md`. No constituye revisión de los 146 callsites ni cierre G1–G3; 1/15.
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
