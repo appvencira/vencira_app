@@ -33,6 +33,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **Validación nueva (01/11/2026, rama aislada `feature/mb1-m104-transition-contract-batch`):** contrato puro de transición de adjuntos con 11/11 pruebas sintéticas PASS (`Ran 11 tests in 0.002s`, `OK`, `MB1_TRANSITION_CONTRACT_UNIT=OK`). La integración en `transition_reconciliation.py` está publicada en esa rama pero **NO se ha ejecutado** sobre ambos esquemas. `MB1_TRANSITION_PG17_HTTP=NOT_RUN`, `MB1_TRANSITION_LEGACY_INTEGRATION=NOT_RUN`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`; no existe autorización de despliegue. Evidencia `docs/MB1_M103_TRANSITION_CONTRACT_BATCH_2026-11-01.md`. M1-03 y M2-03 siguen [ ]; cierre 1/15 (6,7 %).
 
+**Plan de aceleración consolidado (01/11/2026):** `docs/VENCIRA_ACCELERATED_CLOSURE_PLAN_2026-11-01.md` (`762c851`) agrupa trabajo pendiente en A: transición+HTTP+rol SQL; B: escritores+captura+backup; C: custodia externa y recuperación en segundo host; D: producto+E2E. Se reusan PASS anteriores, sin repetir fases ya validadas y sin modificar DEV. Es un plan, **no** un PASS de nuevos gates. Hitos 1/15 (6,7 %).
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
