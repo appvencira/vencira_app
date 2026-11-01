@@ -47,6 +47,8 @@ jobs:
         run: python3 scripts/mb1_g1_risk_triage.py --source backend
       - name: G1 runtime ledger tests and scan
         run: bash scripts/validate_mb1_g1_runtime_review_ledger.sh
+      - name: G1 critical callsite unit tests
+        run: python3 -m unittest -v scripts.test_mb1_g1_critical_callsite_audit
       - name: G1 critical callsite audit
         run: |
           REPORT=$(mktemp)
