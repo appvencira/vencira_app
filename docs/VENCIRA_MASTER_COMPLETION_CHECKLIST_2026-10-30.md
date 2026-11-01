@@ -51,6 +51,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **G1–G3 control agrupado de evidencia (01/11/2026):** nuevos `scripts/mb1_g123_evidence_gate.py`, `scripts/test_mb1_g123_evidence_gate.py` y `scripts/validate_mb1_g123_evidence_gate.sh`; ocho pruebas propuestas para denegar inventarios incompletos y evidencias autodeclaradas. **NO EJECUTADO.** No verifica freeze operativo, no modifica roles ni DEV; evidencia en `docs/MB1_G123_FAILCLOSED_EVIDENCE_GATE_2026-11-01.md`. Cierre formal 1/15 (6,7%).
 
+**G1–G3 contrato fail-closed — PASS unitario (01/11/2026):** `Ran 8 tests in 0.001s`, `OK`, `MB1_G123_UNIT_CONTRACT=OK`, `MB1_G123_DEFAULT_FAILCLOSED=OK`, `MB1_G123_UNVERIFIED_COUNT=14`, `MB1_G123_OPERATIONAL_EVIDENCE=NOT_VERIFIED`. Las 14 condiciones operativas siguen sin acreditar, freeze no verificado y release NO. Evidencia `docs/MB1_G123_FAILCLOSED_EVIDENCE_GATE_2026-11-01.md`. Sin cierre de hitos: 1/15 (6,7 %).
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
