@@ -177,7 +177,8 @@ class _InboxState extends State<VenciraOperationalInboxScreen> {
       builder: (_) => VenciraOperationalHistoryScreen(
         api: widget.api, workspaceId: widget.workspace.id,
         renewalId: item.renewalId, reminderId: item.reminder.id,
-        reason: item.reminder.reason),
+        reason: item.reminder.reason,
+        onSessionExpired: _expire),
     ));
   }
 
