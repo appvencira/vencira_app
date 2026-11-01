@@ -68,7 +68,7 @@ class _HistoryState extends State<VenciraOperationalHistoryScreen> {
   }
 
   Future<void> _load({bool reload = false}) async {
-    if (_loading) return;
+    if (_loading || _unauthorized) return;
     final request = ++_generation;
     final page = reload ? 1 : _nextPage;
     setState(() { _loading = true; _failed = false; });
