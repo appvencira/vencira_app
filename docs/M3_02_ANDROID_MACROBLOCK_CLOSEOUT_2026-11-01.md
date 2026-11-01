@@ -109,3 +109,8 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 - `c291f4e`: prueba widget de ruta de ficha con `VenciraUnauthorized` y rechazo del callback de cancelación nativa. Exige que la ruta permanezca montada, sin abrir automáticamente otra ruta.
 - Se mantienen las pruebas equivalentes del historial, la espera de barrera con `Completer`, clasificación HTTP y cancelación desde dashboard.
 - **Pendiente** comprobar CI vía GitHub Actions, analizar otras rutas y ejecutar ensayos reales de Android. Estado A=OPEN, B=BLOCKED, autorizaciones de release=NO.
+
+## A6 — Eliminación de la incertidumbre de disparo CI
+
+- Commits `d20eabb` y `4213ccd`: workflow M3 configurado para ejecutar contratos en **todas** las actualizaciones de PR y disponible para `workflow_dispatch`. El evento `push` de la rama M3 se mantiene; se eliminan filtros de rutas para `pull_request` que podían dejar nuevas revisiones sin cobertura.
+- Esta configuración no confiere permisos de despliegue ni migraciones. Los resultados de los nuevos runs deben verificarse antes de considerar A cerrado. El conector usado para consultar ejecuciones por commit solo devuelve runs de PR; no debe inferirse que un push sin resultado esté fallando o pasando.
