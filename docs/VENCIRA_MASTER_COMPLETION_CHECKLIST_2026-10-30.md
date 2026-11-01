@@ -63,6 +63,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **G1 runtime callsite ledger — PASS corregido (01/11/2026):** `MB1_G1_LEDGER_UNIT=OK`, 330 archivos parseados y 146 llamadas runtime pendientes: 100 ORM, 3 SQL, 9 FS, 34 dinámicas; CSV temporal generado y limpiado. `MB1_G1_LEDGER_SEMANTICALLY_REVIEWED=NO`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`. Evidencia `docs/MB1_G1_RUNTIME_CALLSITE_REVIEW_2026-11-01.md`. Sin cerrar G1 ni hitos principales: 1/15 (6,7%).
 
+**GitHub Actions CI (01/11/2026):** nuevo `.github/workflows/mb1-audit.yml` en rama aislada; automatiza G1 fuente/riesgo/runtime y gate unitario G1–G3 en runners públicos sin acceso a DEV. Documentado en `docs/MB1_GITHUB_ACTIONS_STATIC_GATES_2026-11-01.md`; workflow publicado, resultado del run aún no comprobado. CI existente Django/Flutter en `.github/workflows/ci.yml` queda intacto. No autoriza release ni altera cierre 1/15.
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
