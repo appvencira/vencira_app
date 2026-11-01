@@ -76,6 +76,8 @@ on:
       - 'backend/reminders/test_person_suggestions_ranking.py'
       - '.github/workflows/m3-product-contracts.yml'
   pull_request:
+  workflow_dispatch:
+
     paths:
       - 'clients/flutter/lib/ui/operational_inbox_screen.dart'
       - 'clients/flutter/lib/ui/operational_history_screen.dart'
