@@ -8,6 +8,8 @@ on:
       - 'backend/**'
       - 'scripts/mb1_g1_*'
       - 'scripts/mb1_g123_*'
+      - 'scripts/mb1_g23_*'
+      - 'scripts/test_mb1_g23_*'
       - 'scripts/test_mb1_g1_*'
       - 'scripts/test_mb1_g123_*'
       - 'scripts/validate_mb1_g1_*'
@@ -65,6 +67,8 @@ jobs:
         run: python3 scripts/mb1_g1_private_store_callers.py --source .
       - name: G1-G3 evidence gate contract tests
         run: bash scripts/validate_mb1_g123_evidence_gate.sh
+      - name: G2-G3 role and writer boundary contract
+        run: python3 -m unittest -v scripts.test_mb1_g23_role_boundary_contract
       - name: Safety boundary
         run: |
           echo 'MB1_GLOBAL_FREEZE=NOT_VERIFIED'
