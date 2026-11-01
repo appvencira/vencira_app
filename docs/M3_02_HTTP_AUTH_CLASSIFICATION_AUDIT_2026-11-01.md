@@ -37,3 +37,10 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
 
 M3-02 sigue abierto. Progreso formal: 2/15 hitos (13,3 %).
+
+## Evidencia de código y contrato añadida
+
+- `backend/reminders/views.py`: `workspace_members` devuelve explícitamente **403** cuando el usuario está autenticado pero no es propietario; `_membership` oculta workspaces sin pertenencia mediante **404**. `/api/v1/me/` permite comprobar la identidad de la sesión.
+- Commit `adf5bce`: dos pruebas Django de regresión verifican que `403` por rol y `404` por falta de membresía pueden coexistir con `GET /api/v1/me/` **200** dentro de la misma sesión. Se ejecutarán tanto sobre SQLite como PostgreSQL17 por el workflow M3 existente.
+- Implicación: la política que traduce indiscriminadamente `403` a `VenciraUnauthorized` debe revisarse; la pérdida de rol y la caducidad no son idénticas. **No** se ha modificado la interpretación Flutter mientras no queden cubiertas las variantes de CSRF y autenticación DRF.
+- Estado de las dos pruebas nuevas: pendiente de resultado GitHub Actions; no atribuirles PASS de workflows de commits anteriores.
