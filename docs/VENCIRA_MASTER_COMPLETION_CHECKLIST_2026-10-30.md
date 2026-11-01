@@ -61,6 +61,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **G1 callsites runtime (01/11/2026):** publicado ledger AST por archivo/línea/función en `scripts/mb1_g1_runtime_review_ledger.py`, 3 pruebas nuevas y ejecutor agrupado `scripts/validate_mb1_g1_runtime_review_ledger.sh`, con CSV temporal. **No ejecutado todavía.** Clasificación solo heurística, revisión humana pendiente; documentación `docs/MB1_G1_RUNTIME_CALLSITE_REVIEW_2026-11-01.md`. G1–G3 abiertos; total 1/15 (6,7 %).
 
+**G1 runtime callsite ledger — PASS corregido (01/11/2026):** `MB1_G1_LEDGER_UNIT=OK`, 330 archivos parseados y 146 llamadas runtime pendientes: 100 ORM, 3 SQL, 9 FS, 34 dinámicas; CSV temporal generado y limpiado. `MB1_G1_LEDGER_SEMANTICALLY_REVIEWED=NO`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`. Evidencia `docs/MB1_G1_RUNTIME_CALLSITE_REVIEW_2026-11-01.md`. Sin cerrar G1 ni hitos principales: 1/15 (6,7%).
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
