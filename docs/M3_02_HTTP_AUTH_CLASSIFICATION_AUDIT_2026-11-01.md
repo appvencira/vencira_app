@@ -51,3 +51,19 @@ M3-02 sigue abierto. Progreso formal: 2/15 hitos (13,3 %).
 - **Punto crítico:** con DRF SessionAuthentication, una petición anónima puede devolver `403` en lugar de `401` si no existe una cabecera de desafío de autenticación; por eso no es correcto clasificar solo por código HTTP. Los nuevos tests aceptan 401 o 403 para denegación anónima, pero comprueban que no se autoriza.
 - Un `403` por falta de rol con sesión válida sigue diferenciándose mediante `/api/v1/me/` 200. El cliente Flutter **no se ha modificado** para hacer una petición adicional en cada fallo: primero deben definirse reglas ante pérdida de red, concurrencia y retirada de membresía.
 - Pruebas añadidas pendientes de resultado CI del commit correspondiente; no publicar PASS sin consultar su conclusión.
+
+## Macrobloque de clasificación pura — 01/11/2026
+
+- `clients/flutter/lib/api/session_denial_classifier.dart`: decisión pura con tres estados (`expired`, `forbidden`, `unknown`) y tres resultados de comprobación de identidad (`authenticated`, `unauthenticated`, `unavailable`). Tanto 401 como 403 requieren evidencia sobre identidad; si la comprobación no está disponible, el estado queda desconocido.
+- `clients/flutter/test/session_denial_classifier_test.dart`: siete pruebas que incluyen 401/403 con identidad válida, ausente o indeterminada y códigos no asociados a pérdida de sesión.
+- Workflow M3 actualizado para ejecutar explícitamente dichas pruebas y dispararse cuando cambian el clasificador o sus tests.
+- **No conectado todavía al cliente HTTP ni a la UI.** Se mantiene el comportamiento actual hasta comprobar CI y definir cuidadosamente la sonda de identidad, protección contra carreras, respuesta con red desconectada y pérdida de membresía. Los tests nuevos no demuestran revocación Android universal.
+- Sin notificaciones reales, sin merge, despliegue o migración persistente. Estado formal 2/15.
+
+```text
+M3_02_AUTH_CLASSIFIER=IMPLEMENTED_UNWIRED_AWAITING_CI
+M3_02_AUTH_PROBE=NOT_IMPLEMENTED
+M3_02_GLOBAL_HTTP_INTEGRATION=NOT_IMPLEMENTED
+M3_02_OS_SCHEDULING_ENABLED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
