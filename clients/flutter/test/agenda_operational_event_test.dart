@@ -27,7 +27,7 @@ void main() {
       {'reminder_id': 'not-a-uuid'},
       {'reason': ''},
       {'reason': ' '},
-      {'reason': 'x' * 161},
+      {'reason': List.filled(161, 'x').join()},
       {'reason': null},
       {'state': 'completed'},
       {'state': 'unknown'},
