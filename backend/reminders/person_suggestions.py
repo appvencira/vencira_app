@@ -11,6 +11,16 @@ from rest_framework.response import Response
 from .views import _membership, _visible_renewals
 
 
+def _prioritized_visible_matches(scoped):
+    """Rank only an already authorized queryset; never widen membership."""
+    return scoped.annotate(
+        _client_first=Case(
+            When(entry="clients", then=Value(0)),
+            default=Value(1), output_field=IntegerField(),
+        )
+    ).order_by("_client_first", "full_name", "id")[:5]
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def person_suggestions(request, workspace_id):
@@ -49,7 +59,8 @@ def person_suggestions(request, workspace_id):
                             status=status.HTTP_400_BAD_REQUEST)
         scoped = scoped.filter(phone__icontains=query).exclude(phone="")
 
-    # Preferir coincidencias ya clasificadas como Clientes sin ampliar el\n    # alcance de visibilidad; el limite se aplica despues de priorizar.\n    matches = scoped.annotate(\n        _client_first=Case(\n            When(entry="clients", then=Value(0)),\n            default=Value(1), output_field=IntegerField(),\n        )\n    ).order_by("_client_first", "full_name", "id")[:5]
+    # Prioritize visible clients before applying the five-result limit.
+    matches = _prioritized_visible_matches(scoped)
     response = Response([{
         "source_id": str(item.pk),
         "full_name": item.full_name,
