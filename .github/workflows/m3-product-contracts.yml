@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - feature/m3-device-notice-preview-ci
     paths:
       - 'clients/flutter/lib/ui/operational_inbox_screen.dart'
       - 'clients/flutter/lib/ui/day_agenda_screen.dart'
@@ -14,6 +15,7 @@ on:
       - 'clients/flutter/test/operational_inbox_test.dart'
       - 'clients/flutter/test/operational_action_http_test.dart'
       - 'clients/flutter/test/device_notice_preview_test.dart'
+      - 'docs/M3_02_DEVICE_NOTICE_PREVIEW_2026-11-01.md'
       - 'clients/flutter/test/operational_inbox_widget_test.dart'
       - 'backend/reminders/operational_inbox.py'
       - 'backend/reminders/device_notice_preview.py'
@@ -55,6 +57,7 @@ on:
       - 'clients/flutter/test/operational_inbox_test.dart'
       - 'clients/flutter/test/operational_action_http_test.dart'
       - 'clients/flutter/test/device_notice_preview_test.dart'
+      - 'docs/M3_02_DEVICE_NOTICE_PREVIEW_2026-11-01.md'
       - 'clients/flutter/test/operational_inbox_widget_test.dart'
       - 'backend/reminders/operational_inbox.py'
       - 'backend/reminders/device_notice_preview.py'
