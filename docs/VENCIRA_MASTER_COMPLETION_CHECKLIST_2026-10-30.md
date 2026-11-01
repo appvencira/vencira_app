@@ -47,6 +47,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **PB almacenamiento Fernet cifrado + PostgreSQL 17 efímero — PASS (01/11/2026):** `MB1_PB_REAL_FERNET_DISK_PG17_ALIGNMENT=OK`, `MB1_PB_MISSING_OBJECT_FAILCLOSED=OK`, `MB1_PB_TAMPERED_CIPHERTEXT_FAILCLOSED=OK`, `MB1_PB_SQL_METADATA_DIVERGENCE_FAILCLOSED=OK`, `MB1_PB_NO_AUTOMATIC_DELETION=OK`, `MB1_PB_TEMPORARY_OBJECTS_CLEANED=OK`, `MB1_PB_CRYPTO_PHASE=DONE`, `MB1_PB_CRYPTO_RESULT=0`. Solo datos y claves sintéticos con tabla Legacy creada temporalmente, sin migración 0027/MFA. `MB1_GLOBAL_FREEZE=NOT_VERIFIED`; no prueba restauración/custodia externa ni autorización. Evidencia `docs/MB1_PB_FERNET_PG17_DISPOSABLE_2026-11-01.md`. Hitos 1/15 (6,7 %).
 
+**Revisión de bloqueos operativos (01/11/2026):** `docs/MB1_OPERATIONAL_BLOCKER_MATRIX_2026-11-01.md` consolida G1 inventario completo de escritores, G2 segregación SQL, G3 freeze universal, G4 O5 integral, G5 custodia/host externo y G6 migración histórica. Los PASS de laboratorio anteriores no se repiten. Documento de análisis, sin gate nuevo ni cambio de autorizaciones. Progreso 1/15 (6,7 %).
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
