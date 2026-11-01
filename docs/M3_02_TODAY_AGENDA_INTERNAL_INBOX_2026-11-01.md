@@ -12,7 +12,19 @@ El whitepaper §5 exige agenda de Hoy como vista de trabajo; el §7 exige ver av
 ## Pruebas previstas y CI
 `clients/flutter/test/agenda_today_inbox_test.dart`: tres pruebas de widget para contador autorizado, error+reintento y respuesta tardía tras navegar a otro día. `.github/workflows/m3-product-contracts.yml` incorpora estos tests. Para evitar ejecuciones dobles se eliminó `push` sobre rama feature (sigue `pull_request`), y se configura concurrencia sin cancelación automática.
 
-**Situación de ejecución comprobada en esta sesión:** el primer run de la nueva batería (`41307111351`) fue cancelado sin resultados; su reintento también quedó cancelado. La nueva ejecución `41307338491` estaba `pending`, sin jobs asignados, al documentar. **No atribuir PASS a los tests de agenda aún.** La auditoría MB1 run `41307338454` sí terminó `success`. Los anteriores 48/48 Django SQLite, 48/48 PG17, 16 Flutter y build Web pertenecen al commit anterior `a20785b`; no acreditan por sí solos la UI nueva.
+**Resultado final de CI confirmado por logs de GitHub Actions:** después de dos cancelaciones y un test de widget demasiado amplio (`find.text('1')` también coincidía con la fecha), se acotó la aserción al `Text` con clave `agenda-due-count`. La última ejecución de revisión quedó íntegramente verde:
+
+| Evidencia | Run / job | Resultado |
+|---|---|---|
+| Django SQLite temporal | `41307549429` / `124851050180` | **62/62 PASS** |
+| Django PostgreSQL17 temporal | `41307549429` / `124851050445` | **62/62 PASS** |
+| Flutter `analyze` | `41307549429` / `124851050383` | **No issues found** |
+| Flutter widgets y contratos (agenda diaria incluida) | `41307549429` / `124851050383` | **49/49 PASS** |
+| Flutter Web release `--pwa-strategy=none` | `41307549429` / `124851050383` | **Built build/web** |
+
+Commit de código validado: `0b6b9aa4b7b4f562f646ec5f729cc1623f9c00ce`. PR #14 sigue **draft**. Auditoría MB1 `41307549434` success, contrato estático; no freeze operativo.
+
+Estos tests comprueban flujo de widgets y temporales de CI, **no** validación con navegador en DEV, Android físico, permisos push, envío en segundo plano ni entrega de notificaciones. Ningún requisito de release se considera satisfecho automáticamente.
 
 ## Restricciones
 - Ninguna notificación externa ni prueba de entrega, ninguna nueva migración, ningún trabajo en background o despliegue DEV.
