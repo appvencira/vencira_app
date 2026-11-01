@@ -2,10 +2,11 @@
 from datetime import date
 import json
 import uuid
+from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
-from reminders.models import Workspace, WorkspaceMember, Renewal, OperationalReminder
+from reminders.models import Workspace, WorkspaceMember, Renewal, OperationalReminder, OperationalReminderEvent
 
 class OperationalApiTests(TestCase):
     def setUp(self):
@@ -80,3 +81,70 @@ class OperationalApiTests(TestCase):
         self.assertEqual(self.client.post(
             url, data=json.dumps({"action": "complete"}),
             content_type="application/json").status_code, 400)
+
+    @patch("reminders.operational_transitions.timezone.localdate",
+           return_value=date(2027, 2, 8))
+    def test_tomorrow_moves_inbox_day_and_audits_once(self, _today):
+        first = self.action(self.owner, action="tomorrow")
+        self.assertEqual(first.status_code, 200, first.content)
+        self.assertEqual(first.json()["state"], "snoozed")
+        self.assertEqual(first.json()["scheduled_for"], "2027-02-09")
+        self.assertEqual(first.json()["delivery_status"], "not_implemented")
+        event = OperationalReminderEvent.objects.get()
+        self.assertEqual(event.actor_id, self.owner.pk)
+        self.assertEqual(event.action, "tomorrow")
+        self.client.force_login(self.owner)
+        inbox = reverse("api-operational-inbox", kwargs={
+            "workspace_id": self.ws.pk})
+        self.assertEqual(self.client.get(inbox, {
+            "day": "2027-02-08", "scope": "today"
+        }).json()["counts"]["today"], 0)
+        due = self.client.get(inbox, {
+            "day": "2027-02-09", "scope": "today"
+        }).json()
+        self.assertEqual(due["counts"]["today"], 1)
+        self.assertEqual(due["results"][0]["state"], "snoozed")
+        self.assertEqual(due["results"][0]["delivery_status"],
+                         "not_implemented")
+
+    @patch("reminders.operational_transitions.timezone.localdate",
+           return_value=date(2027, 2, 8))
+    def test_control_cannot_be_snoozed_to_cutoff_through_http(self, _today):
+        self.reminder.control_question = True
+        self.reminder.save(update_fields=["control_question"])
+        refused = self.action(
+            self.owner, action="another_day", days=7)
+        self.assertEqual(refused.status_code, 400)
+        self.reminder.refresh_from_db()
+        self.assertEqual(self.reminder.scheduled_for, date(2027, 2, 8))
+        self.assertEqual(OperationalReminderEvent.objects.count(), 0)
+        accepted = self.action(
+            self.owner, action="another_day", days=6)
+        self.assertEqual(accepted.status_code, 200, accepted.content)
+        self.assertEqual(accepted.json()["scheduled_for"], "2027-02-14")
+        self.assertEqual(OperationalReminderEvent.objects.count(), 1)
+
+    @patch("reminders.operational_transitions.timezone.localdate",
+           return_value=date(2027, 2, 14))
+    def test_tomorrow_control_on_cutoff_refused(self, _today):
+        self.reminder.control_question = True
+        self.reminder.save(update_fields=["control_question"])
+        result = self.action(self.owner, action="tomorrow")
+        self.assertEqual(result.status_code, 400)
+        self.assertFalse(OperationalReminderEvent.objects.exists())
+
+    def test_closed_renewal_rejects_action_without_audit(self):
+        self.renewal.status = Renewal.Status.CLOSED
+        self.renewal.save(update_fields=["status"])
+        response = self.action(self.owner)
+        self.assertEqual(response.status_code, 409)
+        self.assertFalse(OperationalReminderEvent.objects.exists())
+
+    def test_idempotent_http_complete_produces_single_event(self):
+        key = uuid.uuid4()
+        first = self.action(self.owner, key=key)
+        second = self.action(self.owner, key=key)
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(OperationalReminderEvent.objects.count(), 1)
+        self.assertEqual(OperationalReminder.objects.count(), 1)
