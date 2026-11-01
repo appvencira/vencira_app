@@ -101,6 +101,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **M3-02 acceso «Hoy» a bandeja (01/11/2026):** Flutter agrega contador y acceso a avisos internos hoy+atrasados desde agenda de HOY, solo lectura autorizada, contador de toda la cuenta explícito, fallos con reintento, descarte de respuestas tardías y cadenas ES/CA. Tres tests widget añadidos, CI M3 ajustada contra duplicación/cancelación de push+PR. Evidencia `docs/M3_02_TODAY_AGENDA_INTERNAL_INBOX_2026-11-01.md`. **CI de widget nueva pendiente** (run `41307338491` aún sin jobs al documentar), MB1 estático PASS; no envío real, no deploy. **M3-02 [ ], total 2/15 (13,3 %)**.
 
+**M3-02 agenda operativa (01/11/2026):** corregida incompatibilidad entre evento Django `operational_reminder` y parser Flutter: la agenda diaria ahora muestra por anotación los motivos reales de las ocurrencias internas activas, con id, estado, no-entrega y precarga sin N+1; soporte ES/CA. Tests Django/Flutter añadidos y CI M3 ampliada. Primer run `41307322694`: Django SQLite y PG17 PASS, Flutter 48 PASS/1 FAIL por selector de test de contador, corregido `3a876f1`; segundo run `41307454540` cancelado por nuevo push. Reejecución nueva disparada con `3124c52`, resultado por verificar. Evidencia `docs/M3_02_AGENDA_OPERATIONAL_EVENT_FIX_2026-11-01.md`. M3-02 sigue [ ], **2/15 (13,3 %)**. No deployment ni migraciones.
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
