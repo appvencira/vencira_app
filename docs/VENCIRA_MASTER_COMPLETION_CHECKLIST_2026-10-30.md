@@ -41,6 +41,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **Integridad de objetos — PASS unitario (01/11/2026):** `Ran 11 tests in 0.001s`, `OK`, `MB1_PA_OBJECT_CONTRACT=OK`. Se validó exclusivamente el nuevo contrato de decisión fail-closed. `MB1_PA_OBJECT_REAL_STORE=NOT_RUN`, `MB1_PA_HISTORICAL_BOTH_SCHEMAS=NOT_RUN`, `MB1_GLOBAL_FREEZE=NOT_VERIFIED`. Documento `docs/MB1_PA_OBJECT_INTEGRITY_CONTRACT_2026-11-01.md`; M1-03, M2-02 y M2-03 continúan abiertos; 1/15 (6,7 %).
 
+**Coexistencia histórica sintética PG17 (01/11/2026):** preparado un gate nuevo de lectura, conciliación y auditoría de objetos simulado en `scripts/rehearse_mb1_pa_coexist_disposable.sh`, documento `docs/MB1_PA_COEXIST_SYNTHETIC_PG17_2026-11-01.md`. **NO EJECUTADO**. La tabla histórica se crea con `schema_editor` dentro de un clon efímero, sin aplicar `reminders.0027` ni MFA 0019–0026; no acredita migración histórica real ni almacén cifrado. Mantener M1-03, M2-02, M2-03 abiertos; 1/15 (6,7%).
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
