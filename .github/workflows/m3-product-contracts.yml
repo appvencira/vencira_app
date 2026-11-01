@@ -23,6 +23,10 @@ on:
       - 'backend/reminders/test_agenda.py'
       - 'backend/reminders/test_operational_inbox.py'
       - 'backend/reminders/test_operational_api.py'
+      - 'backend/reminders/results.py'
+      - 'backend/reminders/test_results.py'
+      - 'clients/flutter/lib/ui/results_screen.dart'
+      - 'clients/flutter/test/results_test.dart'
       - 'backend/reminders/operational_api.py'
       - 'clients/flutter/lib/l10n/app_es.arb'
       - 'clients/flutter/lib/l10n/app_ca.arb'
@@ -60,6 +64,10 @@ on:
       - 'backend/reminders/test_agenda.py'
       - 'backend/reminders/test_operational_inbox.py'
       - 'backend/reminders/test_operational_api.py'
+      - 'backend/reminders/results.py'
+      - 'backend/reminders/test_results.py'
+      - 'clients/flutter/lib/ui/results_screen.dart'
+      - 'clients/flutter/test/results_test.dart'
       - 'backend/reminders/operational_api.py'
       - 'clients/flutter/lib/l10n/app_es.arb'
       - 'clients/flutter/lib/l10n/app_ca.arb'
@@ -106,7 +114,7 @@ jobs:
       - name: Check Django project
         run: python manage.py check
       - name: Product control and suggestion tests
-        run: python manage.py test reminders.test_reminder_planning reminders.test_control_intent reminders.test_person_suggestions_ranking reminders.test_control_responses reminders.test_control_response_api reminders.test_operational_transitions reminders.test_operational_inbox reminders.test_operational_api reminders.test_device_notice_preview reminders.test_agenda
+        run: python manage.py test reminders.test_reminder_planning reminders.test_control_intent reminders.test_person_suggestions_ranking reminders.test_control_responses reminders.test_control_response_api reminders.test_operational_transitions reminders.test_operational_inbox reminders.test_operational_api reminders.test_results reminders.test_device_notice_preview reminders.test_agenda
       - name: No operational release
         run: |
           echo 'M3_02_DELIVERY=NOT_IMPLEMENTED'
@@ -156,7 +164,7 @@ jobs:
       - name: Check Django with PG17 configuration
         run: python manage.py check
       - name: Run O9b and operational inbox regressions on isolated PG17
-        run: python manage.py test reminders.test_reminder_planning reminders.test_control_intent reminders.test_person_suggestions_ranking reminders.test_control_responses reminders.test_control_response_api reminders.test_operational_transitions reminders.test_operational_inbox reminders.test_operational_api reminders.test_device_notice_preview reminders.test_agenda
+        run: python manage.py test reminders.test_reminder_planning reminders.test_control_intent reminders.test_person_suggestions_ranking reminders.test_control_responses reminders.test_control_response_api reminders.test_operational_transitions reminders.test_operational_inbox reminders.test_operational_api reminders.test_results reminders.test_device_notice_preview reminders.test_agenda
       - name: Keep release blocked
         run: |
           echo 'M3_02_PG17_EPHEMERAL_ONLY=1'
@@ -178,6 +186,6 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter analyze
-      - run: flutter test test/operational_inbox_test.dart test/operational_inbox_widget_test.dart test/operational_action_http_test.dart test/device_notice_preview_test.dart test/day_agenda_test.dart test/agenda_operational_event_test.dart test/agenda_today_inbox_test.dart
+      - run: flutter test test/operational_inbox_test.dart test/operational_inbox_widget_test.dart test/operational_action_http_test.dart test/results_test.dart test/device_notice_preview_test.dart test/day_agenda_test.dart test/agenda_operational_event_test.dart test/agenda_today_inbox_test.dart
       - name: Compile Flutter Web without publishing
         run: flutter build web --release --pwa-strategy=none
