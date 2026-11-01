@@ -876,7 +876,8 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     if (workspace == null || _saving) return;
     Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => VenciraOperationalInboxScreen(
-        api: _api, workspace: workspace),
+        api: _api, workspace: workspace,
+        onSessionExpired: _handleExpiredSession),
     ));
   }
 
@@ -890,6 +891,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         initialEntry: _entryFilter,
         initialModality: _modalityFilter,
         initialInsurer: _insurerFilter,
+        onSessionExpired: _handleExpiredSession,
       ),
     ));
   }
