@@ -15,6 +15,9 @@ on:
       - 'clients/flutter/test/operational_action_http_test.dart'
       - 'clients/flutter/test/operational_inbox_widget_test.dart'
       - 'backend/reminders/operational_inbox.py'
+      - 'backend/reminders/device_notice_preview.py'
+      - 'backend/reminders/test_device_notice_preview.py'
+      - 'backend/reminders/urls.py'
       - 'backend/reminders/views.py'
       - 'backend/reminders/test_agenda.py'
       - 'backend/reminders/test_operational_inbox.py'
@@ -47,6 +50,9 @@ on:
       - 'clients/flutter/test/operational_action_http_test.dart'
       - 'clients/flutter/test/operational_inbox_widget_test.dart'
       - 'backend/reminders/operational_inbox.py'
+      - 'backend/reminders/device_notice_preview.py'
+      - 'backend/reminders/test_device_notice_preview.py'
+      - 'backend/reminders/urls.py'
       - 'backend/reminders/views.py'
       - 'backend/reminders/test_agenda.py'
       - 'backend/reminders/test_operational_inbox.py'
@@ -96,7 +102,7 @@ jobs:
       - name: Check Django project
         run: python manage.py check
       - name: Product control and suggestion tests
-        run: python manage.py test reminders.test_control_intent reminders.test_person_suggestions_ranking reminders.test_control_responses reminders.test_control_response_api reminders.test_operational_transitions reminders.test_operational_inbox reminders.test_operational_api reminders.test_agenda
+        run: python manage.py test reminders.test_control_intent reminders.test_person_suggestions_ranking reminders.test_control_responses reminders.test_control_response_api reminders.test_operational_transitions reminders.test_operational_inbox reminders.test_operational_api reminders.test_device_notice_preview reminders.test_agenda
       - name: No operational release
         run: |
           echo 'M3_02_DELIVERY=NOT_IMPLEMENTED'
@@ -146,7 +152,7 @@ jobs:
       - name: Check Django with PG17 configuration
         run: python manage.py check
       - name: Run O9b and operational inbox regressions on isolated PG17
-        run: python manage.py test reminders.test_control_intent reminders.test_person_suggestions_ranking reminders.test_control_responses reminders.test_control_response_api reminders.test_operational_transitions reminders.test_operational_inbox reminders.test_operational_api reminders.test_agenda
+        run: python manage.py test reminders.test_control_intent reminders.test_person_suggestions_ranking reminders.test_control_responses reminders.test_control_response_api reminders.test_operational_transitions reminders.test_operational_inbox reminders.test_operational_api reminders.test_device_notice_preview reminders.test_agenda
       - name: Keep release blocked
         run: |
           echo 'M3_02_PG17_EPHEMERAL_ONLY=1'
