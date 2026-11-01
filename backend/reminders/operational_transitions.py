@@ -71,7 +71,7 @@ def transition_reminder(*, renewal_id, reminder_id, action, expected_state,
             raise ValueError("Fecha fuera de rango") from None
         if reminder.control_question:
             from .legal_deadlines import one_month_before
-            if renewal.modality == "vida" or new_day > one_month_before(renewal.expires_on):
+            if renewal.modality == "vida" or new_day >= one_month_before(renewal.expires_on):
                 raise ValueError("Aplazamiento fuera del límite civil; revisión humana")
         new_state = OperationalReminder.State.SNOOZED
     reminder.state = new_state
