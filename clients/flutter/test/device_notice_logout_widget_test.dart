@@ -15,9 +15,13 @@ const workspace = VenciraWorkspace(
 
 class FakeApi implements VenciraApi {
   int logoutCalls = 0;
+  bool unauthorizedWorkspaces = false;
 
   @override
-  Future<List<VenciraWorkspace>> fetchWorkspaces() async => [workspace];
+  Future<List<VenciraWorkspace>> fetchWorkspaces() async {
+    if (unauthorizedWorkspaces) throw const VenciraUnauthorized();
+    return [workspace];
+  }
 
   @override
   Future<VenciraRenewalPage> fetchFilteredRenewals(
@@ -61,6 +65,41 @@ Widget shell(FakeApi api, Future<void> Function() before) =>
     );
 
 void main() {
+  testWidgets('Expired authenticated session triggers local alarm revocation',
+      (tester) async {
+    final api = FakeApi()..unauthorizedWorkspaces = true;
+    var revoked = 0;
+    await tester.pumpWidget(shell(api, () async { revoked++; }));
+    await tester.pumpAndSettle();
+    expect(revoked, 1);
+    expect(api.logoutCalls, 0);
+    expect(find.text('Equipo de pruebas'), findsNothing);
+    api.unauthorizedWorkspaces = false;
+    await tester.tap(find.byIcon(Icons.refresh));
+    await tester.pumpAndSettle();
+    expect(find.text('Equipo de pruebas'), findsWidgets);
+  });
+
+  testWidgets('401 cleanup failure blocks reload until native retry succeeds',
+      (tester) async {
+    final api = FakeApi()..unauthorizedWorkspaces = true;
+    var attempts = 0;
+    var cannotCancel = true;
+    await tester.pumpWidget(shell(api, () async {
+      attempts++;
+      if (cannotCancel) throw StateError('OS alarm failed');
+    }));
+    await tester.pumpAndSettle();
+    expect(attempts, 1);
+    expect(find.text('Equipo de pruebas'), findsNothing);
+    api.unauthorizedWorkspaces = false;
+    cannotCancel = false;
+    await tester.tap(find.byIcon(Icons.refresh));
+    await tester.pumpAndSettle();
+    expect(attempts, 2);
+    expect(find.text('Equipo de pruebas'), findsWidgets);
+  });
+
   testWidgets('Server logout waits for Android alarm cancellation',
       (tester) async {
     final api = FakeApi();
