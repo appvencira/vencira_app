@@ -91,6 +91,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **M3-02 bandeja móvil (01/11/2026):** bloqueadas acciones sobre datos obsoletos después de fallo de recarga, y ocultada lista mientras `_failed` o `_unauthorized`; CI M3 añade `flutter analyze` y test de contrato de bandeja. Documento `docs/M3_02_INBOX_STALE_DATA_GUARD_2026-11-01.md`. CI sin PASS observado; M3-02 sigue abierto; 2/15 (13,3 %).
 
+**M3-02 widgets de bandeja y resultado de acción incierto (01/11/2026):** `clients/flutter/test/operational_inbox_widget_test.dart` añade pruebas de error de recarga, reintento, sesión revocada, error tras acción y etiqueta de aplazado. Flutter oculta datos no validados y fuerza recarga tras fallos de escritura; parser rechaza estados desconocidos; CI M3 incorpora estas pruebas y `flutter analyze`. Documento `docs/M3_02_FLUTTER_INBOX_WIDGET_REGRESSIONS_2026-11-01.md`. **CI no verificada**; M3-02 permanece [ ], progreso 2/15 (13,3 %).
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
