@@ -72,3 +72,9 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 
 - La propagación desde historial individual → índice/bandeja → ficha → dashboard podía intentar varios `Navigator.pop()` sucesivos sobre rutas distintas. Se sustituyó la salida de los controladores de invalidación por `Navigator.popUntil((route) => route.isFirst)`, condicionado a que exista callback de revocación del controlador padre.
 - Este comportamiento todavía exige una prueba widget de navegación anidada y CI del commit final. No convertirlo en veredicto de finalización de macrobloque A.
+
+## A4 — Prueba de navegación anidada
+
+- Commits `92a17e4` y `1edd647`: nueva prueba de widget `detail_expiry_navigation_test.dart` para abrir dos rutas (intermedia e historial), simular `VenciraUnauthorized` durante carga del historial, contar una sola notificación al controlador padre y comprobar el retorno directo al inicio.
+- La firma simulada usa `VenciraOperationalHistory`, coherente con la API declarada.
+- CI del conjunto aún por comprobar. El macrobloque A no se declara completo con una única prueba de navegación.
