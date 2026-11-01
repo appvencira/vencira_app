@@ -96,3 +96,9 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 - `8184416` y `41605de`: si el callback de limpieza del padre falla, las vistas de historial conservan la ruta con los eventos/filas sensibles ya borrados y no ejecutan salida de navegación. El bloqueo persistente y el reintento de la barrera corresponden al controlador principal.
 - `68615e8`: prueba widget de fallo de la barrera: una excepción simulada en la cancelación no debe devolver automáticamente al usuario a la raíz ni reintroducir eventos.
 - Queda pendiente CI de estos cambios y una auditoría de reentrada para otras pantallas. Macrobloque A **NO cerrado**.
+
+## A5 — Consistencia de barrera entre rutas (01/11/2026)
+
+- Commits `8d2d66f`, `726902a`, `99ebbd7`, `3e17b77`: ficha, bandeja, agenda y catálogo capturan el fallo del callback de revocación nativa, conservan estado invalidado y evitan cerrar la ruta si no hay confirmación. Se unifica la conducta que ya aplicaban los historiales.
+- Commit `aa2a01f`: adaptador `_handleExpiredSessionFromChild` del dashboard comunica a las rutas hijas el fallo de la barrera nativa, después de limpiar el estado global. El manejador local previo sigue compatible con rutas originales.
+- **CI de esta tanda aún no confirmado**. Pendiente revisión de rutas adicionales y prueba widget específica del adaptador dashboard. Sin inferir autorización global.
