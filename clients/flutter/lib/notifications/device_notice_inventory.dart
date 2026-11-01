@@ -2,9 +2,11 @@ import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'device_notice_reconciliation.dart';
+import 'device_notice_transaction.dart';
 
 const _maxInventory = 500;
 const _storageKey = 'vencira.device.alarms.v1';
+const _pendingKey = 'vencira.device.alarms.pending.v1';
 final _uuid = RegExp(
     r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
     r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
@@ -102,7 +104,7 @@ List<DeviceNoticeSlot> decodeAlarmInventory(
 
 /// Explicitly scoped encrypted store. No preference, JSON cache, or backup
 /// fallback. Callers must revoke native OS alarms before clearing on logout.
-class EncryptedAlarmInventory {
+class EncryptedAlarmInventory implements DeviceAlarmLedger {
   EncryptedAlarmInventory({
     FlutterSecureStorage? storage,
   }) : _storage = storage ?? const FlutterSecureStorage(
@@ -137,5 +139,42 @@ class EncryptedAlarmInventory {
     }
   }
 
-  Future<void> clear() => _storage.delete(key: _storageKey);
+  @override
+  Future<List<DeviceNoticeSlot>?> readPending({
+    required String workspaceId, required String userId,
+  }) async {
+    final encoded = await _storage.read(key: _pendingKey);
+    if (encoded == null) return null;
+    return decodeAlarmInventory(
+      encoded, workspaceId: workspaceId, userId: userId);
+  }
+
+  @override
+  Future<void> writePending({
+    required String workspaceId, required String userId,
+    required List<DeviceNoticeSlot> slots,
+  }) async {
+    final encoded = encodeAlarmInventory(
+      workspaceId: workspaceId, userId: userId, slots: slots);
+    // Do not overwrite unresolved journals; recovery must complete first.
+    if (await _storage.read(key: _pendingKey) != null) {
+      throw StateError('Alarm recovery required before scheduling');
+    }
+    await _storage.write(key: _pendingKey, value: encoded);
+    if (await _storage.read(key: _pendingKey) != encoded) {
+      throw StateError('Encrypted pending alarm journal not verified');
+    }
+  }
+
+  @override
+  Future<void> clearPending() => _storage.delete(key: _pendingKey);
+
+  /// Only permitted after successful native cancellation of every alarm.
+  /// Never clear an unresolved journal to suppress a scheduling error.
+  Future<void> clear() async {
+    if (await _storage.read(key: _pendingKey) != null) {
+      throw StateError('Cancel journalled alarms before clearing keys');
+    }
+    await _storage.delete(key: _storageKey);
+  }
 }
