@@ -44,3 +44,10 @@ M3-02 sigue abierto. Progreso formal: 2/15 hitos (13,3 %).
 - Commit `adf5bce`: dos pruebas Django de regresión verifican que `403` por rol y `404` por falta de membresía pueden coexistir con `GET /api/v1/me/` **200** dentro de la misma sesión. Se ejecutarán tanto sobre SQLite como PostgreSQL17 por el workflow M3 existente.
 - Implicación: la política que traduce indiscriminadamente `403` a `VenciraUnauthorized` debe revisarse; la pérdida de rol y la caducidad no son idénticas. **No** se ha modificado la interpretación Flutter mientras no queden cubiertas las variantes de CSRF y autenticación DRF.
 - Estado de las dos pruebas nuevas: pendiente de resultado GitHub Actions; no atribuirles PASS de workflows de commits anteriores.
+
+## Contrato de sesión anónima y logout — ampliación
+
+- Commit `7e605c3`: tests backend adicionales verifican que un usuario anónimo no puede consultar identidad ni miembros y que, después del logout, `/api/v1/me/` deja de devolver 200.
+- **Punto crítico:** con DRF SessionAuthentication, una petición anónima puede devolver `403` en lugar de `401` si no existe una cabecera de desafío de autenticación; por eso no es correcto clasificar solo por código HTTP. Los nuevos tests aceptan 401 o 403 para denegación anónima, pero comprueban que no se autoriza.
+- Un `403` por falta de rol con sesión válida sigue diferenciándose mediante `/api/v1/me/` 200. El cliente Flutter **no se ha modificado** para hacer una petición adicional en cada fallo: primero deben definirse reglas ante pérdida de red, concurrencia y retirada de membresía.
+- Pruebas añadidas pendientes de resultado CI del commit correspondiente; no publicar PASS sin consultar su conclusión.
