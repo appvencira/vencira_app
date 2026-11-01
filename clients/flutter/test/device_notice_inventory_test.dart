@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vencira/notifications/device_notice_inventory.dart';
+import 'package:vencira/notifications/device_alarm_scope.dart';
 import 'package:vencira/notifications/device_notice_reconciliation.dart';
 
 const ws = '11111111-1111-4111-8111-111111111111';
@@ -27,6 +28,22 @@ void main() {
     expect(json, isNot(contains('reason')));
     expect(json, isNot(contains('email')));
     expect(json, isNot(contains('policy')));
+  });
+
+  test('Verified encrypted record restores its owner after app restart', () {
+    final record = encodeAlarmInventory(
+        workspaceId: ws, userId: '17', slots: [slot()]);
+    expect(decodeStoredAlarmScope(record),
+        DeviceAlarmScope(workspaceId: ws, userId: '17'));
+    expect(decodeStoredAlarmScope(null), isNull);
+    expect(() => decodeStoredAlarmScope('{'), throwsFormatException);
+    expect(() => decodeStoredAlarmScope(jsonEncode({
+      'version': 1, 'workspace_id': ws, 'user_id': '17',
+      'slots': [
+        {'occurrence_id': occurrence, 'generation': 0,
+         'at': '2027-03-31T09:00:00.000'},
+      ],
+    })), throwsFormatException);
   });
 
   test('User or workspace mismatch fails rather than sharing inventory', () {
