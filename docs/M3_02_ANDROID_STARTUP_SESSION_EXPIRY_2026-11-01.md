@@ -15,6 +15,16 @@ La revisión inicial (`c8f29f6a`) está verificada en GitHub Actions run **41316
 
 La última revisión de esta fase incorpora el manejo de cambios automáticos de workspace y la acción de ajustes. Sus workflows deben quedar en verde de forma independiente antes de afirmar aceptación. Compilar APK no demuestra avisos reales ni funcionamiento offline en un terminal físico.
 
+## Ampliación: cancelación manual y pérdida de membresía
+
+- En ajustes de seguridad Android se ha incorporado una acción funcional de **cancelación voluntaria**, sin permitir opt-in ni programación hasta liberación del producto. La interfaz usa ES/CA y muestra confirmación o error según el resultado real.
+- La actualización de workspaces contempla la **pérdida remota de pertenencia**. Si la selección automática del servidor cambia de workspace, se revocan las alarmas anteriores *antes* de mostrar el nuevo espacio. Si falla, se limpia la vista y se impide el cambio.
+- Widget tests adicionales prueban pérdida de pertenencia con y sin fallo de revocación y cancelación voluntaria desde ajustes Android.
+
+### Incidencia de prueba identificada
+
+En run `41317117956` Django SQLite y PG17 finalizaron PASS. Flutter obtuvo **117 PASS / 1 FAIL** por no restablecer `debugDefaultTargetPlatformOverride` antes del final del test de ajustes. **No fue una excepción del adaptador de notificaciones ni una alarma real**, pero el job completo fue FAIL. La corrección está en commit `1a20c8c7` y se está revalidando en workflow `41317331030`; no asumir PASS hasta ver los tres jobs finales.
+
 ## Bloqueos que no deben levantarse
 
 - La programación nativa sigue sin usarse desde la UI, no se solicita consentimiento de activación y no hay prueba de alarmas entregadas ni tras reboot/Doze/DST.
