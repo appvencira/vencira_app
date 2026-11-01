@@ -18,11 +18,12 @@ import 'vencira_select.dart';
 class VenciraRenewalDetailScreen extends StatefulWidget {
   const VenciraRenewalDetailScreen({super.key, required this.api,
       required this.workspace, required this.renewalId,
-      this.openEditorOnLoad = false});
+      this.openEditorOnLoad = false, this.onSessionExpired});
   final VenciraApi api;
   final VenciraWorkspace workspace;
   final String renewalId;
   final bool openEditorOnLoad;
+  final Future<void> Function()? onSessionExpired;
 
   @override
   State<VenciraRenewalDetailScreen> createState() => _DetailState();
@@ -65,8 +66,29 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       builder: (_) => VenciraOperationalHistoryIndexScreen(
         api: widget.api,
         workspaceId: widget.workspace.id,
-        renewalId: widget.renewalId),
+        renewalId: widget.renewalId,
+        onSessionExpired: _invalidateSession),
     ));
+  }
+
+  Future<void> _invalidateSession() async {
+    if (!mounted || _unauthorized) return;
+    setState(() {
+      _generation++;
+      _unauthorized = true;
+      _loading = false;
+      _renewal = null;
+      _manualFollowUp = null;
+      _history = null;
+      _insurers = [];
+      _followUpLoading = false;
+    });
+    await widget.onSessionExpired?.call();
+    // The parent dashboard now owns the expired-session screen. Leaving this
+    // route mounted would keep a secondary navigation surface alive.
+    if (mounted && widget.onSessionExpired != null) {
+      Navigator.of(context).pop();
+    }
   }
 
   Future<void> _refresh() async {
@@ -81,21 +103,25 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
           value.archiveOutcome.isEmpty) {
         _initialEditTriggered = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _edit();
+          if (mounted && token == _generation && !_unauthorized &&
+              _renewal?.id == value.id) _edit();
         });
       }
       await _loadManualFollowUp(token);
+      if (!mounted || token != _generation || _unauthorized) return;
       try {
         final insurers = await widget.api.fetchInsurers(widget.workspace.id);
         if (mounted && token == _generation) {
           setState(() => _insurers = insurers);
         }
+      } on VenciraUnauthorized {
+        rethrow;
       } catch (_) {
         // No inventar nombre de aseguradora si falla la consulta.
       }
     } on VenciraUnauthorized {
       if (!mounted || token != _generation) return;
-      setState(() { _loading = false; _unauthorized = true; _renewal = null; });
+      await _invalidateSession();
     } catch (_) {
       if (!mounted || token != _generation) return;
       setState(() { _loading = false; _error = true; });
@@ -113,7 +139,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       setState(() { _manualFollowUp = value; _followUpLoaded = true; _followUpLoading = false; });
     } on VenciraUnauthorized {
       if (!mounted || token != _generation) return;
-      setState(() { _unauthorized = true; _followUpLoading = false; });
+      await _invalidateSession();
     } catch (_) {
       if (!mounted || token != _generation) return;
       setState(() { _followUpError = true; _followUpLoading = false; });
@@ -175,7 +201,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
         _t.detailText07)));
       if (_history != null) await _loadHistory(1);
     } on VenciraUnauthorized {
-      if (mounted) setState(() => _unauthorized = true);
+      await _invalidateSession();
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t.saveError)));
@@ -215,7 +241,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
           : _t.detailText13)));
       if (_history != null) await _loadHistory(1);
     } on VenciraUnauthorized {
-      if (mounted) setState(() => _unauthorized = true);
+      await _invalidateSession();
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t.saveError)));
@@ -334,7 +360,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       // No se reconstruye un historial si no se ha solicitado.
       if (mounted && _history != null) await _loadHistory(1);
     } on VenciraUnauthorized {
-      if (mounted) setState(() { _renewal = null; _unauthorized = true; });
+      await _invalidateSession();
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t.saveError)));
@@ -389,7 +415,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       await _refresh();
       if (mounted && _history != null) await _loadHistory(1);
     } on VenciraUnauthorized {
-      if (mounted) setState(() { _renewal = null; _unauthorized = true; });
+      await _invalidateSession();
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t.saveError)));
@@ -515,10 +541,7 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       await _refresh();
       if (mounted && _history != null) await _loadHistory(1);
     } on VenciraUnauthorized {
-      if (mounted) setState(() {
-        _renewal = null;
-        _unauthorized = true;
-      });
+      await _invalidateSession();
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t.saveError)));

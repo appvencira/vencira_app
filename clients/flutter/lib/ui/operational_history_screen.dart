@@ -13,10 +13,12 @@ class VenciraOperationalHistoryScreen extends StatefulWidget {
     required this.renewalId,
     required this.reminderId,
     required this.reason,
+    this.onSessionExpired,
   });
 
   final VenciraApi api;
   final String workspaceId, renewalId, reminderId, reason;
+  final Future<void> Function()? onSessionExpired;
 
   @override
   State<VenciraOperationalHistoryScreen> createState() => _HistoryState();
@@ -45,6 +47,18 @@ class _HistoryState extends State<VenciraOperationalHistoryScreen> {
     super.dispose();
   }
 
+  Future<void> _expire() async {
+    if (!mounted || _unauthorized) return;
+    setState(() {
+      _generation++;
+      _unauthorized = true;
+      _events.clear();
+      _loading = false;
+    });
+    await widget.onSessionExpired?.call();
+    if (mounted && widget.onSessionExpired != null) Navigator.of(context).pop();
+  }
+
   Future<void> _load({bool reload = false}) async {
     if (_loading) return;
     final request = ++_generation;
@@ -63,11 +77,7 @@ class _HistoryState extends State<VenciraOperationalHistoryScreen> {
       });
     } on VenciraUnauthorized {
       if (!mounted || request != _generation) return;
-      setState(() {
-        _unauthorized = true;
-        _events.clear();
-        _loading = false;
-      });
+      await _expire();
     } catch (_) {
       if (!mounted || request != _generation) return;
       setState(() { _loading = false; _failed = true; });

@@ -1,7 +1,8 @@
 import 'device_notice_reconciliation.dart';
 
-/// Port for a future OS-specific adapter. No implementation is registered in
-/// the shipping app, and no native plugin is installed in this phase.
+/// Contract for OS cancellation and scheduling. Android adapter code is
+/// available, but scheduling is NOT activated or registered in the app.
+/// Only the cancellation-only cleanup path is wired at session boundaries.
 abstract class DeviceNoticeAlarmPort {
   Future<void> cancel(DeviceNoticeSlot slot);
   Future<void> schedule(DeviceNoticeSlot slot);

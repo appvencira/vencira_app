@@ -5,6 +5,10 @@ import 'package:http/http.dart' as http;
 /// La API usa cookies de sesión y solo funciona en web bajo el MISMO origen
 /// que Django. No transportamos ni guardamos contraseñas, tokens o cookies.
 abstract class VenciraApi {
+  /// Identity must come from the authenticated server session, never UI state.
+  Future<String> fetchAuthenticatedUserId() async =>
+      throw const VenciraApiException();
+
   Future<List<VenciraWorkspace>> fetchWorkspaces();
 
   /// Estadísticas agregadas del §11; solo web escritorio y propietarios.
@@ -1510,7 +1514,7 @@ class HttpVenciraApi implements VenciraApi {
       }, body:jsonEncode({'expected_revision':expectedRevision}));
     } catch (_) { throw const VenciraApiException(); }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode == 409) throw const VenciraConflictException();
     if (response.statusCode != 200) throw const VenciraApiException();
@@ -1539,7 +1543,7 @@ class HttpVenciraApi implements VenciraApi {
       }));
     } catch (_) { throw const VenciraApiException(); }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode == 409) throw const VenciraConflictException();
     if (response.statusCode != 200) throw const VenciraApiException();
@@ -1615,7 +1619,7 @@ class HttpVenciraApi implements VenciraApi {
       }));
     } catch (_) { throw const VenciraApiException(); }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode == 409) {
       throw const VenciraConflictException();
@@ -1656,7 +1660,7 @@ class HttpVenciraApi implements VenciraApi {
       );
     } catch (_) { throw const VenciraApiException(); }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode == 409) {
       throw const VenciraConflictException();
@@ -1744,7 +1748,7 @@ class HttpVenciraApi implements VenciraApi {
       throw const VenciraApiException();
     }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode == 409) {
       throw const VenciraConflictException();
@@ -1853,6 +1857,35 @@ class HttpVenciraApi implements VenciraApi {
   final bool _ownsClient;
   final Uri _baseUri;
 
+  /// Never replay writes after 401/403: a valid session may lack permission
+  /// or CSRF; only a separately denied /me/ confirms session revocation.
+  Future<void> _rejectDeniedResponse(http.Response response) async {
+    final identity = await _probeIdentityAfterDenial();
+    if (identity == false) throw const VenciraUnauthorized();
+    throw const VenciraApiException();
+  }
+
+  /// null = unavailable or malformed; never classify a failed probe as logout.
+  Future<bool?> _probeIdentityAfterDenial() async {
+    try {
+      final response = await _client.get(
+        _baseUri.resolve('/api/v1/me/'),
+        headers: const {'Accept': 'application/json'},
+      );
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        return false;
+      }
+      if (response.statusCode != 200) return null;
+      final json = jsonDecode(utf8.decode(response.bodyBytes));
+      if (json is! Map<String, dynamic>) return null;
+      final id = json['id'];
+      return id is int && id > 0 && id <= 9007199254740991
+          ? true : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// No sigue URLs next suministradas por el servidor ni orígenes externos.
   /// El path y los UUID proceden de los valores seleccionados en la app.
   Future<Object?> _fetch(String path) async {
@@ -1866,13 +1899,37 @@ class HttpVenciraApi implements VenciraApi {
       throw const VenciraApiException();
     }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      // SessionAuthentication can return 403 for anonymous requests and
+      // for authenticated users with insufficient permissions. Probe identity
+      // once, without recursion; network failures remain indeterminate.
+      final identity = await _probeIdentityAfterDenial();
+      if (identity == false) throw const VenciraUnauthorized();
+      throw const VenciraApiException();
     }
     if (response.statusCode != 200) {
       throw const VenciraApiException();
     }
     try {
       return jsonDecode(utf8.decode(response.bodyBytes));
+    } catch (_) {
+      throw const VenciraApiException();
+    }
+  }
+
+  @override
+  Future<String> fetchAuthenticatedUserId() async {
+    try {
+      final payload = await _fetch('/api/v1/me/') as Map<String, dynamic>;
+      final id = payload['id'];
+      // User PK is always an integer in this Django installation. Do not
+      // accept usernames, arbitrary strings, booleans or values outside the
+      // representable identity range.
+      if (id is! int || id < 1 || id > 9007199254740991) {
+        throw const VenciraApiException();
+      }
+      return id.toString();
+    } on VenciraUnauthorized {
+      rethrow;
     } catch (_) {
       throw const VenciraApiException();
     }
@@ -2019,7 +2076,7 @@ class HttpVenciraApi implements VenciraApi {
       throw const VenciraApiException();
     }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     final expected = method == 'POST' ? 201 : method == 'DELETE' ? 204 : 200;
     if (response.statusCode != expected) throw const VenciraApiException();
@@ -2185,7 +2242,7 @@ class HttpVenciraApi implements VenciraApi {
       response = await http.Response.fromStream(await _client.send(request));
     } catch (_) { throw const VenciraApiException(); }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     final code = method == 'POST' ? 201 : method == 'DELETE' ? 204 : 200;
     if (response.statusCode != code) throw const VenciraApiException();
@@ -2265,7 +2322,7 @@ class HttpVenciraApi implements VenciraApi {
       throw const VenciraApiException();
     }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode != (renewalId == null ? 201 : 200)) {
       throw const VenciraApiException();
@@ -2357,7 +2414,7 @@ class HttpVenciraApi implements VenciraApi {
       throw const VenciraApiException();
     }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode != 200) {
       throw const VenciraApiException();
@@ -2407,7 +2464,7 @@ class HttpVenciraApi implements VenciraApi {
       throw const VenciraApiException();
     }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode != 201) {
       throw const VenciraApiException();
@@ -2464,7 +2521,7 @@ class HttpVenciraApi implements VenciraApi {
       throw const VenciraApiException();
     }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode != 201 && response.statusCode != 200) {
       throw const VenciraApiException();
@@ -2500,7 +2557,7 @@ class HttpVenciraApi implements VenciraApi {
       throw const VenciraApiException();
     }
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const VenciraUnauthorized();
+      await _rejectDeniedResponse(response);
     }
     if (response.statusCode != 200) {
       throw const VenciraApiException();

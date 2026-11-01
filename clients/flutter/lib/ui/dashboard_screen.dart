@@ -20,9 +20,15 @@ import 'vencira_select.dart';
 import 'mfa_setup_screen.dart';
 
 class VenciraDashboardScreen extends StatefulWidget {
-  const VenciraDashboardScreen({super.key, this.api, this.openTodayOnLoad = false});
+  const VenciraDashboardScreen({
+    super.key, this.api, this.openTodayOnLoad = false,
+    this.beforeSessionBoundary,
+  });
 
   final VenciraApi? api;
+  /// Cancellation-only native alarm barrier before account switch/logout.
+  /// Failure aborts the user action rather than discarding encrypted identity.
+  final Future<void> Function()? beforeSessionBoundary;
   /// En la aplicación real, tras autenticarse se abre HOY (§5).
   final bool openTodayOnLoad;
 
@@ -51,7 +57,9 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
   bool _saving = false;
   int _page = 1;
   int _sequence = 0;
+  int _sessionGeneration = 0;
   bool _initialTodayOpened = false;
+  bool _nativeCleanupFailed = false;
 
   @override
   void initState() {
@@ -70,7 +78,46 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     super.dispose();
   }
 
+  Future<void> _handleExpiredSession() async {
+    if (!mounted) return;
+    // Clear customer data and stale requests immediately on authentication
+    // failure, even when native OS cancellation subsequently fails.
+    setState(() {
+      _sequence++;
+      _sessionGeneration++;
+      _unauthorized = true;
+      _selected = null;
+      _renewals = null;
+      _workspaces = [];
+      _modalities = VenciraModalityOption.defaults;
+      _insurers = [];
+      _loadingWorkspaces = false;
+      _loadingRenewals = false;
+    });
+    try {
+      await widget.beforeSessionBoundary?.call();
+      if (mounted) setState(() => _nativeCleanupFailed = false);
+    } catch (_) {
+      // Never claim cleanup succeeded or erase the encrypted alarm journal.
+      // Future workspace loading must pass the cleanup barrier again.
+      if (mounted) setState(() {
+        _nativeCleanupFailed = true;
+        _failed = true;
+      });
+    }
+  }
+
   Future<void> _loadWorkspaces() async {
+    if (_nativeCleanupFailed) {
+      try {
+        await widget.beforeSessionBoundary?.call();
+        if (!mounted) return;
+        _nativeCleanupFailed = false;
+      } catch (_) {
+        if (mounted) setState(() => _failed = true);
+        return;
+      }
+    }
     final sequence = ++_sequence;
     // En una recarga manual conservar la organización y sus resultados.
     // Sólo se descartan si el servidor confirma cambio de pertenencia.
@@ -84,6 +131,33 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     try {
       final loaded = await _api.fetchWorkspaces();
       if (!mounted || sequence != _sequence) return;
+      // Membership can disappear while the app is open. Automatic selection
+      // of a different workspace must also revoke the previous OS alarms;
+      // otherwise a user could receive notifications from a lost workspace.
+      final previousId = _selected?.id;
+      final retained = loaded.any((w) => w.id == previousId);
+      if (previousId != null && !retained) {
+        try {
+          await widget.beforeSessionBoundary?.call();
+        } catch (_) {
+          if (!mounted || sequence != _sequence) return;
+          setState(() {
+            _nativeCleanupFailed = true;
+            _failed = true;
+            _loadingWorkspaces = false;
+            _loadingRenewals = false;
+            _selected = null;
+            _renewals = null;
+            _workspaces = [];
+            _modalities = VenciraModalityOption.defaults;
+            _insurers = [];
+            _sequence++;
+            _sessionGeneration++;
+          });
+          return;
+        }
+        if (!mounted || sequence != _sequence) return;
+      }
       setState(() {
         _workspaces = loaded;
         final previouslySelected = _selected?.id;
@@ -91,6 +165,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         _selected = preserved.isNotEmpty
             ? preserved.first : (loaded.isEmpty ? null : loaded.first);
         if (_selected?.id != previouslySelected) {
+          _sessionGeneration++;
           _renewals = null;
           _searchController.clear();
           _appliedSearch = '';
@@ -120,13 +195,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       }
     } on VenciraUnauthorized {
       if (!mounted || sequence != _sequence) return;
-      setState(() {
-        _loadingWorkspaces = false;
-        _unauthorized = true;
-        _selected = null;
-        _renewals = null;
-        _workspaces = [];
-      });
+      await _handleExpiredSession();
     } catch (_) {
       if (!mounted || sequence != _sequence) return;
       setState(() {
@@ -137,8 +206,26 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
   }
 
   Future<void> _selectWorkspace(VenciraWorkspace? workspace) async {
-    if (workspace == null) return;
+    if (workspace == null || _saving) return;
+    if (workspace.id != _selected?.id && widget.beforeSessionBoundary != null) {
+      setState(() => _saving = true);
+      try {
+        await widget.beforeSessionBoundary!();
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(_t.saveError)),
+          );
+        }
+        return;
+      } finally {
+        if (mounted) setState(() => _saving = false);
+      }
+      if (!mounted) return;
+    }
     setState(() {
+      _sessionGeneration++;
+      _sequence++;
       _selected = workspace;
       _renewals = null;
       _page = 1;
@@ -187,11 +274,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       });
     } on VenciraUnauthorized {
       if (!mounted || sequence != _sequence) return;
-      setState(() {
-        _loadingRenewals = false;
-        _renewals = null;
-        _unauthorized = true;
-      });
+      await _handleExpiredSession();
     } catch (_) {
       if (!mounted || sequence != _sequence) return;
       setState(() {
@@ -203,11 +286,20 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
 
   Future<void> _loadModalities() async {
     final selected = _selected;
-    if (selected == null) return;
+    if (selected == null || _unauthorized || _nativeCleanupFailed) return;
+    final generation = _sessionGeneration;
     try {
       final result = await _api.fetchModalities(selected.id);
-      if (!mounted || _selected?.id != selected.id) return;
+      if (!mounted || _selected?.id != selected.id ||
+          generation != _sessionGeneration || _unauthorized ||
+          _nativeCleanupFailed) return;
       setState(() => _modalities = result);
+    } on VenciraUnauthorized {
+      if (mounted && _selected?.id == selected.id &&
+          generation == _sessionGeneration && !_unauthorized &&
+          !_nativeCleanupFailed) {
+        await _handleExpiredSession();
+      }
     } catch (_) {
       // La página de catálogo informa del fallo y permite reintentar.
     }
@@ -215,11 +307,20 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
 
   Future<void> _loadInsurers() async {
     final workspace = _selected;
-    if (workspace == null) return;
+    if (workspace == null || _unauthorized || _nativeCleanupFailed) return;
+    final generation = _sessionGeneration;
     try {
       final results = await _api.fetchInsurers(workspace.id);
-      if (!mounted || _selected?.id != workspace.id) return;
+      if (!mounted || _selected?.id != workspace.id ||
+          generation != _sessionGeneration || _unauthorized ||
+          _nativeCleanupFailed) return;
       setState(() => _insurers = results);
+    } on VenciraUnauthorized {
+      if (mounted && _selected?.id == workspace.id &&
+          generation == _sessionGeneration && !_unauthorized &&
+          !_nativeCleanupFailed) {
+        await _handleExpiredSession();
+      }
     } catch (_) {
       // No mostrar resultados de otra cuenta si falla una recarga.
       if (mounted && _selected?.id == workspace.id) {
@@ -247,6 +348,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     await Navigator.of(context).push<void>(MaterialPageRoute(
       builder: (_) => VenciraModalityCatalogScreen(
         api: _api, workspace: selected,
+        onSessionExpired: _handleExpiredSession,
       ),
     ));
     if (!mounted || _selected?.id != selected.id) return;
@@ -331,10 +433,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       await _loadRenewals(1);
     } on VenciraUnauthorized {
       if (!mounted) return;
-      setState(() {
-        _unauthorized = true;
-        _renewals = null;
-      });
+      await _handleExpiredSession();
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -349,13 +448,20 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     if (_saving) return;
     setState(() => _saving = true);
     try {
+      // Never terminate the authenticated session while native alarms
+      // remain recoverable only under the current encrypted account scope.
+      await widget.beforeSessionBoundary?.call();
+      if (!mounted) return;
       await _api.logout();
       if (!mounted) return;
       setState(() {
         _sequence++;
+        _sessionGeneration++;
         _selected = null;
         _workspaces = [];
         _renewals = null;
+        _modalities = VenciraModalityOption.defaults;
+        _insurers = [];
         _unauthorized = true;
         _failed = false;
       });
@@ -364,6 +470,31 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_t.logoutError)),
       );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _clearLocalDeviceNotices() async {
+    final cleanup = widget.beforeSessionBoundary;
+    if (_saving || cleanup == null) return;
+    setState(() => _saving = true);
+    final ca = Localizations.localeOf(context).languageCode == 'ca';
+    try {
+      await cleanup();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(ca
+            ? 'S’han cancel·lat els avisos locals del dispositiu.'
+            : 'Se han cancelado los avisos locales del dispositivo.'),
+      ));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(ca
+            ? 'No s’han pogut cancel·lar els avisos locals. Torna-ho a provar.'
+            : 'No se han podido cancelar los avisos locales. Reinténtalo.'),
+      ));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -468,6 +599,27 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
                           builder: (_) => MfaSetupScreen(api: _api,
                             catalan: preferences.locale.languageCode == 'ca'),
                         ));
+                      },
+                    ),
+                  // This is a meaningful opt-OUT only. No UI action can
+                  // enable OS notifications until the release gate is opened.
+                  if (!kIsWeb &&
+                      defaultTargetPlatform == TargetPlatform.android &&
+                      widget.beforeSessionBoundary != null)
+                    ListTile(
+                      key: const ValueKey('settings-clear-local-notices'),
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.notifications_off_outlined),
+                      title: Text(preferences.locale.languageCode == 'ca'
+                        ? 'Cancel·lar avisos locals del dispositiu'
+                        : 'Cancelar avisos locales del dispositivo'),
+                      subtitle: Text(preferences.locale.languageCode == 'ca'
+                        ? 'No s’activen nous avisos automàticament.'
+                        : 'No se activan nuevos avisos automáticamente.'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: _saving ? null : () {
+                        Navigator.of(sheetContext).pop();
+                        _clearLocalDeviceNotices();
                       },
                     ),
                   ListTile(
@@ -724,7 +876,8 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     if (workspace == null || _saving) return;
     Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => VenciraOperationalInboxScreen(
-        api: _api, workspace: workspace),
+        api: _api, workspace: workspace,
+        onSessionExpired: _handleExpiredSession),
     ));
   }
 
@@ -738,6 +891,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
         initialEntry: _entryFilter,
         initialModality: _modalityFilter,
         initialInsurer: _insurerFilter,
+        onSessionExpired: _handleExpiredSession,
       ),
     ));
   }
@@ -1075,6 +1229,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     await Navigator.of(context).push<void>(MaterialPageRoute(
       builder: (_) => VenciraRenewalDetailScreen(
         api: _api, workspace: selected, renewalId: item.id,
+        onSessionExpired: _handleExpiredSession,
       ),
     ));
     if (mounted && _selected?.id == selected.id) _loadRenewals(1);

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:async';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api/vencira_api.dart';
+import 'notifications/device_notice_revocation.dart';
+import 'notifications/device_notice_startup_gate.dart';
 import 'l10n/app_localizations.dart';
 import 'ui/dashboard_screen.dart';
 import 'ui/vencira_theme.dart';
@@ -28,6 +32,29 @@ class _VenciraAppState extends State<VenciraApp> {
   Locale _locale = const Locale('es');
   bool _themeChangedByUser = false;
   bool _localeChangedByUser = false;
+
+  // Share a single cancellation operation between startup, session expiry,
+  // account switch and logout. Do not run native OS changes concurrently.
+  Future<void>? _nativeRevocationInProgress;
+
+  Future<void> _revokeNativeAlarms() {
+    final running = _nativeRevocationInProgress;
+    if (running != null) return running;
+    final completer = Completer<void>();
+    _nativeRevocationInProgress = completer.future;
+    () async {
+      try {
+        await revokePersistedAndroidAlarms();
+        completer.complete();
+      } catch (error, stack) {
+        completer.completeError(error, stack);
+      } finally {
+        _nativeRevocationInProgress = null;
+      }
+    }();
+    return completer.future;
+  }
+
 
   @override
   void initState() {
@@ -111,9 +138,21 @@ class _VenciraAppState extends State<VenciraApp> {
           GlobalCupertinoLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
         ],
-        home: VenciraDashboardScreen(
-          api: widget.api,
-          openTodayOnLoad: widget.api == null,
+        home: DeviceNoticeStartupGate(
+          // This gate is active only for the real Android application.
+          // No authenticated API calls may start before native cancellation
+          // of prior-session alarms succeeds, or the user retries.
+          enabled: widget.api == null && !kIsWeb &&
+              defaultTargetPlatform == TargetPlatform.android,
+          cancelPreviousAlarms: _revokeNativeAlarms,
+          child: VenciraDashboardScreen(
+            api: widget.api,
+            openTodayOnLoad: widget.api == null,
+            // Never schedule on startup; this only cancels. Expired sessions,
+            // logout and workspace changes share the exact same gate.
+            beforeSessionBoundary: widget.api == null
+                ? _revokeNativeAlarms : null,
+          ),
         ),
       ),
     );
