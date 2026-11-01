@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -141,6 +142,26 @@ void main() {
     await tester.pumpAndSettle();
     expect(attempts, 2);
     expect(find.text('Equipo nuevo'), findsWidgets);
+  });
+
+  testWidgets('Android privacy settings offer a real cancellation-only action',
+      (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    final api = FakeApi();
+    var cancellations = 0;
+    await tester.pumpWidget(shell(api, () async { cancellations++; }));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.tune_rounded));
+    await tester.pumpAndSettle();
+    final action = find.byKey(
+        const ValueKey('settings-clear-local-notices'));
+    expect(action, findsOneWidget);
+    await tester.ensureVisible(action);
+    await tester.tap(action);
+    await tester.pumpAndSettle();
+    expect(cancellations, 1);
+    expect(api.logoutCalls, 0);
   });
 
   testWidgets('Server logout waits for Android alarm cancellation',
