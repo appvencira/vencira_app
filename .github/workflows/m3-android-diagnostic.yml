@@ -1,4 +1,4 @@
-name: Android scaffold diagnostic (no delivery)
+name: Android scaffold verification and feature-branch versioning
 on:
   push:
     branches:
@@ -18,18 +18,26 @@ on:
       - '.github/workflows/m3-android-diagnostic.yml'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
+concurrency:
+  group: vencira-android-scaffold-feature
+  cancel-in-progress: false
 jobs:
-  ephemeral-android-build:
+  android-build:
+    if: >-
+      github.repository == 'appvencira/vencira_app' &&
+      github.ref != 'refs/heads/main' &&
+      (github.event_name != 'pull_request' ||
+       (github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event.pull_request.head.ref == 'feature/mb1-m104-transition-contract-batch'))
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    defaults:
-      run:
-        working-directory: clients/flutter
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
         with:
-          persist-credentials: false
+          ref: feature/mb1-m104-transition-contract-batch
+          fetch-depth: 0
+          persist-credentials: true
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -38,21 +46,47 @@ jobs:
         with:
           channel: stable
           cache: true
-      - run: flutter pub get
-      - name: Confirm native Android scaffold is not in the repository
+      - name: Resolve Flutter dependencies
+        working-directory: clients/flutter
+        run: flutter pub get
+      - name: Create Android project only when absent
+        working-directory: clients/flutter
         run: |
-          if test -e android/app/src/main/AndroidManifest.xml; then
-            echo 'Native Android scaffold is now checked in; review this diagnostic.'
+          set -eu
+          if test -f android/app/src/main/AndroidManifest.xml; then
+            echo 'Using versioned Android scaffold'
+          else
+            flutter create --platforms=android --org es --project-name vencira .
+          fi
+          test -f android/app/src/main/AndroidManifest.xml
+          test -f android/gradlew
+          test -f android/gradle/wrapper/gradle-wrapper.jar
+      - name: Verify Android debug APK; never distribute
+        working-directory: clients/flutter
+        run: flutter build apk --debug
+      - name: Commit only safe Android scaffold, never secrets
+        run: |
+          set -eu
+          test -f clients/flutter/build/app/outputs/flutter-apk/app-debug.apk
+          test "$(git branch --show-current)" = 'feature/mb1-m104-transition-contract-batch'
+          git add -A clients/flutter/android
+          git add -f clients/flutter/android/gradle/wrapper/gradle-wrapper.jar
+          if git diff --cached --name-only | grep -E '(^|/)(local\.properties|key\.properties|.*\.keystore|.*\.jks)$'; then
+            echo 'Rejected local or signing file'
             exit 1
           fi
-      - name: Generate temporary Android scaffold, never commit
-        run: flutter create --platforms=android --project-name vencira .
-      - name: Compile synthetic Android debug APK without distributing
-        run: flutter build apk --debug
-      - name: Explicit non-release evidence
+          if git diff --cached --quiet; then
+            echo 'ANDROID_SCAFFOLD_ALREADY_VERSIONED=YES'
+          else
+            git config user.name 'vencira-ci[bot]'
+            git config user.email 'appvencira@users.noreply.github.com'
+            git commit -m 'chore(android): version tested scaffold in isolated branch'
+            git push origin HEAD:feature/mb1-m104-transition-contract-batch
+          fi
+      - name: State explicit release restrictions
         run: |
-          test -f build/app/outputs/flutter-apk/app-debug.apk
-          echo 'ANDROID_SCAFFOLD_TEMPORARY_BUILD=PASS'
+          echo 'ANDROID_DEBUG_BUILD=PASS'
           echo 'NATIVE_NOTIFICATIONS_IMPLEMENTED=NO'
           echo 'OFFLINE_ENCRYPTED_STORE_IMPLEMENTED=NO'
+          echo 'MB1_RELEASE_AUTHORIZED=NO'
           echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
