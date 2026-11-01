@@ -674,6 +674,13 @@ class _VenciraDayAgendaScreenState extends State<VenciraDayAgendaScreen> {
                           const Color(0xFF956DC0),
                         );
                       }
+                      if (event.kind == 'operational_reminder') {
+                        return _activityChip(
+                          '${_t.agendaInternalReminder}: ${event.operationalReason}',
+                          Icons.notifications_active_outlined,
+                          Theme.of(context).colorScheme.primary,
+                        );
+                      }
                       return _activityChip(
                         event.basis == 'notice_deadline'
                             ? _t.agendaPlannedNotice
