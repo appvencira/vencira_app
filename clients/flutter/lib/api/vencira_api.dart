@@ -795,16 +795,23 @@ class VenciraHistoryPage {
 
 /// Evento tipado de la proyección diaria; los valores son códigos de la API.
 class VenciraAgendaEvent {
-  const VenciraAgendaEvent({required this.kind, this.basis, this.candidateId});
+  const VenciraAgendaEvent({
+    required this.kind, this.basis, this.candidateId,
+    this.operationalReminderId, this.operationalReason, this.operationalState,
+  });
 
   final String kind;
   final String? basis;
   final String? candidateId;
+  final String? operationalReminderId;
+  final String? operationalReason;
+  final String? operationalState;
 
   factory VenciraAgendaEvent.fromJson(Map<String, dynamic> json) {
     final kind = json['kind'];
     if (kind != 'expiry' && kind != 'notice_deadline' &&
-        kind != 'reminder' && kind != 'follow_up') {
+        kind != 'reminder' && kind != 'follow_up' &&
+        kind != 'operational_reminder') {
       throw const FormatException('Unsupported agenda event');
     }
     final candidateId = json['candidate_id'];
@@ -813,6 +820,30 @@ class VenciraAgendaEvent {
         (candidateId is! String ||
          (basis != 'expiry' && basis != 'notice_deadline'))) {
       throw const FormatException('Invalid reminder event');
+    }
+    if (kind == 'operational_reminder') {
+      final id = json['reminder_id'];
+      final reason = json['reason'];
+      final state = json['state'];
+      final uuid = RegExp(
+        r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
+        r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+      );
+      if (id is! String || !uuid.hasMatch(id) ||
+          reason is! String || reason.trim().isEmpty ||
+          reason.length > 160 ||
+          state is! String ||
+          !const {'planned', 'pending', 'snoozed'}.contains(state) ||
+          json['delivery_status'] != 'not_implemented' ||
+          candidateId != null || basis != null) {
+        throw const FormatException('Invalid operational agenda event');
+      }
+      return VenciraAgendaEvent(
+        kind: kind as String,
+        operationalReminderId: id,
+        operationalReason: reason,
+        operationalState: state,
+      );
     }
     return VenciraAgendaEvent(
       kind: kind as String,
