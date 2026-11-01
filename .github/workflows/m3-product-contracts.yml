@@ -5,6 +5,9 @@ on:
       - main
     paths:
       - 'clients/flutter/lib/ui/operational_inbox_screen.dart'
+      - 'clients/flutter/android/app/build.gradle.kts'
+      - 'clients/flutter/android/app/src/main/AndroidManifest.xml'
+      - 'scripts/check_android_platform_security.py'
       - 'clients/flutter/lib/ui/day_agenda_screen.dart'
       - 'clients/flutter/test/day_agenda_test.dart'
       - 'clients/flutter/test/agenda_operational_event_test.dart'
@@ -50,6 +53,9 @@ on:
   pull_request:
     paths:
       - 'clients/flutter/lib/ui/operational_inbox_screen.dart'
+      - 'clients/flutter/android/app/build.gradle.kts'
+      - 'clients/flutter/android/app/src/main/AndroidManifest.xml'
+      - 'scripts/check_android_platform_security.py'
       - 'clients/flutter/lib/ui/day_agenda_screen.dart'
       - 'clients/flutter/test/day_agenda_test.dart'
       - 'clients/flutter/test/agenda_operational_event_test.dart'
@@ -121,6 +127,8 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Check Django project
         run: python manage.py check
+      - name: Guard native release signing and privacy defaults
+        run: python ../scripts/check_android_platform_security.py
       - name: Product control and suggestion tests
         run: python manage.py test reminders.test_reminder_planning reminders.test_control_intent reminders.test_person_suggestions_ranking reminders.test_control_responses reminders.test_control_response_api reminders.test_operational_transitions reminders.test_operational_inbox reminders.test_operational_api reminders.test_results reminders.test_device_notice_preview reminders.test_agenda
       - name: No operational release
