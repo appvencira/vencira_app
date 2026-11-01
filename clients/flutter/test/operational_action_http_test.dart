@@ -16,13 +16,18 @@ VenciraOperationalReminder item() => VenciraOperationalReminder(
 );
 
 HttpVenciraApi apiWithReply(Map<String, dynamic> actionReply,
-    {int status = 200, void Function(http.Request)? checkRequest}) {
+    {int status = 200, int identityStatus = 403,
+    void Function(http.Request)? checkRequest}) {
   final client = MockClient((request) async {
     if (request.url.path == '/api/v1/csrf/') {
       return http.Response(
         jsonEncode({'csrfToken': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'}),
         200, headers: {'content-type': 'application/json'},
       );
+    }
+    if (request.url.path == '/api/v1/me/') {
+      return http.Response(jsonEncode({'id': 12}), identityStatus,
+        headers: {'content-type': 'application/json'});
     }
     checkRequest?.call(request);
     return http.Response(jsonEncode(actionReply), status,
@@ -84,6 +89,28 @@ void main() {
       api.updateOperationalReminder(ws, renewal, item(), 'complete',
           '44444444-4444-4444-8444-444444444444'),
       throwsA(isA<VenciraConflictException>()),
+    );
+    api.close();
+  });
+
+  test('HTTP action: forbidden with valid identity is not logout', () async {
+    final api = apiWithReply({'detail': 'forbidden'},
+        status: 403, identityStatus: 200);
+    await expectLater(
+      api.updateOperationalReminder(ws, renewal, item(), 'complete',
+          '44444444-4444-4444-8444-444444444444'),
+      throwsA(isA<VenciraApiException>()),
+    );
+    api.close();
+  });
+
+  test('HTTP action: ambiguous 401 with valid identity is not logout', () async {
+    final api = apiWithReply({'detail': 'forbidden'},
+        status: 401, identityStatus: 200);
+    await expectLater(
+      api.updateOperationalReminder(ws, renewal, item(), 'complete',
+          '44444444-4444-4444-8444-444444444444'),
+      throwsA(isA<VenciraApiException>()),
     );
     api.close();
   });
