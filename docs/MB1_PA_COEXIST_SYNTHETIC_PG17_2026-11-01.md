@@ -16,5 +16,5 @@
 - Objetos verdaderamente cifrados en almacenamiento independiente; adversarios, hash, corrupción y congelación DB+FS bajo carga.
 - Derechos SQL de ejecución final y segundo host independiente.
 
-**Estado actual: código publicado, NO EJECUTADO por operador.**
+**Estado actual: PASS confirmado por operador (01/11/2026).** `MB1_PA_COEXIST_PREFLIGHT=OK`, `MB1_PA_COEXIST_PG17_INTERNAL=OK`, `MB1_PA_COEXIST_LEGACY_SCHEMA_SYNTHETIC=OK`, `MB1_PA_COEXIST_METADATA_RECONCILED=OK`, `MB1_PA_COEXIST_SYNTHETIC_OBJECT_HASH_FAILCLOSED=OK`, `MB1_PA_COEXIST_METADATA_DIVERGENCE_DENIED=OK`, `MB1_PA_COEXIST_NO_AUTOMATIC_DELETION=OK`, `MB1_PA_COEXIST_LAB=OK`, `MB1_PA_COEXIST_PHASE=DONE`, `MB1_PA_COEXIST_RESULT=0`. Limites declarados: fake store TEST_ONLY; MFA migraciones no aplicadas; migración histórica 0027 y almacén cifrado real NOT_RUN. Dos marcadores NOT_RUN aparecen concatenados en la salida copiada, por lo que se leen como límites explícitos, sin atribuirles validación.
 `MB1_GLOBAL_FREEZE=NOT_VERIFIED`; `MB1_RELEASE_AUTHORIZED=NO`; `MFA_RELEASE_AUTHORIZED=NO`; `C_FICHA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Progreso formal: 1/15 (6,7%).
