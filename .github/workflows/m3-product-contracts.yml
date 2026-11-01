@@ -6,6 +6,8 @@ on:
       - feature/mb1-m104-transition-contract-batch
     paths:
       - 'clients/flutter/lib/ui/operational_inbox_screen.dart'
+      - 'clients/flutter/lib/ui/day_agenda_screen.dart'
+      - 'clients/flutter/test/agenda_today_inbox_test.dart'
       - 'clients/flutter/lib/api/vencira_api.dart'
       - 'clients/flutter/test/operational_inbox_test.dart'
       - 'clients/flutter/test/operational_action_http_test.dart'
@@ -31,6 +33,8 @@ on:
   pull_request:
     paths:
       - 'clients/flutter/lib/ui/operational_inbox_screen.dart'
+      - 'clients/flutter/lib/ui/day_agenda_screen.dart'
+      - 'clients/flutter/test/agenda_today_inbox_test.dart'
       - 'clients/flutter/lib/api/vencira_api.dart'
       - 'clients/flutter/test/operational_inbox_test.dart'
       - 'clients/flutter/test/operational_action_http_test.dart'
@@ -155,6 +159,6 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter analyze
-      - run: flutter test test/operational_inbox_test.dart test/operational_inbox_widget_test.dart test/operational_action_http_test.dart
+      - run: flutter test test/operational_inbox_test.dart test/operational_inbox_widget_test.dart test/operational_action_http_test.dart test/agenda_today_inbox_test.dart
       - name: Compile Flutter Web without publishing
         run: flutter build web --release --pwa-strategy=none
