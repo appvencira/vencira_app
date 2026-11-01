@@ -77,6 +77,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **CIERRE FORMAL M3-01 (01/11/2026):** reconciliación de las 23 páginas/18 secciones del whitepaper y revisión delta en HEAD completadas, con discrepancias aún abiertas documentadas en `docs/M3_01_WHITEPAPER_RECONCILIATION_CLOSURE_2026-11-01.md` (`f5282f1`). **M3-01 [x]**, porque el criterio era auditoría y registro de diferencias, no su implementación. MB1 1/7, MB2 0/4, MB3 1/4; **total 2/15 = 13,3 %**. No cambia ningún gate de seguridad ni autoriza despliegue.
 
+**M3-02 avance funcional (01/11/2026):** priorización de sugerencias de anotaciones Clientes previamente visibles en `backend/reminders/person_suggestions.py`, con prueba específica `backend/reminders/test_person_suggestions_ranking.py` y documento `docs/M3_02_CLIENT_SUGGESTIONS_BATCH_2026-11-01.md`. Prueba pendiente de PASS CI; sin desplegar, sin nuevos permisos y sin cierre M3-02. Total 2/15 = 13,3 %.
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
