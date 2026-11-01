@@ -112,3 +112,28 @@ Future<void> applyDurableDeviceNoticeDiff({
   );
   await ledger.clearPending();
 }
+
+/// Logout/permission-revocation gate: never erase encryption keys before
+/// confirming native cancellation of every known OS alarm. A cancellation
+/// failure retains the durable pending journal and blocks further schedules.
+/// The caller must then clear the empty scoped store and release the session.
+Future<void> revokeAllDeviceNotices({
+  required DeviceAlarmLedger ledger,
+  required DeviceNoticeAlarmPort revocationPort,
+  required String workspaceId,
+  required String userId,
+}) async {
+  await recoverInterruptedDeviceNotices(
+    ledger: ledger, port: revocationPort,
+    workspaceId: workspaceId, userId: userId,
+  );
+  final installed = await ledger.read(
+    workspaceId: workspaceId, userId: userId,
+  );
+  if (installed.isEmpty) return;
+  await applyDurableDeviceNoticeDiff(
+    ledger: ledger, port: revocationPort,
+    workspaceId: workspaceId, userId: userId,
+    diff: DeviceNoticeDiff(cancel: installed, schedule: const []),
+  );
+}
