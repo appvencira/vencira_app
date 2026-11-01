@@ -35,6 +35,52 @@ def main() -> int:
     ):
         print("ANDROID_PLATFORM_GUARD=FAIL_BACKUP_OR_CLEAR_TEXT")
         return 1
+    allowed_permissions = {
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+    }
+    declared = {
+        row.get(NAMESPACE + "name")
+        for row in root.findall("uses-permission")
+    }
+    if declared != allowed_permissions:
+        print("ANDROID_PLATFORM_GUARD=FAIL_NOTIFICATION_PERMISSIONS")
+        return 1
+    allowed_receivers = {
+        "com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver",
+        "com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver",
+    }
+    receivers = {
+        row.get(NAMESPACE + "name"): row
+        for row in app.findall("receiver")
+    }
+    if set(receivers) != allowed_receivers:
+        print("ANDROID_PLATFORM_GUARD=FAIL_NOTIFICATION_RECEIVERS")
+        return 1
+    if any(row.get(NAMESPACE + "exported") != "false"
+           for row in receivers.values()):
+        print("ANDROID_PLATFORM_GUARD=FAIL_EXPORTED_RECEIVER")
+        return 1
+    expected_boot_actions = {
+        "android.intent.action.BOOT_COMPLETED",
+        "android.intent.action.MY_PACKAGE_REPLACED",
+    }
+    boot = receivers[
+        "com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+    ]
+    actions = {
+        row.get(NAMESPACE + "name")
+        for intent in boot.findall("intent-filter")
+        for row in intent.findall("action")
+    }
+    if actions != expected_boot_actions:
+        print("ANDROID_PLATFORM_GUARD=FAIL_BOOT_ACTIONS")
+        return 1
+    if receivers[
+        "com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+    ].find("intent-filter") is not None:
+        print("ANDROID_PLATFORM_GUARD=FAIL_SCHEDULER_EXPOSURE")
+        return 1
     for permission in root.findall("uses-permission"):
         if permission.get(NAMESPACE + "name") in {
             "android.permission.USE_EXACT_ALARM",
