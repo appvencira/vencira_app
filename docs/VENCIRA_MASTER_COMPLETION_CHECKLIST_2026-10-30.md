@@ -71,6 +71,8 @@ Fuente de seguimiento: esta checklist en la rama `feature/c-ficha-independent-at
 
 **G1 revisión semántica parcial (01/11/2026):** verificados directamente cuatro módulos de adjuntos en GitHub: handlers HTTP deniegan POST/DELETE/descarga; `may_download_attachment` devuelve `False`; el almacén interno mantiene métodos de escritura y `discard_quarantine` con borrado físico que requiere auditoría de llamadores; conciliación de metadatos es de solo lectura pero no snapshot global. Documento `docs/MB1_G1_ATTACHMENT_CALLPATH_SEMANTIC_REVIEW_2026-11-01.md`. No constituye revisión de los 146 callsites ni cierre G1–G3; 1/15.
 
+**G1 callers almacén privado (01/11/2026):** `scripts/mb1_g1_private_store_callers.py` publicado e integrado en `.github/workflows/mb1-audit.yml`, localiza imports/llamadas explícitas de Fernet/quarantine en checkout Python. **Ejecución y revisión pendientes**, no cubre alias dinámicos ni código no Python; documentado en `docs/MB1_G1_PRIVATE_STORE_CALLERS_2026-11-01.md`. G1–G3 no cerrados; 1/15.
+
 **Regla de seguimiento para próximas sesiones:** registrar cada resultado PASS/FAIL con fecha, evidencia y commit en el hito correspondiente; actualizar este panel y anotar explícitamente lo que sigue pendiente. No incrementar porcentaje porque haya más tests si no se ha cerrado un hito.
 
 
