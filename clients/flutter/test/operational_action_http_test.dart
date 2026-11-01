@@ -18,7 +18,7 @@ VenciraOperationalReminder item() => VenciraOperationalReminder(
 HttpVenciraApi apiWithReply(Map<String, dynamic> actionReply,
     {int status = 200, void Function(http.Request)? checkRequest}) {
   final client = MockClient((request) async {
-    if (request.uri.path == '/api/v1/csrf/') {
+    if (request.url.path == '/api/v1/csrf/') {
       return http.Response(
         jsonEncode({'csrfToken': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'}),
         200, headers: {'content-type': 'application/json'},
@@ -40,7 +40,7 @@ void main() {
   test('HTTP action: successful internal result preserves control bound', () async {
     final api = apiWithReply(validReply(), checkRequest: (req) {
       expect(req.method, 'POST');
-      expect(req.uri.path, contains('/operational-reminders/$reminderId/action/'));
+      expect(req.url.path, contains('/operational-reminders/$reminderId/action/'));
       expect(req.headers['X-CSRFToken'], isNotEmpty);
       final body = jsonDecode(req.body) as Map<String, dynamic>;
       expect(body['action'], 'another_day');
