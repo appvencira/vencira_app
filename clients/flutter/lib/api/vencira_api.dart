@@ -991,7 +991,9 @@ class VenciraOperationalReminder {
   final bool controlQuestion;
 
   factory VenciraOperationalReminder.fromJson(Map<String, dynamic> raw) {
+    const validStates = {'planned', 'pending', 'snoozed', 'completed', 'cancelled'};
     if (raw['id'] is! String || raw['state'] is! String ||
+        !validStates.contains(raw['state']) ||
         raw['scheduled_for'] is! String || raw['reason'] is! String ||
         raw['control_question'] is! bool ||
         raw['delivery_status'] != 'not_implemented') {
