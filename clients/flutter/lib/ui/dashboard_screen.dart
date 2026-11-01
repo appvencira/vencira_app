@@ -348,6 +348,7 @@ class _VenciraDashboardScreenState extends State<VenciraDashboardScreen> {
     await Navigator.of(context).push<void>(MaterialPageRoute(
       builder: (_) => VenciraModalityCatalogScreen(
         api: _api, workspace: selected,
+        onSessionExpired: _handleExpiredSession,
       ),
     ));
     if (!mounted || _selected?.id != selected.id) return;
