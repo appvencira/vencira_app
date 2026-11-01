@@ -57,8 +57,13 @@ class ReminderPlanningTests(SimpleTestCase):
     def test_control_repeat_last_day_and_no_post_cutoff(self):
         expiry = date(2027, 3, 31)
         self.assertEqual(validate_control_repeat_day(
-            expiry, as_of=date(2027, 2, 25), days_later=3), date(2027, 2, 28))
-        for today, days in ((date(2027, 2, 25), 4),
+            expiry, as_of=date(2027, 2, 25), days_later=2), date(2027, 2, 27))
+        self.assertEqual(validate_control_repeat_day(
+            date(2028, 3, 31), as_of=date(2028, 2, 27), days_later=1),
+            date(2028, 2, 28))
+        for today, days in ((date(2027, 2, 25), 3),
+                            (date(2028, 2, 27), 2),
+                            (date(2027, 2, 25), 4),
                             (date(2027, 2, 28), 1),
                             (date(2027, 3, 1), 1),
                             (date(2027, 2, 25), True),
