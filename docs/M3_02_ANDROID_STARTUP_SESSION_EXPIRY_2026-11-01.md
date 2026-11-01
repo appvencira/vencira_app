@@ -80,3 +80,11 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 - Commit `abc5b0e`: si el servidor elimina el workspace activo y falla la cancelación nativa, el dashboard oculta también las cachés de modalidades y aseguradoras e invalida peticiones pendientes. Conserva el estado de fallo para bloquear recargas hasta reintentar la cancelación.
 - Commit `d82c27f`: test widget de denegación de pertenencia con cancelación fallida, ocultación de espacios anterior y nuevo, y recuperación posterior.
 - Los cambios de este bloque **requieren nuevo CI**; no inferir resultado desde el commit previo. M3-02 abierto, sin avisos Android reales ni autorización de despliegue.
+
+## Control de respuestas tardías de catálogos (01/11/2026)
+
+- CI de la revisión anterior `12b55c0`: M3 `41330260382`, Android `41330260363` y MB1 `41330260361` finalizaron `success`; scaffold `41330260417` fue `skipped`.
+- `b7df09d`: el dashboard asigna una generación de sesión a peticiones de modalidades y aseguradoras. Al cambiar de cuenta, detectar caducidad o cerrar sesión invalida la generación anterior. Los resultados y errores de autenticación tardíos de una generación obsoleta se descartan.
+- `214785d`: prueba de regresión que mantiene pendiente la carga de modalidades, cierra sesión y después entrega un error de autenticación antiguo; no debe provocar una segunda revocación ni mostrar el workspace anterior.
+- Esta protección se limita a los cargadores del dashboard; no demuestra seguridad universal en pantallas secundarias ni revocación completa a través de todas las rutas.
+- **Pendiente CI de esta revisión.** No habilitar avisos, fusionar, desplegar ni ejecutar migraciones persistentes.
