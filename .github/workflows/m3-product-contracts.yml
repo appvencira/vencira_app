@@ -5,6 +5,8 @@ on:
       - main
     paths:
       - 'clients/flutter/lib/ui/operational_inbox_screen.dart'
+      - 'clients/flutter/lib/ui/operational_history_screen.dart'
+      - 'clients/flutter/lib/ui/operational_history_index_screen.dart'
       - 'clients/flutter/lib/ui/day_agenda_screen.dart'
       - 'clients/flutter/test/day_agenda_test.dart'
       - 'clients/flutter/test/agenda_operational_event_test.dart'
