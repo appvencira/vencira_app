@@ -22,18 +22,49 @@ int androidNoticeId(String opaqueKey) {
   return hash == 0 ? 1 : hash;
 }
 
+/// Preverified ID ownership survives repeated cancels in the same process.
+/// A cancelled ID remains reserved to prevent a different task from reusing
+/// it after a hash collision. Only a fresh verified inventory can reset it.
+class AndroidNoticeIdRegistry {
+  AndroidNoticeIdRegistry(Iterable<DeviceNoticeSlot> existing) {
+    for (final slot in existing) {
+      reserve(slot);
+    }
+  }
+
+  final Map<int, String> _ownerById = {};
+
+  int reserve(DeviceNoticeSlot slot) {
+    final id = androidNoticeId(slot.key);
+    final owner = _ownerById[id];
+    if (owner != null && owner != slot.key) {
+      throw StateError('Local notification ID collision');
+    }
+    _ownerById[id] = slot.key;
+    return id;
+  }
+
+  int authorizedCancelId(DeviceNoticeSlot slot) {
+    final id = androidNoticeId(slot.key);
+    if (_ownerById[id] != slot.key) {
+      throw StateError('Untracked local alarm cannot be cancelled');
+    }
+    return id;
+  }
+}
+
 /// Real Android OS adapter: intentionally NOT initialized from main.dart.
 ///
 /// Never construct without explicit consent, a verified encrypted inventory
 /// and an authenticated current session. Inexact OS scheduling may be delayed.
 class AndroidLocalAlarmPort implements DeviceNoticeAlarmPort {
   AndroidLocalAlarmPort._(
-    this._plugin, this._location, this._idOwners,
+    this._plugin, this._location, this._registry,
   );
 
   final FlutterLocalNotificationsPlugin _plugin;
   final tz.Location _location;
-  final Map<int, String> _idOwners;
+  final AndroidNoticeIdRegistry _registry;
 
   static Future<AndroidLocalAlarmPort> prepare({
     required bool explicitUserOptIn,
@@ -64,39 +95,21 @@ class AndroidLocalAlarmPort implements DeviceNoticeAlarmPort {
       // Permission prompts MUST be a separate explicit UI action.
       throw StateError('Android notification permission not granted');
     }
-    final ids = <int, String>{};
-    for (final slot in installedInventory) {
-      final id = androidNoticeId(slot.key);
-      if (ids.containsKey(id)) {
-        throw StateError('Android notification ID collision');
-      }
-      ids[id] = slot.key;
-    }
-    return AndroidLocalAlarmPort._(notifications, location, ids);
-  }
-
-  int _verifiedId(DeviceNoticeSlot slot) {
-    final id = androidNoticeId(slot.key);
-    final owner = _idOwners[id];
-    if (owner != null && owner != slot.key) {
-      throw StateError('Notification ID belongs to a different alarm');
-    }
-    return id;
+    final registry = AndroidNoticeIdRegistry(installedInventory);
+    return AndroidLocalAlarmPort._(notifications, location, registry);
   }
 
   @override
   Future<void> cancel(DeviceNoticeSlot slot) async {
-    final id = _verifiedId(slot);
-    if (_idOwners[id] != slot.key) {
-      throw StateError('Untracked alarm cannot be cancelled silently');
-    }
+    final id = _registry.authorizedCancelId(slot);
+    // Keep the ID authorized so a cancellation can be retried after a lost
+    // acknowledgement or a partial batch failure, without leaking an alarm.
     await _plugin.cancel(id: id);
-    _idOwners.remove(id);
   }
 
   @override
   Future<void> schedule(DeviceNoticeSlot slot) async {
-    final id = _verifiedId(slot);
+    final id = _registry.reserve(slot);
     final local = tz.TZDateTime(
       _location, slot.at.year, slot.at.month, slot.at.day,
       slot.at.hour, slot.at.minute,
@@ -109,7 +122,6 @@ class AndroidLocalAlarmPort implements DeviceNoticeAlarmPort {
     // Reserve ownership BEFORE the OS call: an alarm may be installed even
     // when the platform response is lost. The caller can then compensate by
     // cancelling this exact slot instead of leaving a stray notification.
-    _idOwners[id] = slot.key;
     await _plugin.zonedSchedule(
       id: id, scheduledDate: local,
       title: 'VENCIRA',
