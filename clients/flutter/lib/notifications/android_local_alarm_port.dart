@@ -59,12 +59,14 @@ class AndroidNoticeIdRegistry {
 /// and an authenticated current session. Inexact OS scheduling may be delayed.
 class AndroidLocalAlarmPort implements DeviceNoticeAlarmPort {
   AndroidLocalAlarmPort._(
-    this._plugin, this._location, this._registry,
-  );
+    this._plugin, this._location, this._registry, {
+    bool revocationOnly = false,
+  }) : _revocationOnly = revocationOnly;
 
   final FlutterLocalNotificationsPlugin _plugin;
   final tz.Location _location;
   final AndroidNoticeIdRegistry _registry;
+  final bool _revocationOnly;
 
   static Future<AndroidLocalAlarmPort> prepare({
     required bool explicitUserOptIn,
@@ -126,6 +128,7 @@ class AndroidLocalAlarmPort implements DeviceNoticeAlarmPort {
     }
     return AndroidLocalAlarmPort._(
       notifications, location, AndroidNoticeIdRegistry(installedAndPending),
+      revocationOnly: true,
     );
   }
 
@@ -139,6 +142,9 @@ class AndroidLocalAlarmPort implements DeviceNoticeAlarmPort {
 
   @override
   Future<void> schedule(DeviceNoticeSlot slot) async {
+    if (_revocationOnly) {
+      throw StateError('Revocation-only port cannot schedule alarms');
+    }
     final id = _registry.reserve(slot);
     final local = tz.TZDateTime(
       _location, slot.at.year, slot.at.month, slot.at.day,
