@@ -102,3 +102,10 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 - Commits `8d2d66f`, `726902a`, `99ebbd7`, `3e17b77`: ficha, bandeja, agenda y catálogo capturan el fallo del callback de revocación nativa, conservan estado invalidado y evitan cerrar la ruta si no hay confirmación. Se unifica la conducta que ya aplicaban los historiales.
 - Commit `aa2a01f`: adaptador `_handleExpiredSessionFromChild` del dashboard comunica a las rutas hijas el fallo de la barrera nativa, después de limpiar el estado global. El manejador local previo sigue compatible con rutas originales.
 - **CI de esta tanda aún no confirmado**. Pendiente revisión de rutas adicionales y prueba widget específica del adaptador dashboard. Sin inferir autorización global.
+
+## A5 — Cierre de regresiones de fallo de cancelación
+
+- PR #17 continúa draft. Head anterior `c549d55`, sin resultados CI PR disponibles en el conector; no atribuir PASS.
+- `c291f4e`: prueba widget de ruta de ficha con `VenciraUnauthorized` y rechazo del callback de cancelación nativa. Exige que la ruta permanezca montada, sin abrir automáticamente otra ruta.
+- Se mantienen las pruebas equivalentes del historial, la espera de barrera con `Completer`, clasificación HTTP y cancelación desde dashboard.
+- **Pendiente** comprobar CI vía GitHub Actions, analizar otras rutas y ejecutar ensayos reales de Android. Estado A=OPEN, B=BLOCKED, autorizaciones de release=NO.
