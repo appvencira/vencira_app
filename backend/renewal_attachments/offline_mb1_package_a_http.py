@@ -27,18 +27,30 @@ def main():
 
     # Explicit test-only synthetic support for real middleware. No MFA
     # migration state is inserted, no enrollment endpoints are activated.
-    existing=set(connection.introspection.table_names())
-    with connection.schema_editor() as editor:
-        for model in (UserMfaState, MfaAdministrativeRecoveryCase):
-            if model._meta.db_table not in existing:
-                editor.create_model(model)
+    if os.environ.get('MB1_PA_SCHEMA_BOOTSTRAP') == '1':
+        if os.environ.get('POSTGRES_USER') != 'mb1':
+            raise SystemExit('MB1_PA_BOOTSTRAP_ADMIN_REQUIRED')
+        existing=set(connection.introspection.table_names())
+        with connection.schema_editor() as editor:
+            for model in (UserMfaState, MfaAdministrativeRecoveryCase):
+                if model._meta.db_table not in existing:
+                    editor.create_model(model)
+        print('MB1_PA_MFA_TABLES_SYNTHETIC_ONLY=OK')
+        return
+    if os.environ.get('POSTGRES_USER') != 'mb1_pa_limited':
+        raise SystemExit('MB1_PA_NONADMIN_REQUIRED')
+    with connection.cursor() as cur:
+        cur.execute('SELECT rolsuper, rolcreatedb, rolcreaterole FROM pg_roles WHERE rolname=current_user')
+        assert cur.fetchone() == (False,False,False)
+        cur.execute("SELECT has_schema_privilege(current_user,'public','CREATE')")
+        assert cur.fetchone()[0] is False
+    print('MB1_PA_HTTP_NONADMIN_ROLE=OK')
     from django.db.migrations.recorder import MigrationRecorder
     applied=MigrationRecorder(connection).applied_migrations()
     assert ("reminders","0018_draft_reasons") in applied
     assert not any(a=="reminders" and n.startswith(tuple(f"{i:04d}" for i in range(19,28))) for a,n in applied)
     assert "reminders_renewalattachment" not in connection.introspection.table_names()
     assert apps.get_app_config("reminders").models.get("renewalattachment") is None
-    print("MB1_PA_MFA_TABLES_SYNTHETIC_ONLY=OK")
     u=get_user_model().objects.create_user(username="pa_http_owner",password="synthetic-test-only-password-123")
     other=get_user_model().objects.create_user(username="pa_http_stranger",password="synthetic-test-only-password-456")
     w=Workspace.objects.create(name="PA HTTP TEST")
