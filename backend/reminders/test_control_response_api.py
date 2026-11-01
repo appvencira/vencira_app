@@ -101,3 +101,39 @@ class ManualControlApiTests(TestCase):
             self.url(), self.payload(), format="json",
         ).status_code, 409)
         self.assertFalse(RenewalControlResponse.objects.exists())
+
+    @patch("reminders.control_response_api.timezone.localdate",
+           return_value=date(2027, 1, 10))
+    def test_idempotency_conflict_and_revision_fail_closed(self, _):
+        initial = self.payload()
+        self.assertEqual(
+            self.client.post(self.url(), initial, format="json").status_code, 201)
+        changed = dict(initial, yes_option="notified_by_mediator")
+        self.assertEqual(
+            self.client.post(self.url(), changed, format="json").status_code, 409)
+        stale = self.payload(revision=0)
+        response = self.client.post(self.url(), stale, format="json")
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.data["current_revision"], 1)
+        self.assertEqual(RenewalControlResponse.objects.count(), 1)
+
+    @patch("reminders.control_response_api.timezone.localdate",
+           return_value=date(2027, 1, 10))
+    def test_strict_payload_and_life_review_write_nothing(self, _):
+        for changes in (
+            {"origin": "automatic"},
+            {"revision": True},
+            {"yes_option": "invented"},
+            {"answer": "no", "yes_option": "notified_by_client", "days_later": 1},
+            {"idempotency_key": "not-a-uuid"},
+        ):
+            with self.subTest(changes=changes):
+                response = self.client.post(
+                    self.url(), self.payload(**changes), format="json")
+                self.assertEqual(response.status_code, 400, response.data)
+        self.assertFalse(RenewalControlResponse.objects.exists())
+        self.renewal.modality = "vida"
+        self.renewal.save(update_fields=["modality"])
+        response = self.client.post(self.url(), self.payload(), format="json")
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertFalse(RenewalControlResponse.objects.exists())
