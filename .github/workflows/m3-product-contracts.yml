@@ -27,11 +27,21 @@ on:
       - '.github/workflows/m3-product-contracts.yml'
   pull_request:
     paths:
+      - 'clients/flutter/lib/ui/operational_inbox_screen.dart'
+      - 'clients/flutter/lib/api/vencira_api.dart'
+      - 'clients/flutter/test/operational_inbox_test.dart'
+      - 'clients/flutter/test/operational_inbox_widget_test.dart'
       - 'backend/reminders/operational_inbox.py'
       - 'backend/reminders/test_operational_inbox.py'
       - 'clients/flutter/lib/l10n/app_es.arb'
       - 'clients/flutter/lib/l10n/app_ca.arb'
       - 'backend/reminders/control_intent.py'
+      - 'backend/reminders/operational_transitions.py'
+      - 'backend/reminders/test_operational_transitions.py'
+      - 'backend/reminders/control_response_api.py'
+      - 'backend/reminders/control_responses.py'
+      - 'backend/reminders/test_control_response_api.py'
+      - 'backend/reminders/test_control_responses.py'
       - 'backend/reminders/test_control_intent.py'
       - 'backend/reminders/reminder_planning.py'
       - 'backend/reminders/person_suggestions.py'
@@ -74,6 +84,55 @@ jobs:
           echo 'MB1_RELEASE_AUTHORIZED=NO'
           echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
 
+
+  django-postgres17:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: vencira_m3_ci
+          POSTGRES_USER: vencira_m3_ci
+          POSTGRES_PASSWORD: ci-test-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vencira_m3_ci -d vencira_m3_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 15
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      VENCIRA_ENV: test
+      DJANGO_DEBUG: '1'
+      DJANGO_SECRET_KEY: 'ci-only-local-test-not-a-production-secret'
+      DJANGO_ALLOWED_HOSTS: 'localhost,127.0.0.1,testserver'
+      VENCIRA_DB_ENGINE: postgresql
+      POSTGRES_DB: vencira_m3_ci
+      POSTGRES_USER: vencira_m3_ci
+      POSTGRES_PASSWORD: ci-test-only
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: '5432'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - name: Check Django with PG17 configuration
+        run: python manage.py check
+      - name: Run O9b and operational inbox regressions on isolated PG17
+        run: python manage.py test reminders.test_control_intent reminders.test_person_suggestions_ranking reminders.test_control_responses reminders.test_control_response_api reminders.test_operational_transitions reminders.test_operational_inbox
+      - name: Keep release blocked
+        run: |
+          echo 'M3_02_PG17_EPHEMERAL_ONLY=1'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
+
   flutter-inbox:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -91,3 +150,5 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test test/operational_inbox_test.dart test/operational_inbox_widget_test.dart
+      - name: Compile Flutter Web without publishing
+        run: flutter build web --release --pwa-strategy=none
