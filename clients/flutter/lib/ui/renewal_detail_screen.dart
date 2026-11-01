@@ -83,7 +83,12 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
       _insurers = [];
       _followUpLoading = false;
     });
-    await widget.onSessionExpired?.call();
+    try {
+      await widget.onSessionExpired?.call();
+    } catch (_) {
+      // Preserve the revoked, data-free route while native cleanup is unacknowledged.
+      return;
+    }
     // The parent dashboard now owns the expired-session screen. Leaving this
     // route mounted would keep a secondary navigation surface alive.
     if (mounted && widget.onSessionExpired != null) {
