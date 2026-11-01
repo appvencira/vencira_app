@@ -121,3 +121,9 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 - El conector `fetch_commit_workflow_runs` no devolvió ejecuciones del commit `e9bdeb2`; `get_commit_combined_status` tampoco devolvió estados. Esto **no acredita ni PASS ni fallo** (los checks de Actions pueden no figurar como estados clásicos y la consulta de runs está limitada a PR).
 - Commit `13aecf5`: el workflow M3 se dispara por cualquier `push` a `feature/m3-android-local-notifications`, cualquier actualización de PR y `workflow_dispatch`; se eliminó el filtro de rutas para eventos `push` de esa rama. No se modifican jobs de despliegue ni se activan migraciones persistentes.
 - Gate `M3_02_CI_VERIFIED=NO` hasta comprobar explícitamente todos los jobs y las pruebas de navegación anidada. Progreso formal 2/15; no autorizar activar alarmas Android reales.
+
+## A8 — Bloqueo de reentrada tras revocación (01/11/2026)
+
+- Corrección conjunta: historial, índice de historial, catálogo de modalidades, bandeja operativa y agenda no admiten una nueva carga desde sus métodos de consulta cuando `_unauthorized` ya está activado. La bandeja deja de restablecer `_unauthorized=false` al recargar. El catálogo impide también nuevas escrituras.
+- Esta medida protege la ruta que permanece montada cuando falla la barrera de cancelación nativa; los datos locales revocados no deben reaparecer con una recarga manual.
+- **CI final del conjunto no confirmado por las herramientas disponibles**. Se necesita verificación de los jobs de Actions del head. Sin prueba física Android, sin activar avisos, sin despliegue, sin merge y sin migraciones persistentes.
