@@ -141,7 +141,14 @@ DeviceAlarmScope? decodeStoredAlarmScope(String? encoded) {
 
 /// Explicitly scoped encrypted store. No preference, JSON cache, or backup
 /// fallback. Callers must revoke native OS alarms before clearing on logout.
-class EncryptedAlarmInventory implements DeviceAlarmLedger {
+abstract class DeviceNoticeVault implements DeviceAlarmLedger {
+  Future<DeviceAlarmScope?> readStoredScope();
+  Future<void> clear({
+    required String workspaceId, required String userId,
+  });
+}
+
+class EncryptedAlarmInventory implements DeviceNoticeVault {
   EncryptedAlarmInventory({
     FlutterSecureStorage? storage,
   }) : _storage = storage ?? const FlutterSecureStorage(
