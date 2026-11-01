@@ -102,6 +102,18 @@ List<DeviceNoticeSlot> decodeAlarmInventory(
   return List.unmodifiable(slots);
 }
 
+/// Never replace encrypted records belonging to a different account.
+/// Stored content is authenticated by Android's encrypted storage and then
+/// fully parsed against the requested tenant/session before overwriting.
+void verifyAlarmInventoryOwnership(
+  String? encryptedRecord, {
+  required String workspaceId, required String userId,
+}) {
+  if (encryptedRecord == null) return;
+  decodeAlarmInventory(
+    encryptedRecord, workspaceId: workspaceId, userId: userId);
+}
+
 /// Explicitly scoped encrypted store. No preference, JSON cache, or backup
 /// fallback. Callers must revoke native OS alarms before clearing on logout.
 class EncryptedAlarmInventory implements DeviceAlarmLedger {
@@ -132,6 +144,12 @@ class EncryptedAlarmInventory implements DeviceAlarmLedger {
   }) async {
     final encoded = encodeAlarmInventory(
       workspaceId: workspaceId, userId: userId, slots: slots);
+    verifyAlarmInventoryOwnership(
+      await _storage.read(key: _storageKey),
+      workspaceId: workspaceId, userId: userId);
+    verifyAlarmInventoryOwnership(
+      await _storage.read(key: _pendingKey),
+      workspaceId: workspaceId, userId: userId);
     await _storage.write(key: _storageKey, value: encoded);
     final verified = await _storage.read(key: _storageKey);
     if (verified != encoded) {
@@ -157,6 +175,9 @@ class EncryptedAlarmInventory implements DeviceAlarmLedger {
     final encoded = encodeAlarmInventory(
       workspaceId: workspaceId, userId: userId, slots: slots);
     // Do not overwrite unresolved journals; recovery must complete first.
+    verifyAlarmInventoryOwnership(
+      await _storage.read(key: _storageKey),
+      workspaceId: workspaceId, userId: userId);
     if (await _storage.read(key: _pendingKey) != null) {
       throw StateError('Alarm recovery required before scheduling');
     }
@@ -171,10 +192,15 @@ class EncryptedAlarmInventory implements DeviceAlarmLedger {
 
   /// Only permitted after successful native cancellation of every alarm.
   /// Never clear an unresolved journal to suppress a scheduling error.
-  Future<void> clear() async {
+  Future<void> clear({
+    required String workspaceId, required String userId,
+  }) async {
     if (await _storage.read(key: _pendingKey) != null) {
       throw StateError('Cancel journalled alarms before clearing keys');
     }
+    verifyAlarmInventoryOwnership(
+      await _storage.read(key: _storageKey),
+      workspaceId: workspaceId, userId: userId);
     await _storage.delete(key: _storageKey);
   }
 }
