@@ -36,6 +36,17 @@ void main() {
       throwsFormatException);
   });
 
+  test('B: unknown internal state rejected before actions', () {
+    final invalid = <String, dynamic>{
+      ...sample, 'results': [
+        {...((sample['results'] as List).first as Map<String, dynamic>),
+         'state': 'sent'}
+      ],
+    };
+    expect(() => VenciraOperationalInbox.fromJson(invalid),
+      throwsFormatException);
+  });
+
   test('B: delivery cannot be represented as implemented', () {
     final invalid = <String, dynamic>{
       ...sample, 'results': [
