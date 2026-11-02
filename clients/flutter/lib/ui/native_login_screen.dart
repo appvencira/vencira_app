@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -185,7 +183,6 @@ class _NativeLoginScreenState extends State<NativeLoginScreen> {
                           labelText: 'Usuario',
                           border: OutlineInputBorder(),
                         ),
-                        onSubmitted: (_) => _submitPassword(),
                       ),
                       const SizedBox(height: 14),
                       TextField(
