@@ -168,6 +168,7 @@ class NativeHttpContractTests(TestCase):
         for path in (
             PASSWORD_PATH, MFA_PATH, REFRESH_PATH,
             REVOKE_PATH, ME_PATH,
+            "/api/v1/mobile/workspaces/00000000-0000-0000-0000-000000000001/renewals/",
         ):
             with self.subTest(path=path), self.assertRaises(Resolver404):
                 resolve(path)
