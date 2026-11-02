@@ -12,6 +12,8 @@ const access = 'v1.a.0123456789abcdef0123456789abcdef.'
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 const refresh = 'v1.r.0123456789abcdef0123456789abcdef.'
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+const rotatedRefresh = 'v1.r.0123456789abcdef0123456789abcdef.'
+    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE';
 const challenge = 'lc1.0123456789abcdef0123456789abcdef.'
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
@@ -96,13 +98,14 @@ void main() {
       expect(request.url.path, '/api/v1/mobile/token/refresh/');
       expect(jsonDecode(request.body), {'refresh': refresh});
       return jsonReply({
-        'status': 'authenticated', 'access': access, 'refresh': refresh,
+        'status': 'authenticated', 'access': access, 'refresh': rotatedRefresh,
       });
     });
     final tokens = await NativeHttpAuthPort(
       endpoint: endpoint, client: client,
     ).rotateRefresh(refresh);
     expect(tokens.access, access);
+    expect(tokens.refresh, rotatedRefresh);
     client.close();
   });
 
@@ -118,6 +121,18 @@ void main() {
       throwsA(isA<NativeHttpAuthFailure>()),
     );
     expect(sent, isFalse);
+    client.close();
+  });
+
+  test('refresh replay response without rotation is rejected', () async {
+    final client = MockClient((_) async => jsonReply({
+      'status': 'authenticated', 'access': access, 'refresh': refresh,
+    }));
+    await expectLater(
+      NativeHttpAuthPort(endpoint: endpoint, client: client)
+          .rotateRefresh(refresh),
+      throwsA(isA<NativeHttpAuthFailure>()),
+    );
     client.close();
   });
 
