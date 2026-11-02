@@ -10,6 +10,10 @@ from . import test_http_contract as views
 urlpatterns = [
     path("api/v1/mobile/auth/password/", views.password, name="lab-native-password"),
     path("api/v1/mobile/auth/mfa/", views.mfa, name="lab-native-mfa"),
+    path("api/v1/mobile/auth/recover/password/",
+         views.recovery_password, name="lab-native-recovery-password"),
+    path("api/v1/mobile/auth/recover/mfa/",
+         views.recovery_mfa, name="lab-native-recovery-mfa"),
     path("api/v1/mobile/token/refresh/", views.refresh, name="lab-native-refresh"),
     path("api/v1/mobile/token/revoke/", views.revoke, name="lab-native-revoke"),
     path("api/v1/mobile/me/", views.me, name="lab-native-me"),
