@@ -13,4 +13,6 @@ urlpatterns = [
     path("api/v1/mobile/token/refresh/", views.refresh, name="lab-native-refresh"),
     path("api/v1/mobile/token/revoke/", views.revoke, name="lab-native-revoke"),
     path("api/v1/mobile/me/", views.me, name="lab-native-me"),
+    path("api/v1/mobile/workspaces/<uuid:workspace_id>/renewals/",
+         views.workspace_renewals, name="lab-native-workspace-renewals"),
 ]
