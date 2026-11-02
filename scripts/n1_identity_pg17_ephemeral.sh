@@ -38,8 +38,16 @@ case "$MODE" in
       native_sessions_lab.test_http_contract_cases
     )
     ;;
+  --lab-case)
+    # Fixed allowlisted regression; do not accept arbitrary test targets.
+    # Uses the same isolated PG17 tmpfs network as the full --lab suite.
+    EXTRA_ENV=(-e VENCIRA_NATIVE_SESSION_LAB=1)
+    SUITES=(
+      native_sessions_lab.test_http_contract_cases.NativeRecoveryAfterAmbiguousRefreshHttpTests.test_recovery_rejects_oversized_payload_without_browser_state
+    )
+    ;;
   *)
-    echo "Usage: bash scripts/n1_identity_pg17_ephemeral.sh [--lab]" >&2
+    echo "Usage: bash scripts/n1_identity_pg17_ephemeral.sh [--lab|--lab-case]" >&2
     exit 2
     ;;
 esac
@@ -102,6 +110,8 @@ result=0
 
 if [ "$MODE" = "--lab" ]; then
   echo "N1_PG17_LAB_RESULT=$result"
+elif [ "$MODE" = "--lab-case" ]; then
+  echo "N1_PG17_LAB_CASE_RESULT=$result"
 else
   echo "N1_IDENTITY_PG17_RESULT=$result"
 fi
