@@ -83,11 +83,13 @@ def rotate_refresh(token):
     The revocation is committed before raising on replay; unknown tokens
     must not be allowed to revoke another user's session.
     """
-    now = timezone.now()
     revoked_for_replay = False
     result = None
     with transaction.atomic():
         row = _find(token, "r", lock=True)
+        # A request may wait for a PG17 row lock. Evaluate expiry AFTER
+        # acquiring that lock, never before entering the wait.
+        now = timezone.now()
         if row.revoked_at is not None or row.refresh_expires_at <= now:
             raise SessionLabDenied()
         digest = native_token_digest(token, kind="r")
