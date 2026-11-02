@@ -75,3 +75,69 @@ def validate_access(token):
         raise SessionLabDenied()
     return _identity(
         row.user, row.verified_mfa, row.mfa_epoch, row.credential_version)
+
+
+def rotate_refresh(token):
+    """Lock, rotate once and revoke on replay of a PREVIOUS valid token.
+
+    The revocation is committed before raising on replay; unknown tokens
+    must not be allowed to revoke another user's session.
+    """
+    now = timezone.now()
+    revoked_for_replay = False
+    result = None
+    with transaction.atomic():
+        row = _find(token, "r", lock=True)
+        if row.revoked_at is not None or row.refresh_expires_at <= now:
+            raise SessionLabDenied()
+        digest = native_token_digest(token, kind="r")
+        if not matches_native_token(
+                token, kind="r", stored_digest=row.refresh_digest):
+            if not SpentRefreshLab.objects.filter(
+                    session=row, digest=digest).exists():
+                raise SessionLabDenied()
+            row.revoked_at = now
+            row.access_digest = ""
+            row.refresh_digest = ""
+            row.save(update_fields=[
+                "revoked_at", "access_digest", "refresh_digest",
+            ])
+            revoked_for_replay = True
+        else:
+            _identity(
+                row.user, row.verified_mfa, row.mfa_epoch,
+                row.credential_version,
+            )
+            SpentRefreshLab.objects.create(
+                session=row, digest=row.refresh_digest)
+            access = make_native_token(kind="a", session_id=row.pk)
+            refresh = make_native_token(kind="r", session_id=row.pk)
+            row.access_digest = native_token_digest(access, kind="a")
+            row.refresh_digest = native_token_digest(refresh, kind="r")
+            row.access_expires_at = min(
+                now + ACCESS_AGE, row.refresh_expires_at)
+            row.generation += 1
+            row.save(update_fields=[
+                "access_digest", "refresh_digest", "access_expires_at",
+                "generation",
+            ])
+            result = (access, refresh)
+    if revoked_for_replay:
+        raise SessionLabDenied()
+    return result
+
+
+def revoke_device(refresh_token):
+    """Current refresh-token holder can revoke only its own device."""
+    with transaction.atomic():
+        row = _find(refresh_token, "r", lock=True)
+        if (row.revoked_at is not None or not matches_native_token(
+                refresh_token, kind="r",
+                stored_digest=row.refresh_digest)):
+            raise SessionLabDenied()
+        row.revoked_at = timezone.now()
+        row.access_digest = ""
+        row.refresh_digest = ""
+        row.save(update_fields=[
+            "revoked_at", "access_digest", "refresh_digest",
+        ])
