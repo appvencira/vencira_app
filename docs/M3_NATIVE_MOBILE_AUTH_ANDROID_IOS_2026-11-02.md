@@ -181,3 +181,13 @@ Dos aplicaciones móviles instalables (Android e iOS) pueden iniciar sesión **n
 - Flutter unifica formato canónico de tokens en `native_mobile_token_shape.dart`: transporte solo acepta `v1.a` y bóveda protegida solo `v1.r`; se adaptaron las pruebas sintéticas y se añadió `native_mobile_token_shape_test.dart`, incluido en CI. Estos cambios también están pendientes de validación.
 - La barrera estática ahora comprueba la sintaxis de todos los módulos nuevos del laboratorio. El próximo paso requiere **un único recheck agrupado** de la versión nueva y análisis de sus seis grupos sin repetir comprobaciones individuales.
 - Sin proveedor de login real, sin tokens publicados, sin DRF Bearer, sin endpoints móviles, sin migraciones de producción. `N1_NATIVE_LOGIN=NOT_IMPLEMENTED`; `N1_OPAQUE_SESSION_LAB=IMPLEMENTED_TEST_PENDING`; `N1_NEW_BATCH_RESULT=PENDING`; `MFA_RELEASE_AUTHORIZED=NO`; `MB1_RELEASE_AUTHORIZED=NO`; `C_FICHA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## Resultado consolidado de macroverificación N1/N2 (02/11/2026 19:42 UTC)
+- El operador aporta resultado completo en Ubuntu del último lote: `N1_BATCH_STATIC=0`, `N1_BATCH_BUILD=0`, `N1_BATCH_SQLITE=0`, `N1_BATCH_SQLITE_LAB=0`, `N1_BATCH_PG17=0`, `N1_BATCH_PG17_LAB=0`, `N1_BATCH_FLUTTER=0`, `N1_BATCH_RESULT=0`.
+- SQLite principal: `Found 126 test(s)`; `Ran 126 tests in 27.137s`, `OK`. SQLite lab: `Found 28 test(s)`; `Ran 28 tests in 0.980s`, `OK (skipped=1)` (ensayo PG17 no aplicable).
+- PostgreSQL17 temporal principal: `Found 126 test(s)`; `Ran 126 tests in 29.586s`, `OK`. PostgreSQL17 lab: `Found 28 test(s)`; `Ran 28 tests in 1.571s`, `OK`; ensayo concurrente ejecutado.
+- Flutter: `+297 All tests passed!`, `flutter build web`: `Built build/web`. Advertencias no bloqueantes: `--pwa-strategy` en desuso y aviso de Wasm dry-run. Backend `BUILD=0`.
+- Registros: `/home/vencira/vencira-m3-results/n1-batch-20261102T194216Z`. El aviso `VENCIRA_CSRF WARNING Forbidden (CSRF token missing.)` aparece en la batería de endpoints web y es coherente con validación CSRF negativa; no hubo errores.
+- La evidencia cierra el **gate de laboratorio** para la revisión ejecutada: `N1_BATCH_RESULT=PASS`; `N1_DEVICE_SESSION_TEST_LAB=PASS`; `N1_PG17_REFRESH_RACE=PASS`. No constituye un permiso de migración en producción, una autenticación Bearer activa, ni una verificación física Android/iOS.
+- **Siguiente trabajo**: circuito de contraseña + MFA y challenge previo a emisión, en la aplicación `native_sessions_lab` exclusiva de pruebas; no endpoints. Toda adición posterior a esta ejecución requiere un nuevo lote.
+- Autorizaciones globales: `MFA_RELEASE_AUTHORIZED=NO`; `C_FICHA_RELEASE_AUTHORIZED=NO`; `MB1_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
