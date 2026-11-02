@@ -111,3 +111,10 @@ Dos aplicaciones móviles instalables (Android e iOS) pueden iniciar sesión **n
 - This is stronger than the preceding 18 mocked tests: Django created and destroyed the test schema for seven ORM integration cases. Neither persistent PostgreSQL nor real mobile access tokens were touched.
 - `N1_IDENTITY_SQLITE_ORM=PASS_25`; `N1_IDENTITY_PG17_ORM=PENDING`; `N1_TOKEN_ISSUER=NOT_IMPLEMENTED`; `N1_NATIVE_LOGIN=NOT_IMPLEMENTED`. Do not infer a valid end-to-end Android or iOS authentication.
 - Next: run the same 25 tests on an isolated temporary PostgreSQL 17 container with a private Docker network and ephemeral PGDATA. Do not use the live VENCIRA database or published PostgreSQL ports. Production deployment/migrations remain forbidden.
+
+## N1 — Portable PostgreSQL17 isolated local gate (02/11/2026)
+- SQLite ORM 25/25 PASS was reported locally. The remaining PG17 gate must run against a **new disposable container**, not a VENCIRA service or existing database.
+- `scripts/n1_identity_pg17_ephemeral.sh` now sets up a uniquely named **Docker internal network** and `postgres:17-alpine` using an in-memory `tmpfs` data directory; **no published ports, no mounted host data and no persistent Docker volume**. The test backend image `vencira-m3-backend-test` is connected only to this private network and uses test-only credentials.
+- The script waits for `pg_isready`, runs the same three N1 test modules, prints `N1_IDENTITY_PG17_RESULT=<exit code>`, and removes its own PostgreSQL container and network on exit, including on normal test errors.
+- To run locally after updating the feature branch and rebuilding the backend image: `bash scripts/n1_identity_pg17_ephemeral.sh`. Execute via `bash`, as GitHub file mode need not be executable.
+- **No result from this PG17 runner yet**. The runner exists but has not been executed. This is a database-test gate, not native authentication. No production migrations, no mobile endpoint activation, no notifications.
