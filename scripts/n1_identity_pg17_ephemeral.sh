@@ -69,6 +69,7 @@ result=0
     reminders.test_native_mobile_auth_boundary \
     reminders.test_native_mobile_identity_gate \
     reminders.test_native_mobile_identity_database \
+    reminders.test_native_mobile_token_primitives \
     --verbosity 1 || result=$?
 
 echo "N1_IDENTITY_PG17_RESULT=$result"
