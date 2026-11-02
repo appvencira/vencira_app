@@ -62,7 +62,7 @@ def _find(token, kind, *, lock=False):
 
 
 def issue_verified_session(
-    *, user, verified_mfa, mfa_epoch, expected_generation=None,
+    *, user, verified_mfa, mfa_epoch, expected_generation,
 ):
     """Lab-only: caller already established password and MFA trust.
 
@@ -74,9 +74,8 @@ def issue_verified_session(
     with transaction.atomic():
         current_user = lock_account_lab(user.pk)
         generation = account_generation_lab(current_user.pk)
-        if (expected_generation is not None
-                and (type(expected_generation) is not int
-                     or expected_generation != generation)):
+        if (type(expected_generation) is not int
+                or expected_generation != generation):
             raise SessionLabDenied()
         version = mobile_credential_version(current_user)
         _identity(current_user, verified_mfa, mfa_epoch, version)
@@ -192,7 +191,7 @@ def revoke_all_devices_for_user_lab(*, user_id):
         raise SessionLabDenied()
     with transaction.atomic():
         lock_account_lab(user_id)
-        fence, _ = MobileAccountFenceLab.objects.get_or_create(
+        MobileAccountFenceLab.objects.get_or_create(
             user_id=user_id, defaults={"generation": 0},
         )
         MobileAccountFenceLab.objects.filter(user_id=user_id).update(
