@@ -1,0 +1,115 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:vencira/api/native_api_endpoint.dart';
+import 'package:vencira/api/native_api_transport.dart';
+
+void main() {
+  final endpoint = NativeApiEndpoint.parse('https://dev.vencira.es');
+  const testToken = 'test-native-credential-123456789';
+
+  test('GET carries bearer credentials only to approved HTTPS API', () async {
+    var calls = 0;
+    final client = MockClient((request) async {
+      calls++;
+      expect(request.url.toString(), 'https://dev.vencira.es/api/v1/me/');
+      expect(request.method, 'GET');
+      expect(request.headers['Authorization'], 'Bearer $testToken');
+      expect(request.followRedirects, isFalse);
+      expect(request.maxRedirects, 0);
+      return http.Response('{"id":12}', 200,
+          headers: {'content-type': 'application/json; charset=utf-8'});
+    });
+    final transport = NativeApiTransport(
+      endpoint: endpoint, client: client, accessToken: () async => testToken);
+    expect(await transport.getJson('/api/v1/me/'), {'id': 12});
+    expect(calls, 1);
+    client.close();
+  });
+
+  test('rejects absent, invalid and failed credentials without sending', () async {
+    var calls = 0;
+    final client = MockClient((request) async {
+      calls++;
+      return http.Response('{}', 200);
+    });
+    for (final token in <String?>[null, '', 'abc', 'unsafe header\r\n']) {
+      final transport = NativeApiTransport(
+          endpoint: endpoint, client: client, accessToken: () async => token);
+      await expectLater(transport.getJson('/api/v1/me/'),
+          throwsA(isA<NativeApiSessionUnavailable>()));
+    }
+    final failing = NativeApiTransport(
+        endpoint: endpoint, client: client,
+        accessToken: () async => throw StateError('not unlocked'));
+    await expectLater(failing.getJson('/api/v1/me/'),
+        throwsA(isA<NativeApiSessionUnavailable>()));
+    expect(calls, 0);
+    client.close();
+  });
+
+  test('invalid path is rejected before reading credentials', () async {
+    var calls = 0;
+    final client = MockClient((request) async {
+      calls++;
+      return http.Response('{}', 200);
+    });
+    final transport = NativeApiTransport(
+        endpoint: endpoint, client: client,
+        accessToken: () async {
+          calls++;
+          return testToken;
+        });
+    await expectLater(transport.getJson('/accounts/login/'),
+        throwsFormatException);
+    expect(calls, 0);
+    client.close();
+  });
+
+  test('never follows redirects carrying bearer credentials', () async {
+    var calls = 0;
+    final client = MockClient((request) async {
+      calls++;
+      expect(request.followRedirects, false);
+      return http.Response('', 302,
+          headers: {'location': 'https://evil.example/steal'});
+    });
+    final transport = NativeApiTransport(
+        endpoint: endpoint, client: client, accessToken: () async => testToken);
+    await expectLater(transport.getJson('/api/v1/me/'),
+        throwsA(isA<NativeApiTransportFailure>()));
+    expect(calls, 1);
+    client.close();
+  });
+
+  test('401 is session unavailable; 403 is not assumed to be logout', () async {
+    for (final status in [401, 403]) {
+      final client = MockClient((request) async => http.Response('', status));
+      final transport = NativeApiTransport(
+          endpoint: endpoint, client: client, accessToken: () async => testToken);
+      await expectLater(transport.getJson('/api/v1/me/'),
+          throwsA(status == 401
+              ? isA<NativeApiSessionUnavailable>()
+              : isA<NativeApiTransportFailure>()));
+      client.close();
+    }
+  });
+
+  test('HTML and unbounded responses fail closed', () async {
+    for (final response in [
+      http.Response('<html/>', 200,
+          headers: {'content-type': 'text/html'}),
+      http.Response('x' * (NativeApiTransport.maxResponseBytes + 1), 200,
+          headers: {'content-type': 'application/json'}),
+      http.Response('not-json', 200,
+          headers: {'content-type': 'application/json'}),
+    ]) {
+      final client = MockClient((request) async => response);
+      final transport = NativeApiTransport(
+          endpoint: endpoint, client: client, accessToken: () async => testToken);
+      await expectLater(transport.getJson('/api/v1/me/'),
+          throwsA(isA<NativeApiTransportFailure>()));
+      client.close();
+    }
+  });
+}
