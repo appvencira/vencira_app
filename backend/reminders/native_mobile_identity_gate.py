@@ -8,6 +8,8 @@ issuer, expiry, revocation and token provenance.
 Django's existing MFA session middleware cannot protect an authenticated
 DRF bearer principal: it runs before DRF attaches its request.user.
 """
+from django.utils.crypto import constant_time_compare
+
 from .models import MfaAdministrativeRecoveryCase, UserMfaState
 
 
@@ -20,12 +22,14 @@ def require_mobile_identity_gate(
     user,
     verified_mfa,
     asserted_mfa_epoch,
+    asserted_password_hash,
 ):
     """Re-evaluate authoritative MFA and recovery state for EACH API request.
 
-    verified_mfa and asserted_mfa_epoch must originate ONLY from a
-    cryptographically verified, server-issued mobile identity token. Neither
-    argument is an authentication proof on its own.
+    Every asserted_* field must originate ONLY from a cryptographically
+    verified, server-issued mobile identity token. Individual claims are not
+    proof of authentication; in particular a client-supplied password hash
+    must never be accepted by an HTTP endpoint.
 
     Returns the active user only if the current MFA/recovery constraints are
     compatible with the verified assertion. Does not grant workspace access.
@@ -35,6 +39,20 @@ def require_mobile_identity_gate(
             or not isinstance(getattr(user, "pk", None), int)
             or isinstance(user.pk, bool)):
         raise MobileIdentityDenied()
+
+    # A password change or Django credential invalidation must revoke even
+    # a formerly valid MFA assertion. The hash is an internal, signed claim.
+    try:
+        if (not isinstance(asserted_password_hash, str)
+                or len(asserted_password_hash) != 64
+                or not constant_time_compare(
+                    asserted_password_hash, user.get_session_auth_hash()
+                )):
+            raise MobileIdentityDenied()
+    except MobileIdentityDenied:
+        raise
+    except Exception as exc:
+        raise MobileIdentityDenied() from exc
 
     if type(verified_mfa) is not bool:
         raise MobileIdentityDenied()
