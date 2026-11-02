@@ -66,6 +66,7 @@ class NativeSessionCoordinator implements NativeLoginGateway {
   DateTime? _accessDeadline;
   bool _busy = false;
   bool _logoutRequired = false;
+  String? _unrevokedIssuedRefresh;
   Future<void>? _logoutInProgress;
   Completer<void>? _finished;
 
@@ -101,14 +102,15 @@ class NativeSessionCoordinator implements NativeLoginGateway {
   }
 
   Future<void> _revokeIssued(NativeIssuedTokens tokens) async {
-    // Any network failure here must NEVER activate the local fence.
+    // Never claim cleanup succeeded if a newly issued server credential
+    // could not be revoked. Hold it only for explicit retry, keep the
+    // request gate locked and do not permit a new sign-in in this instance.
+    if (!NativeMobileTokenShape.accepts(tokens.refresh, kind: 'r')) return;
     try {
-      if (NativeMobileTokenShape.accepts(tokens.refresh, kind: 'r')) {
-        await port.revoke(refresh: tokens.refresh);
-      }
+      await port.revoke(refresh: tokens.refresh);
     } catch (_) {
-      // No local session is active, and the issued token is not retained.
-      // The operational service needs expiry and an auditable cleanup policy.
+      _unrevokedIssuedRefresh = tokens.refresh;
+      _logoutRequired = true;
     }
   }
 
@@ -219,6 +221,9 @@ class NativeSessionCoordinator implements NativeLoginGateway {
     // caller may start a new native login on this coordinator.
     final pending = _finished?.future;
     if (pending != null) await pending;
+    if (_unrevokedIssuedRefresh != null) {
+      throw StateError('Native session cancellation requires cleanup');
+    }
   }
 
   /// Synchronously close the request gate first. The future only resolves
@@ -243,6 +248,11 @@ class NativeSessionCoordinator implements NativeLoginGateway {
     try {
       final pending = _finished?.future;
       if (pending != null) await pending;
+      final unrevoked = _unrevokedIssuedRefresh;
+      if (unrevoked != null) {
+        await port.revoke(refresh: unrevoked);
+        _unrevokedIssuedRefresh = null;
+      }
       final refresh = await vault.read();
       if (refresh != null) await port.revoke(refresh: refresh);
       await vault.clear();
