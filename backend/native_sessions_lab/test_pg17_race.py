@@ -8,6 +8,7 @@ from .models import MobileDeviceSessionLab
 from .session_rules import (
     SessionLabDenied, issue_verified_session, rotate_refresh,
     validate_access, revoke_all_devices_for_user_lab,
+    account_generation_lab,
 )
 
 
@@ -20,7 +21,8 @@ class RefreshRacePG17Tests(TransactionTestCase):
             password="NotAProductionPassword!2026",
         )
         _, refresh = issue_verified_session(
-            user=user, verified_mfa=False, mfa_epoch=None)
+            user=user, verified_mfa=False, mfa_epoch=None,
+            expected_generation=account_generation_lab(user.pk))
         start = Barrier(3)
 
         def contender():
@@ -73,7 +75,8 @@ class RefreshRacePG17Tests(TransactionTestCase):
             password="SyntheticRowLockOnly-2026!",
         )
         access, refresh = issue_verified_session(
-            user=user, verified_mfa=False, mfa_epoch=None)
+            user=user, verified_mfa=False, mfa_epoch=None,
+            expected_generation=account_generation_lab(user.pk))
         start = Barrier(3)
 
         def do_refresh():
