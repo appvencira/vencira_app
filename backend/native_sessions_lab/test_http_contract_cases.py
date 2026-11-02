@@ -146,6 +146,17 @@ class NativeHttpContractTests(TestCase):
         self.assertEqual(self.client.post(ME_PATH, {}, content_type="application/json").status_code, 405)
         self.assertFalse(MobileDeviceSessionLab.objects.exists())
 
+    @override_settings(ROOT_URLCONF="config.urls")
+    def test_experimental_paths_absent_from_operational_urlconf_even_in_lab(self):
+        from django.urls import Resolver404, resolve
+
+        for path in (
+            PASSWORD_PATH, MFA_PATH, REFRESH_PATH,
+            REVOKE_PATH, ME_PATH,
+        ):
+            with self.subTest(path=path), self.assertRaises(Resolver404):
+                resolve(path)
+
     @override_settings(VENCIRA_NATIVE_SESSION_LAB=False)
     def test_standalone_views_denied_if_lab_flag_disabled(self):
         request = RequestFactory().post(
