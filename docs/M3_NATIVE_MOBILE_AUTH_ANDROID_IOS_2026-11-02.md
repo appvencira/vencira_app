@@ -285,3 +285,9 @@ Dos aplicaciones móviles instalables (Android e iOS) pueden iniciar sesión **n
 - Revisión final del contrato: el cliente Flutter incluye además `rotateRefresh()` como intercambio HTTP **sin activación de sesión**, rechazando respuestas que devuelvan el mismo token de renovación. No se conectará a `NativeSessionCoordinator` hasta definir recuperación segura de respuestas perdidas o inciertas y persistencia transaccional del refresh. **14 pruebas Flutter nuevas y 11 HTTP Django nuevas siguen PENDING** del nuevo lote.
 
 - Seguridad adicional de CI: el laboratorio prueba que **ni siquiera con la app de ensayo registrada** se resuelven sus cinco rutas usando `config.urls`. Solo el `ROOT_URLCONF` explícito de tests habilita el intercambio; la configuración productiva continúa sin endpoints móviles.
+
+## M3 HTTP contract local batch — PG17_LAB FAIL (02/11/2026 21:37 UTC)
+- Operator reports `M3_HTTP_STATIC=0`, `M3_HTTP_BUILD=0`, `M3_HTTP_PG17_LAB=1`, `M3_HTTP_FLUTTER=0`, `M3_HTTP_RESULT=1` from `/home/vencira/vencira-m3-results/m3-http-contract-20261102T213749Z`.
+- Selected Flutter HTTP/coordinator/UI/vault/transport tests: 49 PASS (`All tests passed!`). This does not certify Django HTTP tests.
+- The concrete exception is NOT in the shared summary; inspect `PG17_LAB.log` before changing source or diagnosing root cause. Prior account epoch lab 53 PASS corresponds to earlier revision.
+- No live migrations or production mobile routes; release gates closed. `M3_HTTP_PG17_LAB=FAIL_PENDING_DIAGNOSIS`.
