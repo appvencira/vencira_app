@@ -61,3 +61,9 @@ Dos aplicaciones móviles instalables (Android e iOS) pueden iniciar sesión **n
 - New tests verify: no credential read after revocation, rejection of a response arriving after logout, and rejection of an earlier account's 200 response after a new account generation starts.
 - **CURRENT CHANGE NOT YET TESTED LOCALLY**; run `flutter analyze`, `flutter test test/native_api_transport_test.dart test/native_api_endpoint_test.dart test/android_web_access_screen_test.dart` and ideally the full Flutter suite. CI of current head not independently verified.
 - This mechanism does not implement authentication, Keychain/Keystore, server revocation, MFA, or network cancellation. Remains disconnected from Android/iOS app entrypoints until those gates are independently verified; avoid treating an in-memory fence as credential storage.
+
+## Regression audit — global Flutter test run (02/11/2026)
+- Local operator: `NATIVE_SESSION_FENCE_RESULT=1`; global suite shows **285 passed, 1 failed** (`Today shows authorized due count from operational inbox`, `test/agenda_today_inbox_test.dart`). This run is **NOT PASS**; do not close N2 based on it.
+- Independent source review found an ambiguous assertion `find.text('3'), findsOneWidget`. The agenda also renders the week strip with a day number 3. On 2026-11-02 (Monday), the displayed calendar week includes 2026-11-03, so the finder can match both the authorized inbox count (3) and calendar day (3). The full assertion failure lines were not available in the supplied log tail, so treat this as a **supported likely cause**, pending rerun.
+- Commit `b8775d4` replaces the unscoped text finder with `tester.widget<Text>(find.byKey(ValueKey('agenda-due-count'))).data == '3'`. This verifies the intended count without depending on today's date.
+- Required follow-up: isolated agenda test, then entire Flutter suite. Do not claim N2 session fence validated until full suite returns zero.
