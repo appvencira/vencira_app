@@ -131,53 +131,7 @@ class NativeHttpAuthPort implements NativeAuthPort {
     required String challenge,
     required String code,
   }) async {
-    if (!RegExp(r'^\d{6}
-    required String challenge,
-    required String code,
-  }) async {
     if (!RegExp(r'^\d{6}$').hasMatch(code) ||
-        challenge.length > 256) {
-      throw const NativeHttpAuthFailure();
-    }
-    return _tokens(await _post('/api/v1/mobile/auth/mfa/', {
-      'challenge': challenge, 'code': code,
-    }));
-  }
-
-  /// Stateless refresh HTTP exchange only. The future coordinator must
-  /// implement crash-safe rotation, secure vault replacement and replay
-  /// semantics BEFORE calling this in an operational application.
-  Future<NativeIssuedTokens> rotateRefresh(String refresh) async {
-    if (!NativeMobileTokenShape.accepts(refresh, kind: 'r')) {
-      throw const NativeHttpAuthFailure();
-    }
-    final next = _tokens(await _post('/api/v1/mobile/token/refresh/', {
-      'refresh': refresh,
-    }));
-    if (next.refresh == refresh) {
-      throw const NativeHttpAuthFailure();
-    }
-    return next;
-  }
-
-  @override
-  Future<void> revoke({required String refresh}) async {
-    if (!NativeMobileTokenShape.accepts(refresh, kind: 'r')) {
-      throw const NativeHttpAuthFailure();
-    }
-    final body = await _post('/api/v1/mobile/token/revoke/', {
-      'refresh': refresh,
-    });
-    if (body.length != 1 || body['status'] != 'revoked') {
-      throw const NativeHttpAuthFailure();
-    }
-  }
-}
-
-class NativeHttpAuthFailure implements Exception {
-  const NativeHttpAuthFailure();
-}
-).hasMatch(code) ||
         challenge.length > 256) {
       throw const NativeHttpAuthFailure();
     }
@@ -200,9 +154,8 @@ class NativeHttpAuthFailure implements Exception {
     }));
   }
 
-  /// Stateless refresh HTTP exchange only. The future coordinator must
-  /// implement crash-safe rotation, secure vault replacement and replay
-  /// semantics BEFORE calling this in an operational application.
+  /// Stateless refresh exchange only: coordinating process crashes and
+  /// protected storage replacement is explicitly NOT implemented here.
   Future<NativeIssuedTokens> rotateRefresh(String refresh) async {
     if (!NativeMobileTokenShape.accepts(refresh, kind: 'r')) {
       throw const NativeHttpAuthFailure();
