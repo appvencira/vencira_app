@@ -27,6 +27,9 @@ def verify():
     session_rules = read("backend/native_sessions_lab/session_rules.py")
     login_rules = read("backend/native_sessions_lab/login_rules.py")
     lab_urls = read("backend/native_sessions_lab/test_urls.py")
+    recovery_migration = read(
+        "backend/native_sessions_lab/migrations/0004_mobile_challenge_recovery_flag.py"
+    )
 
     failures = []
     checks = {
@@ -70,6 +73,13 @@ def verify():
             and "test_http_contract" not in routes
             and 'path("api/v1/mobile/auth/password/"' in lab_urls
             and 'path("api/v1/mobile/workspaces/<uuid:workspace_id>/renewals/"' in lab_urls,
+        "g6_recovery_after_full_mfa":
+            "replace_devices" in recovery_migration
+            and "record.replace_devices is not expected_recovery" in login_rules
+            and "revoke_all_devices_for_user_lab(user_id=user.pk)" in login_rules
+            and 'path("api/v1/mobile/auth/recover/password/"' in lab_urls
+            and 'path("api/v1/mobile/auth/recover/mfa/"' in lab_urls
+            and "native_sessions_lab.test_urls" not in config,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
@@ -93,6 +103,7 @@ def verify():
         "backend/native_sessions_lab/test_pg17_login_race.py",
         "backend/native_sessions_lab/migrations/0002_mobileloginchallengelab.py",
         "backend/native_sessions_lab/migrations/0003_mobile_account_fence.py",
+        "backend/native_sessions_lab/migrations/0004_mobile_challenge_recovery_flag.py",
         "backend/native_sessions_lab/test_urls.py",
         "backend/native_sessions_lab/test_http_contract.py",
         "backend/native_sessions_lab/test_http_contract_cases.py",
