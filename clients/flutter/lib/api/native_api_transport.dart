@@ -28,7 +28,12 @@ class NativeApiTransport {
   Future<Object> getJson(String path) async {
     // Validate path before requesting credentials.
     final uri = endpoint.resolveApiPath(path);
-    final token = await accessToken();
+    final String? token;
+    try {
+      token = await accessToken();
+    } catch (_) {
+      throw const NativeApiSessionUnavailable();
+    }
     if (token == null ||
         token.length < 16 ||
         token.length > 4096 ||
@@ -55,9 +60,8 @@ class NativeApiTransport {
       throw const NativeApiTransportFailure();
     }
     final contentType = response.headers['content-type'] ?? '';
-    if (!contentType.toLowerCase().split(';').first.trim().endsWith('/json') &&
-        contentType.toLowerCase().split(';').first.trim() !=
-            'application/problem+json') {
+    final mediaType = contentType.toLowerCase().split(';').first.trim();
+    if (mediaType != 'application/json' && !mediaType.endsWith('+json')) {
       throw const NativeApiTransportFailure();
     }
     final bytes = <int>[];
