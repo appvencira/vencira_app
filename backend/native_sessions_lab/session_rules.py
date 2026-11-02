@@ -143,3 +143,32 @@ def revoke_device(refresh_token):
         row.save(update_fields=[
             "revoked_at", "access_digest", "refresh_digest",
         ])
+
+
+def revoke_all_devices_for_user_lab(*, user_id):
+    """Synthetic privileged revocation (no HTTP/permission grants).
+
+    A future application adapter MUST authenticate/authorize the caller
+    independently before invoking any user-wide revocation. Never accept
+    arbitrary user IDs from an untrusted client as proof of authorization.
+    The row updates are atomic; refresh rotation uses the same row lock.
+    """
+    if type(user_id) is not int or user_id <= 0:
+        raise SessionLabDenied()
+    with transaction.atomic():
+        rows = list(
+            MobileDeviceSessionLab.objects.select_for_update()
+            .filter(user_id=user_id, revoked_at__isnull=True)
+            .order_by("pk")
+        )
+        if not rows:
+            return 0
+        count = MobileDeviceSessionLab.objects.filter(
+            pk__in=[row.pk for row in rows],
+            revoked_at__isnull=True,
+        ).update(
+            revoked_at=timezone.now(),
+            access_digest="",
+            refresh_digest="",
+        )
+    return count
