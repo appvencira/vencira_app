@@ -79,7 +79,9 @@ void main() {
     expect(find.byKey(const ValueKey('agenda-today-inbox-shortcut')),
         findsOneWidget);
     expect(find.byKey(const ValueKey('agenda-due-count')), findsOneWidget);
-    expect(find.text('3'), findsOneWidget);
+    // The week strip can also show day 3, so assert the keyed count only.
+    expect(tester.widget<Text>(
+      find.byKey(const ValueKey('agenda-due-count'))).data, '3');
     expect(find.textContaining('Toda la cuenta'), findsOneWidget);
   });
 
