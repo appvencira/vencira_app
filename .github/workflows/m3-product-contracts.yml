@@ -38,8 +38,10 @@ jobs:
           fi
           grep -q 'Native device session lab only allowed in test' /tmp/n1-prod-lab-denied.log
           echo 'N1_LAB_PRODUCTION_FAILCLOSED=OK'
-      - name: Validate grouped regression runner syntax
-        run: bash -n ../scripts/n1_verification_batch.sh
+      - name: Validate grouped and targeted PG17 runner syntax
+        run: |
+          bash -n ../scripts/n1_verification_batch.sh
+          bash -n ../scripts/n1_identity_pg17_ephemeral.sh
       - name: Check Django project
         run: python manage.py check
       - name: Product control and suggestion tests
