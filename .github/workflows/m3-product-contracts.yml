@@ -51,7 +51,7 @@ jobs:
           VENCIRA_NATIVE_SESSION_LAB: '1'
         run: |
           python manage.py makemigrations native_sessions_lab --check --dry-run
-          python manage.py test reminders.test_native_mobile_identity_database reminders.test_native_mobile_token_primitives native_sessions_lab.tests native_sessions_lab.test_pg17_race native_sessions_lab.test_login_rules native_sessions_lab.test_pg17_login_race
+          python manage.py test reminders.test_native_mobile_identity_database reminders.test_native_mobile_token_primitives native_sessions_lab.tests native_sessions_lab.test_pg17_race native_sessions_lab.test_login_rules native_sessions_lab.test_pg17_login_race native_sessions_lab.test_http_contract_cases
       - name: No operational release
         run: |
           echo 'M3_02_DELIVERY=NOT_IMPLEMENTED'
@@ -109,7 +109,7 @@ jobs:
           VENCIRA_NATIVE_SESSION_LAB: '1'
         run: |
           python manage.py makemigrations native_sessions_lab --check --dry-run
-          python manage.py test reminders.test_native_mobile_identity_database reminders.test_native_mobile_token_primitives native_sessions_lab.tests native_sessions_lab.test_pg17_race native_sessions_lab.test_login_rules native_sessions_lab.test_pg17_login_race
+          python manage.py test reminders.test_native_mobile_identity_database reminders.test_native_mobile_token_primitives native_sessions_lab.tests native_sessions_lab.test_pg17_race native_sessions_lab.test_login_rules native_sessions_lab.test_pg17_login_race native_sessions_lab.test_http_contract_cases
       - name: Keep release blocked
         run: |
           echo 'M3_02_PG17_EPHEMERAL_ONLY=1'
