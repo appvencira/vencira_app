@@ -69,7 +69,9 @@ class LabSecretStore implements NativeSecretStore {
   }
 
   @override
-  Future<void> delete(String key) async => items.remove(key);
+  Future<void> delete(String key) async {
+    items.remove(key);
+  }
 }
 
 void main() {
