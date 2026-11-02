@@ -124,11 +124,14 @@ class NativeIdentityGateTests(SimpleTestCase):
         self.user.get_session_auth_hash = lambda: 1 / 0
         self.mock_queries()
         with self.assertRaises(MobileIdentityDenied):
-            self.invoke()
+            require_mobile_identity_gate(
+                user=self.user, verified_mfa=False,
+                asserted_mfa_epoch=None, asserted_credential_version="a" * 64,
+            )
 
-    def test_mfa_query_failure_is_not_a_bypass(self):
+    def test_recovery_lookup_failure_is_not_a_bypass(self):
         with patch(
-            "reminders.native_mobile_identity_gate.UserMfaState.objects.filter",
+            "reminders.native_mobile_identity_gate.MfaAdministrativeRecoveryCase.objects.filter",
             side_effect=RuntimeError("unavailable"),
         ):
             with self.assertRaises(MobileIdentityDenied):
