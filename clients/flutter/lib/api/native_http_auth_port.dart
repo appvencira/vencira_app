@@ -127,9 +127,13 @@ class NativeHttpAuthPort implements NativeAuthPort {
     if (!NativeMobileTokenShape.accepts(refresh, kind: 'r')) {
       throw const NativeHttpAuthFailure();
     }
-    return _tokens(await _post('/api/v1/mobile/token/refresh/', {
+    final next = _tokens(await _post('/api/v1/mobile/token/refresh/', {
       'refresh': refresh,
     }));
+    if (next.refresh == refresh) {
+      throw const NativeHttpAuthFailure();
+    }
+    return next;
   }
 
   @override
