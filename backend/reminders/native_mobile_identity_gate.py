@@ -76,7 +76,9 @@ def require_mobile_identity_gate(
         # DENY instead of silently treating as MFA-disabled.
         raise MobileIdentityDenied() from exc
 
-    if pending or (state is not None and not state.enabled and any_case):
+    # Historical recovery must not become an access bypass if the MFA state
+    # row is absent or was disabled during recovery.
+    if pending or (any_case and (state is None or not state.enabled)):
         raise MobileIdentityDenied()
 
     if state is not None and state.enabled:
