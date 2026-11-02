@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import 'native_api_endpoint.dart';
 import 'native_mobile_token_shape.dart';
+import 'native_recovery_login_gateway.dart';
 import 'native_session_coordinator.dart';
 
 /// Browserless password/MFA transport contract. Not instantiated by main.dart
@@ -11,7 +12,7 @@ import 'native_session_coordinator.dart';
 ///
 /// Does not accept web cookies, redirects, SessionAuthentication, or CSRF
 /// tokens. No automatic retries for password, one-time MFA or revocation.
-class NativeHttpAuthPort implements NativeAuthPort {
+class NativeHttpAuthPort implements NativeAuthPort, NativeRecoveryAuthPort {
   NativeHttpAuthPort({
     required this.endpoint,
     required this.client,
