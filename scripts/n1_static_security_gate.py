@@ -26,6 +26,7 @@ def verify():
     )
     session_rules = read("backend/native_sessions_lab/session_rules.py")
     login_rules = read("backend/native_sessions_lab/login_rules.py")
+    lab_urls = read("backend/native_sessions_lab/test_urls.py")
 
     failures = []
     checks = {
@@ -62,6 +63,12 @@ def verify():
             and "MobileLoginChallengeLab.objects.filter(" in session_rules
             and "consumed_at=now" in session_rules
             and "record.auth_generation != account_generation_lab" in login_rules,
+        "test_http_is_unreachable_from_operational_routes":
+            "native_sessions_lab.test_urls" not in config
+            and "native_sessions_lab.test_urls" not in routes
+            and "test_http_contract" not in config
+            and "test_http_contract" not in routes
+            and "/api/v1/mobile/auth/password/" in lab_urls,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
@@ -85,6 +92,9 @@ def verify():
         "backend/native_sessions_lab/test_pg17_login_race.py",
         "backend/native_sessions_lab/migrations/0002_mobileloginchallengelab.py",
         "backend/native_sessions_lab/migrations/0003_mobile_account_fence.py",
+        "backend/native_sessions_lab/test_urls.py",
+        "backend/native_sessions_lab/test_http_contract.py",
+        "backend/native_sessions_lab/test_http_contract_cases.py",
         "backend/reminders/native_mobile_identity_gate.py",
         "backend/reminders/native_mobile_token_primitives.py",
     ):
