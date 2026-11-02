@@ -15,6 +15,8 @@ from reminders.mfa_totp import generate_secret, totp_at
 from reminders.models import UserMfaState
 from . import test_http_contract as lab_http
 from .models import MobileDeviceSessionLab
+from reminders.models import Renewal, Workspace, WorkspaceMember
+from datetime import date
 
 PASSWORD = "SyntheticPasswordOnlyForHttpLab-2026!"
 PASSWORD_PATH = "/api/v1/mobile/auth/password/"
@@ -230,3 +232,147 @@ class NativeHttpContractTests(TestCase):
         self.user.save(update_fields=["is_active"])
         self.assertEqual(self.password().status_code, 401)
         self.assertFalse(MobileDeviceSessionLab.objects.exists())
+
+
+@override_settings(ROOT_URLCONF="native_sessions_lab.test_urls")
+class NativeWorkspaceBearerScopeTests(TestCase):
+    """Bearer is authenticated separately from workspace permission."""
+
+    @classmethod
+    def setUpTestData(cls):
+        User = get_user_model()
+        cls.owner = User.objects.create_user(
+            username="n1-scope-owner", password=PASSWORD,
+        )
+        cls.member = User.objects.create_user(
+            username="n1-scope-member", password=PASSWORD,
+        )
+        cls.outsider = User.objects.create_user(
+            username="n1-scope-outsider", password=PASSWORD,
+        )
+        cls.workspace = Workspace.objects.create(name="Lab workspace A")
+        cls.foreign = Workspace.objects.create(name="Lab workspace B")
+        WorkspaceMember.objects.create(
+            workspace=cls.workspace, user=cls.owner,
+            role=WorkspaceMember.Role.OWNER,
+        )
+        WorkspaceMember.objects.create(
+            workspace=cls.workspace, user=cls.member,
+            role=WorkspaceMember.Role.MEMBER,
+        )
+        WorkspaceMember.objects.create(
+            workspace=cls.foreign, user=cls.outsider,
+            role=WorkspaceMember.Role.OWNER,
+        )
+        cls.member_renewal = Renewal.objects.create(
+            workspace=cls.workspace, assigned_to=cls.member,
+            customer_reference="member-secret-not-in-response",
+            full_name="private synthetic name",
+            expires_on=date(2030, 4, 3),
+        )
+        cls.other_renewal = Renewal.objects.create(
+            workspace=cls.workspace, assigned_to=cls.owner,
+            customer_reference="owner-secret-not-in-response",
+            expires_on=date(2030, 4, 4),
+        )
+        cls.unassigned_renewal = Renewal.objects.create(
+            workspace=cls.workspace, assigned_to=None,
+            customer_reference="unassigned-secret-not-in-response",
+            expires_on=date(2030, 4, 5),
+        )
+        cls.foreign_renewal = Renewal.objects.create(
+            workspace=cls.foreign, assigned_to=cls.outsider,
+            customer_reference="foreign-secret-not-in-response",
+            expires_on=date(2030, 4, 6),
+        )
+
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=True)
+
+    def login(self, user):
+        response = self.client.post(
+            PASSWORD_PATH,
+            data=json.dumps({"username": user.username, "password": PASSWORD}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], "authenticated")
+        return response.json()
+
+    def scoped(self, access, workspace=None, query=""):
+        workspace = workspace or self.workspace
+        return self.client.get(
+            f"/api/v1/mobile/workspaces/{workspace.pk}/renewals/{query}",
+            HTTP_AUTHORIZATION="Bearer " + access,
+        )
+
+    def test_owner_sees_only_own_workspace_without_pii(self):
+        access = self.login(self.owner)["access"]
+        response = self.scoped(access)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["workspace_id"], str(self.workspace.pk))
+        self.assertEqual(
+            {row["id"] for row in data["results"]},
+            {
+                str(self.member_renewal.pk),
+                str(self.other_renewal.pk),
+                str(self.unassigned_renewal.pk),
+            },
+        )
+        serialized = response.content.decode("utf-8")
+        for private in (
+            "member-secret", "owner-secret", "unassigned-secret",
+            "foreign-secret", "private synthetic name",
+        ):
+            self.assertNotIn(private, serialized)
+
+    def test_member_sees_only_assigned_renewals(self):
+        access = self.login(self.member)["access"]
+        response = self.scoped(access)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [row["id"] for row in response.json()["results"]],
+            [str(self.member_renewal.pk)],
+        )
+
+    def test_foreign_workspace_denied_even_with_valid_bearer(self):
+        access = self.login(self.owner)["access"]
+        response = self.scoped(access, self.foreign)
+        self.assertEqual(response.status_code, 404)
+        self.assertNotIn("foreign-secret", response.content.decode("utf-8"))
+
+    def test_membership_removal_immediately_denies_existing_token(self):
+        access = self.login(self.member)["access"]
+        self.assertEqual(self.scoped(access).status_code, 200)
+        WorkspaceMember.objects.filter(
+            workspace=self.workspace, user=self.member,
+        ).delete()
+        self.assertEqual(self.scoped(access).status_code, 404)
+
+    def test_revoked_token_does_not_authenticate_workspace(self):
+        tokens = self.login(self.owner)
+        self.assertEqual(self.scoped(tokens["access"]).status_code, 200)
+        self.assertEqual(self.client.post(
+            REVOKE_PATH, data=json.dumps({"refresh": tokens["refresh"]}),
+            content_type="application/json",
+        ).status_code, 200)
+        self.assertEqual(self.scoped(tokens["access"]).status_code, 401)
+
+    def test_refresh_token_cannot_authorize_workspace(self):
+        tokens = self.login(self.owner)
+        self.assertEqual(self.scoped(tokens["refresh"]).status_code, 401)
+        self.assertEqual(self.client.get(
+            f"/api/v1/mobile/workspaces/{self.workspace.pk}/renewals/",
+        ).status_code, 401)
+
+    def test_query_parameters_and_unknown_workspace_rejected(self):
+        tokens = self.login(self.owner)
+        self.assertEqual(
+            self.scoped(tokens["access"], query="?limit=1000").status_code,
+            400,
+        )
+        unknown = Workspace.objects.create(name="No member workspace")
+        self.assertEqual(self.scoped(
+            tokens["access"], unknown,
+        ).status_code, 404)
