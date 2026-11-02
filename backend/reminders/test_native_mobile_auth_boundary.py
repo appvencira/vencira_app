@@ -51,6 +51,10 @@ class MobileAuthBoundaryTests(SimpleTestCase):
         self.assertEqual(settings.SESSION_COOKIE_SAMESITE, "Lax")
         self.assertEqual(settings.CSRF_COOKIE_SAMESITE, "Lax")
 
+    def test_device_session_lab_is_absent_from_normal_django(self):
+        self.assertFalse(getattr(settings, "VENCIRA_NATIVE_SESSION_LAB", False))
+        self.assertNotIn("native_sessions_lab", settings.INSTALLED_APPS)
+
     def test_bearer_header_cannot_authenticate_web_session_api(self):
         # The mobile gateway is disabled; never silently treat arbitrary
         # bearer data as an authenticated Django user.
