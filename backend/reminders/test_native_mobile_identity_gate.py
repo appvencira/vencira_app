@@ -106,6 +106,27 @@ class NativeIdentityGateTests(SimpleTestCase):
                 with self.assertRaises(MobileIdentityDenied):
                     self.invoke(verified=verified, epoch=epoch)
 
+
+    def test_missing_mfa_row_with_recovery_history_denied(self):
+        self.has_history = True
+        self.mock_queries()
+        with self.assertRaises(MobileIdentityDenied):
+            self.invoke()
+
+    def test_password_lookup_failure_is_not_a_bypass(self):
+        self.user.get_session_auth_hash = lambda: 1 / 0
+        self.mock_queries()
+        with self.assertRaises(MobileIdentityDenied):
+            self.invoke()
+
+    def test_mfa_query_failure_is_not_a_bypass(self):
+        with patch(
+            "reminders.native_mobile_identity_gate.UserMfaState.objects.filter",
+            side_effect=RuntimeError("unavailable"),
+        ):
+            with self.assertRaises(MobileIdentityDenied):
+                self.invoke()
+
     def test_missing_database_state_fails_closed(self):
         with patch(
             "reminders.native_mobile_identity_gate.UserMfaState.objects.filter",
