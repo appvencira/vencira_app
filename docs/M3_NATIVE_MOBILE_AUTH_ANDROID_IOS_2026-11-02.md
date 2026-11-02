@@ -1,0 +1,44 @@
+# VENCIRA — Conectividad y autenticación NATIVAS Android e iOS
+Fecha: 2026-11-02
+Estado: CONTRATO / DISEÑO PENDIENTE DE IMPLEMENTACIÓN Y VALIDACIÓN
+Rama de trabajo inicial: feature/m3-android-local-notifications; PR #17 draft.
+
+## Objetivo de producto (obligatorio)
+La aplicación móvil VENCIRA debe trabajar directamente con la API Django mediante HTTPS **desde Android y desde iOS**, incluida conectividad por datos móviles fuera de la red local, sin depender del navegador web como medio de autenticación o de ejecución. Debe permitir usar las funciones autorizadas del usuario con sesión nativa, permisos de workspace y revocación segura. **No dar por terminada la conectividad móvil cuando solo se abre dev.vencira.es en Chrome/Safari.**
+
+Flutter Web mantiene el flujo actual de sesión web y CSRF, sin regresiones. Android/iOS compartirán un contrato de API y autenticación multiplataforma, con adaptadores de almacenamiento y ciclo de vida específicos de cada sistema. No mezclar identidades web y nativas por accidente.
+
+## Diagnóstico reproducido el 02/11/2026
+- APK Android instalado en dispositivo y conectado mediante datos móviles muestra «No se han podido cargar los datos».
+- dev.vencira.es funciona en Chrome con los mismos datos móviles: el servidor público y HTTPS son accesibles.
+- En código, HttpVenciraApi usa `baseUri ?? Uri.base`; el README señala explícitamente que el cliente HTTP usa cookies de sesión **solo en web bajo el mismo origen** y que no hay autenticación nativa terminada.
+- El permiso `android.permission.INTERNET` faltaba en la variante Release; se corrigió y verificó mediante `aapt`, publicado en commit d6ebf49.
+- Workaround temporal 6251c95/58dedbb y prueba 204162c: Android abre navegador externo en `https://dev.vencira.es/`; NO proporciona conexión nativa ni sesión Android. Validación local de este cambio está ejecutándose, resultado aún no comunicado.
+- iOS no ha sido construido ni probado; no inferir compatibilidad iOS a partir de compilaciones Android.
+
+## Contrato de seguridad antes de programar credenciales
+1. Diseñar y revisar endpoints de autenticación móvil en Django, compatibles con MFA, recuperación, revocación, límites de intentos y auditoría. Considerar Authorization Code + PKCE con proveedor OIDC o un contrato equivalente revisado; no inventar endpoints ni hacer login por scraping de páginas Django.
+2. Cliente HTTP nativo debe usar una URL base HTTPS explícita, independiente de `Uri.base`, con control estricto de host/esquema por entorno; no permitir HTTP o URL arbitraria suministrada por servidor.
+3. Tokens de acceso de vida corta, renovación y revocación con rotación/reutilización detectada según diseño aprobado; definir caducidad y gestión de errores sin reintentos de escrituras no idempotentes. **No guardar contraseñas ni secretos en código, SharedPreferences, logs ni repositorio.**
+4. Persistencia mínima protegida mediante Android Keystore e iOS Keychain (adaptadores de plataforma; decidir política biométrica y copias de seguridad explícitamente). Borrado seguro en logout, caducidad, cambio de cuenta/workspace y pérdida de permisos; mantener barrera de cancelación de alarmas antes de avanzar.
+5. CSRF y cookies web permanecen en su flujo; la autenticación móvil debe tener su propia protección contra suplantación, almacenamiento indebido y fugas por redirección.
+6. Uso de TLS válido, límites de redirección y errores de certificado tratados como fallo; nunca saltar validación TLS para pruebas. Separar entorno dev de producción.
+7. Pruebas de backend y clientes: 401/403, expiración, desconexión 4G/Wi-Fi, MFA, token revocado, rotación simultánea, cambios de workspace, datos tardíos, proceso en segundo plano, reinstalación, cierre de sesión y fallo de borrado; no reexponer información tras revocación.
+8. iOS: configuración ATS, permisos, Keychain, firma/provisioning y pruebas en iPhone real; Android: Keystore, Network Security Config, Activity/manifest y dispositivo real.
+
+## Entregas en macrobloques
+- N1 Contrato backend (amenazas y esquema de sesión, endpoints y tests, sin migración persistente).
+- N2 Capa API Flutter multiplataforma (separar cliente web vs cliente nativo; inyección de base HTTPS, tests con transporte simulado).
+- N3 UI de autenticación Android+iOS y almacenamiento seguro, MFA/revocación con tests de barreras.
+- N4 E2E con entorno temporal aislado, pruebas reales Android e iOS en conexión exterior y rehabilitación controlada de UI móvil.
+- N5 revisión de seguridad, autorización independiente de distribución y entrega; firma de producción y stores solo tras aprobación y custodia real.
+
+## Evidencia ya disponible vs pendiente
+- Flutter 273 tests; Django SQLite 77; PG17 temporal 77; Flutter Web, APK Android Debug, APK Android Release y reconstrucción desde clon GitHub: PASS comunicados localmente para commits previos.
+- APK Android Release auditado con `allowBackup=false`, `debuggable` no declarado, permiso INTERNET añadido; firma es Android Debug (no distribuible).
+- **No hay pruebas de contrato de sesión móvil nativa, ni build iOS, ni pruebas en dispositivo iOS, ni validación de autenticación nativa Android.**
+- El workaround navegador no incrementa hitos de autenticación nativa.
+- Gates activos: `MB1_RELEASE_AUTHORIZED=NO`; `MFA_RELEASE_AUTHORIZED=NO`; `C_FICHA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`. No activar alarmas reales o envíos externos.
+
+## Criterio de aceptación
+Dos aplicaciones móviles instalables (Android e iOS) pueden iniciar sesión **nativamente** y operar sobre la API HTTPS desde datos móviles con autenticación segura, MFA y revocación verificados, sin navegador como dependencia funcional. Flutter Web sigue funcionando. La aceptación requiere tests automáticos y pruebas físicas por plataforma, y aprobación explícita de los gates operativos. No declarar completado antes.
