@@ -7,7 +7,7 @@ import 'package:vencira/api/native_session_fence.dart';
 const first = 'v1.r.0123456789abcdef0123456789abcdef.'
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 const second = 'v1.r.0123456789abcdef0123456789abcdef.'
-    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE';
+    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQ';
 
 class DurableFakeSecretStore implements NativeSecretStore {
   final records = <String, String>{};
