@@ -50,3 +50,12 @@ class MobileAuthBoundaryTests(SimpleTestCase):
         self.assertTrue(settings.SESSION_COOKIE_HTTPONLY)
         self.assertEqual(settings.SESSION_COOKIE_SAMESITE, "Lax")
         self.assertEqual(settings.CSRF_COOKIE_SAMESITE, "Lax")
+
+    def test_bearer_header_cannot_authenticate_web_session_api(self):
+        # The mobile gateway is disabled; never silently treat arbitrary
+        # bearer data as an authenticated Django user.
+        response = self.client.get(
+            "/api/v1/me/",
+            HTTP_AUTHORIZATION="Bearer synthetic-invalid-test-only",
+        )
+        self.assertIn(response.status_code, (401, 403))
