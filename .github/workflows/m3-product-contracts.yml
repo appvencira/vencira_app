@@ -42,6 +42,7 @@ jobs:
         run: |
           bash -n ../scripts/n1_verification_batch.sh
           bash -n ../scripts/n1_identity_pg17_ephemeral.sh
+          bash -n ../scripts/m3_native_http_contract_batch.sh
       - name: Check Django project
         run: python manage.py check
       - name: Product control and suggestion tests
