@@ -6,6 +6,8 @@ NOT import or register this module. A standalone runtime guard denies requests
 even if someone mistakenly includes a URL outside the test environment.
 """
 import json
+import uuid
+
 
 from django.conf import settings
 from django.http import JsonResponse
@@ -147,3 +149,48 @@ def me(request):
     except SessionLabDenied:
         return _denied()
     return _result({"authenticated": True, "user_id": user.pk})
+
+
+def workspace_renewals(request, workspace_id):
+    """Read-only mobile Bearer scope; lab-only.
+
+    Authenticate from the verified token, then reuse the exact membership and
+    visible-renewals restrictions already applied by the web API. Never look
+    up a renewal outside that filtered queryset, and do not expose PII in this
+    synthetic contract. This is not installed in operational routing.
+    """
+    denial = _guard(request, post=False)
+    if denial is not None:
+        return denial
+    if request.GET:
+        return _denied(400)
+    header = request.headers.get("Authorization", "")
+    if not header.startswith("Bearer ") or header.count(" ") != 1:
+        return _denied()
+    try:
+        user = validate_access(header[7:])
+    except SessionLabDenied:
+        return _denied()
+
+    from reminders.models import WorkspaceMember
+    from reminders.views import _visible_renewals
+
+    if not isinstance(workspace_id, uuid.UUID):
+        return _denied(404)
+    member = WorkspaceMember.objects.filter(
+        workspace_id=workspace_id, user_id=user.pk,
+    ).first()
+    if member is None:
+        return _denied(404)
+    queryset = _visible_renewals(member).order_by("expires_on", "pk")
+    # Limit both item count and response body; deliberately omit names,
+    # policy number, phone, notes and other sensitive contract fields.
+    rows = list(queryset.values("id", "expires_on", "status")[:50])
+    return _result({
+        "workspace_id": str(workspace_id),
+        "results": [{
+            "id": str(row["id"]),
+            "expires_on": row["expires_on"].isoformat(),
+            "status": row["status"],
+        } for row in rows],
+    })
