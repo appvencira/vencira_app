@@ -14,11 +14,17 @@ class NativeApiTransport {
     required this.client,
     required this.accessToken,
     required this.sessionFence,
+    this.connectTimeout = const Duration(seconds: 15),
+    this.streamIdleTimeout = const Duration(seconds: 15),
   });
 
   final NativeApiEndpoint endpoint;
   final http.Client client;
   final NativeSessionFence sessionFence;
+  /// Per-request time limits prevent a disconnected mobile transport from
+  /// keeping stale requests open indefinitely.
+  final Duration connectTimeout;
+  final Duration streamIdleTimeout;
 
   /// Supplied by the future secure mobile session controller, never by
   /// SharedPreferences or a compile-time secret.
@@ -66,7 +72,7 @@ class NativeApiTransport {
       ..headers['Authorization'] = 'Bearer $token';
     late http.StreamedResponse response;
     try {
-      response = await client.send(request);
+      response = await client.send(request).timeout(connectTimeout);
     } catch (_) {
       throw const NativeApiTransportFailure();
     }
@@ -89,7 +95,7 @@ class NativeApiTransport {
     }
     final bytes = <int>[];
     try {
-      await for (final chunk in response.stream) {
+      await for (final chunk in response.stream.timeout(streamIdleTimeout)) {
         if (chunk.length > maxResponseBytes - bytes.length) {
           throw const NativeApiTransportFailure();
         }
