@@ -62,6 +62,7 @@ step() {
   echo "N1_BATCH_${name}=${STATUS[$name]}"
 }
 
+step STATIC python3 scripts/n1_static_security_gate.py
 step BUILD "${DOCKER[@]}" build -t "$IMG" ./backend
 
 if [ "${STATUS[BUILD]}" -eq 0 ]; then
@@ -145,7 +146,7 @@ step FLUTTER "${DOCKER[@]}" run --rm \
 
 echo "=== BATCH FINAL SUMMARY ==="
 FAILED=0
-for name in BUILD SQLITE SQLITE_LAB PG17 PG17_LAB FLUTTER; do
+for name in STATIC BUILD SQLITE SQLITE_LAB PG17 PG17_LAB FLUTTER; do
   code="${STATUS[$name]:-99}"
   echo "N1_BATCH_${name}=$code"
   if [ "$code" -ne 0 ]; then FAILED=1; fi
