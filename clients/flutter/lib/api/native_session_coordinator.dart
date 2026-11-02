@@ -65,6 +65,8 @@ class NativeSessionCoordinator implements NativeLoginGateway {
   String? _access;
   DateTime? _accessDeadline;
   bool _busy = false;
+  bool _logoutRequired = false;
+  Future<void>? _logoutInProgress;
   Completer<void>? _finished;
 
   static final RegExp _challengeShape = RegExp(
@@ -85,7 +87,7 @@ class NativeSessionCoordinator implements NativeLoginGateway {
   }
 
   void _start() {
-    if (_busy || fence.ticket != null) {
+    if (_busy || _logoutRequired || fence.ticket != null) {
       throw StateError('Native session transition unavailable');
     }
     _busy = true;
@@ -113,6 +115,7 @@ class NativeSessionCoordinator implements NativeLoginGateway {
   Future<void> _activate(NativeIssuedTokens tokens, int epoch) async {
     if (!NativeMobileTokenShape.accepts(tokens.access, kind: 'a') ||
         !NativeMobileTokenShape.accepts(tokens.refresh, kind: 'r')) {
+      await _revokeIssued(tokens);
       throw StateError('Invalid native session credentials');
     }
     if (epoch != _epoch) {
@@ -216,16 +219,32 @@ class NativeSessionCoordinator implements NativeLoginGateway {
   /// after server-side revocation and secure storage cleanup both succeed.
   /// On failure the fence remains closed and vault content is retained for
   /// explicit retry; never report logout as successfully completed.
-  Future<void> logout() async {
+  Future<void> logout() {
+    final existing = _logoutInProgress;
+    if (existing != null) return existing;
+    _logoutRequired = true;
     _epoch++;
     fence.revoke();
     _access = null;
     _accessDeadline = null;
     _challenge = null;
-    final pending = _finished?.future;
-    if (pending != null) await pending;
-    final refresh = await vault.read();
-    if (refresh != null) await port.revoke(refresh: refresh);
-    await vault.clear();
+    final result = _finishLogout();
+    _logoutInProgress = result;
+    return result;
+  }
+
+  Future<void> _finishLogout() async {
+    try {
+      final pending = _finished?.future;
+      if (pending != null) await pending;
+      final refresh = await vault.read();
+      if (refresh != null) await port.revoke(refresh: refresh);
+      await vault.clear();
+      _logoutRequired = false;
+    } finally {
+      // Failed server/storage cleanup leaves _logoutRequired=true. Another
+      // logout() may retry; no new sign-in can start until then.
+      _logoutInProgress = null;
+    }
   }
 }
