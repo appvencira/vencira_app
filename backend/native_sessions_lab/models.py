@@ -14,6 +14,7 @@ class MobileDeviceSessionLab(models.Model):
     access_digest = models.CharField(max_length=64)
     refresh_digest = models.CharField(max_length=64)
     credential_version = models.CharField(max_length=64)
+    auth_generation = models.PositiveBigIntegerField(default=0)
     verified_mfa = models.BooleanField(default=False)
     mfa_epoch = models.PositiveIntegerField(null=True, blank=True)
     access_expires_at = models.DateTimeField()
@@ -40,6 +41,16 @@ class MobileLoginChallengeLab(models.Model):
     secret_digest = models.CharField(max_length=64)
     credential_version = models.CharField(max_length=64)
     mfa_epoch = models.PositiveIntegerField()
+    auth_generation = models.PositiveBigIntegerField(default=0)
     expires_at = models.DateTimeField()
     consumed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class MobileAccountFenceLab(models.Model):
+    """Account revocation epoch; lab-only persistent serialization fence."""
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        primary_key=True, related_name="+",
+    )
+    generation = models.PositiveBigIntegerField(default=0)
