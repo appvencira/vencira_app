@@ -7,7 +7,7 @@ from django.test import TransactionTestCase
 from .models import MobileDeviceSessionLab
 from .session_rules import (
     SessionLabDenied, issue_verified_session, rotate_refresh,
-    validate_access,
+    validate_access, revoke_all_devices_for_user_lab,
 )
 
 
@@ -64,3 +64,60 @@ class RefreshRacePG17Tests(TransactionTestCase):
         success = next(item[1] for item in results if item[0] == "issued")
         with self.assertRaises(SessionLabDenied):
             validate_access(success[0])
+
+    def test_global_revoke_race_with_refresh_remains_revoked(self):
+        if connection.vendor != "postgresql":
+            self.skipTest("Requires PostgreSQL row locking")
+        user = get_user_model().objects.create_user(
+            username="n1-pg17-revoke-race",
+            password="SyntheticRowLockOnly-2026!",
+        )
+        access, refresh = issue_verified_session(
+            user=user, verified_mfa=False, mfa_epoch=None)
+        start = Barrier(3)
+
+        def do_refresh():
+            connections.close_all()
+            try:
+                start.wait(timeout=10)
+                return rotate_refresh(refresh)
+            except SessionLabDenied:
+                return None
+            finally:
+                connections.close_all()
+
+        def do_revoke():
+            connections.close_all()
+            try:
+                start.wait(timeout=10)
+                return revoke_all_devices_for_user_lab(user_id=user.pk)
+            finally:
+                connections.close_all()
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            a = pool.submit(do_refresh)
+            b = pool.submit(do_revoke)
+            start.wait(timeout=10)
+            refreshed = a.result(timeout=20)
+            revoked_count = b.result(timeout=20)
+
+        self.assertEqual(revoked_count, 1)
+        self.assertIsNotNone(MobileDeviceSessionLab.objects.get().revoked_at)
+        with self.assertRaises(SessionLabDenied):
+            validate_access(access)
+        with self.assertRaises(SessionLabDenied):
+            rotate_refresh(refresh)
+        if refreshed is not None:
+            with self.assertRaises(SessionLabDenied):
+                validate_access(refreshed[0])
+            with self.assertRaises(SessionLabDenied):
+                rotate_refresh(refreshed[1])
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM pg_stat_activity "
+                "WHERE datname = current_database() "
+                "AND pid <> pg_backend_pid() "
+                "AND backend_type = 'client backend'"
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
