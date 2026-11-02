@@ -358,3 +358,10 @@ Dos aplicaciones móviles instalables (Android e iOS) pueden iniciar sesión **n
 - Nuevo modo `bash scripts/n1_identity_pg17_ephemeral.sh --lab-case` ejecuta **solo ese caso** en una DB PostgreSQL17 temporal, con el mismo aislamiento Docker que `--lab`, sin repetir las demás pruebas. El resultado esperado es `N1_PG17_LAB_CASE_RESULT=0`. **PENDIENTE de ejecución** (total previsto en el `--lab` completo: 81 pruebas, no verificado).
 - Flutter G6: último operador notificó `flutter analyze` `No issues found! (13.8s)` y 26 casos sin errores en el tramo proporcionado, tras corregir el archivo truncado. No repetir Flutter para este test Django.
 - `G6_PG17=REPAIR_PENDING_LOCAL_CASE`, `G6_OPERATIONAL=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## G6 — prueba PostgreSQL focalizada confirmada (02/11/2026)
+- El operador reconstruyó correctamente la imagen Docker `vencira-m3-backend-test` desde la revisión con test dividido y ejecutó `bash scripts/n1_identity_pg17_ephemeral.sh --lab-case`.
+- Evidencia: `Ran 1 test in 0.218s`, `OK`, `Destroying test database for alias 'default'...`, `N1_PG17_LAB_CASE_RESULT=0`.
+- La regresión exacta `test_recovery_rejects_oversized_payload_without_browser_state` está confirmada en PostgreSQL17 temporal. La prueba de Origin/cookies permanece en otra función y fue parte del primer lote anterior, pero **no** se ha vuelto a ejecutar la batería nueva con 81 casos; por tanto `M3_HTTP_RESULT=0` para G6 **no está acreditado**.
+- Flutter: `flutter analyze` sin incidencias tras reparación y 26 pruebas focalizadas sin errores visibles (salida no incluye línea global final); no repetir en esta fase hasta incorporar el resto de integración.
+- Estado `G6_PG17_OVERSIZE_CASE=PASS`, `G6_INTEGRAL=PENDING`, `G6_OPERATIONAL=NO`. Sin cambios en API operativa ni BD persistente. `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
