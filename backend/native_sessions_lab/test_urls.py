@@ -8,9 +8,9 @@ from django.urls import path
 from . import test_http_contract as views
 
 urlpatterns = [
-    path("lab/mobile/auth/password/", views.password, name="lab-native-password"),
-    path("lab/mobile/auth/mfa/", views.mfa, name="lab-native-mfa"),
-    path("lab/mobile/token/refresh/", views.refresh, name="lab-native-refresh"),
-    path("lab/mobile/token/revoke/", views.revoke, name="lab-native-revoke"),
-    path("lab/mobile/me/", views.me, name="lab-native-me"),
+    path("api/v1/mobile/auth/password/", views.password, name="lab-native-password"),
+    path("api/v1/mobile/auth/mfa/", views.mfa, name="lab-native-mfa"),
+    path("api/v1/mobile/token/refresh/", views.refresh, name="lab-native-refresh"),
+    path("api/v1/mobile/token/revoke/", views.revoke, name="lab-native-revoke"),
+    path("api/v1/mobile/me/", views.me, name="lab-native-me"),
 ]
