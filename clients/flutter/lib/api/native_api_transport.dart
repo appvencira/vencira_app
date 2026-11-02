@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import 'native_api_endpoint.dart';
 import 'native_session_fence.dart';
+import 'native_mobile_token_shape.dart';
 
 /// A transport primitive for a FUTURE, separately authorised Android/iOS
 /// session. Not connected to the app until the backend MFA/token contract is
@@ -31,24 +32,6 @@ class NativeApiTransport {
   final Future<String?> Function() accessToken;
 
   static const int maxResponseBytes = 1024 * 1024;
-  // A refresh token must never be attached to an API access request.
-  // Keep v1 access token parsing aligned with the backend primitive.
-  static final RegExp _accessTokenShape =
-      RegExp(r'^v1\.a\.[0-9a-f]{32}\.([A-Za-z0-9_-]{43})$');
-
-  static bool _validAccessToken(String token) {
-    final match = _accessTokenShape.firstMatch(token);
-    if (match == null) return false;
-    final encoded = match.group(1)!;
-    try {
-      final raw = base64Url.decode('$encoded=');
-      return raw.length == 32 &&
-          base64UrlEncode(raw).replaceAll('=', '') == encoded;
-    } on FormatException {
-      return false;
-    }
-  }
-
   Future<Object> getJson(String path) async {
     // Validate both path and active session before reading credentials.
     final uri = endpoint.resolveApiPath(path);
@@ -61,7 +44,7 @@ class NativeApiTransport {
       throw const NativeApiSessionUnavailable();
     }
     if (!sessionFence.accepts(ticket) || token == null ||
-        !_validAccessToken(token)) {
+        !NativeMobileTokenShape.accepts(token, kind: 'a')) {
       throw const NativeApiSessionUnavailable();
     }
 
