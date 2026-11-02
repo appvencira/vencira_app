@@ -37,7 +37,8 @@ class FakeNativeSecretStore implements NativeSecretStore {
 }
 
 void main() {
-  const token = 'synthetic-refresh-credential-for-unit-tests-only-1234';
+  const token = 'v1.r.0123456789abcdef0123456789abcdef.'
+      'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
   NativeRefreshCredentialVault vault(FakeNativeSecretStore store,
           {String origin = 'https://dev.vencira.es'}) =>
@@ -60,7 +61,9 @@ void main() {
     final prod = vault(store, origin: 'https://vencira.es');
     await dev.replace(token);
     expect(await prod.read(), isNull);
-    await prod.replace('synthetic-other-production-refresh-credential-5678');
+    await prod.replace(token.replaceFirst(
+      '0123456789abcdef0123456789abcdef',
+      'fedcba9876543210fedcba9876543210'));
     expect(await dev.read(), token);
     await dev.clear();
     expect(await prod.read(), isNotNull);
@@ -69,8 +72,13 @@ void main() {
   test('rejects malformed credential without touching storage', () async {
     final store = FakeNativeSecretStore();
     final target = vault(store);
-    for (final bad in ['', 'short', 'secret\r\n' * 8,
-        'contains whitespace and unsafe header characters!!!']) {
+    final access = token.replaceFirst('v1.r.', 'v1.a.');
+    final noncanonical = '${token.substring(0, token.length - 1)}B';
+    for (final bad in [
+      '', 'short', 'secret\\r\\n' * 8,
+      'contains whitespace and unsafe header characters!!!',
+      access, noncanonical,
+    ]) {
       await expectLater(target.replace(bad), throwsFormatException);
     }
     expect(store.data, isEmpty);
