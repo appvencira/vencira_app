@@ -224,6 +224,29 @@ void main() {
     expect(port.revoked, [refresh]);
   });
 
+  test('failed revoke of late issued token blocks logout until retry',
+      () async {
+    port.failRevoke = true;
+    port.delayedPassword = Completer<NativePasswordResponse>();
+    final login = coordinator.verifyPassword(username: 'u', password: 'p');
+    final logout = coordinator.logout();
+    port.delayedPassword!.complete(const NativePasswordGranted(
+      NativeIssuedTokens(access: access, refresh: refresh),
+    ));
+    await expectLater(login, throwsA(isA<StateError>()));
+    await expectLater(logout, throwsA(isA<StateError>()));
+    expect(fence.ticket, isNull);
+    await expectLater(
+      coordinator.verifyPassword(username: 'u', password: 'p'),
+      throwsA(isA<StateError>()),
+    );
+    port.failRevoke = false;
+    await coordinator.logout();
+    expect(port.revoked, [refresh]);
+    expect(fence.ticket, isNull);
+    expect(store.items, isEmpty);
+  });
+
   test('logout racing with secret write cannot activate old session',
       () async {
     store.writeGate = Completer<void>();
