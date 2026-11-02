@@ -3,6 +3,7 @@
 The lab is test-only; no URLs, DRF auth, production migration or live tokens.
 """
 from datetime import timedelta
+import uuid
 from unittest.mock import patch
 
 from cryptography.fernet import Fernet
@@ -196,6 +197,33 @@ class NativeLoginFlowLabTests(TestCase):
         new_mode, new_tokens = begin_native_login_lab(self.user.username, PASSWORD)
         self.assertEqual(new_mode, "ready")
         self.assertEqual(validate_access(new_tokens[0]).pk, self.user.pk)
+
+    def test_account_revoke_does_not_consume_another_users_challenge(self):
+        self.enable_mfa()
+        own_challenge = self.challenge()
+        other = get_user_model().objects.create_user(
+            username="n1-other-challenge",
+            password="SyntheticOtherUserPassword!2026",
+        )
+        UserMfaState.objects.create(
+            user=other, enabled=True, session_epoch=2,
+            encrypted_totp_secret="synthetic-only-other",
+        )
+        mode, other_challenge = begin_native_login_lab(
+            other.username, "SyntheticOtherUserPassword!2026",
+        )
+        self.assertEqual(mode, "mfa")
+        revoke_all_devices_for_user_lab(user_id=self.user.pk)
+        self.assertIsNotNone(
+            MobileLoginChallengeLab.objects.get(
+                id=uuid.UUID(hex=own_challenge.split(".")[1]),
+            ).consumed_at,
+        )
+        self.assertIsNone(
+            MobileLoginChallengeLab.objects.get(
+                id=uuid.UUID(hex=other_challenge.split(".")[1]),
+            ).consumed_at,
+        )
 
     def test_forged_challenge_cannot_complete_mfa(self):
         self.enable_mfa()
