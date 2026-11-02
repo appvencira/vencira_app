@@ -180,6 +180,9 @@ class NativeSessionCoordinator implements NativeLoginGateway {
       }
       if (result is NativePasswordGranted) {
         await _activate(result.tokens, epoch);
+        if (epoch != _epoch || fence.ticket == null) {
+          throw StateError('Native login invalidated');
+        }
         return NativePasswordDecision.authenticated;
       }
       throw StateError('Unexpected native password response');
@@ -199,6 +202,9 @@ class NativeSessionCoordinator implements NativeLoginGateway {
     try {
       final tokens = await port.mfa(challenge: challenge, code: code);
       await _activate(tokens, epoch);
+      if (epoch != _epoch || fence.ticket == null) {
+        throw StateError('Native MFA completion invalidated');
+      }
       _challenge = null;
     } finally {
       _end();
