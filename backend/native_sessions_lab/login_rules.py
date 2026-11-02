@@ -118,8 +118,10 @@ def finish_native_mfa_lab(challenge, code):
     issue no session. All credentials and challenges are lab-only.
     """
     sid = _challenge_id(challenge)
-    if type(code) is not str or len(code) != 6:
+    if type(code) is not str or len(code) > 256:
         raise NativeLoginLabDenied()
+    accepted = False
+    credentials = None
     try:
         with transaction.atomic():
             record = MobileLoginChallengeLab.objects.select_for_update().filter(
@@ -139,16 +141,19 @@ def finish_native_mfa_lab(challenge, code):
                 asserted_credential_version=record.credential_version,
             )
             keys = load_mfa_keys()
-            if not consume_totp(user.pk, code, keys=keys):
-                raise NativeLoginLabDenied()
-
-            credentials = issue_verified_session(
-                user=user, verified_mfa=True,
-                mfa_epoch=record.mfa_epoch,
-            )
-            record.consumed_at = timezone.now()
-            record.save(update_fields=["consumed_at"])
-            clear_failures(user.get_username())
+            accepted = consume_totp(user.pk, code, keys=keys)
+            if accepted:
+                credentials = issue_verified_session(
+                    user=user, verified_mfa=True,
+                    mfa_epoch=record.mfa_epoch,
+                )
+                record.consumed_at = timezone.now()
+                record.save(update_fields=["consumed_at"])
+                clear_failures(user.get_username())
+        # Wrong OTP must COMMIT the rate-limit counter, even when denied.
+        # Raising inside the transaction would silently roll it back.
+        if not accepted:
+            raise NativeLoginLabDenied()
         return credentials
     except (SessionLabDenied, MobileIdentityDenied, ValueError) as exc:
         raise NativeLoginLabDenied() from exc
