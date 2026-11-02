@@ -1,0 +1,52 @@
+"""PostgreSQL 17 row-lock race rehearsal, disposable database ONLY."""
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
+from django.contrib.auth import get_user_model
+from django.db import close_old_connections, connection
+from django.test import TransactionTestCase
+from .models import MobileDeviceSessionLab
+from .session_rules import (
+    SessionLabDenied, issue_verified_session, rotate_refresh,
+    validate_access,
+)
+
+
+class RefreshRacePG17Tests(TransactionTestCase):
+    def test_two_parallel_refreshes_cannot_both_succeed(self):
+        if connection.vendor != "postgresql":
+            self.skipTest("Requires true PostgreSQL row locks")
+        user = get_user_model().objects.create_user(
+            username="n1-pg17-locked-test",
+            password="NotAProductionPassword!2026",
+        )
+        _, refresh = issue_verified_session(
+            user=user, verified_mfa=False, mfa_epoch=None)
+        start = Barrier(3)
+
+        def contender():
+            close_old_connections()
+            try:
+                start.wait(timeout=10)
+                return ("issued", rotate_refresh(refresh))
+            except SessionLabDenied:
+                return ("denied", None)
+            finally:
+                close_old_connections()
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [pool.submit(contender) for _ in range(2)]
+            start.wait(timeout=10)
+            results = [future.result(timeout=20) for future in futures]
+
+        self.assertEqual(
+            sorted(item[0] for item in results),
+            ["denied", "issued"],
+        )
+        row = MobileDeviceSessionLab.objects.get()
+        self.assertEqual(row.generation, 1)
+        # The second request used an already consumed token. It must revoke
+        # the device, including the just-issued access credential.
+        self.assertIsNotNone(row.revoked_at)
+        success = next(item[1] for item in results if item[0] == "issued")
+        with self.assertRaises(SessionLabDenied):
+            validate_access(success[0])
