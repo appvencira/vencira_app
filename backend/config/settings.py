@@ -32,6 +32,14 @@ if os.getenv("VENCIRA_ATTACHMENT_SPLIT_REHEARSAL", "") == "1":
     INSTALLED_APPS.append("renewal_attachments")
     VENCIRA_ATTACHMENT_SPLIT_REHEARSAL_ENABLED = True
 
+# A strictly test-only application with its own ephemeral migrations. It must
+# NEVER enter an operational Django installation or live migration graph.
+VENCIRA_NATIVE_SESSION_LAB = os.getenv("VENCIRA_NATIVE_SESSION_LAB", "0") == "1"
+if VENCIRA_NATIVE_SESSION_LAB:
+    if VENCIRA_ENV != "test":
+        raise ImproperlyConfigured("Native device session lab only allowed in test")
+    INSTALLED_APPS.append("native_sessions_lab")
+
 # Only in an explicitly isolated test lab, omit the historical registered
 # model whose table requires MFA-gated reminders.0027. Does not touch schema.
 VENCIRA_M103_SPLIT_DELETE_LAB = os.getenv("VENCIRA_M103_SPLIT_DELETE_LAB", "0") == "1"
