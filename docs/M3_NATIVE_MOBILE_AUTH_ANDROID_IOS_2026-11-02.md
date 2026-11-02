@@ -118,3 +118,10 @@ Dos aplicaciones móviles instalables (Android e iOS) pueden iniciar sesión **n
 - The script waits for `pg_isready`, runs the same three N1 test modules, prints `N1_IDENTITY_PG17_RESULT=<exit code>`, and removes its own PostgreSQL container and network on exit, including on normal test errors.
 - To run locally after updating the feature branch and rebuilding the backend image: `bash scripts/n1_identity_pg17_ephemeral.sh`. Execute via `bash`, as GitHub file mode need not be executable.
 - **No result from this PG17 runner yet**. The runner exists but has not been executed. This is a database-test gate, not native authentication. No production migrations, no mobile endpoint activation, no notifications.
+
+## N1 — PostgreSQL17 ORM gate confirmed (02/11/2026)
+- Operator reports from `bash scripts/n1_identity_pg17_ephemeral.sh`: `Ran 25 tests in 0.607s`, `OK`, `Destroying test database for alias 'default'...`, and `N1_IDENTITY_PG17_RESULT=0`.
+- The PG17 run used the isolated runner (private network, temporary container, tmpfs and automatic teardown). No deployment or persistent DB migration was requested. SQLite had independently passed 25/25.
+- `N1_IDENTITY_SQLITE_ORM=PASS_25`; `N1_IDENTITY_PG17_ORM=PASS_25`. These results close only the N1 **identity predicate** test gates, not the complete mobile authentication.
+- Next implementation scope: browserless first-party Android/iOS login UI (per product requirement), authenticated Django password/MFA verification, tightly controlled issue/refresh/revoke of opaque credentials, per-device server records, fail-closed revocation and DRF integration with tenant/workspace permissions. Keep existing session+CSRF web authentication untouched.
+- `N1_AUTH_SERVER=NOT_IMPLEMENTED`; `NATIVE_MOBILE_LOGIN=NOT_IMPLEMENTED`; `MFA_RELEASE_AUTHORIZED=NO`; `C_FICHA_RELEASE_AUTHORIZED=NO`; `MB1_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
