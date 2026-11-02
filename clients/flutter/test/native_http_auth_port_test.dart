@@ -91,6 +91,36 @@ void main() {
     client.close();
   });
 
+  test('refresh exchanges only a canonical refresh credential', () async {
+    final client = MockClient((request) async {
+      expect(request.url.path, '/api/v1/mobile/token/refresh/');
+      expect(jsonDecode(request.body), {'refresh': refresh});
+      return jsonReply({
+        'status': 'authenticated', 'access': access, 'refresh': refresh,
+      });
+    });
+    final tokens = await NativeHttpAuthPort(
+      endpoint: endpoint, client: client,
+    ).rotateRefresh(refresh);
+    expect(tokens.access, access);
+    client.close();
+  });
+
+  test('access credential cannot be used as a refresh', () async {
+    var sent = false;
+    final client = MockClient((_) async {
+      sent = true;
+      return jsonReply({'status': 'error'});
+    });
+    await expectLater(
+      NativeHttpAuthPort(endpoint: endpoint, client: client)
+          .rotateRefresh(access),
+      throwsA(isA<NativeHttpAuthFailure>()),
+    );
+    expect(sent, isFalse);
+    client.close();
+  });
+
   test('device revocation requires server acknowledgement', () async {
     final client = MockClient((request) async {
       expect(request.url.path, '/api/v1/mobile/token/revoke/');
