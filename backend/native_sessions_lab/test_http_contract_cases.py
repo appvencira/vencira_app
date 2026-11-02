@@ -17,11 +17,11 @@ from . import test_http_contract as lab_http
 from .models import MobileDeviceSessionLab
 
 PASSWORD = "SyntheticPasswordOnlyForHttpLab-2026!"
-PASSWORD_PATH = "/lab/mobile/auth/password/"
-MFA_PATH = "/lab/mobile/auth/mfa/"
-REFRESH_PATH = "/lab/mobile/token/refresh/"
-REVOKE_PATH = "/lab/mobile/token/revoke/"
-ME_PATH = "/lab/mobile/me/"
+PASSWORD_PATH = "/api/v1/mobile/auth/password/"
+MFA_PATH = "/api/v1/mobile/auth/mfa/"
+REFRESH_PATH = "/api/v1/mobile/token/refresh/"
+REVOKE_PATH = "/api/v1/mobile/token/revoke/"
+ME_PATH = "/api/v1/mobile/me/"
 
 
 @override_settings(ROOT_URLCONF="native_sessions_lab.test_urls")
