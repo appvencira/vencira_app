@@ -565,7 +565,7 @@ class NativeRecoveryAfterAmbiguousRefreshHttpTests(TestCase):
         )
         self.assertEqual(lab_http.recovery_mfa(request_mfa).status_code, 404)
 
-    def test_recovery_rejects_web_cookie_origin_and_oversized_payload(self):
+    def test_recovery_rejects_web_cookie_and_origin(self):
         payload = {"username": self.user.username, "password": PASSWORD}
         self.assertEqual(self.client.post(
             RECOVERY_PASSWORD_PATH, data=json.dumps(payload),
@@ -577,7 +577,19 @@ class NativeRecoveryAfterAmbiguousRefreshHttpTests(TestCase):
             content_type="application/json",
             HTTP_COOKIE="vencira_sessionid=test-only",
         ).status_code, 403)
-        self.assertEqual(self.post(RECOVERY_PASSWORD_PATH, {
+        self.assertFalse(MobileDeviceSessionLab.objects.exists())
+
+    def test_recovery_rejects_oversized_payload_without_browser_state(self):
+        # Each subcase must start with a fresh Django test-client cookie jar.
+        # SessionMiddleware may return Set-Cookie after a malformed browser
+        # session: reusing that client would change a later native request to
+        # 403 (cookie denied) before it can exercise the 4096-byte limit.
+        payload = {
             "username": self.user.username, "password": "a" * 5000,
-        }).status_code, 400)
+        }
+        self.assertGreater(len(json.dumps(payload)), lab_http.MAX_REQUEST_BYTES)
+        self.assertFalse(self.client.cookies)
+        response = self.post(RECOVERY_PASSWORD_PATH, payload)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {"error": "native_auth_unavailable"})
         self.assertFalse(MobileDeviceSessionLab.objects.exists())
