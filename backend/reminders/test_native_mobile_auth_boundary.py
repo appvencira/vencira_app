@@ -44,6 +44,8 @@ class MobileAuthBoundaryTests(SimpleTestCase):
             "/api/v1/mobile/token/revoke/",
             "/api/v1/mobile/auth/password/",
             "/api/v1/mobile/auth/mfa/",
+            "/api/v1/mobile/auth/recover/password/",
+            "/api/v1/mobile/auth/recover/mfa/",
             "/api/v1/mobile/me/",
         ):
             with self.subTest(path=path), self.assertRaises(Resolver404):
