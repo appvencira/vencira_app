@@ -108,6 +108,48 @@ def mfa(request):
 
 
 @csrf_exempt
+def recovery_password(request):
+    """Opt-in recovery: fresh password, THEN MFA if account requires it.
+
+    The account-wide revocation is committed only after a complete, verified
+    login. POST is not a replay of the old refresh token.
+    """
+    denial = _guard(request)
+    if denial is not None:
+        return denial
+    payload = _payload(request, {"username", "password"})
+    if payload is None:
+        return _denied(400)
+    try:
+        mode, result = begin_native_login_lab(
+            payload["username"], payload["password"], replace_devices=True,
+        )
+        if mode == "mfa":
+            return _result({"status": "mfa_required", "challenge": result})
+        return _issued(result)
+    except NativeLoginLabDenied:
+        return _denied()
+
+
+@csrf_exempt
+def recovery_mfa(request):
+    denial = _guard(request)
+    if denial is not None:
+        return denial
+    payload = _payload(request, {"challenge", "code"})
+    if payload is None:
+        return _denied(400)
+    try:
+        tokens = finish_native_mfa_lab(
+            payload["challenge"], payload["code"],
+            expected_recovery=True,
+        )
+        return _issued(tokens)
+    except NativeLoginLabDenied:
+        return _denied()
+
+
+@csrf_exempt
 def refresh(request):
     denial = _guard(request)
     if denial is not None:
