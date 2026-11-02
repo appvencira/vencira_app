@@ -91,3 +91,9 @@ Dos aplicaciones móviles instalables (Android e iOS) pueden iniciar sesión **n
 - Además, un test del contrato web comprueba que un encabezado `Authorization: Bearer` arbitrario no autentica `/api/v1/me/` mientras REST Framework continúa usando SessionAuthentication.
 - **VALIDACIÓN PENDIENTE**: no se ha ejecutado la nueva batería N1-B localmente, y no hay resultado concluyente CI para el head actual. Los anteriores 293 PASS son de Flutter, no de este cambio Django.
 - No hay emisor/verificador de tokens nativos ni endpoint móvil; la función interna no es un mecanismo de login. `N1_AUTH_SERVER=NOT_IMPLEMENTED`; `MOBILE_API_ENABLED=NO`. Conservar todos los gates globales cerrados.
+
+## N1 identity gate — local regression and SHA256 repair (02/11/2026)
+- Log supplied by operator: `n1-identity.log`. Git fast-forward to `d5583507`, Docker build successful. `Found 18 test(s)`, `System check identified no issues`, `Ran 18 tests`: 15 PASS / 2 ERROR / 1 FAIL; `N1_IDENTITY_RESULT` not separately visible within uploaded log; Django verdict **FAILED**.
+- Root cause: `salted_hmac()` uses SHA-1 by default (40-character hexadecimal digest); `require_mobile_identity_gate` requires a 64-character credential version. Thus valid synthetic identities were rejected. Test `test_mobile_version_is_not_django_session_hash` expected 64 but saw 40.
+- Fix `dd62686`: require `algorithm='sha256'` explicitly in `mobile_credential_version`. Regression `1f4a1fe`: pin expected domain-separated SHA256 digest in test. No session middleware, schema, tokens, endpoints, deployment or persistent DB affected.
+- **Recheck pending**: rebuild Django test image from updated branch and rerun `reminders.test_native_mobile_auth_boundary reminders.test_native_mobile_identity_gate`, then PG17 temporary integration. Do not claim N1 pass until rerun confirms it; production/auth gates remain closed.
