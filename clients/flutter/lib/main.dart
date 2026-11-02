@@ -9,6 +9,7 @@ import 'notifications/device_notice_revocation.dart';
 import 'notifications/device_notice_startup_gate.dart';
 import 'l10n/app_localizations.dart';
 import 'ui/dashboard_screen.dart';
+import 'ui/android_web_access_screen.dart';
 import 'ui/vencira_theme.dart';
 import 'ui/vencira_preferences.dart';
 
@@ -145,7 +146,10 @@ class _VenciraAppState extends State<VenciraApp> {
           enabled: widget.api == null && !kIsWeb &&
               defaultTargetPlatform == TargetPlatform.android,
           cancelPreviousAlarms: _revokeNativeAlarms,
-          child: VenciraDashboardScreen(
+          child: widget.api == null && !kIsWeb &&
+                  defaultTargetPlatform == TargetPlatform.android
+              ? const AndroidWebAccessScreen()
+              : VenciraDashboardScreen(
             api: widget.api,
             openTodayOnLoad: widget.api == null,
             // Never schedule on startup; this only cancels. Expired sessions,
