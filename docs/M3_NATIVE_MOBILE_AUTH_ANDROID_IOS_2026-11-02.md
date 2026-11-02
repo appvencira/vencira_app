@@ -150,3 +150,10 @@ Dos aplicaciones móviles instalables (Android e iOS) pueden iniciar sesión **n
 - **Pruebas nuevas PENDING**: análisis Dart/Flutter, batería Django agrupada, PG17/SQLite laboratorio y barrera estática de nuevos commits; no confundir con 33/33 anteriores. El transporte continúa sin conectarse al login, por lo que no hay sesiones nativas reales.
 - No se ha implementado la lógica de emisión/rotación/revocación con estado del servidor; la app `native_sessions_lab` todavía es solamente el esquema de laboratorio. No activar credenciales públicas ni alterar las reglas MFA/MB1/C-FICHA.
 - Gates: `N1_BATCH_RESULT=PENDING`, `N1_MOBILE_ENDPOINTS=DISABLED`, `N1_AUTH_SERVER=NOT_IMPLEMENTED`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## N2 — Tiempo de red acotado y pruebas integradas (02/11/2026)
+- El futuro transporte Flutter N2 ahora aplica un límite de 15 s a `http.Client.send` y 15 s de inactividad entre bloques del flujo JSON. Los fallos resultan en `NativeApiTransportFailure`, sin mostrar contenido. La respuesta sigue limitada a 1 MiB, con autenticación Bearer estrictamente de acceso (`v1.a`) y sin seguir redirecciones.
+- `native_api_transport_test.dart` añade ensayos de petición sin respuesta y flujo JSON permanentemente inactivo, con tiempos breves para ejecutar de forma determinista. Se mantienen casos para logout, cambio de generación, 401/403, HTML, límite de tamaño y rechazo de refresh.
+- El script agrupado `n1_verification_batch.sh` ejecuta `flutter test` COMPLETO y análisis/compilación web, por lo que incluye estas regresiones. **Sin resultado local aún para estos nuevos cambios.**
+- En esta fase se ha validado en GitHub la presencia de los cambios, no su ejecución. Las anteriores 33/33 pruebas Django de SQLite/PG17 son de la versión previa y no prueban el transporte Flutter actual.
+- La sesión móvil aún NO está habilitada en Android/iOS. Persistencia y rotación/revocación de sesiones con servidor no implementadas. `N1_BATCH_RESULT=PENDING`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
