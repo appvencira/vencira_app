@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
+from reminders.models import MfaAdministrativeRecoveryCase
 from reminders.models import UserMfaState
 from reminders.native_mobile_token_primitives import make_native_token
 from .models import MobileDeviceSessionLab, SpentRefreshLab
@@ -119,6 +120,28 @@ class DeviceLifecycleTests(TestCase):
             validate_access(access)
         with self.assertRaises(SessionLabDenied):
             rotate_refresh(refresh)
+
+    def test_pending_administrative_recovery_revokes_authorization(self):
+        access, refresh = self.issue()
+        now = timezone.now()
+        MfaAdministrativeRecoveryCase.objects.create(
+            subject=self.user, requester=self.user,
+            status=MfaAdministrativeRecoveryCase.Status.PENDING,
+            quarantine_until=now + timedelta(days=1),
+            expires_at=now + timedelta(days=2),
+        )
+        with self.assertRaises(SessionLabDenied):
+            validate_access(access)
+        with self.assertRaises(SessionLabDenied):
+            rotate_refresh(refresh)
+
+    def test_forged_access_sharing_uuid_is_denied(self):
+        access, _ = self.issue()
+        sid = MobileDeviceSessionLab.objects.get().pk
+        forgery = make_native_token(kind="a", session_id=sid)
+        with self.assertRaises(SessionLabDenied):
+            validate_access(forgery)
+        self.assertEqual(validate_access(access).pk, self.user.pk)
 
     def test_disabled_mfa_cannot_claim_completed_factor(self):
         with self.assertRaises(SessionLabDenied):
