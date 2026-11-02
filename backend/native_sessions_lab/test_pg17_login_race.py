@@ -214,3 +214,62 @@ class ChallengeRacePG17Tests(TransactionTestCase):
                 "AND backend_type = 'client backend'"
             )
             self.assertEqual(cursor.fetchone()[0], 0)
+
+    def test_password_rotation_between_authenticate_and_user_lock_denies(self):
+        if connection.vendor != "postgresql":
+            self.skipTest("Requires PostgreSQL row locking")
+        password = "SyntheticG6OldPassword!2026"
+        user = get_user_model().objects.create_user(
+            username="n1-g6-password-rotation-race",
+            password=password,
+        )
+        ready = Event()
+        proceed = Event()
+        original = lab_login_module.account_generation_lab
+
+        def hold_before_lock(user_id):
+            generation = original(user_id)
+            if not ready.is_set():
+                ready.set()
+                if not proceed.wait(timeout=10):
+                    raise RuntimeError("Synthetic password race synchronisation")
+            return generation
+
+        def login_worker():
+            connections.close_all()
+            try:
+                try:
+                    return begin_native_login_lab(
+                        user.username, password, replace_devices=True,
+                    )
+                except NativeLoginLabDenied:
+                    return None
+            finally:
+                connections.close_all()
+
+        with patch.object(
+            lab_login_module, "account_generation_lab",
+            side_effect=hold_before_lock,
+        ):
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                pending = pool.submit(login_worker)
+                try:
+                    self.assertTrue(ready.wait(timeout=10))
+                    user.set_password("SyntheticG6NewPassword!2026")
+                    user.save(update_fields=["password"])
+                finally:
+                    proceed.set()
+                result = pending.result(timeout=20)
+
+        self.assertIsNone(result)
+        self.assertFalse(
+            MobileDeviceSessionLab.objects.filter(user_id=user.pk).exists()
+        )
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM pg_stat_activity "
+                "WHERE datname = current_database() "
+                "AND pid <> pg_backend_pid() "
+                "AND backend_type = 'client backend'"
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
