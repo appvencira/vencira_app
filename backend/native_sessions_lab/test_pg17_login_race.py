@@ -63,6 +63,17 @@ class ChallengeRacePG17Tests(TransactionTestCase):
                 start.wait(timeout=10)
                 results = [task.result(timeout=25) for task in tasks]
 
+        # Verify worker connections are gone BEFORE Django tears down the DB.
+        # The previous batch failed DROP DATABASE with two lingering sessions.
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM pg_stat_activity "
+                "WHERE datname = current_database() "
+                "AND pid <> pg_backend_pid() "
+                "AND backend_type = 'client backend'"
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
+
         self.assertEqual(
             sorted(mode for mode, _ in results),
             ["denied", "issued"],
