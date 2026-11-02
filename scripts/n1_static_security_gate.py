@@ -27,6 +27,7 @@ def verify():
     session_rules = read("backend/native_sessions_lab/session_rules.py")
     login_rules = read("backend/native_sessions_lab/login_rules.py")
     lab_urls = read("backend/native_sessions_lab/test_urls.py")
+    flutter_http = read("clients/flutter/lib/api/native_http_auth_port.dart")
     recovery_migration = read(
         "backend/native_sessions_lab/migrations/0004_mobile_challenge_recovery_flag.py"
     )
@@ -80,6 +81,13 @@ def verify():
             and 'path("api/v1/mobile/auth/recover/password/"' in lab_urls
             and 'path("api/v1/mobile/auth/recover/mfa/"' in lab_urls
             and "native_sessions_lab.test_urls" not in config,
+        "flutter_http_single_canonical_recovery_contract":
+            flutter_http.count("class NativeHttpAuthFailure implements Exception") == 1
+            and flutter_http.count("Future<NativeIssuedTokens> recoverMfa({") == 1
+            and flutter_http.count("Future<NativeIssuedTokens> mfa({") == 1
+            and flutter_http.count("Future<NativeIssuedTokens> rotateRefresh(") == 1
+            and flutter_http.count("Future<void> revoke({") == 1
+            and "'/api/v1/mobile/auth/recover/mfa/'" in flutter_http,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
