@@ -9,7 +9,7 @@ from reminders.native_mobile_token_primitives import make_native_token
 from .models import MobileDeviceSessionLab, SpentRefreshLab
 from .session_rules import (
     SessionLabDenied, issue_verified_session, validate_access,
-    rotate_refresh, revoke_device,
+    rotate_refresh, revoke_device, revoke_all_devices_for_user_lab,
 )
 
 
@@ -142,6 +142,39 @@ class DeviceLifecycleTests(TestCase):
         with self.assertRaises(SessionLabDenied):
             validate_access(forgery)
         self.assertEqual(validate_access(access).pk, self.user.pk)
+
+    def test_lost_device_revoke_all_prevents_every_refresh(self):
+        first_access, first_refresh = self.issue()
+        second_access, second_refresh = self.issue()
+        self.assertEqual(
+            revoke_all_devices_for_user_lab(user_id=self.user.pk), 2)
+        for token in (first_access, second_access):
+            with self.assertRaises(SessionLabDenied):
+                validate_access(token)
+        for token in (first_refresh, second_refresh):
+            with self.assertRaises(SessionLabDenied):
+                rotate_refresh(token)
+        self.assertEqual(
+            revoke_all_devices_for_user_lab(user_id=self.user.pk), 0)
+
+    def test_global_revocation_does_not_affect_another_account(self):
+        other = get_user_model().objects.create_user(
+            username="other-lab-identity", password="OnlySyntheticPass-99")
+        own_access, _ = self.issue()
+        other_access, other_refresh = issue_verified_session(
+            user=other, verified_mfa=False, mfa_epoch=None)
+        self.assertEqual(
+            revoke_all_devices_for_user_lab(user_id=self.user.pk), 1)
+        with self.assertRaises(SessionLabDenied):
+            validate_access(own_access)
+        self.assertEqual(validate_access(other_access).pk, other.pk)
+        self.assertIsNotNone(rotate_refresh(other_refresh))
+
+    def test_invalid_global_revocation_user_id_fails_closed(self):
+        for invalid in (None, 0, -1, True, "1"):
+            with self.subTest(invalid=invalid):
+                with self.assertRaises(SessionLabDenied):
+                    revoke_all_devices_for_user_lab(user_id=invalid)
 
     def test_disabled_mfa_cannot_claim_completed_factor(self):
         with self.assertRaises(SessionLabDenied):
