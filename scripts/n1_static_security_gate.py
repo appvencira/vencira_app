@@ -65,6 +65,9 @@ def verify():
         "backend/native_sessions_lab/session_rules.py",
         "backend/native_sessions_lab/tests.py",
         "backend/native_sessions_lab/test_pg17_race.py",
+        "backend/native_sessions_lab/login_rules.py",
+        "backend/native_sessions_lab/test_login_rules.py",
+        "backend/native_sessions_lab/migrations/0002_mobileloginchallengelab.py",
         "backend/reminders/native_mobile_identity_gate.py",
         "backend/reminders/native_mobile_token_primitives.py",
     ):
