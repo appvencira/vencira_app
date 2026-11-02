@@ -99,7 +99,7 @@ void main() {
     for (final response in [
       http.Response('<html/>', 200,
           headers: {'content-type': 'text/html'}),
-      http.Response('x' * (NativeApiTransport.maxResponseBytes + 1), 200,
+      http.Response(List<String>.filled(NativeApiTransport.maxResponseBytes + 1, 'x').join(), 200,
           headers: {'content-type': 'application/json'}),
       http.Response('not-json', 200,
           headers: {'content-type': 'application/json'}),
