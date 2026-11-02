@@ -10,6 +10,7 @@ from .models import MobileDeviceSessionLab, SpentRefreshLab
 from .session_rules import (
     SessionLabDenied, issue_verified_session, validate_access,
     rotate_refresh, revoke_device, revoke_all_devices_for_user_lab,
+    account_generation_lab,
 )
 
 
@@ -175,6 +176,31 @@ class DeviceLifecycleTests(TestCase):
             with self.subTest(invalid=invalid):
                 with self.assertRaises(SessionLabDenied):
                     revoke_all_devices_for_user_lab(user_id=invalid)
+
+    def test_revoke_without_devices_advances_durable_epoch(self):
+        self.assertEqual(account_generation_lab(self.user.pk), 0)
+        self.assertEqual(
+            revoke_all_devices_for_user_lab(user_id=self.user.pk), 0)
+        self.assertEqual(account_generation_lab(self.user.pk), 1)
+        self.assertEqual(
+            revoke_all_devices_for_user_lab(user_id=self.user.pk), 0)
+        self.assertEqual(account_generation_lab(self.user.pk), 2)
+
+    def test_stale_pre_revoke_generation_cannot_issue(self):
+        expected = account_generation_lab(self.user.pk)
+        self.assertEqual(expected, 0)
+        revoke_all_devices_for_user_lab(user_id=self.user.pk)
+        with self.assertRaises(SessionLabDenied):
+            issue_verified_session(
+                user=self.user, verified_mfa=False, mfa_epoch=None,
+                expected_generation=expected,
+            )
+        self.assertFalse(MobileDeviceSessionLab.objects.exists())
+        access, _ = issue_verified_session(
+            user=self.user, verified_mfa=False, mfa_epoch=None,
+            expected_generation=account_generation_lab(self.user.pk),
+        )
+        self.assertEqual(validate_access(access).pk, self.user.pk)
 
     def test_disabled_mfa_cannot_claim_completed_factor(self):
         with self.assertRaises(SessionLabDenied):
