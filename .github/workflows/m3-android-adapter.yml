@@ -42,6 +42,20 @@ jobs:
       - run: flutter analyze
       - name: Compile Android APK without distributing
         run: flutter build apk --debug
+      - name: Compile release and verify permissions without distributing
+        run: |
+          flutter build apk --release
+          test -f build/app/outputs/flutter-apk/app-release.apk
+          AAPT="$(find "${ANDROID_HOME:-/opt/android-sdk-linux}/build-tools" -name aapt -type f | sort -V | tail -1)"
+          test -n "$AAPT"
+          "$AAPT" dump badging build/app/outputs/flutter-apk/app-release.apk > /tmp/vencira-m3-release-badging.txt
+          grep -F "uses-permission: name='android.permission.INTERNET'" /tmp/vencira-m3-release-badging.txt
+          if grep -q '^application-debuggable' /tmp/vencira-m3-release-badging.txt; then
+            echo 'RELEASE_DEBUGGABLE=FAIL'
+            exit 1
+          fi
+          grep -F 'android:allowBackup="false"' android/app/src/main/AndroidManifest.xml
+          echo 'M3_RELEASE_MANIFEST_GATES=OK'
       - name: Non-release status
         run: |
           test -f build/app/outputs/flutter-apk/app-debug.apk
