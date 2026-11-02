@@ -8,7 +8,8 @@ import 'dart:async';
 
 void main() {
   final endpoint = NativeApiEndpoint.parse('https://dev.vencira.es');
-  const testToken = 'test-native-credential-123456789';
+  final testToken = 'v1.a.0123456789abcdef0123456789abcdef.'
+      '${List<String>.filled(43, 'A').join()}';
   late NativeSessionFence fence;
   setUp(() => fence = NativeSessionFence()..activate());
 
@@ -37,7 +38,11 @@ void main() {
       calls++;
       return http.Response('{}', 200);
     });
-    for (final token in <String?>[null, '', 'abc', 'unsafe header\r\n']) {
+    final corrupted = '${testToken.substring(0, testToken.length - 1)}B';
+    final refresh = testToken.replaceFirst('v1.a.', 'v1.r.');
+    for (final token in <String?>[
+      null, '', 'abc', 'unsafe header\r\n', refresh, corrupted,
+    ]) {
       final transport = NativeApiTransport(
           endpoint: endpoint, client: client, sessionFence: fence, accessToken: () async => token);
       await expectLater(transport.getJson('/api/v1/me/'),
