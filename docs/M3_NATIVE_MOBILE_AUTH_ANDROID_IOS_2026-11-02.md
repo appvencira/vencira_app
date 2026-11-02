@@ -42,3 +42,13 @@ Flutter Web mantiene el flujo actual de sesión web y CSRF, sin regresiones. And
 
 ## Criterio de aceptación
 Dos aplicaciones móviles instalables (Android e iOS) pueden iniciar sesión **nativamente** y operar sobre la API HTTPS desde datos móviles con autenticación segura, MFA y revocación verificados, sin navegador como dependencia funcional. Flutter Web sigue funcionando. La aceptación requiere tests automáticos y pruebas físicas por plataforma, y aprobación explícita de los gates operativos. No declarar completado antes.
+
+## N1/N2 — Ejecuciones locales y transporte aislado (02/11/2026)
+
+- Pruebas locales comunicadas por el operador: `N1_AUTH_BOUNDARY_RESULT=0` para pruebas de barrera Django; `NATIVE_API_CONTRACT_RESULT=0` para `flutter analyze` y cuatro pruebas Flutter (política de origen y acceso provisional). No extrapolarlo a pruebas nuevas que aún no se han ejecutado.
+- Contrato detallado: [N1_NATIVE_AUTH_CONTRACT_V1_2026-11-02.md](N1_NATIVE_AUTH_CONTRACT_V1_2026-11-02.md); es una propuesta, no una API operativa.
+- El módulo `lib/api/native_api_transport.dart` contiene exclusivamente una base de transporte HTTPS con token inyectado por un futuro controlador seguro. Está **sin conectar a main.dart**, no genera, recibe, renueva ni conserva credenciales, y ningún endpoint Django emite tokens móviles.
+- Controles: rechazo de credencial ausente/malformada, rutas API delimitadas, `followRedirects=false` para evitar fuga de Authorization, 401 distinto de 403, tipo JSON exigido y límite 1 MiB por respuesta. Pruebas añadidas en `test/native_api_transport_test.dart` y CI.
+- **Estado del nuevo transporte: IMPLEMENTADO SIN VALIDAR LOCALMENTE**. Ejecutar `flutter analyze` y `flutter test test/native_api_transport_test.dart test/native_api_endpoint_test.dart test/android_web_access_screen_test.dart` antes de atribuir PASS.
+- Pendiente esencial: seleccionar y aprobar contrato de identidad, MFA móvil, revocación, almacenamiento Keystore/Keychain, API Django y pruebas físicas iOS/Android.
+- Permanece `N1_NATIVE_AUTH=NOT_IMPLEMENTED`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
