@@ -143,7 +143,20 @@ class NativeHttpContractTests(TestCase):
         self.assertEqual(self.post(PASSWORD_PATH, {
             "username": self.user.username, "password": PASSWORD,
         }, HTTP_COOKIE="vencira_sessionid=synthetic").status_code, 403)
-        self.assertEqual(self.client.post(ME_PATH, {}, content_type="application/json").status_code, 405)
+        # With enforce_csrf_checks=True, Django rejects unsafe POST
+        # before the GET-only view can return its own method denial.
+        self.assertEqual(
+            self.client.post(
+                ME_PATH, {}, content_type="application/json",
+            ).status_code,
+            403,
+        )
+        # The view itself still rejects POST as method not allowed when
+        # exercised without middleware. Do NOT exempt /me/ from CSRF.
+        request = RequestFactory().post(
+            ME_PATH, data="{}", content_type="application/json",
+        )
+        self.assertEqual(lab_http.me(request).status_code, 405)
         self.assertFalse(MobileDeviceSessionLab.objects.exists())
 
     @override_settings(ROOT_URLCONF="config.urls")
