@@ -124,7 +124,7 @@ if [ "${STATUS[BUILD]}" -eq 0 ]; then
           reminders.test_native_mobile_token_primitives \
           native_sessions_lab.tests \
           native_sessions_lab.test_pg17_race \
-    native_sessions_lab.test_login_rules --verbosity 1
+          native_sessions_lab.test_login_rules --verbosity 1
       else
         STATUS[PG17]=3
         STATUS[PG17_LAB]=3
