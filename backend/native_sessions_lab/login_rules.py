@@ -28,7 +28,7 @@ from reminders.native_mobile_identity_gate import (
 from .models import MobileLoginChallengeLab
 from .session_rules import (
     SessionLabDenied, issue_verified_session, account_generation_lab,
-    lock_account_lab,
+    lock_account_lab, revoke_all_devices_for_user_lab,
 )
 
 CHALLENGE_AGE = timedelta(minutes=5)
@@ -66,10 +66,11 @@ def _challenge_id(raw):
     return uuid.UUID(hex=matched.group(1))
 
 
-def begin_native_login_lab(username, password):
+def begin_native_login_lab(username, password, *, replace_devices=False):
     """Lab only: password then optional MFA challenge (no public HTTP)."""
     if (type(username) is not str or not 1 <= len(username) <= 150
-            or type(password) is not str or not password):
+            or type(password) is not str or not password
+            or type(replace_devices) is not bool):
         raise NativeLoginLabDenied()
     try:
         if is_blocked(username):
@@ -90,6 +91,16 @@ def begin_native_login_lab(username, password):
             version = mobile_credential_version(current_user)
             state = UserMfaState.objects.filter(user_id=current_user.pk).first()
             if state is None or not state.enabled:
+                # The password is already verified. The identity predicate
+                # independently denies MFA recovery quarantine before revoke.
+                if replace_devices:
+                    require_mobile_identity_gate(
+                        user=current_user, verified_mfa=False,
+                        asserted_mfa_epoch=None,
+                        asserted_credential_version=version,
+                    )
+                    revoke_all_devices_for_user_lab(user_id=current_user.pk)
+                    initial_generation = account_generation_lab(current_user.pk)
                 issued = issue_verified_session(
                     user=current_user, verified_mfa=False, mfa_epoch=None,
                     expected_generation=initial_generation,
@@ -113,6 +124,7 @@ def begin_native_login_lab(username, password):
                     credential_version=version,
                     mfa_epoch=state.session_epoch,
                     auth_generation=initial_generation,
+                    replace_devices=replace_devices,
                     expires_at=timezone.now() + CHALLENGE_AGE,
                 )
                 mode, result = "mfa", raw
@@ -123,14 +135,15 @@ def begin_native_login_lab(username, password):
         raise NativeLoginLabDenied() from exc
 
 
-def finish_native_mfa_lab(challenge, code):
+def finish_native_mfa_lab(challenge, code, *, expected_recovery=False):
     """Lab-only MFA completion: lock user BEFORE challenge to avoid deadlock.
 
     Account-wide revocation takes the same user lock and increments its
     generation, so pending/competing challenges cannot resurrect sessions.
     """
     sid = _challenge_id(challenge)
-    if type(code) is not str or len(code) > 256:
+    if (type(code) is not str or len(code) > 256
+            or type(expected_recovery) is not bool):
         raise NativeLoginLabDenied()
     accepted = False
     credentials = None
@@ -146,7 +159,9 @@ def finish_native_mfa_lab(challenge, code):
             record = MobileLoginChallengeLab.objects.select_for_update().filter(
                 pk=sid, user_id=user.pk,
             ).first()
-            if (record is None or record.consumed_at is not None
+            if (record is None
+                    or record.replace_devices is not expected_recovery
+                    or record.consumed_at is not None
                     or record.expires_at <= timezone.now()
                     or record.auth_generation != account_generation_lab(user.pk)
                     or not constant_time_compare(
@@ -161,10 +176,16 @@ def finish_native_mfa_lab(challenge, code):
             keys = load_mfa_keys()
             accepted = consume_totp(user.pk, code, keys=keys)
             if accepted:
+                expected_generation = record.auth_generation
+                if expected_recovery:
+                    # Only a completed second factor may revoke other devices.
+                    # Same user row lock serializes revocation and issuance.
+                    revoke_all_devices_for_user_lab(user_id=user.pk)
+                    expected_generation = account_generation_lab(user.pk)
                 credentials = issue_verified_session(
                     user=user, verified_mfa=True,
                     mfa_epoch=record.mfa_epoch,
-                    expected_generation=record.auth_generation,
+                    expected_generation=expected_generation,
                 )
                 record.consumed_at = timezone.now()
                 record.save(update_fields=["consumed_at"])
