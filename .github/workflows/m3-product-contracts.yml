@@ -28,6 +28,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -r requirements.txt
+      - name: Validate grouped regression runner syntax
+        run: bash -n ../scripts/n1_verification_batch.sh
       - name: Check Django project
         run: python manage.py check
       - name: Product control and suggestion tests
