@@ -6,6 +6,21 @@ import 'package:vencira/api/native_api_transport.dart';
 import 'package:vencira/api/native_session_fence.dart';
 import 'dart:async';
 
+class IdleNativeStreamClient extends http.BaseClient {
+  final StreamController<List<int>> controller =
+      StreamController<List<int>>();
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async =>
+      http.StreamedResponse(controller.stream, 200,
+          headers: {'content-type': 'application/json'});
+
+  @override
+  void close() {
+    controller.close();
+  }
+}
+
 void main() {
   final endpoint = NativeApiEndpoint.parse('https://dev.vencira.es');
   final testToken = 'v1.a.0123456789abcdef0123456789abcdef.'
@@ -124,6 +139,33 @@ void main() {
       client.close();
     }
   });
+  test('a stalled HTTP send has a finite timeout', () async {
+    final pending = Completer<http.Response>();
+    final client = MockClient((request) => pending.future);
+    final transport = NativeApiTransport(
+      endpoint: endpoint, client: client, sessionFence: fence,
+      accessToken: () async => testToken,
+      connectTimeout: const Duration(milliseconds: 20),
+    );
+    await expectLater(transport.getJson('/api/v1/me/'),
+        throwsA(isA<NativeApiTransportFailure>()));
+    pending.complete(http.Response('{}', 200,
+        headers: {'content-type': 'application/json'}));
+    client.close();
+  });
+
+  test('an idle JSON response stream has a finite timeout', () async {
+    final client = IdleNativeStreamClient();
+    final transport = NativeApiTransport(
+      endpoint: endpoint, client: client, sessionFence: fence,
+      accessToken: () async => testToken,
+      streamIdleTimeout: const Duration(milliseconds: 20),
+    );
+    await expectLater(transport.getJson('/api/v1/me/'),
+        throwsA(isA<NativeApiTransportFailure>()));
+    client.close();
+  });
+
   test('late reply after logout is rejected even if server returns 200',
       () async {
     final pending = Completer<http.Response>();
