@@ -28,3 +28,18 @@ class SpentRefreshLab(models.Model):
         related_name="spent_refreshes",
     )
     digest = models.CharField(max_length=64, unique=True)
+
+
+class MobileLoginChallengeLab(models.Model):
+    """Single-use second-factor challenge; TEST APP ONLY, never deployed."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="+",
+    )
+    secret_digest = models.CharField(max_length=64)
+    credential_version = models.CharField(max_length=64)
+    mfa_epoch = models.PositiveIntegerField()
+    expires_at = models.DateTimeField()
+    consumed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
