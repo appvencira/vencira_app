@@ -120,6 +120,18 @@ class NativeHttpAuthPort implements NativeAuthPort {
     }));
   }
 
+  /// Stateless refresh HTTP exchange only. The future coordinator must
+  /// implement crash-safe rotation, secure vault replacement and replay
+  /// semantics BEFORE calling this in an operational application.
+  Future<NativeIssuedTokens> rotateRefresh(String refresh) async {
+    if (!NativeMobileTokenShape.accepts(refresh, kind: 'r')) {
+      throw const NativeHttpAuthFailure();
+    }
+    return _tokens(await _post('/api/v1/mobile/token/refresh/', {
+      'refresh': refresh,
+    }));
+  }
+
   @override
   Future<void> revoke({required String refresh}) async {
     if (!NativeMobileTokenShape.accepts(refresh, kind: 'r')) {
