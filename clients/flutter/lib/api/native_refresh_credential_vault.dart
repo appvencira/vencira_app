@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'native_api_endpoint.dart';
+import 'native_mobile_token_shape.dart';
 
 /// Low-level port for platform-protected secrets. Never use SharedPreferences.
 abstract class NativeSecretStore {
@@ -84,20 +85,9 @@ class NativeRefreshCredentialVault {
     return next;
   }
 
-  static bool _valid(String credential) {
-    if (credential.length < 32 || credential.length > 4096) return false;
-    for (final codeUnit in credential.codeUnits) {
-      final allowed =
-          (codeUnit >= 48 && codeUnit <= 57) ||
-          (codeUnit >= 65 && codeUnit <= 90) ||
-          (codeUnit >= 97 && codeUnit <= 122) ||
-          codeUnit == 45 || codeUnit == 46 || codeUnit == 95 ||
-          codeUnit == 126 || codeUnit == 43 || codeUnit == 47 ||
-          codeUnit == 61;
-      if (!allowed) return false;
-    }
-    return true;
-  }
+  // Refresh-only; prevent writing an access credential in protected storage.
+  static bool _valid(String credential) =>
+      NativeMobileTokenShape.accepts(credential, kind: 'r');
 
   Future<String?> read() => _serial(() async {
     final credential = await _store.read(_key);
