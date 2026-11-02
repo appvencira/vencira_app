@@ -546,6 +546,25 @@ class NativeRecoveryAfterAmbiguousRefreshHttpTests(TestCase):
         self.assertEqual(account_generation_lab(self.user.pk), 0)
         self.assertFalse(MobileDeviceSessionLab.objects.exists())
 
+    @override_settings(VENCIRA_ENV="production")
+    def test_recovery_views_refuse_production_even_if_directly_called(self):
+        request = RequestFactory().post(
+            RECOVERY_PASSWORD_PATH,
+            data=json.dumps({
+                "username": self.user.username, "password": PASSWORD,
+            }),
+            content_type="application/json",
+        )
+        self.assertEqual(lab_http.recovery_password(request).status_code, 404)
+        request_mfa = RequestFactory().post(
+            RECOVERY_MFA_PATH,
+            data=json.dumps({
+                "challenge": "synthetic", "code": "123456",
+            }),
+            content_type="application/json",
+        )
+        self.assertEqual(lab_http.recovery_mfa(request_mfa).status_code, 404)
+
     def test_recovery_rejects_web_cookie_origin_and_oversized_payload(self):
         payload = {"username": self.user.username, "password": PASSWORD}
         self.assertEqual(self.client.post(
