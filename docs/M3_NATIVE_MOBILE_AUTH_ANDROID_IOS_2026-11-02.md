@@ -105,3 +105,9 @@ Dos aplicaciones móviles instalables (Android e iOS) pueden iniciar sesión **n
 - CI `m3-product-contracts.yml` includes the new suite in both SQLite and PostgreSQL 17 ephemeral jobs. **New DB-backed tests are PENDING verification**. A passing mocked suite must not be misrepresented as an end-to-end authentication test.
 - Required evidence before marking N1 identity persistence gate: Django test output showing test DB creation/destruction, all tests passing under SQLite and PG17 disposable instances. Prior backend gate and web auth must remain untouched.
 - Status: `N1_IDENTITY_MOCK_GATE=PASS_18`; `N1_IDENTITY_DB_GATE=PENDING`; `N1_AUTH_SERVER=NOT_IMPLEMENTED`; `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## N1 — SQLite ORM validation confirmed (02/11/2026)
+- User-reported terminal result on the current `test_native_mobile_auth_boundary`, `test_native_mobile_identity_gate`, and `test_native_mobile_identity_database` suite: `Ran 25 tests in 0.554s`, `OK`, `Destroying test database for alias 'default'...`. Backend Docker image rebuilt before execution. This confirms **25/25 PASS with real Django SQLite test database**, after HMAC-SHA256 repair.
+- This is stronger than the preceding 18 mocked tests: Django created and destroyed the test schema for seven ORM integration cases. Neither persistent PostgreSQL nor real mobile access tokens were touched.
+- `N1_IDENTITY_SQLITE_ORM=PASS_25`; `N1_IDENTITY_PG17_ORM=PENDING`; `N1_TOKEN_ISSUER=NOT_IMPLEMENTED`; `N1_NATIVE_LOGIN=NOT_IMPLEMENTED`. Do not infer a valid end-to-end Android or iOS authentication.
+- Next: run the same 25 tests on an isolated temporary PostgreSQL 17 container with a private Docker network and ephemeral PGDATA. Do not use the live VENCIRA database or published PostgreSQL ports. Production deployment/migrations remain forbidden.
