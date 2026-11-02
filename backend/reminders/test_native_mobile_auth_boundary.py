@@ -42,6 +42,9 @@ class MobileAuthBoundaryTests(SimpleTestCase):
             "/api/v1/mobile/token/",
             "/api/v1/mobile/token/refresh/",
             "/api/v1/mobile/token/revoke/",
+            "/api/v1/mobile/auth/password/",
+            "/api/v1/mobile/auth/mfa/",
+            "/api/v1/mobile/me/",
         ):
             with self.subTest(path=path), self.assertRaises(Resolver404):
                 resolve(path)
