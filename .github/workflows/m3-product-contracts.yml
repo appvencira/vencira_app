@@ -32,6 +32,12 @@ jobs:
         run: python manage.py check
       - name: Product control and suggestion tests
         run: python manage.py test reminders.test_native_mobile_auth_boundary reminders.test_native_mobile_identity_gate reminders.test_native_mobile_identity_database reminders.test_native_mobile_token_primitives reminders.test_reminder_planning reminders.test_control_intent reminders.test_person_suggestions_ranking reminders.test_control_responses reminders.test_control_response_api reminders.test_operational_transitions reminders.test_operational_inbox reminders.test_operational_api reminders.test_results reminders.test_device_notice_preview reminders.test_agenda
+      - name: Validate test-only N1 device-session schema
+        env:
+          VENCIRA_NATIVE_SESSION_LAB: '1'
+        run: |
+          python manage.py makemigrations native_sessions_lab --check --dry-run
+          python manage.py test reminders.test_native_mobile_identity_database reminders.test_native_mobile_token_primitives
       - name: No operational release
         run: |
           echo 'M3_02_DELIVERY=NOT_IMPLEMENTED'
@@ -82,6 +88,12 @@ jobs:
         run: python manage.py check
       - name: Run O9b and operational inbox regressions on isolated PG17
         run: python manage.py test reminders.test_native_mobile_auth_boundary reminders.test_native_mobile_identity_gate reminders.test_native_mobile_identity_database reminders.test_native_mobile_token_primitives reminders.test_reminder_planning reminders.test_control_intent reminders.test_person_suggestions_ranking reminders.test_control_responses reminders.test_control_response_api reminders.test_operational_transitions reminders.test_operational_inbox reminders.test_operational_api reminders.test_results reminders.test_device_notice_preview reminders.test_agenda
+      - name: Validate test-only N1 device-session schema
+        env:
+          VENCIRA_NATIVE_SESSION_LAB: '1'
+        run: |
+          python manage.py makemigrations native_sessions_lab --check --dry-run
+          python manage.py test reminders.test_native_mobile_identity_database reminders.test_native_mobile_token_primitives
       - name: Keep release blocked
         run: |
           echo 'M3_02_PG17_EPHEMERAL_ONLY=1'
