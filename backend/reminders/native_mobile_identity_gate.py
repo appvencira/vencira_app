@@ -8,7 +8,7 @@ issuer, expiry, revocation and token provenance.
 Django's existing MFA session middleware cannot protect an authenticated
 DRF bearer principal: it runs before DRF attaches its request.user.
 """
-from django.utils.crypto import constant_time_compare
+from django.utils.crypto import constant_time_compare, salted_hmac
 
 from .models import MfaAdministrativeRecoveryCase, UserMfaState
 
@@ -17,12 +17,24 @@ class MobileIdentityDenied(Exception):
     """Fail-closed internal denial; never expose account state to clients."""
 
 
+def mobile_credential_version(user):
+    """Domain-separated credential version, NOT the Django session hash.
+
+    This version must be compared only after verifying a future token's
+    signature. Never send get_session_auth_hash() to a mobile client.
+    """
+    return salted_hmac(
+        'vencira.mobile.credential-version.v1',
+        user.get_session_auth_hash(),
+    ).hexdigest()
+
+
 def require_mobile_identity_gate(
     *,
     user,
     verified_mfa,
     asserted_mfa_epoch,
-    asserted_password_hash,
+    asserted_credential_version,
 ):
     """Re-evaluate authoritative MFA and recovery state for EACH API request.
 
@@ -40,13 +52,13 @@ def require_mobile_identity_gate(
             or isinstance(user.pk, bool)):
         raise MobileIdentityDenied()
 
-    # A password change or Django credential invalidation must revoke even
-    # a formerly valid MFA assertion. The hash is an internal, signed claim.
+    # Password rotation must invalidate old mobile identities. Use a
+    # domain-separated version: never disclose Django's own session hash.
     try:
-        if (not isinstance(asserted_password_hash, str)
-                or len(asserted_password_hash) != 64
+        if (not isinstance(asserted_credential_version, str)
+                or len(asserted_credential_version) != 64
                 or not constant_time_compare(
-                    asserted_password_hash, user.get_session_auth_hash()
+                    asserted_credential_version, mobile_credential_version(user)
                 )):
             raise MobileIdentityDenied()
     except MobileIdentityDenied:
