@@ -85,9 +85,15 @@ class NativeRecoveryLoginGateway implements NativeLoginGateway {
   /// A cold-start session stays locked; this never restores a prior access
   /// token, even if the secure vault still contains a refresh credential.
   Future<bool> requiresRecovery() async {
+    // Invalidate any pending callback before consulting protected storage.
+    // A delayed network result must never activate after cold-start reset.
+    _epoch++;
     fence.revoke();
+    _challenge = null;
     _access = null;
     _accessDeadline = null;
+    final pending = _finished?.future;
+    if (pending != null) await pending;
     return journal.requiresReauthentication();
   }
 
