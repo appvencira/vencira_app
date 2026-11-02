@@ -26,6 +26,7 @@ def mobile_credential_version(user):
     return salted_hmac(
         'vencira.mobile.credential-version.v1',
         user.get_session_auth_hash(),
+        algorithm='sha256',
     ).hexdigest()
 
 
