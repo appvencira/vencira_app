@@ -20,7 +20,9 @@ from .login_rules import (
     NativeLoginLabDenied, begin_native_login_lab, finish_native_mfa_lab,
 )
 from .models import MobileDeviceSessionLab, MobileLoginChallengeLab
-from .session_rules import validate_access, revoke_all_devices_for_user_lab
+from .session_rules import (
+    SessionLabDenied, validate_access, revoke_all_devices_for_user_lab,
+)
 
 PASSWORD = "SyntheticLabPassword-2026!"
 
@@ -189,7 +191,7 @@ class NativeLoginFlowLabTests(TestCase):
         old_mode, old_tokens = begin_native_login_lab(self.user.username, PASSWORD)
         self.assertEqual(old_mode, "ready")
         self.assertEqual(revoke_all_devices_for_user_lab(user_id=self.user.pk), 1)
-        with self.assertRaises(Exception):
+        with self.assertRaises(SessionLabDenied):
             validate_access(old_tokens[0])
         new_mode, new_tokens = begin_native_login_lab(self.user.username, PASSWORD)
         self.assertEqual(new_mode, "ready")
