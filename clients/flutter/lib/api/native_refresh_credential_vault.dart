@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'native_api_endpoint.dart';
@@ -28,15 +29,30 @@ class FlutterNativeSecretStore implements NativeSecretStore {
 
   final FlutterSecureStorage _storage;
 
-  @override
-  Future<String?> read(String key) => _storage.read(key: key);
+  void _requireMobilePlatform() {
+    if (kIsWeb || (defaultTargetPlatform != TargetPlatform.android &&
+        defaultTargetPlatform != TargetPlatform.iOS)) {
+      throw UnsupportedError('Native credential storage requires Android/iOS');
+    }
+  }
 
   @override
-  Future<void> write(String key, String value) =>
-      _storage.write(key: key, value: value);
+  Future<String?> read(String key) {
+    _requireMobilePlatform();
+    return _storage.read(key: key);
+  }
 
   @override
-  Future<void> delete(String key) => _storage.delete(key: key);
+  Future<void> write(String key, String value) {
+    _requireMobilePlatform();
+    return _storage.write(key: key, value: value);
+  }
+
+  @override
+  Future<void> delete(String key) {
+    _requireMobilePlatform();
+    return _storage.delete(key: key);
+  }
 }
 
 /// Stores ONLY a future opaque refresh credential, never password, access
@@ -55,6 +71,18 @@ class NativeRefreshCredentialVault {
 
   final NativeSecretStore _store;
   final String _key;
+  Future<void> _previous = Future<void>.value();
+
+  // A slow refresh write must never finish AFTER logout has already cleared
+  // the vault. Serialise read, replace and clear for this vault instance.
+  Future<T> _serial<T>(Future<T> Function() work) {
+    final next = _previous.then((_) => work());
+    _previous = next.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace __) {},
+    );
+    return next;
+  }
 
   static bool _valid(String credential) {
     if (credential.length < 32 || credential.length > 4096) return false;
@@ -71,32 +99,35 @@ class NativeRefreshCredentialVault {
     return true;
   }
 
-  Future<String?> read() async {
+  Future<String?> read() => _serial(() async {
     final credential = await _store.read(_key);
     if (credential != null && !_valid(credential)) {
       throw StateError('Invalid protected mobile credential');
     }
     return credential;
-  }
+  });
 
   /// Replace is called only after server-approved refresh token rotation.
   /// Do not issue authenticated requests until a verified write succeeds.
-  Future<void> replace(String credential) async {
+  Future<void> replace(String credential) {
     if (!_valid(credential)) {
-      throw const FormatException('Invalid mobile credential');
+      return Future<void>.error(
+          const FormatException('Invalid mobile credential'));
     }
-    await _store.write(_key, credential);
-    if (await read() != credential) {
-      throw StateError('Mobile credential write not verified');
-    }
+    return _serial(() async {
+      await _store.write(_key, credential);
+      if (await _store.read(_key) != credential) {
+        throw StateError('Mobile credential write not verified');
+      }
+    });
   }
 
   /// Called after synchronous session fence revocation and server revocation.
   /// If deletion cannot be verified, keep the session blocked and retry.
-  Future<void> clear() async {
+  Future<void> clear() => _serial(() async {
     await _store.delete(_key);
     if (await _store.read(_key) != null) {
       throw StateError('Mobile credential deletion not verified');
     }
-  }
+  });
 }
