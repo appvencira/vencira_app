@@ -323,3 +323,8 @@ Dos aplicaciones móviles instalables (Android e iOS) pueden iniciar sesión **n
 - Se puede cerrar el gate **experimental** `M3_HTTP_AND_WORKSPACE_LAB=PASS`; no se puede transformar en `M3_MOBILE_LOGIN_OPERATIONAL=YES`.
 - Siguen bloqueados el backend de autenticación nativa instalado en modo operativo, auditoría de acceso por recurso, recuperación de refresh ambiguo tras reinicio, custodia real de secretos, control de abuso distribuido, validación física Android/iOS y las autorizaciones globales.
 - `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `GLOBAL_FREEZE=NOT_VERIFIED`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## Transición M3 de laboratorio validado a beta — documento de liberación
+- Se crea `docs/M3_NATIVE_BETA_RELEASE_GATES_2026-11-02.md` con criterios G0–G9, evidencia de `M3_HTTP_RESULT=0` y distinción explícita entre ensayo verde y aplicación móvil operativa.
+- Resultado: `G0=PASS` (aislamiento del laboratorio); `G1/G2/G3/G6=BLOCKED` (MFA, MB1, adjuntos, refresh ambiguo); `G4/G5/G7/G8/G9=NOT_RELEASED` (esquema/servicio, controles de abuso, dispositivos físicos, permisos operativos, despliegue). Sin porcentajes inventados ni fechas garantizadas.
+- Próxima ruta crítica: protocolo de recuperación de refresh tras respuesta perdida, servicio Django operacional revisado en clon, integración Flutter y cierre de custodia/release. El sistema actual conserva bloqueo `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
