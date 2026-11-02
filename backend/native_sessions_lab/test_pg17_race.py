@@ -2,7 +2,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 from django.contrib.auth import get_user_model
-from django.db import close_old_connections, connection
+from django.db import connection, connections
 from django.test import TransactionTestCase
 from .models import MobileDeviceSessionLab
 from .session_rules import (
@@ -24,14 +24,17 @@ class RefreshRacePG17Tests(TransactionTestCase):
         start = Barrier(3)
 
         def contender():
-            close_old_connections()
+            # A thread may own a reusable Django connection (CONN_MAX_AGE>0).
+            # Explicitly close it even on rejection, avoiding leaked PG17
+            # sessions that prevent Django from dropping its disposable DB.
+            connections.close_all()
             try:
                 start.wait(timeout=10)
                 return ("issued", rotate_refresh(refresh))
             except SessionLabDenied:
                 return ("denied", None)
             finally:
-                close_old_connections()
+                connections.close_all()
 
         with ThreadPoolExecutor(max_workers=2) as pool:
             futures = [pool.submit(contender) for _ in range(2)]
