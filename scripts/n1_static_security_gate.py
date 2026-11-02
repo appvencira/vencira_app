@@ -21,6 +21,11 @@ def verify():
     guard = read("backend/reminders/test_native_mobile_auth_boundary.py")
     lab_models = read("backend/native_sessions_lab/models.py")
     lab_migration = read("backend/native_sessions_lab/migrations/0001_initial.py")
+    lab_epoch_migration = read(
+        "backend/native_sessions_lab/migrations/0003_mobile_account_fence.py"
+    )
+    session_rules = read("backend/native_sessions_lab/session_rules.py")
+    login_rules = read("backend/native_sessions_lab/login_rules.py")
 
     failures = []
     checks = {
@@ -50,6 +55,16 @@ def verify():
             and "password" not in lab_migration.lower()
             and "refresh_digest" in lab_models
             and "SpentRefreshLab" in lab_migration,
+        "account_revoke_fences_pending_mfa":
+            "MobileAccountFenceLab" in lab_models
+            and "auth_generation" in lab_epoch_migration
+            and "generation=F(\"generation\") + 1" in session_rules
+            and "MobileLoginChallengeLab.objects.filter(" in session_rules
+            and "consumed_at=now" in session_rules
+            and "record.auth_generation != account_generation_lab" in login_rules,
+        "lab_issuer_requires_epoch":
+            "expected_generation," in session_rules
+            and "expected_generation=None" not in session_rules,
     }
 
     for name, ok in checks.items():
@@ -69,6 +84,7 @@ def verify():
         "backend/native_sessions_lab/test_login_rules.py",
         "backend/native_sessions_lab/test_pg17_login_race.py",
         "backend/native_sessions_lab/migrations/0002_mobileloginchallengelab.py",
+        "backend/native_sessions_lab/migrations/0003_mobile_account_fence.py",
         "backend/reminders/native_mobile_identity_gate.py",
         "backend/reminders/native_mobile_token_primitives.py",
     ):
