@@ -68,6 +68,12 @@ class NativeIdentityGateTests(SimpleTestCase):
             self.invoke(auth_hash=previous_version)
 
     def test_mobile_version_is_not_django_session_hash(self):
+        from django.utils.crypto import salted_hmac
+        expected = salted_hmac(
+            'vencira.mobile.credential-version.v1',
+            self.user.get_session_auth_hash(), algorithm='sha256',
+        ).hexdigest()
+        self.assertEqual(mobile_credential_version(self.user), expected)
         self.assertNotEqual(mobile_credential_version(self.user), self.hash)
         self.assertEqual(len(mobile_credential_version(self.user)), 64)
 
