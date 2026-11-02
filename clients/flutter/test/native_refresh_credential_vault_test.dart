@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vencira/api/native_api_endpoint.dart';
 import 'package:vencira/api/native_refresh_credential_vault.dart';
@@ -9,6 +10,9 @@ class FakeNativeSecretStore implements NativeSecretStore {
   bool failDelete = false;
   bool ignoreWrite = false;
   bool ignoreDelete = false;
+  Completer<void>? blockWrite;
+  int writeStarts = 0;
+  int deleteStarts = 0;
 
   @override
   Future<String?> read(String key) async {
@@ -18,12 +22,15 @@ class FakeNativeSecretStore implements NativeSecretStore {
 
   @override
   Future<void> write(String key, String value) async {
+    writeStarts++;
+    if (blockWrite != null) await blockWrite!.future;
     if (failWrite) throw StateError('write failed');
     if (!ignoreWrite) data[key] = value;
   }
 
   @override
   Future<void> delete(String key) async {
+    deleteStarts++;
     if (failDelete) throw StateError('delete failed');
     if (!ignoreDelete) data.remove(key);
   }
@@ -105,4 +112,22 @@ void main() {
     store.failDelete = true;
     await expectLater(target.clear(), throwsStateError);
   });
+  test('slow refresh write completes before queued logout deletion', () async {
+    final store = FakeNativeSecretStore();
+    final gate = Completer<void>();
+    store.blockWrite = gate;
+    final target = vault(store);
+    final rotate = target.replace(token);
+    await Future<void>.delayed(Duration.zero);
+    expect(store.writeStarts, 1);
+    final logout = target.clear();
+    await Future<void>.delayed(Duration.zero);
+    expect(store.deleteStarts, 0);
+    gate.complete();
+    await rotate;
+    await logout;
+    expect(store.deleteStarts, 1);
+    expect(await target.read(), isNull);
+  });
+
 }
