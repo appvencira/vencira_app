@@ -93,3 +93,9 @@ Contrato requerido:
 - Los nuevos ensayos se han incorporado al runner M3 y al workflow; **NINGUNA PRUEBA NUEVA SE DECLARA PASS** hasta que el operador devuelva salida de ejecución. El último `M3_HTTP_RESULT=0` confirmado pertenece al commit anterior a G6.
 
 **Aún bloqueante para producción:** el marcador y la recuperación NO están cableados en `main.dart` ni `NativeSessionCoordinator`. La función de confirmación recibe un callback de confianza, pero ese callback todavía NO demuestra por sí mismo que el servidor operativo haya revocado los dispositivos. Falta validación en Android/iOS físico y ante muerte real del proceso, diseño de auditoría global y sesiones operativas persistentes. En consecuencia, `G6_POLICY=SELECTED`, `G6_LAB=NOT_VERIFIED`, `G6_OPERATIONAL=NO`, todos los gates de despliegue `NO`.
+
+## G6 — Implementación de prototipo del gateway móvil (02/11/2026)
+- `NativeRecoveryLoginGateway` es la implementación aislada del `NativeLoginGateway` para la recuperación obligatoria, sin acceso a `rotateRefresh`. Se acopla al `NativeRefreshRecoveryJournal` y al vault seguro e impide activar el fence antes de completar la sustitución y verificación de la credencial.
+- Casos de prueba nuevos: 9 sintéticos. Se incorporan al workflow de GitHub Actions y al runner M3. Todavía sin evidencia de ejecución de estos nueve.
+- **No equiparar este prototipo con la recuperación funcional en Android/iOS**: no está conectado a `main.dart`, no cubre las transiciones de refresh normal ni la revocación operacional, y falta el apagado brusco real y el aviso a usuario sobre cierre de otros dispositivos.
+- Evidencia independiente: el operador confirmó el fallo G6 corregido en PostgreSQL17 temporal `Ran 1 test in 0.218s`, `OK`, `N1_PG17_LAB_CASE_RESULT=0`. La validación integral del nuevo conjunto sigue pendiente; no se autorizan migraciones reales.
