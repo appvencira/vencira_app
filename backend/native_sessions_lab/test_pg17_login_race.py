@@ -17,6 +17,9 @@ from .login_rules import (
     NativeLoginLabDenied, begin_native_login_lab, finish_native_mfa_lab,
 )
 from .models import MobileDeviceSessionLab, MobileLoginChallengeLab
+from .session_rules import (
+    SessionLabDenied, revoke_all_devices_for_user_lab, validate_access,
+)
 
 
 class ChallengeRacePG17Tests(TransactionTestCase):
@@ -82,3 +85,73 @@ class ChallengeRacePG17Tests(TransactionTestCase):
         self.assertIsNotNone(
             MobileLoginChallengeLab.objects.get().consumed_at,
         )
+
+    def test_account_revoke_race_with_mfa_finish_never_resurrects(self):
+        if connection.vendor != "postgresql":
+            self.skipTest("Requires PostgreSQL row locking")
+        password = "SyntheticRevocationRacePassword!2026"
+        user = get_user_model().objects.create_user(
+            username="n1-mfa-revocation-race",
+            password=password,
+        )
+        key = Fernet.generate_key().decode("ascii")
+        secret = generate_secret()
+        UserMfaState.objects.create(
+            user=user, enabled=True, session_epoch=8,
+            encrypted_totp_secret=encrypt_totp_secret(
+                secret, user_id=user.pk, keys=[key],
+            ),
+        )
+        mode, challenge = begin_native_login_lab(user.username, password)
+        self.assertEqual(mode, "mfa")
+        code = totp_at(secret, int(timezone.now().timestamp()))
+        start = Barrier(3)
+
+        def finish():
+            connections.close_all()
+            try:
+                start.wait(timeout=10)
+                return finish_native_mfa_lab(challenge, code)
+            except NativeLoginLabDenied:
+                return None
+            finally:
+                connections.close_all()
+
+        def revoke():
+            connections.close_all()
+            try:
+                start.wait(timeout=10)
+                return revoke_all_devices_for_user_lab(user_id=user.pk)
+            finally:
+                connections.close_all()
+
+        with patch.dict("os.environ", {
+            "VENCIRA_MFA_FERNET_KEYS": key,
+            "VENCIRA_MFA_FERNET_KEYS_FILE": "",
+        }):
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                pending_finish = pool.submit(finish)
+                pending_revoke = pool.submit(revoke)
+                start.wait(timeout=10)
+                tokens = pending_finish.result(timeout=25)
+                revoked_count = pending_revoke.result(timeout=25)
+
+        self.assertIn(revoked_count, (0, 1))
+        self.assertFalse(
+            MobileDeviceSessionLab.objects.filter(revoked_at__isnull=True).exists()
+        )
+        self.assertIsNotNone(MobileLoginChallengeLab.objects.get().consumed_at)
+        with self.assertRaises(NativeLoginLabDenied):
+            finish_native_mfa_lab(challenge, code)
+        if tokens is not None:
+            with self.assertRaises(SessionLabDenied):
+                validate_access(tokens[0])
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM pg_stat_activity "
+                "WHERE datname = current_database() "
+                "AND pid <> pg_backend_pid() "
+                "AND backend_type = 'client backend'"
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
