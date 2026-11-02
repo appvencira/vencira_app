@@ -86,7 +86,12 @@ def begin_native_login_lab(username, password, *, replace_devices=False):
         initial_generation = account_generation_lab(user.pk)
         with transaction.atomic():
             current_user = lock_account_lab(user.pk)
-            if account_generation_lab(current_user.pk) != initial_generation:
+            # Password rotation can race with authenticate(), which executed
+            # before the row lock. Never mint a new credential from a stale
+            # successful check against the previous password hash.
+            if (not current_user.is_active
+                    or not current_user.check_password(password)
+                    or account_generation_lab(current_user.pk) != initial_generation):
                 raise NativeLoginLabDenied()
             version = mobile_credential_version(current_user)
             state = UserMfaState.objects.filter(user_id=current_user.pk).first()
