@@ -42,6 +42,7 @@ class MobileLoginChallengeLab(models.Model):
     credential_version = models.CharField(max_length=64)
     mfa_epoch = models.PositiveIntegerField()
     auth_generation = models.PositiveBigIntegerField(default=0)
+    replace_devices = models.BooleanField(default=False)
     expires_at = models.DateTimeField()
     consumed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
