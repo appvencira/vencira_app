@@ -24,7 +24,8 @@ class DeviceLifecycleTests(TestCase):
 
     def issue(self):
         return issue_verified_session(
-            user=self.user, verified_mfa=False, mfa_epoch=None)
+            user=self.user, verified_mfa=False, mfa_epoch=None,
+            expected_generation=account_generation_lab(self.user.pk))
 
     def test_issue_and_validate_access(self):
         access, refresh = self.issue()
@@ -113,7 +114,8 @@ class DeviceLifecycleTests(TestCase):
             enabled=True, session_epoch=10,
         )
         access, refresh = issue_verified_session(
-            user=self.user, verified_mfa=True, mfa_epoch=10)
+            user=self.user, verified_mfa=True, mfa_epoch=10,
+            expected_generation=account_generation_lab(self.user.pk))
         self.assertEqual(validate_access(access).pk, self.user.pk)
         state.session_epoch = 11
         state.save(update_fields=["session_epoch"])
@@ -163,7 +165,8 @@ class DeviceLifecycleTests(TestCase):
             username="other-lab-identity", password="OnlySyntheticPass-99")
         own_access, _ = self.issue()
         other_access, other_refresh = issue_verified_session(
-            user=other, verified_mfa=False, mfa_epoch=None)
+            user=other, verified_mfa=False, mfa_epoch=None,
+            expected_generation=account_generation_lab(other.pk))
         self.assertEqual(
             revoke_all_devices_for_user_lab(user_id=self.user.pk), 1)
         with self.assertRaises(SessionLabDenied):
@@ -205,4 +208,5 @@ class DeviceLifecycleTests(TestCase):
     def test_disabled_mfa_cannot_claim_completed_factor(self):
         with self.assertRaises(SessionLabDenied):
             issue_verified_session(
-                user=self.user, verified_mfa=True, mfa_epoch=10)
+                user=self.user, verified_mfa=True, mfa_epoch=10,
+            expected_generation=account_generation_lab(self.user.pk))
