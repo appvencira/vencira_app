@@ -373,3 +373,20 @@ Dos aplicaciones móviles instalables (Android e iOS) pueden iniciar sesión **n
 - `clients/flutter/test/native_recovery_login_gateway_test.dart` incorpora **9 pruebas sintéticas nuevas**: marcador obligatorio, contraseña completa, MFA previo a autorización, reto inválido, MFA rechazado, escritura protegida no confirmada, respuesta tardía, MFA tardío y arranque frío. CI y `scripts/m3_native_http_contract_batch.sh` incluyen el archivo. `scripts/n1_static_security_gate.py` garantiza que `main.dart` no importa ni conecta el gateway.
 - **ESTADO: CÓDIGO NUEVO PENDIENTE DE ANÁLISIS/TESTS FLUTTER**. No atribuir este lote al test local anterior. El caso aislado PG17 original ya se confirmó `N1_PG17_LAB_CASE_RESULT=0`; el lote integrado sigue sin repetirse tras la corrección.
 - G6 camino hacia beta: `POLICY=SELECTED`, `G6_RECOVERY_GATEWAY=CODE_PENDING_TESTS`, `G6_OPERATIONAL=NO`. MFA/MB1/C-FICHA sin autorización; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## M3/G6 — batería integrada validada después de gateway móvil (02/11/2026 23:47 UTC)
+- El operador ejecutó `bash scripts/m3_native_http_contract_batch.sh` sobre la rama que incorpora `NativeRecoveryLoginGateway` y la regresión de tamaño JSON aislada. Resumen aportado:
+  ```text
+  M3_HTTP_STATIC=0
+  M3_HTTP_BUILD=0
+  M3_HTTP_PG17_LAB=0
+  M3_HTTP_FLUTTER=0
+  M3_HTTP_LOGS=/home/vencira/vencira-m3-results/m3-http-contract-20261102T234745Z
+  M3_HTTP_RESULT=0
+  NO_DEPLOY_NO_LIVE_MIGRATION=1
+  ```
+- **Confirmación: `M3_G6_INTEGRATED_LAB=PASS`**: static, Docker build, PG17 desechable y Flutter analizador/tests. Este lote sustituye los anteriores fallos con `PG17_LAB=1` y `FLUTTER=1`.
+- El extracto comunicado no incluye líneas `Ran N tests` ni `All tests passed!`, así que no se declaran cifras exactas de tests; se acredita el código de salida de cada fase y el resultado global.
+- Incluye el gateway experimental `NativeRecoveryLoginGateway`, marcador persistente de operación incierta, recuperación con contraseña y MFA diferenciados, filtros por workspace y fallos cerrados de respuestas tardías; la cobertura es de **ensayo**, no demuestra resistencia en dispositivos reales ni autorización operativa.
+- **`G6_POLICY=SELECTED`, `G6_LAB=PASS`, `G6_OPERATIONAL=NO`**. `NativeRecoveryLoginGateway` no está en `main.dart`, no hay backend nativo de producción ni migraciones vivas. Restan custodia MFA real, MB1 GLOBAL_FREEZE, C-FICHA, validación física, pruebas operativas, antiabuso y rollout.
+- Gates: `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `GLOBAL_FREEZE=NOT_VERIFIED`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
