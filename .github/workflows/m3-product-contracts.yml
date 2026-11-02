@@ -28,6 +28,16 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -r requirements.txt
+      - name: Check native authentication release boundary
+        run: python ../scripts/n1_static_security_gate.py
+      - name: Reject experimental session lab under production environment
+        run: |
+          if VENCIRA_ENV=production DJANGO_DEBUG=0 VENCIRA_NATIVE_SESSION_LAB=1 python manage.py check > /tmp/n1-prod-lab-denied.log 2>&1; then
+            echo 'N1_LAB_PRODUCTION_FAILCLOSED=FAIL'
+            exit 1
+          fi
+          grep -q 'Native device session lab only allowed in test' /tmp/n1-prod-lab-denied.log
+          echo 'N1_LAB_PRODUCTION_FAILCLOSED=OK'
       - name: Validate grouped regression runner syntax
         run: bash -n ../scripts/n1_verification_batch.sh
       - name: Check Django project
@@ -86,6 +96,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -r requirements.txt
+      - name: Check native authentication release boundary
+        run: python ../scripts/n1_static_security_gate.py
       - name: Check Django with PG17 configuration
         run: python manage.py check
       - name: Run O9b and operational inbox regressions on isolated PG17
