@@ -62,6 +62,9 @@ def verify():
         "backend/config/settings.py",
         "backend/native_sessions_lab/models.py",
         "backend/native_sessions_lab/migrations/0001_initial.py",
+        "backend/native_sessions_lab/session_rules.py",
+        "backend/native_sessions_lab/tests.py",
+        "backend/native_sessions_lab/test_pg17_race.py",
         "backend/reminders/native_mobile_identity_gate.py",
         "backend/reminders/native_mobile_token_primitives.py",
     ):
