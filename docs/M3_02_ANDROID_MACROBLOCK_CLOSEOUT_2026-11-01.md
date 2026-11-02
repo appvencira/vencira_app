@@ -127,3 +127,10 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 - Corrección conjunta: historial, índice de historial, catálogo de modalidades, bandeja operativa y agenda no admiten una nueva carga desde sus métodos de consulta cuando `_unauthorized` ya está activado. La bandeja deja de restablecer `_unauthorized=false` al recargar. El catálogo impide también nuevas escrituras.
 - Esta medida protege la ruta que permanece montada cuando falla la barrera de cancelación nativa; los datos locales revocados no deben reaparecer con una recarga manual.
 - **CI final del conjunto no confirmado por las herramientas disponibles**. Se necesita verificación de los jobs de Actions del head. Sin prueba física Android, sin activar avisos, sin despliegue, sin merge y sin migraciones persistentes.
+
+## A9 — Alcance móvil Android e iOS / diagnóstico físico (02/11/2026)
+
+- El usuario ha instalado el APK Android en teléfono con datos móviles: la UI inicia pero la API no carga; la misma URL dev.vencira.es funciona desde el navegador móvil. `HttpVenciraApi` utiliza `Uri.base` y el login actual presupone sesión web same-origin.
+- Workaround Android: botón para abrir navegador HTTPS (commits 6251c95, 58dedbb), conservando barrera previa de revocación, prueba widget 204162c y workflow actualizado 2f7b3c2. **No representa autenticación nativa**. Compilación/tests locales de estos cambios pendientes de salida del usuario.
+- **Objetivo final explícito**: conectividad HTTPS, autenticación, datos y operaciones NATIVOS en **Android e iOS**. Diseño, threat model, hitos N1–N5 y gates definidos en [M3_NATIVE_MOBILE_AUTH_ANDROID_IOS_2026-11-02.md](M3_NATIVE_MOBILE_AUTH_ANDROID_IOS_2026-11-02.md).
+- No convertir el fallback web en cierre de M3; iOS no se ha construido ni probado, Android aún sin auth nativa. Los gates de release siguen cerrados.
