@@ -20,7 +20,7 @@ from .login_rules import (
     NativeLoginLabDenied, begin_native_login_lab, finish_native_mfa_lab,
 )
 from .models import MobileDeviceSessionLab, MobileLoginChallengeLab
-from .session_rules import validate_access
+from .session_rules import validate_access, revoke_all_devices_for_user_lab
 
 PASSWORD = "SyntheticLabPassword-2026!"
 
@@ -159,6 +159,41 @@ class NativeLoginFlowLabTests(TestCase):
         )
         with self.assertRaises(NativeLoginLabDenied):
             self.valid_mfa(raw)
+
+    def test_global_revocation_invalidates_preexisting_mfa_challenge(self):
+        self.enable_mfa()
+        raw = self.challenge()
+        self.assertEqual(
+            revoke_all_devices_for_user_lab(user_id=self.user.pk), 0)
+        record = MobileLoginChallengeLab.objects.get()
+        self.assertIsNotNone(record.consumed_at)
+        with self.assertRaises(NativeLoginLabDenied):
+            self.valid_mfa(raw)
+        self.assertFalse(MobileDeviceSessionLab.objects.exists())
+
+    def test_fresh_password_and_mfa_can_login_after_revocation(self):
+        self.enable_mfa()
+        old = self.challenge()
+        revoke_all_devices_for_user_lab(user_id=self.user.pk)
+        with self.assertRaises(NativeLoginLabDenied):
+            self.valid_mfa(old)
+        new = self.challenge()
+        fresh = MobileLoginChallengeLab.objects.get(secret_digest__isnull=False,
+                                                   consumed_at__isnull=True)
+        self.assertEqual(fresh.auth_generation, 1)
+        access, refresh = self.valid_mfa(new)
+        self.assertEqual(validate_access(access).pk, self.user.pk)
+        self.assertTrue(refresh.startswith("v1.r."))
+
+    def test_revoke_with_no_mfa_blocks_old_session_and_accepts_fresh_login(self):
+        old_mode, old_tokens = begin_native_login_lab(self.user.username, PASSWORD)
+        self.assertEqual(old_mode, "ready")
+        self.assertEqual(revoke_all_devices_for_user_lab(user_id=self.user.pk), 1)
+        with self.assertRaises(Exception):
+            validate_access(old_tokens[0])
+        new_mode, new_tokens = begin_native_login_lab(self.user.username, PASSWORD)
+        self.assertEqual(new_mode, "ready")
+        self.assertEqual(validate_access(new_tokens[0]).pk, self.user.pk)
 
     def test_forged_challenge_cannot_complete_mfa(self):
         self.enable_mfa()
