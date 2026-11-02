@@ -291,3 +291,10 @@ Dos aplicaciones móviles instalables (Android e iOS) pueden iniciar sesión **n
 - Selected Flutter HTTP/coordinator/UI/vault/transport tests: 49 PASS (`All tests passed!`). This does not certify Django HTTP tests.
 - The concrete exception is NOT in the shared summary; inspect `PG17_LAB.log` before changing source or diagnosing root cause. Prior account epoch lab 53 PASS corresponds to earlier revision.
 - No live migrations or production mobile routes; release gates closed. `M3_HTTP_PG17_LAB=FAIL_PENDING_DIAGNOSIS`.
+
+## M3 HTTP — causa verificada y corrección test-only (02/11/2026)
+- El operador aporta el traceback completo del ensayo PG17: `Found 64 test(s)`, `Ran 64 tests in 13.231s`, **1 FAIL**: `test_method_origin_and_cookie_fail_closed`, línea 146, esperaba HTTP `405` en `POST /api/v1/mobile/me/` pero recibe `403`, junto con `VENCIRA_CSRF WARNING Forbidden (CSRF cookie not set.)`.
+- Diagnóstico: `Client(enforce_csrf_checks=True)` pasa por el middleware CSRF. La vista `me` es GET-only y **no está exenta de CSRF**, por lo que Django deniega primero el POST inseguro (403) antes de ejecutar la comprobación de método (405) de la vista. Es un comportamiento protector correcto, no un fallo de autenticación.
+- Corrección en `native_sessions_lab/test_http_contract_cases.py`: comprobar **403** en el cliente HTTP real con CSRF activo, y **405** por separado al invocar directamente `lab_http.me(RequestFactory().post(...))` para verificar la política GET-only. No se toca la vista ni se añade `csrf_exempt`; no se alteran middleware, autenticación ni URLs operativos.
+- La batería anterior confirma `M3_HTTP_STATIC=0`, `M3_HTTP_BUILD=0`, `M3_HTTP_FLUTTER=0` con **49 pruebas Flutter PASS**. `M3_HTTP_PG17_LAB` y `M3_HTTP_RESULT` permanecen **pendientes de nueva validación**, y no se debe presentar el fix como PASS hasta completar `N1_PG17_LAB_RESULT=0` en un ensayo PG17 aislado.
+- Todos los gates de producción continúan en `NO`: `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
