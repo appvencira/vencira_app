@@ -23,7 +23,7 @@ class NativeApiTransport {
 
   static const int maxResponseBytes = 1024 * 1024;
   static final RegExp _tokenCharacters =
-      RegExp(r'^[A-Za-z0-9._~+/\\-]+=*$');
+      RegExp(r'^[A-Za-z0-9._~+/-]+=*$');
 
   Future<Object> getJson(String path) async {
     // Validate path before requesting credentials.
