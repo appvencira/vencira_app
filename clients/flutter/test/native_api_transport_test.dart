@@ -3,10 +3,14 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:vencira/api/native_api_endpoint.dart';
 import 'package:vencira/api/native_api_transport.dart';
+import 'package:vencira/api/native_session_fence.dart';
+import 'dart:async';
 
 void main() {
   final endpoint = NativeApiEndpoint.parse('https://dev.vencira.es');
   const testToken = 'test-native-credential-123456789';
+  late NativeSessionFence fence;
+  setUp(() => fence = NativeSessionFence()..activate());
 
   test('GET carries bearer credentials only to approved HTTPS API', () async {
     var calls = 0;
@@ -21,7 +25,7 @@ void main() {
           headers: {'content-type': 'application/json; charset=utf-8'});
     });
     final transport = NativeApiTransport(
-      endpoint: endpoint, client: client, accessToken: () async => testToken);
+      endpoint: endpoint, client: client, sessionFence: fence, accessToken: () async => testToken);
     expect(await transport.getJson('/api/v1/me/'), {'id': 12});
     expect(calls, 1);
     client.close();
@@ -35,12 +39,12 @@ void main() {
     });
     for (final token in <String?>[null, '', 'abc', 'unsafe header\r\n']) {
       final transport = NativeApiTransport(
-          endpoint: endpoint, client: client, accessToken: () async => token);
+          endpoint: endpoint, client: client, sessionFence: fence, accessToken: () async => token);
       await expectLater(transport.getJson('/api/v1/me/'),
           throwsA(isA<NativeApiSessionUnavailable>()));
     }
     final failing = NativeApiTransport(
-        endpoint: endpoint, client: client,
+        endpoint: endpoint, client: client, sessionFence: fence,
         accessToken: () async => throw StateError('not unlocked'));
     await expectLater(failing.getJson('/api/v1/me/'),
         throwsA(isA<NativeApiSessionUnavailable>()));
@@ -55,7 +59,7 @@ void main() {
       return http.Response('{}', 200);
     });
     final transport = NativeApiTransport(
-        endpoint: endpoint, client: client,
+        endpoint: endpoint, client: client, sessionFence: fence,
         accessToken: () async {
           calls++;
           return testToken;
@@ -75,7 +79,7 @@ void main() {
           headers: {'location': 'https://evil.example/steal'});
     });
     final transport = NativeApiTransport(
-        endpoint: endpoint, client: client, accessToken: () async => testToken);
+        endpoint: endpoint, client: client, sessionFence: fence, accessToken: () async => testToken);
     await expectLater(transport.getJson('/api/v1/me/'),
         throwsA(isA<NativeApiTransportFailure>()));
     expect(calls, 1);
@@ -84,13 +88,16 @@ void main() {
 
   test('401 is session unavailable; 403 is not assumed to be logout', () async {
     for (final status in [401, 403]) {
+      final caseFence = NativeSessionFence()..activate();
       final client = MockClient((request) async => http.Response('', status));
       final transport = NativeApiTransport(
-          endpoint: endpoint, client: client, accessToken: () async => testToken);
+          endpoint: endpoint, client: client, sessionFence: caseFence,
+          accessToken: () async => testToken);
       await expectLater(transport.getJson('/api/v1/me/'),
           throwsA(status == 401
               ? isA<NativeApiSessionUnavailable>()
               : isA<NativeApiTransportFailure>()));
+      expect(caseFence.ticket == null, status == 401);
       client.close();
     }
   });
@@ -106,10 +113,67 @@ void main() {
     ]) {
       final client = MockClient((request) async => response);
       final transport = NativeApiTransport(
-          endpoint: endpoint, client: client, accessToken: () async => testToken);
+          endpoint: endpoint, client: client, sessionFence: fence, accessToken: () async => testToken);
       await expectLater(transport.getJson('/api/v1/me/'),
           throwsA(isA<NativeApiTransportFailure>()));
       client.close();
     }
+  });
+  test('late reply after logout is rejected even if server returns 200',
+      () async {
+    final pending = Completer<http.Response>();
+    var requests = 0;
+    final client = MockClient((request) {
+      requests++;
+      return pending.future;
+    });
+    final transport = NativeApiTransport(
+        endpoint: endpoint, client: client, sessionFence: fence,
+        accessToken: () async => testToken);
+    final request = transport.getJson('/api/v1/me/');
+    await Future<void>.delayed(Duration.zero);
+    expect(requests, 1);
+    fence.revoke();
+    pending.complete(http.Response('{"id":12}', 200,
+        headers: {'content-type': 'application/json'}));
+    await expectLater(request, throwsA(isA<NativeApiSessionUnavailable>()));
+    client.close();
+  });
+
+  test('new account generation cannot receive prior account response',
+      () async {
+    final pending = Completer<http.Response>();
+    final client = MockClient((request) => pending.future);
+    final transport = NativeApiTransport(
+        endpoint: endpoint, client: client, sessionFence: fence,
+        accessToken: () async => testToken);
+    final previous = transport.getJson('/api/v1/me/');
+    await Future<void>.delayed(Duration.zero);
+    fence.revoke();
+    fence.activate();
+    pending.complete(http.Response('{"id":12}', 200,
+        headers: {'content-type': 'application/json'}));
+    await expectLater(previous, throwsA(isA<NativeApiSessionUnavailable>()));
+    expect(fence.ticket, isNotNull);
+    client.close();
+  });
+
+  test('session cannot read credentials after local revocation',
+      () async {
+    var tokenReads = 0;
+    var networkCalls = 0;
+    final client = MockClient((request) async {
+      networkCalls++;
+      return http.Response('{}', 200);
+    });
+    fence.revoke();
+    final transport = NativeApiTransport(
+      endpoint: endpoint, client: client, sessionFence: fence,
+      accessToken: () async { tokenReads++; return testToken; });
+    await expectLater(transport.getJson('/api/v1/me/'),
+        throwsA(isA<NativeApiSessionUnavailable>()));
+    expect(tokenReads, 0);
+    expect(networkCalls, 0);
+    client.close();
   });
 }
