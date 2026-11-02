@@ -52,3 +52,12 @@ Dos aplicaciones móviles instalables (Android e iOS) pueden iniciar sesión **n
 - **Estado del nuevo transporte: IMPLEMENTADO SIN VALIDAR LOCALMENTE**. Ejecutar `flutter analyze` y `flutter test test/native_api_transport_test.dart test/native_api_endpoint_test.dart test/android_web_access_screen_test.dart` antes de atribuir PASS.
 - Pendiente esencial: seleccionar y aprobar contrato de identidad, MFA móvil, revocación, almacenamiento Keystore/Keychain, API Django y pruebas físicas iOS/Android.
 - Permanece `N1_NATIVE_AUTH=NOT_IMPLEMENTED`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## N2 — Invalidation fence for delayed native HTTP responses (02/11/2026)
+
+- Local operator reported `NATIVE_TRANSPORT_RESULT=0` for the preceding HTTPS transport + browser fallback suite. This confirms the **previous** revision, not the new session fence.
+- New `NativeSessionFence` is deliberately in-memory and stores **no credential**. Each authenticated session generation receives a distinct ticket; revoking the session invalidates existing tickets synchronously, before any asynchronous cleanup.
+- `NativeApiTransport` now requires an active fence. It checks the ticket before obtaining credentials, immediately before accepting the HTTP response, and again before returning decoded JSON. A 401 revokes its generation; 403 remains a permission error and does not silently log out.
+- New tests verify: no credential read after revocation, rejection of a response arriving after logout, and rejection of an earlier account's 200 response after a new account generation starts.
+- **CURRENT CHANGE NOT YET TESTED LOCALLY**; run `flutter analyze`, `flutter test test/native_api_transport_test.dart test/native_api_endpoint_test.dart test/android_web_access_screen_test.dart` and ideally the full Flutter suite. CI of current head not independently verified.
+- This mechanism does not implement authentication, Keychain/Keystore, server revocation, MFA, or network cancellation. Remains disconnected from Android/iOS app entrypoints until those gates are independently verified; avoid treating an in-memory fence as credential storage.
