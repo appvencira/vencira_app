@@ -14,13 +14,19 @@ from reminders.mfa_secrets import encrypt_totp_secret
 from reminders.mfa_totp import generate_secret, totp_at
 from reminders.models import UserMfaState
 from . import test_http_contract as lab_http
-from .models import MobileDeviceSessionLab
+from .models import MobileDeviceSessionLab, MobileLoginChallengeLab
 from reminders.models import Renewal, Workspace, WorkspaceMember
 from datetime import date
+from .session_rules import (
+    SessionLabDenied, issue_verified_session, account_generation_lab,
+    validate_access,
+)
 
 PASSWORD = "SyntheticPasswordOnlyForHttpLab-2026!"
 PASSWORD_PATH = "/api/v1/mobile/auth/password/"
 MFA_PATH = "/api/v1/mobile/auth/mfa/"
+RECOVERY_PASSWORD_PATH = "/api/v1/mobile/auth/recover/password/"
+RECOVERY_MFA_PATH = "/api/v1/mobile/auth/recover/mfa/"
 REFRESH_PATH = "/api/v1/mobile/token/refresh/"
 REVOKE_PATH = "/api/v1/mobile/token/revoke/"
 ME_PATH = "/api/v1/mobile/me/"
@@ -168,6 +174,7 @@ class NativeHttpContractTests(TestCase):
         for path in (
             PASSWORD_PATH, MFA_PATH, REFRESH_PATH,
             REVOKE_PATH, ME_PATH,
+            RECOVERY_PASSWORD_PATH, RECOVERY_MFA_PATH,
             "/api/v1/mobile/workspaces/00000000-0000-0000-0000-000000000001/renewals/",
         ):
             with self.subTest(path=path), self.assertRaises(Resolver404):
@@ -377,3 +384,181 @@ class NativeWorkspaceBearerScopeTests(TestCase):
         self.assertEqual(self.scoped(
             tokens["access"], unknown,
         ).status_code, 404)
+
+
+@override_settings(ROOT_URLCONF="native_sessions_lab.test_urls")
+class NativeRecoveryAfterAmbiguousRefreshHttpTests(TestCase):
+    """Fresh verification replaces stale sessions; no ambiguous retry."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = get_user_model().objects.create_user(
+            username="n1-g6-recovery", password=PASSWORD,
+        )
+
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=True)
+
+    def post(self, path, payload):
+        return self.client.post(
+            path, data=json.dumps(payload),
+            content_type="application/json",
+        )
+
+    def basic_login(self):
+        response = self.post(PASSWORD_PATH, {
+            "username": self.user.username, "password": PASSWORD,
+        })
+        self.assertEqual(response.status_code, 200)
+        return response.json()
+
+    def recover_password(self, password=PASSWORD):
+        return self.post(RECOVERY_PASSWORD_PATH, {
+            "username": self.user.username, "password": password,
+        })
+
+    def get_me(self, access):
+        return self.client.get(
+            ME_PATH, HTTP_AUTHORIZATION="Bearer " + access,
+        ).status_code
+
+    def test_ambiguous_rotation_then_fresh_password_revokes_old_and_new(self):
+        old = self.basic_login()
+        # Backend committed rotation but its response is LOST at the client.
+        rotated = self.post(REFRESH_PATH, {
+            "refresh": old["refresh"],
+        })
+        self.assertEqual(rotated.status_code, 200)
+        newer = rotated.json()
+        self.assertEqual(self.get_me(newer["access"]), 200)
+        epoch = account_generation_lab(self.user.pk)
+        recovered = self.recover_password()
+        self.assertEqual(recovered.status_code, 200)
+        tokens = recovered.json()
+        self.assertEqual(tokens["status"], "authenticated")
+        self.assertEqual(account_generation_lab(self.user.pk), epoch + 1)
+        self.assertEqual(self.get_me(newer["access"]), 401)
+        self.assertEqual(self.get_me(tokens["access"]), 200)
+        self.assertEqual(self.post(REFRESH_PATH, {
+            "refresh": newer["refresh"],
+        }).status_code, 401)
+
+    def test_recovery_wrong_password_does_not_revoke_existing_device(self):
+        old = self.basic_login()
+        self.assertEqual(self.recover_password("incorrect").status_code, 401)
+        self.assertEqual(self.get_me(old["access"]), 200)
+        self.assertEqual(account_generation_lab(self.user.pk), 0)
+
+    def test_normal_login_does_not_revoke_existing_devices(self):
+        old = self.basic_login()
+        other = self.basic_login()
+        self.assertEqual(self.get_me(old["access"]), 200)
+        self.assertEqual(self.get_me(other["access"]), 200)
+        self.assertEqual(account_generation_lab(self.user.pk), 0)
+
+    def test_recovery_requires_mfa_before_any_account_wide_revocation(self):
+        key = Fernet.generate_key().decode("ascii")
+        secret = generate_secret()
+        UserMfaState.objects.create(
+            user=self.user, enabled=True, session_epoch=6,
+            encrypted_totp_secret=encrypt_totp_secret(
+                secret, user_id=self.user.pk, keys=[key],
+            ),
+        )
+        old_access, _ = issue_verified_session(
+            user=self.user, verified_mfa=True, mfa_epoch=6,
+            expected_generation=0,
+        )
+        old_access2, _ = issue_verified_session(
+            user=self.user, verified_mfa=True, mfa_epoch=6,
+            expected_generation=0,
+        )
+        start = self.recover_password()
+        self.assertEqual(start.status_code, 200)
+        challenge = start.json()["challenge"]
+        self.assertEqual(start.json()["status"], "mfa_required")
+        self.assertEqual(account_generation_lab(self.user.pk), 0)
+        self.assertEqual(self.get_me(old_access), 200)
+        self.assertEqual(self.get_me(old_access2), 200)
+
+        with patch.dict("os.environ", {
+            "VENCIRA_MFA_FERNET_KEYS": key,
+            "VENCIRA_MFA_FERNET_KEYS_FILE": "",
+        }):
+            self.assertEqual(self.post(RECOVERY_MFA_PATH, {
+                "challenge": challenge, "code": "wrong",
+            }).status_code, 401)
+            self.assertEqual(account_generation_lab(self.user.pk), 0)
+            self.assertEqual(self.get_me(old_access), 200)
+            code = totp_at(secret, int(timezone.now().timestamp()))
+            granted = self.post(RECOVERY_MFA_PATH, {
+                "challenge": challenge, "code": code,
+            })
+        self.assertEqual(granted.status_code, 200)
+        new_access = granted.json()["access"]
+        self.assertEqual(account_generation_lab(self.user.pk), 1)
+        self.assertEqual(self.get_me(old_access), 401)
+        self.assertEqual(self.get_me(old_access2), 401)
+        self.assertEqual(self.get_me(new_access), 200)
+        self.assertEqual(self.post(RECOVERY_MFA_PATH, {
+            "challenge": challenge, "code": "123456",
+        }).status_code, 401)
+
+    def test_recovery_challenge_cannot_be_completed_via_normal_mfa_path(self):
+        key = Fernet.generate_key().decode("ascii")
+        secret = generate_secret()
+        UserMfaState.objects.create(
+            user=self.user, enabled=True, session_epoch=2,
+            encrypted_totp_secret=encrypt_totp_secret(
+                secret, user_id=self.user.pk, keys=[key],
+            ),
+        )
+        start = self.recover_password()
+        challenge = start.json()["challenge"]
+        record = MobileLoginChallengeLab.objects.get()
+        self.assertTrue(record.replace_devices)
+        code = totp_at(secret, int(timezone.now().timestamp()))
+        with patch.dict("os.environ", {
+            "VENCIRA_MFA_FERNET_KEYS": key,
+            "VENCIRA_MFA_FERNET_KEYS_FILE": "",
+        }):
+            self.assertEqual(self.post(MFA_PATH, {
+                "challenge": challenge, "code": code,
+            }).status_code, 401)
+            self.assertEqual(self.post(RECOVERY_MFA_PATH, {
+                "challenge": challenge, "code": code,
+            }).status_code, 200)
+        self.assertEqual(account_generation_lab(self.user.pk), 1)
+
+    def test_normal_mfa_challenge_cannot_be_upgraded_to_recovery(self):
+        UserMfaState.objects.create(
+            user=self.user, enabled=True, session_epoch=2,
+            encrypted_totp_secret="synthetic-only",
+        )
+        start = self.post(PASSWORD_PATH, {
+            "username": self.user.username, "password": PASSWORD,
+        })
+        self.assertEqual(start.status_code, 200)
+        raw = start.json()["challenge"]
+        self.assertEqual(self.post(RECOVERY_MFA_PATH, {
+            "challenge": raw, "code": "123456",
+        }).status_code, 401)
+        self.assertEqual(account_generation_lab(self.user.pk), 0)
+        self.assertFalse(MobileDeviceSessionLab.objects.exists())
+
+    def test_recovery_rejects_web_cookie_origin_and_oversized_payload(self):
+        payload = {"username": self.user.username, "password": PASSWORD}
+        self.assertEqual(self.client.post(
+            RECOVERY_PASSWORD_PATH, data=json.dumps(payload),
+            content_type="application/json",
+            HTTP_ORIGIN="https://untrusted.example",
+        ).status_code, 403)
+        self.assertEqual(self.client.post(
+            RECOVERY_PASSWORD_PATH, data=json.dumps(payload),
+            content_type="application/json",
+            HTTP_COOKIE="vencira_sessionid=test-only",
+        ).status_code, 403)
+        self.assertEqual(self.post(RECOVERY_PASSWORD_PATH, {
+            "username": self.user.username, "password": "a" * 5000,
+        }).status_code, 400)
+        self.assertFalse(MobileDeviceSessionLab.objects.exists())
