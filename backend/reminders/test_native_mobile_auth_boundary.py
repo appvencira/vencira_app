@@ -6,7 +6,6 @@ It detects accidental exposure until a separately reviewed N1 contract exists.
 from django.conf import settings
 from django.test import SimpleTestCase
 from django.urls import resolve
-from rest_framework.authentication import SessionAuthentication
 
 from reminders.login_security import ProtectedLoginView
 from reminders.mfa_challenge import mfa_challenge
@@ -19,7 +18,6 @@ class MobileAuthBoundaryTests(SimpleTestCase):
         self.assertEqual(
             classes, ["rest_framework.authentication.SessionAuthentication"]
         )
-        self.assertIs(SessionAuthentication.__mro__[0], SessionAuthentication)
 
     def test_session_auth_mfa_middleware_not_bypassed(self):
         middleware = settings.MIDDLEWARE
