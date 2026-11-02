@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'native_api_endpoint.dart';
+import 'native_session_fence.dart';
 
 /// A transport primitive for a FUTURE, separately authorised Android/iOS
 /// session. Not connected to the app until the backend MFA/token contract is
@@ -12,10 +13,12 @@ class NativeApiTransport {
     required this.endpoint,
     required this.client,
     required this.accessToken,
+    required this.sessionFence,
   });
 
   final NativeApiEndpoint endpoint;
   final http.Client client;
+  final NativeSessionFence sessionFence;
 
   /// Supplied by the future secure mobile session controller, never by
   /// SharedPreferences or a compile-time secret.
@@ -26,15 +29,17 @@ class NativeApiTransport {
       RegExp(r'^[A-Za-z0-9._~+/-]+=*$');
 
   Future<Object> getJson(String path) async {
-    // Validate path before requesting credentials.
+    // Validate both path and active session before reading credentials.
     final uri = endpoint.resolveApiPath(path);
+    final ticket = sessionFence.ticket;
+    if (ticket == null) throw const NativeApiSessionUnavailable();
     final String? token;
     try {
       token = await accessToken();
     } catch (_) {
       throw const NativeApiSessionUnavailable();
     }
-    if (token == null ||
+    if (!sessionFence.accepts(ticket) || token == null ||
         token.length < 16 ||
         token.length > 4096 ||
         !_tokenCharacters.hasMatch(token)) {
@@ -52,7 +57,12 @@ class NativeApiTransport {
     } catch (_) {
       throw const NativeApiTransportFailure();
     }
+    if (!sessionFence.accepts(ticket)) {
+      throw const NativeApiSessionUnavailable();
+    }
     if (response.statusCode == 401) {
+      // Only revoke the generation which actually sent this request.
+      if (sessionFence.accepts(ticket)) sessionFence.revoke();
       throw const NativeApiSessionUnavailable();
     }
     // Never follow login redirects or an unapproved destination with a token.
@@ -73,9 +83,14 @@ class NativeApiTransport {
         bytes.addAll(chunk);
       }
       final result = jsonDecode(utf8.decode(bytes));
+      if (!sessionFence.accepts(ticket)) {
+        throw const NativeApiSessionUnavailable();
+      }
       if (result is Map<String, dynamic> || result is List<dynamic>) {
         return result;
       }
+    } on NativeApiSessionUnavailable {
+      rethrow;
     } on NativeApiTransportFailure {
       rethrow;
     } catch (_) {
