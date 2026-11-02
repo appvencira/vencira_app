@@ -68,7 +68,7 @@ def verify():
             and "native_sessions_lab.test_urls" not in routes
             and "test_http_contract" not in config
             and "test_http_contract" not in routes
-            and "/api/v1/mobile/auth/password/" in lab_urls,
+            and 'path("api/v1/mobile/auth/password/"' in lab_urls,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
