@@ -26,7 +26,10 @@ from reminders.native_mobile_identity_gate import (
 )
 
 from .models import MobileLoginChallengeLab
-from .session_rules import SessionLabDenied, issue_verified_session
+from .session_rules import (
+    SessionLabDenied, issue_verified_session, account_generation_lab,
+    lock_account_lab,
+)
 
 CHALLENGE_AGE = timedelta(minutes=5)
 _CHALLENGE_FORMAT = re.compile(
@@ -64,11 +67,7 @@ def _challenge_id(raw):
 
 
 def begin_native_login_lab(username, password):
-    """Verify Django password. Never issue tokens before enabled MFA succeeds.
-
-    Returns ('ready', (access, refresh)) or ('mfa', challenge).
-    This is NOT an endpoint and is prohibited from use outside test.
-    """
+    """Lab only: password then optional MFA challenge (no public HTTP)."""
     if (type(username) is not str or not 1 <= len(username) <= 150
             or type(password) is not str or not password):
         raise NativeLoginLabDenied()
@@ -80,42 +79,55 @@ def begin_native_login_lab(username, password):
             register_failure(username)
             raise NativeLoginLabDenied()
 
-        version = mobile_credential_version(user)
-        state = UserMfaState.objects.filter(user_id=user.pk).first()
-        if state is None or not state.enabled:
-            issued = issue_verified_session(
-                user=user, verified_mfa=False, mfa_epoch=None)
+        # Capture the epoch before acquiring the account lock. A concurrent
+        # revocation invalidates this login attempt rather than silently
+        # issuing tokens from an old password/MFA challenge.
+        initial_generation = account_generation_lab(user.pk)
+        with transaction.atomic():
+            current_user = lock_account_lab(user.pk)
+            if account_generation_lab(current_user.pk) != initial_generation:
+                raise NativeLoginLabDenied()
+            version = mobile_credential_version(current_user)
+            state = UserMfaState.objects.filter(user_id=current_user.pk).first()
+            if state is None or not state.enabled:
+                issued = issue_verified_session(
+                    user=current_user, verified_mfa=False, mfa_epoch=None,
+                    expected_generation=initial_generation,
+                )
+                mode, result = "ready", issued
+            else:
+                # No bearer issued until TOTP is consumed and state rechecked.
+                require_mobile_identity_gate(
+                    user=current_user, verified_mfa=True,
+                    asserted_mfa_epoch=state.session_epoch,
+                    asserted_credential_version=version,
+                )
+                sid = uuid.uuid4()
+                secret = base64.urlsafe_b64encode(
+                    secrets.token_bytes(32),
+                ).decode("ascii").rstrip("=")
+                raw = f"lc1.{sid.hex}.{secret}"
+                MobileLoginChallengeLab.objects.create(
+                    id=sid, user=current_user,
+                    secret_digest=_digest(raw),
+                    credential_version=version,
+                    mfa_epoch=state.session_epoch,
+                    auth_generation=initial_generation,
+                    expires_at=timezone.now() + CHALLENGE_AGE,
+                )
+                mode, result = "mfa", raw
+        if mode == "ready":
             clear_failures(username)
-            return ("ready", issued)
-
-        # This preflight is only a DB-state check. MFA is not asserted to a
-        # client, and absolutely no access/refresh token is issued here.
-        require_mobile_identity_gate(
-            user=user, verified_mfa=True,
-            asserted_mfa_epoch=state.session_epoch,
-            asserted_credential_version=version,
-        )
-        sid = uuid.uuid4()
-        raw = base64.urlsafe_b64encode(
-            secrets.token_bytes(32)).decode("ascii").rstrip("=")
-        challenge = f"lc1.{sid.hex}.{raw}"
-        MobileLoginChallengeLab.objects.create(
-            id=sid, user=user,
-            secret_digest=_digest(challenge),
-            credential_version=version,
-            mfa_epoch=state.session_epoch,
-            expires_at=timezone.now() + CHALLENGE_AGE,
-        )
-        return ("mfa", challenge)
+        return mode, result
     except (SessionLabDenied, MobileIdentityDenied) as exc:
         raise NativeLoginLabDenied() from exc
 
 
 def finish_native_mfa_lab(challenge, code):
-    """Consume one password-bound MFA challenge and TOTP in one transaction.
+    """Lab-only MFA completion: lock user BEFORE challenge to avoid deadlock.
 
-    Uses existing MFA per-user row locks and replay counter. On failures,
-    issue no session. All credentials and challenges are lab-only.
+    Account-wide revocation takes the same user lock and increments its
+    generation, so pending/competing challenges cannot resurrect sessions.
     """
     sid = _challenge_id(challenge)
     if type(code) is not str or len(code) > 256:
@@ -124,17 +136,23 @@ def finish_native_mfa_lab(challenge, code):
     credentials = None
     try:
         with transaction.atomic():
-            record = MobileLoginChallengeLab.objects.select_for_update().filter(
+            # The first read is ONLY a locator; do not trust it as authority.
+            user_id = MobileLoginChallengeLab.objects.filter(
                 pk=sid,
+            ).values_list("user_id", flat=True).first()
+            if user_id is None:
+                raise NativeLoginLabDenied()
+            user = lock_account_lab(user_id)
+            record = MobileLoginChallengeLab.objects.select_for_update().filter(
+                pk=sid, user_id=user.pk,
             ).first()
             if (record is None or record.consumed_at is not None
                     or record.expires_at <= timezone.now()
+                    or record.auth_generation != account_generation_lab(user.pk)
                     or not constant_time_compare(
                         _digest(challenge), record.secret_digest,
                     )):
                 raise NativeLoginLabDenied()
-
-            user = record.user
             require_mobile_identity_gate(
                 user=user, verified_mfa=True,
                 asserted_mfa_epoch=record.mfa_epoch,
@@ -146,12 +164,12 @@ def finish_native_mfa_lab(challenge, code):
                 credentials = issue_verified_session(
                     user=user, verified_mfa=True,
                     mfa_epoch=record.mfa_epoch,
+                    expected_generation=record.auth_generation,
                 )
                 record.consumed_at = timezone.now()
                 record.save(update_fields=["consumed_at"])
                 clear_failures(user.get_username())
-        # Wrong OTP must COMMIT the rate-limit counter, even when denied.
-        # Raising inside the transaction would silently roll it back.
+        # Deny AFTER commit; a failed OTP must increment the MFA counter.
         if not accepted:
             raise NativeLoginLabDenied()
         return credentials
