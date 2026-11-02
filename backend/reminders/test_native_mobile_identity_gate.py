@@ -9,6 +9,7 @@ from django.test import SimpleTestCase
 
 from .native_mobile_identity_gate import (
     MobileIdentityDenied, require_mobile_identity_gate,
+    mobile_credential_version,
 )
 
 
@@ -28,7 +29,8 @@ class NativeIdentityGateTests(SimpleTestCase):
             user=self.user,
             verified_mfa=verified,
             asserted_mfa_epoch=epoch,
-            asserted_password_hash=self.hash if auth_hash is None else auth_hash,
+            asserted_credential_version=(mobile_credential_version(self.user)
+                if auth_hash is None else auth_hash),
         )
 
     def mock_queries(self):
@@ -60,9 +62,14 @@ class NativeIdentityGateTests(SimpleTestCase):
             with self.subTest(hash_length=len(token_hash)):
                 with self.assertRaises(MobileIdentityDenied):
                     self.invoke(auth_hash=token_hash)
+        previous_version = mobile_credential_version(self.user)
         self.hash = "b" * 64
         with self.assertRaises(MobileIdentityDenied):
-            self.invoke(auth_hash="a" * 64)
+            self.invoke(auth_hash=previous_version)
+
+    def test_mobile_version_is_not_django_session_hash(self):
+        self.assertNotEqual(mobile_credential_version(self.user), self.hash)
+        self.assertEqual(len(mobile_credential_version(self.user)), 64)
 
     def test_mfa_requires_matching_current_epoch(self):
         self.mfa = SimpleNamespace(enabled=True, session_epoch=8)
