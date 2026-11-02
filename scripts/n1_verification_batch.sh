@@ -80,7 +80,8 @@ if [ "${STATUS[BUILD]}" -eq 0 ]; then
     -e VENCIRA_DB_ENGINE=sqlite -e VENCIRA_NATIVE_SESSION_LAB=1 \
     "$IMG" python -u manage.py test \
     reminders.test_native_mobile_identity_database \
-    reminders.test_native_mobile_token_primitives --verbosity 1
+    reminders.test_native_mobile_token_primitives \
+    native_sessions_lab.tests native_sessions_lab.test_pg17_race --verbosity 1
 
   if "${DOCKER[@]}" network create --internal "$NET" > "$OUT/pg-network.log" 2>&1; then
     NET_UP=1
@@ -118,7 +119,8 @@ if [ "${STATUS[BUILD]}" -eq 0 ]; then
           -e POSTGRES_PASSWORD="$PW" -e POSTGRES_HOST="$PG" \
           "$IMG" python -u manage.py test \
           reminders.test_native_mobile_identity_database \
-          reminders.test_native_mobile_token_primitives --verbosity 1
+          reminders.test_native_mobile_token_primitives \
+    native_sessions_lab.tests native_sessions_lab.test_pg17_race --verbosity 1
       else
         STATUS[PG17]=3
         STATUS[PG17_LAB]=3
