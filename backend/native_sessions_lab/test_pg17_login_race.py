@@ -1,6 +1,6 @@
 """Native MFA challenge single-use race on a disposable PG17 DB only."""
 from concurrent.futures import ThreadPoolExecutor
-from threading import Barrier
+from threading import Barrier, Event
 from unittest.mock import patch
 
 from cryptography.fernet import Fernet
@@ -13,6 +13,7 @@ from reminders.mfa_secrets import encrypt_totp_secret
 from reminders.mfa_totp import generate_secret, totp_at
 from reminders.models import UserMfaState
 
+from . import login_rules as lab_login_module
 from .login_rules import (
     NativeLoginLabDenied, begin_native_login_lab, finish_native_mfa_lab,
 )
@@ -147,6 +148,64 @@ class ChallengeRacePG17Tests(TransactionTestCase):
             with self.assertRaises(SessionLabDenied):
                 validate_access(tokens[0])
 
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM pg_stat_activity "
+                "WHERE datname = current_database() "
+                "AND pid <> pg_backend_pid() "
+                "AND backend_type = 'client backend'"
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
+
+    def test_revocation_between_password_and_account_lock_denies_login(self):
+        if connection.vendor != "postgresql":
+            self.skipTest("Requires PostgreSQL row locking")
+        password = "SyntheticEpochBoundaryPassword!2026"
+        user = get_user_model().objects.create_user(
+            username="n1-pg17-epoch-race",
+            password=password,
+        )
+        ready = Event()
+        allow = Event()
+        original_generation = lab_login_module.account_generation_lab
+
+        def hold_initial_epoch(user_id):
+            generation = original_generation(user_id)
+            if not ready.is_set():
+                ready.set()
+                if not allow.wait(timeout=10):
+                    raise RuntimeError("Test synchronisation timed out")
+            return generation
+
+        def login_worker():
+            connections.close_all()
+            try:
+                try:
+                    return begin_native_login_lab(user.username, password)
+                except NativeLoginLabDenied:
+                    return None
+            finally:
+                connections.close_all()
+
+        with patch.object(
+            lab_login_module, "account_generation_lab",
+            side_effect=hold_initial_epoch,
+        ):
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                pending = pool.submit(login_worker)
+                try:
+                    self.assertTrue(ready.wait(timeout=10))
+                    self.assertEqual(
+                        revoke_all_devices_for_user_lab(user_id=user.pk), 0
+                    )
+                finally:
+                    allow.set()
+                result = pending.result(timeout=20)
+
+        self.assertIsNone(result)
+        self.assertFalse(
+            MobileDeviceSessionLab.objects.filter(user_id=user.pk).exists()
+        )
         with connection.cursor() as cursor:
             cursor.execute(
                 "SELECT count(*) FROM pg_stat_activity "
