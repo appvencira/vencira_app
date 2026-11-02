@@ -28,7 +28,7 @@ Esto acredita **el ensayo de contratos, no un release**. Las rutas HTTP experime
 | G3 Adjuntos C-FICHA | **BLOCKED** — `C_FICHA_RELEASE_AUTHORIZED=NO` | Confirmar gates reales de ClamAV, migraciones y custodia, sin habilitar endpoints por inferencia |
 | G4 Servicio nativo persistente | **NOT IMPLEMENTED** | Esquema operacional revisado separado de `native_sessions_lab`, plan reversible de migración, DRF authentication/permissions revisadas, pruebas con PostgreSQL real en clon |
 | G5 MFA/token móvil y antiabuso | **LAB PASS / OPERATIONAL NOT IMPLEMENTED** | Garantizar rate-limits distribuidos por cuenta y IP de proxy confiable, rotación de secretos, MFA/recovery en cada solicitud, revocación multiinstancia |
-| G6 Refresh con respuesta ambigua | **POLÍTICA SELECCIONADA; ENSAYO NUEVO PENDIENTE** | Reautenticación completa y revocación global después del MFA; marcador protegido persistente antes de emitir/rotar, prueba de apagado brusco; integración real y clave custodiada pendientes |
+| G6 Refresh con respuesta ambigua | **LAB PASS / OPERACIONAL NO** | Ensayo PG17 + Flutter integrados finalizados con `M3_HTTP_RESULT=0`; faltan integración real, custodia, fallo físico de proceso, antiabuso y autorización de despliegue |
 | G7 Cliente Android/iOS instalable | **UI/COORDINATOR LAB PASS / INTEGRATION NOT DONE** | Conectar pantalla y gateway revisados, restauración de sesión desde vault, cierre/account switching, UX de errores, dispositivos físicos Android+iOS |
 | G8 Aislamiento de datos | **LAB PASS / PRODUCTION REVIEW PENDING** | Autenticador Bearer usado por vistas reales y control de rol/asignación en *todos* los recursos, escrituras y adjuntos; pruebas horizontales y verticales negativas |
 | G9 Preproducción y liberación | **NOT AUTHORIZED** | Backup y restore independiente, observabilidad, rollback verificado, control de migraciones, aprobación humana e informe reproducible |
@@ -99,3 +99,14 @@ Contrato requerido:
 - Casos de prueba nuevos: 9 sintéticos. Se incorporan al workflow de GitHub Actions y al runner M3. Todavía sin evidencia de ejecución de estos nueve.
 - **No equiparar este prototipo con la recuperación funcional en Android/iOS**: no está conectado a `main.dart`, no cubre las transiciones de refresh normal ni la revocación operacional, y falta el apagado brusco real y el aviso a usuario sobre cierre de otros dispositivos.
 - Evidencia independiente: el operador confirmó el fallo G6 corregido en PostgreSQL17 temporal `Ran 1 test in 0.218s`, `OK`, `N1_PG17_LAB_CASE_RESULT=0`. La validación integral del nuevo conjunto sigue pendiente; no se autorizan migraciones reales.
+
+## G6 — Cierre de laboratorio, apertura de gate operativo (03/11/2026, salida 02/11 23:47 UTC)
+- Última validación integrada confirmada por operador: `M3_HTTP_STATIC=0`, `M3_HTTP_BUILD=0`, `M3_HTTP_PG17_LAB=0`, `M3_HTTP_FLUTTER=0`, `M3_HTTP_RESULT=0`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`; logs locales `~/vencira-m3-results/m3-http-contract-20261102T234745Z`.
+- G6 se considera **VALIDADO COMO CONTRATO EN LABORATORIO**. Las nueve pruebas nuevas del gateway se incluyeron en el runner validado. El resumen no trae el número exacto de tests ni equivale a ensayo físico.
+- La **ruta crítica próxima** deja de ser seguir añadiendo pruebas sintéticas del contrato ya verde. Se limita a cerrar estos bloqueos de producto:
+  1. **G1/G2/G3 externos:** custodia de MFA real, congelación/verificación de todos los escritores MB1, separación de adjuntos C-FICHA. Sus gates siguen en NO y requieren evidencia externa; no inferir resolución de un commit.
+  2. **G4/G5 backend no-lab:** sistema de tokens propio persistente operativo, aislamiento por cuentas, DRF/HTTP autorizado, autorización completa de recursos, control de abuso y auditoría en clúster; ensayos en clon antes de migración.
+  3. **G7 integración cliente real:** `main.dart` continúa sin usar el gateway de recuperación ni el login nativo; impedir el envío HTTP desde móvil sin marcador protegido previo, integrar pantalla y Keychain/Keystore, probar cierre real de app y fallo de red en Android/iOS físicos.
+  4. **G9 habilitación:** backup/restauración independiente, rollback, observabilidad y aprobación humana de despliegue.
+- Próxima revisión debe producir evidencia reproducible de `G4/G5` en un servicio **aún no desplegado**, sin desbloquear ni migrar la BD persistente. Un laboratorio aprobado no autoriza abrir rutas bajo `/api/v1/mobile/`.
+- `G6_LAB=PASS`; `G6_OPERATIONAL=NO`; `MFA_RELEASE_AUTHORIZED=NO`; `MB1_RELEASE_AUTHORIZED=NO`; `C_FICHA_RELEASE_AUTHORIZED=NO`; `GLOBAL_FREEZE=NOT_VERIFIED`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
