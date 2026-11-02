@@ -27,7 +27,8 @@ class NativeApiEndpoint {
   Uri resolveApiPath(String path) {
     if (!path.startsWith('/api/v1/') ||
         path.contains('\\') ||
-        path.startsWith('//')) {
+        path.startsWith('//') ||
+        path.split('/').any((part) => part == '..' || part == '.')) {
       throw const FormatException('Invalid API path');
     }
     final parsed = Uri.tryParse(path);
