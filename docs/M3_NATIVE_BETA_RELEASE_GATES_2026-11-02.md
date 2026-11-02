@@ -28,7 +28,7 @@ Esto acredita **el ensayo de contratos, no un release**. Las rutas HTTP experime
 | G3 Adjuntos C-FICHA | **BLOCKED** — `C_FICHA_RELEASE_AUTHORIZED=NO` | Confirmar gates reales de ClamAV, migraciones y custodia, sin habilitar endpoints por inferencia |
 | G4 Servicio nativo persistente | **NOT IMPLEMENTED** | Esquema operacional revisado separado de `native_sessions_lab`, plan reversible de migración, DRF authentication/permissions revisadas, pruebas con PostgreSQL real en clon |
 | G5 MFA/token móvil y antiabuso | **LAB PASS / OPERATIONAL NOT IMPLEMENTED** | Garantizar rate-limits distribuidos por cuenta y IP de proxy confiable, rotación de secretos, MFA/recovery en cada solicitud, revocación multiinstancia |
-| G6 Refresh con respuesta ambigua | **BLOCKED** | Protocolo para renovación cuyo resultado se pierde tras commit del servidor o durante escritura en Keystore/Keychain; pruebas de caída de proceso y carrera entre dispositivos |
+| G6 Refresh con respuesta ambigua | **POLÍTICA SELECCIONADA; ENSAYO NUEVO PENDIENTE** | Reautenticación completa y revocación global después del MFA; marcador protegido persistente antes de emitir/rotar, prueba de apagado brusco; integración real y clave custodiada pendientes |
 | G7 Cliente Android/iOS instalable | **UI/COORDINATOR LAB PASS / INTEGRATION NOT DONE** | Conectar pantalla y gateway revisados, restauración de sesión desde vault, cierre/account switching, UX de errores, dispositivos físicos Android+iOS |
 | G8 Aislamiento de datos | **LAB PASS / PRODUCTION REVIEW PENDING** | Autenticador Bearer usado por vistas reales y control de rol/asignación en *todos* los recursos, escrituras y adjuntos; pruebas horizontales y verticales negativas |
 | G9 Preproducción y liberación | **NOT AUTHORIZED** | Backup y restore independiente, observabilidad, rollback verificado, control de migraciones, aprobación humana e informe reproducible |
@@ -69,3 +69,27 @@ Esto acredita **el ensayo de contratos, no un release**. Las rutas HTTP experime
 ## Próximo entregable concreto
 
 Cerrar **G6 — Refresh con respuesta ambigua** con una decisión de protocolo y criterios de aceptación comprobables *antes de* trasladar código al servicio operativo. En paralelo solo avanzar G1/G2/G3 sobre evidencias reales, no por estimaciones. El siguiente ensayo no necesita repetir todo Flutter ni el laboratorio ya verde salvo que cambie su código.
+
+## G6 — Decisión de protocolo (02/11/2026, nueva revisión no validada)
+
+**Opción elegida: reautenticación completa con revocación global, sin reintento del refresh anterior.** Prioriza fallo cerrado y lógica sencilla frente a continuidad de sesión transparente. La renovación actual de laboratorio consume el refresh inmediatamente, y su replay revoca el dispositivo: por eso NO es seguro reenviar el mismo token tras un timeout.
+
+Contrato requerido:
+
+1. Antes de cualquier HTTP capaz de emitir o renovar credenciales, el futuro coordinador debe ejecutar y confirmar en almacenamiento protegido un marcador `full-reauth-required-v1` asociado al entorno. Si no puede escribirse y releerse, bloquear **antes de enviar** la petición.
+2. Si se pierde la respuesta, se interrumpe el proceso o se desconoce si el servidor confirmó la rotación, cerrar inmediatamente `NativeSessionFence`; **NO reutilizar ni reintentar** el refresh antiguo.
+3. Al reiniciar, leer el marcador protegido antes de restaurar sesión. Si existe o está corrupto, no reconstruir Bearer desde el vault. Exigir nueva contraseña y, si está activo, TOTP. Los fallos de lectura o escritura bloquean el acceso.
+4. Tras la autenticación completa, el servidor revoca **TODAS** las sesiones previas y retos pendientes de la cuenta, incrementa `auth_generation`, y emite una sesión nueva dentro de la misma transacción PostgreSQL. Si MFA está habilitado, la contraseña **no revoca nada**: solo la validación exitosa del segundo factor realiza el corte.
+5. El cliente guarda y relee un refresh **nuevo** en Keychain/Keystore; comprueba que difiere del previo; solo entonces borra y verifica el borrado del marcador. La barrera de solicitudes sigue cerrada hasta confirmar todo el proceso.
+6. Si falla el segundo factor, la escritura, la eliminación del marcador o la red, conservar el estado de recuperación (sin acceso). Si un proceso muere durante la recuperación, repetir reautenticación completa. No aceptar un simple HTTP 200 como demostración de autorización de recurso.
+
+**Impacto UX consciente:** una recuperación G6 cierra las sesiones de **otros dispositivos**, por lo que debe advertirse explícitamente al usuario antes de iniciar esa recuperación. Los inicios de sesión normales NO producen esa revocación global. Es política propuesta para una beta, no una liberación comercial aprobada.
+
+**Implementado solo en test (pendiente de gate):**
+- `native_sessions_lab.models.MobileLoginChallengeLab.replace_devices`, migración **0004 exclusivamente temporal**. `begin_native_login_lab(..., replace_devices=True)` y `finish_native_mfa_lab(..., expected_recovery=True)` comprueban el flujo y el orden de revocación.
+- Solo la URLConf experimental incluye `POST /api/v1/mobile/auth/recover/password/` y `POST /api/v1/mobile/auth/recover/mfa/`. `config.urls` y `reminders.urls` NO se tocan. Se amplían tests HTTP: respuesta perdida, contraseña incorrecta sin revocación, MFA incompleto sin revocación, completitud del corte, separación entre retos normales y de recuperación, guard de entorno y cookies.
+- Cliente `NativeHttpAuthPort.recoverPassword/recoverMfa` con endpoints separados; `NativeRefreshRecoveryJournal` escribe marcador **no secreto** en `NativeSecretStore` independiente por entorno, detecta reinicios y exige un refresh nuevo protegido antes del borrado verificado. Pruebas sintéticas cubren escritura, lectura, reinicio, fallo de red, borrado fallido, credencial repetida y activación prematura.
+- Se vuelve a comprobar la contraseña bajo el bloqueo de cuenta por posible carrera con cambio de contraseña; prueba concurrente PostgreSQL 17.
+- Los nuevos ensayos se han incorporado al runner M3 y al workflow; **NINGUNA PRUEBA NUEVA SE DECLARA PASS** hasta que el operador devuelva salida de ejecución. El último `M3_HTTP_RESULT=0` confirmado pertenece al commit anterior a G6.
+
+**Aún bloqueante para producción:** el marcador y la recuperación NO están cableados en `main.dart` ni `NativeSessionCoordinator`. La función de confirmación recibe un callback de confianza, pero ese callback todavía NO demuestra por sí mismo que el servidor operativo haya revocado los dispositivos. Falta validación en Android/iOS físico y ante muerte real del proceso, diseño de auditoría global y sesiones operativas persistentes. En consecuencia, `G6_POLICY=SELECTED`, `G6_LAB=NOT_VERIFIED`, `G6_OPERATIONAL=NO`, todos los gates de despliegue `NO`.
