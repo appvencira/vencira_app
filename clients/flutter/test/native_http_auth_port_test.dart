@@ -136,6 +136,65 @@ void main() {
     client.close();
   });
 
+  test('G6 recovery password uses distinct no-retry endpoint', () async {
+    final client = MockClient((request) async {
+      expect(request.method, 'POST');
+      expect(request.url.path, '/api/v1/mobile/auth/recover/password/');
+      expect(request.followRedirects, isFalse);
+      expect(request.headers['Authorization'], isNull);
+      expect(request.headers['Cookie'], isNull);
+      expect(jsonDecode(request.body), {
+        'username': 'agent', 'password': 'synthetic-new-auth',
+      });
+      return jsonReply({
+        'status': 'mfa_required', 'challenge': challenge,
+      });
+    });
+    final port = NativeHttpAuthPort(endpoint: endpoint, client: client);
+    final result = await port.recoverPassword(
+      username: 'agent', password: 'synthetic-new-auth',
+    );
+    expect(result, isA<NativePasswordMfaRequired>());
+    client.close();
+  });
+
+  test('G6 recovery MFA uses distinct endpoint and canonical grant', () async {
+    final client = MockClient((request) async {
+      expect(request.url.path, '/api/v1/mobile/auth/recover/mfa/');
+      expect(jsonDecode(request.body), {
+        'challenge': challenge, 'code': '123456',
+      });
+      return jsonReply({
+        'status': 'authenticated', 'access': access,
+        'refresh': rotatedRefresh,
+      });
+    });
+    final tokens = await NativeHttpAuthPort(
+      endpoint: endpoint, client: client,
+    ).recoverMfa(challenge: challenge, code: '123456');
+    expect(tokens.refresh, rotatedRefresh);
+    client.close();
+  });
+
+  test('G6 invalid recovery input cannot send a network request', () async {
+    var requests = 0;
+    final client = MockClient((_) async {
+      requests++;
+      return jsonReply({'status': 'authenticated'});
+    });
+    final port = NativeHttpAuthPort(endpoint: endpoint, client: client);
+    await expectLater(
+      port.recoverPassword(username: 'a', password: ''),
+      throwsA(isA<NativeHttpAuthFailure>()),
+    );
+    await expectLater(
+      port.recoverMfa(challenge: challenge, code: 'invalid'),
+      throwsA(isA<NativeHttpAuthFailure>()),
+    );
+    expect(requests, 0);
+    client.close();
+  });
+
   test('device revocation requires server acknowledgement', () async {
     final client = MockClient((request) async {
       expect(request.url.path, '/api/v1/mobile/token/revoke/');
