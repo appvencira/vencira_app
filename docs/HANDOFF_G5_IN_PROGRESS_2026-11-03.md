@@ -133,3 +133,26 @@ Operador comunica `G7_SPLIT_RESULT=0`, `All tests passed!` con **6 pruebas G7-A*
 ## G7-C Django socket loopback — implementación candidata, pruebas pendientes
 
 A partir de G7-A+B local **11/11 PASS**, se añadió `native_sessions_lab.test_loopback_http_contract` (tres `LiveServerTestCase`) para verificar por sockets TCP/HTTP exclusivamente en `127.0.0.1` una autenticación real de Django **solo en entorno de test con BD desechable**: password, Bearer, refresh y replay, revocación, cookies/Origin, rechazo de credenciales. No es E2E Flutter→Django y **no es HTTPS**. Incluido en `n1_identity_pg17_ephemeral.sh --lab`, CI SQLite y PG17, gate estático que impide confundir URLConf de test con operacional. **G7-C RESULTADO PENDING**; ejecutar gate estático, build imagen de test y PG17 --lab sobre checkout actualizado. Sin deploy ni migraciones persistentes; el PR sigue draft.
+
+## G7-C PASS PG17 y G7-D1 HTTPS verificado candidato (03/11/2026)
+
+El operador confirma `Ran 84 tests in 30.472s\nOK\nN1_PG17_LAB_RESULT=0` con PostgreSQL17 desechable; este suite incluye `native_sessions_lab.test_loopback_http_contract`. G7-A+B también se confirmaron antes `G7_SPLIT_RESULT=0`, **11 PASS**. Esto acredita que G7-C trabaja con Django por socket HTTP local; **no es un E2E Flutter HTTPS**.
+
+Añadido `backend/native_sessions_lab/test_verified_https_loopback.py`, tres casos `LiveServerTestCase` tras **proxy TLS temporal en loopback**, CA+certificado efímeros firmados para SAN `dev.vencira.es`, cliente con SNI y confianza exclusiva en CA temporal, y pruebas de rechazo de CA/hostname incorrectos. Se valida password → Bearer → revocación y denegación Cookie/Origin atravesando TLS. Sin DNS remoto, puertos Docker publicados, cambios operativos, migraciones persistentes o claves versionadas.
+
+Se incluye en `n1_identity_pg17_ephemeral.sh --lab` y en CI SQLite/PG17; modo nuevo `--lab-https` permite **validar solo estos tres casos** en Docker PG17 privado `tmpfs` sin repetir los 84 anteriores. Gate estático `g7_https_lab_ephemeral_tls_and_hostname` exige TLS estricto y URLConf de test. **G7_D1_TLS_PG17_RESULT=PENDING**, no hay ejecución registrada. El siguiente bloque G7-D2 (Flutter↔Django por HTTPS real) sigue pendiente y la prueba D1 no debe confundirse con él.
+
+Próximo paso local:
+```bash
+cd ~/vencira-m3-localcheck
+git status --short
+git fetch origin feature/m3-android-local-notifications
+git merge --ff-only FETCH_HEAD
+python3 scripts/n1_static_security_gate.py &&
+bash -n scripts/n1_identity_pg17_ephemeral.sh &&
+sudo docker build -t vencira-m3-backend-test ./backend &&
+bash scripts/n1_identity_pg17_ephemeral.sh --lab-https
+echo "G7_D1_GATE_RESULT=$?"
+```
+
+Conservar `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. PR #17 sigue **DRAFT**, no fusionar.
