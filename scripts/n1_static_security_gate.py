@@ -47,6 +47,11 @@ def verify():
     g9_boot_test = read("clients/flutter/test/native_mobile_startup_gate_test.dart")
     g9_entry_test = read("clients/flutter/test/native_mobile_recovery_entry_test.dart")
     g9_boot_runner = read("scripts/g9_native_startup_gate.sh")
+    g10_entry = read("clients/flutter/lib/api/native_first_issuance_entry.dart")
+    g10_journal = read("clients/flutter/lib/api/native_refresh_recovery_journal.dart")
+    g10_coordinator = read("clients/flutter/lib/api/native_session_coordinator.dart")
+    g10_test = read("clients/flutter/test/native_first_issuance_entry_test.dart")
+    g10_runner = read("scripts/g10_issuance_logout_gate.sh")
     g8_phone_ci = read(".github/workflows/g8-phone-apk.yml")
     g8_gradle = read("clients/flutter/android/app/build.gradle.kts")
     flutter_pubspec = read("clients/flutter/pubspec.yaml")
@@ -501,6 +506,43 @@ def verify():
             and "native_mobile_recovery_entry_test.dart" in g9_boot_runner
             and "native_mobile_recovery_entry.dart" in g9_boot_runner
             and "NO_DEPLOY_NO_LIVE_MIGRATION=1" in g9_boot_runner,
+        "g10_first_issuance_logout_checkpoint":
+            "Future<void> confirmFirstIssuance(" in g10_journal
+            and "First issuance checkpoint missing" in g10_journal
+            and "First issuance requires an empty protected vault" in g10_journal
+            and "First issuance storage commit not verified" in g10_journal
+            and "First issuance marker deletion not verified" in g10_journal
+            and "Future<void> confirmLogoutCompleted(" in g10_journal
+            and "Logout credential still protected" in g10_journal
+            and "Logout checkpoint deletion not verified" in g10_journal
+            and "firstIssuanceJournal" in g10_coordinator
+            and "G10 checkpoint required before password" in g10_coordinator
+            and "G10 checkpoint required before MFA" in g10_coordinator
+            and "issuance.confirmFirstIssuance(" in g10_coordinator
+            and "await issuance.arm();" in g10_coordinator
+            and "await issuance.confirmLogoutCompleted(vault: vault);" in g10_coordinator
+            and "_revokedStoredRefresh" in g10_coordinator
+            and "class NativeFirstIssuanceEntry implements NativeLoginGateway" in g10_entry
+            and "await startup.inspect()" in g10_entry
+            and "await journal.arm();" in g10_entry
+            and "if (!await journal.requiresReauthentication())" in g10_entry
+            and "First issuance cancelled before network" in g10_entry
+            and "return coordinator.verifyPassword(" in g10_entry
+            and "return coordinator.verifyTotp(" in g10_entry
+            and "return coordinator.logout();" in g10_entry
+            and "native_first_issuance_entry_test.dart" in g10_runner
+            and "native_mobile_startup_gate_test.dart" in g10_runner
+            and "native_mobile_recovery_entry_test.dart" in g10_runner
+            and "native_refresh_recovery_journal_test.dart" in g10_runner
+            and "G10_ISSUANCE_LOGOUT_BATCH=OK" in g10_runner
+            and "NO_DEPLOY_NO_LIVE_MIGRATION=1" in g10_runner
+            and "silent checkpoint write fails before any password request" in g10_test
+            and "failed remote logout remains durable" in g10_test
+            and "failed protected deletion retries without replaying successful revoke" in g10_test
+            and "cancelled issuance while marker write waits sends no HTTP" in g10_test
+            and "NativeFirstIssuanceEntry" not in flutter_main
+            and "native_sessions_lab.test_urls" not in config
+            and "native_sessions_lab.test_urls" not in routes,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
