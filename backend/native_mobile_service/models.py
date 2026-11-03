@@ -69,3 +69,19 @@ class MobileAuthAttemptBucket(models.Model):
         indexes = [
             models.Index(fields=["blocked_until"], name="nms_abuse_block_idx"),
         ]
+
+
+class MobileAuthAuditEvent(models.Model):
+    """G5 lab-only immutable-shaped security event without raw credentials."""
+
+    event_id = models.UUIDField(primary_key=True, editable=False)
+    event_type = models.CharField(max_length=24)
+    actor_digest = models.CharField(max_length=64, blank=True)
+    session_id = models.UUIDField(null=True, blank=True)
+    occurred_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["occurred_at"], name="nms_audit_age_idx"),
+            models.Index(fields=["event_type", "occurred_at"], name="nms_audit_type_age_idx"),
+        ]
