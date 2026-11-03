@@ -308,6 +308,9 @@ def verify():
             and "group == 'all' || group == 'd2'" in dart_d2_probe
             and "group == 'all' || group == 'e'" in dart_d2_probe
             and "group == 'all' || group == 'f'" in dart_d2_probe
+            and "group == 'all' || group == 'g'" in dart_d2_probe
+            and 'GROUP="g"' in g7_d2_runner
+            and "d2|e|f|g)" in g7_d2_runner
             and 'GROUP="all"' in g7_d2_runner
             and "--fast)" in g7_d2_runner
             and "--group)" in g7_d2_runner
@@ -322,6 +325,27 @@ def verify():
             and 'echo "G7_D2_GATE_RESULT=$status"' in g7_d2_runner
             and '--internal "$NETWORK"' in g7_d2_runner
             and 'NO_DEPLOY_NO_LIVE_MIGRATION=1' in g7_d2_runner,
+        "g7_g_real_https_mfa_recovery_fail_closed":
+            'username="g7-g-mfa-recovery"' in django_d2_fixture
+            and 'session_epoch=1' in django_d2_fixture
+            and 'keys=[mfa_key]' in django_d2_fixture
+            and 'Future<void> _verifyMfaRecoveryHttps(' in dart_d2_probe
+            and 'G7_G_MFA_RECOVERY_HTTPS_RESULT=0' in dart_d2_probe
+            and 'MFA_RECOVERY_CHECKPOINT_BEFORE_ROTATION' in dart_d2_probe
+            and 'MFA_RECOVERY_LOST_REFRESH_RESPONSE' in dart_d2_probe
+            and 'MFA_RECOVERY_COLD_START_FENCED' in dart_d2_probe
+            and 'MFA_RECOVERY_PASSWORD_CANNOT_REVOKE' in dart_d2_probe
+            and 'MFA_RECOVERY_REPLAY_NO_ACCOUNT_REVOKE' in dart_d2_probe
+            and 'MFA_RECOVERY_VERIFIED_COMMIT' in dart_d2_probe
+            and 'MFA_RECOVERY_ACCOUNT_WIDE_REVOKE' in dart_d2_probe
+            and 'MFA_RECOVERY_FINAL_LOGOUT_REVOKES' in dart_d2_probe
+            and 'await gateway.verifyTotp(_syntheticTotp())' in dart_d2_probe
+            and 'await _verifyMfaRecoveryHttps(endpoint, httpClient)' in dart_d2_probe
+            and 'G7_G_MFA_RECOVERY_HTTPS_RESULT=0' in g7_d2_runner
+            and 'G7_G_HTTPS_MFA_RECOVERY=OK' in g7_d2_runner
+            and 'G7_LAB_GROUP_COMPLETE=$GROUP' in g7_d2_runner
+            and 'native_sessions_lab.test_urls' not in config
+            and 'native_sessions_lab.test_urls' not in routes,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
