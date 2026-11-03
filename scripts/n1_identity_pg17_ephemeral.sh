@@ -38,6 +38,13 @@ case "$MODE" in
       native_sessions_lab.test_http_contract_cases
     )
     ;;
+  --candidate)
+    # Isolated G4 persistent-schema proposal, no operational route or DB.
+    EXTRA_ENV=(-e VENCIRA_NATIVE_SERVICE_CANDIDATE=1)
+    SUITES=(
+      native_mobile_service.test_contract
+    )
+    ;;
   --lab-case)
     # Fixed allowlisted regression; do not accept arbitrary test targets.
     # Uses the same isolated PG17 tmpfs network as the full --lab suite.
@@ -47,7 +54,7 @@ case "$MODE" in
     )
     ;;
   *)
-    echo "Usage: bash scripts/n1_identity_pg17_ephemeral.sh [--lab|--lab-case]" >&2
+    echo "Usage: bash scripts/n1_identity_pg17_ephemeral.sh [--lab|--lab-case|--candidate]" >&2
     exit 2
     ;;
 esac
@@ -105,13 +112,20 @@ result=0
   -e "POSTGRES_PASSWORD=$DB_PASSWORD" \
   -e "POSTGRES_HOST=$PG_CONTAINER" \
   -e POSTGRES_PORT=5432 \
-  "$API_IMAGE" python -u manage.py test \
-    "${SUITES[@]}" --verbosity 1 || result=$?
+  "$API_IMAGE" sh -c '
+    if [ "$1" = "--candidate" ]; then
+      python manage.py makemigrations native_mobile_service --check --dry-run || exit $?
+    fi
+    shift
+    exec python -u manage.py test "$@" --verbosity 1
+  ' -- "$MODE" "${SUITES[@]}" || result=$?
 
 if [ "$MODE" = "--lab" ]; then
   echo "N1_PG17_LAB_RESULT=$result"
 elif [ "$MODE" = "--lab-case" ]; then
   echo "N1_PG17_LAB_CASE_RESULT=$result"
+elif [ "$MODE" = "--candidate" ]; then
+  echo "G4_CANDIDATE_PG17_RESULT=$result"
 else
   echo "N1_IDENTITY_PG17_RESULT=$result"
 fi
