@@ -23,8 +23,8 @@ class MobileDeviceSession(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
         related_name="+",
     )
-    access_digest = models.CharField(max_length=64)
-    refresh_digest = models.CharField(max_length=64)
+    access_digest = models.CharField(max_length=96)
+    refresh_digest = models.CharField(max_length=96)
     credential_version = models.CharField(max_length=64)
     auth_generation = models.PositiveBigIntegerField(default=0)
     verified_mfa = models.BooleanField(default=False)
@@ -47,7 +47,7 @@ class MobileSpentRefresh(models.Model):
         MobileDeviceSession, on_delete=models.CASCADE,
         related_name="spent_refreshes",
     )
-    digest = models.CharField(max_length=64, unique=True)
+    digest = models.CharField(max_length=96, unique=True)
     spent_at = models.DateTimeField(auto_now_add=True)
 
 
@@ -55,7 +55,7 @@ class MobileAuthAttemptBucket(models.Model):
     """G5 test-only shared throttle ledger; HMAC subject, never a raw IP/login."""
 
     scope = models.CharField(max_length=12)
-    subject_digest = models.CharField(max_length=64)
+    subject_digest = models.CharField(max_length=96)
     window_started_at = models.DateTimeField()
     attempt_count = models.PositiveIntegerField(default=0)
     blocked_until = models.DateTimeField(null=True, blank=True)
@@ -76,7 +76,7 @@ class MobileAuthAuditEvent(models.Model):
 
     event_id = models.UUIDField(primary_key=True, editable=False)
     event_type = models.CharField(max_length=24)
-    actor_digest = models.CharField(max_length=64, blank=True)
+    actor_digest = models.CharField(max_length=96, blank=True)
     session_id = models.UUIDField(null=True, blank=True)
     occurred_at = models.DateTimeField(auto_now_add=True)
 
