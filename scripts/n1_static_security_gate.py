@@ -255,6 +255,9 @@ def verify():
             and 'final httpClient = _SafeHttpTraceClient(IOClient(_httpsClient(trust)));' in dart_d2_probe
             and 'G7_D2_HTTP_${kind}_STATUS=' in dart_d2_probe
             and 'G7_D2_TLS_PREFLIGHT=OK' in dart_d2_probe
+            and 'WEB_COOKIE_RESPONSE_ONLY_DELETES_SESSION' in dart_d2_probe
+            and "cookieName == 'vencira_sessionid'" in dart_d2_probe
+            and 'max-age=0' in dart_d2_probe
             and 'badCertificateCallback' not in dart_d2_probe
             and 'bool get overrideHttpClient => false' in dart_d2_binding
             and 'G7_D2_ISOLATED_NETWORK_ACK' in dart_d2_binding
