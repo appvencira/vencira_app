@@ -8,6 +8,8 @@ import 'package:vencira/api/native_api_endpoint.dart';
 import 'package:vencira/api/native_refresh_credential_vault.dart';
 import 'package:vencira/api/native_session_coordinator.dart';
 import 'package:vencira/api/native_session_fence.dart';
+import 'package:vencira/api/native_mobile_token_shape.dart';
+import 'package:vencira/ui/native_login_screen.dart';
 import 'package:vencira/main.dart';
 import 'package:vencira/ui/native_lab_login_shell.dart';
 
@@ -101,7 +103,20 @@ void main() {
     for (var n = 0; n < 60 && target.evaluate().isEmpty; n++) {
       await tester.pump(const Duration(milliseconds: 50));
     }
-    expect(target, findsOneWidget);
+    if (target.evaluate().length != 1) {
+      // A failed UI transition must expose the *state*, not sensitive input.
+      // No access/refresh/password values are interpolated into this report.
+      final loginError = find.byKey(const Key('native-login-error'));
+      final loginErrorVisible = loginError.evaluate().isNotEmpty;
+      final retry = find.byKey(const Key('g7-native-retry-logout'));
+      fail(
+        'G7 target absent: loginError=$loginErrorVisible '
+        'retryLogout=${retry.evaluate().isNotEmpty} '
+        'passwordCalls=${port.passwordCalls} mfaCalls=${port.mfaCalls} '
+        'fenceActive=${fence.ticket != null} '
+        'vaultPopulated=${store.data.isNotEmpty}',
+      );
+    }
   }
 
   Future<void> passwordLogin(
@@ -122,6 +137,18 @@ void main() {
           : find.byKey(const Key('g7-native-logout')),
     );
   }
+
+  test('synthetic fixture satisfies native credential shape and coordinator', () async {
+    expect(NativeMobileTokenShape.accepts(_access, kind: 'a'), isTrue);
+    expect(NativeMobileTokenShape.accepts(_refresh, kind: 'r'), isTrue);
+    final decision = await coordinator.verifyPassword(
+      username: 'operator',
+      password: 'synthetic-password',
+    );
+    expect(decision, NativePasswordDecision.authenticated);
+    expect(fence.ticket, isNotNull);
+    expect(store.data.values, contains(_refresh));
+  });
 
   testWidgets('native shell starts locked; password success stays lab-only',
       (tester) async {
