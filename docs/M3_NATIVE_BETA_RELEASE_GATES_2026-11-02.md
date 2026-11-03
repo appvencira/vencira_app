@@ -26,7 +26,7 @@ Esto acredita **el ensayo de contratos, no un release**. Las rutas HTTP experime
 | G1 MFA y recuperación real | **BLOCKED** — `MFA_RELEASE_AUTHORIZED=NO` | Custodia externa real y procedimiento probado, autorización expresa de la fase MFA |
 | G2 Integridad y corte multi-escritor MB1 | **BLOCKED** — `GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO` | Evidencia completa de exclusión de escritores, captura y restauración física independiente, corte consistente |
 | G3 Adjuntos C-FICHA | **BLOCKED** — `C_FICHA_RELEASE_AUTHORIZED=NO` | Confirmar gates reales de ClamAV, migraciones y custodia, sin habilitar endpoints por inferencia |
-| G4 Servicio nativo persistente | **NOT IMPLEMENTED** | Esquema operacional revisado separado de `native_sessions_lab`, plan reversible de migración, DRF authentication/permissions revisadas, pruebas con PostgreSQL real en clon |
+| G4 Servicio nativo persistente | **CANDIDATO EN CÓDIGO / PRUEBAS PENDIENTES** | Nueva app separada `native_mobile_service` solo registrada en test; exige revisión de autenticación y autorización, G4 PG17/SQLite verde, custodia y autorización antes de instalar en producción |
 | G5 MFA/token móvil y antiabuso | **LAB PASS / OPERATIONAL NOT IMPLEMENTED** | Garantizar rate-limits distribuidos por cuenta y IP de proxy confiable, rotación de secretos, MFA/recovery en cada solicitud, revocación multiinstancia |
 | G6 Refresh con respuesta ambigua | **LAB PASS / OPERACIONAL NO** | Ensayo PG17 + Flutter integrados finalizados con `M3_HTTP_RESULT=0`; faltan integración real, custodia, fallo físico de proceso, antiabuso y autorización de despliegue |
 | G7 Cliente Android/iOS instalable | **UI/COORDINATOR LAB PASS / INTEGRATION NOT DONE** | Conectar pantalla y gateway revisados, restauración de sesión desde vault, cierre/account switching, UX de errores, dispositivos físicos Android+iOS |
@@ -110,3 +110,26 @@ Contrato requerido:
   4. **G9 habilitación:** backup/restauración independiente, rollback, observabilidad y aprobación humana de despliegue.
 - Próxima revisión debe producir evidencia reproducible de `G4/G5` en un servicio **aún no desplegado**, sin desbloquear ni migrar la BD persistente. Un laboratorio aprobado no autoriza abrir rutas bajo `/api/v1/mobile/`.
 - `G6_LAB=PASS`; `G6_OPERATIONAL=NO`; `MFA_RELEASE_AUTHORIZED=NO`; `MB1_RELEASE_AUTHORIZED=NO`; `C_FICHA_RELEASE_AUTHORIZED=NO`; `GLOBAL_FREEZE=NOT_VERIFIED`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## G4 — Servicio móvil persistente candidato (03/11/2026, sin activación)
+
+**Propósito:** pasar del ensayo `native_sessions_lab` a un candidato de arquitectura operativa, **sin promover la lógica de emisión desde pruebas a producción**. No se han modificado `config.urls`, `reminders.urls`, el `main.dart` de Flutter, los autenticadores por defecto, la base de datos real ni las rutas públicas.
+
+### Contenido implementado (PENDIENTE de probar)
+
+- `backend/native_mobile_service/`: app Django independiente, registrada **solo** cuando `VENCIRA_NATIVE_SERVICE_CANDIDATE=1` y `VENCIRA_ENV=test`. Solicitarla en otro entorno provoca `ImproperlyConfigured`. `VENCIRA_NATIVE_BEARER_ENABLED=False` en configuración normal.
+- `models.py` y migración `0001_initial.py` exclusiva del candidato: `MobileAccountFence` (epoch por cuenta), `MobileDeviceSession` (UUID, digests HMAC de access/refresh, vencimientos, versión de contraseña/MFA y revocación), `MobileSpentRefresh` (hash único de refresh consumido). **Esta migración no se ejecutará en la BD persistente**.
+- `session_store.py`: candidato de emisión sintética limitada explícitamente a `test`, validación access en cada petición con `require_mobile_identity_gate`, rotación refresh transaccional con replay conocido que revoca dispositivo, revocación individual y de cuenta por generación. Los secretos en claro no se escriben en BD. El método `issue_verified_candidate_session` **no establece que el llamador verificó la contraseña/MFA**: es solo un inyector de tests, no una función de login autorizada para una implementación real.
+- `authentication.py`: `CandidateMobileBearerAuthentication` para DRF sin aceptación de cookies de navegador, `Origin`, `Referer` o HTTP no seguro, con autorización explícita adicional. Se usa solo en `test_views.py` y `test_urls.py` (URLConf sustituida dentro de un test). `REST_FRAMEWORK.DEFAULT_AUTHENTICATION_CLASSES` permanece solo con `SessionAuthentication`.
+- `test_contract.py`: **15** pruebas Django para tokens opacos, workspace owner/member, PII, membresía revocada, host HTTP/Origin/cookies, ausencia de fallback web, feature flag, expiración, password, MFA epoch, rotación/replay y revocación. `test_pg17_races.py`: **2** tests de concurrencia PG17 para doble refresh y corte simultáneo de cuenta/alta; evita inversión de lock entre row y usuario.
+- `scripts/n1_identity_pg17_ephemeral.sh --candidate` se ejecuta en PG17 `tmpfs` con red interna, sin volumen ni puerto publicado; comprueba `makemigrations native_mobile_service --check --dry-run` antes de las dos suites. `scripts/m3_native_http_contract_batch.sh` incluye ahora una **fase nueva `M3_HTTP_G4_PG17`**, además de M3/G6 que ya habían pasado, y la exige para `M3_HTTP_RESULT=0`. GitHub Actions incluye SQLite y PG17; `n1_static_security_gate.py` vigila el aislamiento y compila sintácticamente las fuentes con `ast.parse`.
+- El guard operativo prueba que el servicio candidato **no está instalado** ni sus URL son resolubles con configuración normal.
+
+### Estado y limitaciones
+
+- Último gate **confirmado por operador antes de esta rama de cambios G4**: `M3_HTTP_STATIC=0`, `M3_HTTP_BUILD=0`, `M3_HTTP_PG17_LAB=0`, `M3_HTTP_FLUTTER=0`, `M3_HTTP_RESULT=0` (logs `m3-http-contract-20261102T234745Z`). **No equivale a validar G4**.
+- Estado actual: `G4_CANDIDATE_CODE=COMMITTED`; `G4_CANDIDATE_PG17=NOT_VERIFIED`; `G4_CANDIDATE_SQLITE=NOT_VERIFIED`; `G4_OPERATIONAL_RELEASE=NO`.
+- PENDIENTE **crítico** para producción: resolver registro/sujeto confiable de emisión después de password+MFA, rate limit distribuido por IP y cuenta con trusted proxy, gestión de claves digest/rotación y auditoría, autorización total de recursos, migraciones reversibles con backup, restauración independiente y limitación segura de tokens simultáneos. Este lote no desbloquea ninguna de esas decisiones.
+- `MFA_RELEASE_AUTHORIZED=NO`; `MB1_RELEASE_AUTHORIZED=NO`; `C_FICHA_RELEASE_AUTHORIZED=NO`; `GLOBAL_FREEZE=NOT_VERIFIED`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+**Siguiente comprobación:** revisión de GitHub Actions si produce evidencia disponible; si no, una única ejecución local `bash scripts/m3_native_http_contract_batch.sh` en el checkout actualizado. No abrir backend operativo automáticamente cuando aparezca PASS.
