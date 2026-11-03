@@ -52,6 +52,10 @@ def verify():
     g10_coordinator = read("clients/flutter/lib/api/native_session_coordinator.dart")
     g10_test = read("clients/flutter/test/native_first_issuance_entry_test.dart")
     g10_runner = read("scripts/g10_issuance_logout_gate.sh")
+    g11_scenarios = read("clients/flutter/tool/g11_https_scenarios.dart")
+    g11_runner = read("scripts/g11_https_first_issue_logout.sh")
+    g11_lab_runner = read("scripts/g7_d2_https_flutter_django.sh")
+    g11_probe = read("clients/flutter/tool/g7_d2_https_probe.dart")
     g8_phone_ci = read(".github/workflows/g8-phone-apk.yml")
     g8_gradle = read("clients/flutter/android/app/build.gradle.kts")
     flutter_pubspec = read("clients/flutter/pubspec.yaml")
@@ -540,6 +544,40 @@ def verify():
             and "failed remote logout remains durable" in g10_test
             and "failed protected deletion retries without replaying successful revoke" in g10_test
             and "cancelled issuance while marker write waits sends no HTTP" in g10_test
+            and "NativeFirstIssuanceEntry" not in flutter_main
+            and "native_sessions_lab.test_urls" not in config
+            and "native_sessions_lab.test_urls" not in routes,
+        "g11_real_https_first_issue_logout_isolated":
+            "Future<void> verifyG11Https(" in g11_scenarios
+            and "NativeFirstIssuanceEntry(" in g11_scenarios
+            and "NativeMobileRecoveryEntry(" in g11_scenarios
+            and "NativeSessionCoordinator(" in g11_scenarios
+            and "NativeHttpAuthPort(" in g11_scenarios
+            and "NativeMobileStartupGate(" in g11_scenarios
+            and "G11_DURABLE_MARKER_REQUIRED_BEFORE_HTTP" in g11_scenarios
+            and "G11_FIRST_ISSUANCE_HTTPS_COMMITTED=OK" not in g11_scenarios
+            and "'FIRST_ISSUANCE_HTTPS_COMMITTED'" in g11_scenarios
+            and "'STORAGE_FAILURE_NO_PASSWORD_HTTP'" in g11_scenarios
+            and "'LOST_ISSUANCE_RESPONSE_FENCED'" in g11_scenarios
+            and "'FULL_RECOVERY_VERIFIED_HTTPS'" in g11_scenarios
+            and "'REMOTE_REVOKE_FAILURE_DURABLE'" in g11_scenarios
+            and "'REVOKE_RETRY_SERVER_DENIES_OLD_ACCESS'" in g11_scenarios
+            and "'MFA_SERVER_REVOKED_AFTER_LOGOUT'" in g11_scenarios
+            and "G11_HTTPS_FIRST_ISSUANCE_LOGOUT_RESULT=0" in g11_scenarios
+            and "loseNextPasswordResponse" in g11_scenarios
+            and "refuseNextRevoke" in g11_scenarios
+            and "void close() {}" in g11_scenarios
+            and "import 'g11_https_scenarios.dart' as g11;" in g11_probe
+            and "if (group == 'g11')" in g11_probe
+            and "await g11.verifyG11Https(" in g11_probe
+            and "--group g11" in g11_runner
+            and "G11_HTTPS_GATE_RESULT=$status" in g11_runner
+            and "G11_HTTPS_FLUTTER_ANALYZE=OK" in g11_runner
+            and "NO_DEPLOY_NO_LIVE_MIGRATION=1" in g11_runner
+            and "--network \"$NETWORK\"" in g11_lab_runner
+            and "--read-only" in g11_lab_runner
+            and "--tmpfs /tmp" in g11_lab_runner
+            and "G11_HTTPS_FIRST_ISSUANCE_LOGOUT_RESULT=0" in g11_lab_runner
             and "NativeFirstIssuanceEntry" not in flutter_main
             and "native_sessions_lab.test_urls" not in config
             and "native_sessions_lab.test_urls" not in routes,
