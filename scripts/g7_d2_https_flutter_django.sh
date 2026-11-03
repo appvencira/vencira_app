@@ -79,14 +79,19 @@ if [[ "$ready" != 1 ]]; then
   exit 1
 fi
 echo "G7_D2_FIXTURE_READY=OK"
+G7_D2_PEER_IPV4="$("${DOCKER[@]}" inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$SERVER")"
+if [[ ! "$G7_D2_PEER_IPV4" =~ ^[0-9]{1,3}([.][0-9]{1,3}){3}$ ]]; then
+  echo "G7_D2_PRIVATE_PEER=INVALID" >&2
+  exit 1
+fi
 
 # Export ONLY the public test CA; private keys stay in the backend tmpfs.
 "${DOCKER[@]}" cp "$SERVER:/tmp/g7d2-public-ca.pem" "$TMP/public-ca.pem" >/dev/null
 test -s "$TMP/public-ca.pem"
 
-# Under --internal, dev.vencira.es is the Docker network alias of the
-# disposable Django fixture, not a public DNS name. Dart sends HTTPS with
-# original SNI/host and validates the temporary CA (no badCertificateCallback).
+# The Dart peer address comes directly from the isolated Docker network,
+# without DNS. The URI/SNI remains dev.vencira.es and the temporary CA is
+# strictly verified, never accepted through a bad-certificate callback.
 "${DOCKER[@]}" run --rm \
   --network "$NETWORK" \
   --tmpfs /tmp:rw,nosuid,size=268435456,mode=1777 \
@@ -98,6 +103,7 @@ test -s "$TMP/public-ca.pem"
   -e PUB_CACHE=/tmp/g7-d2-pub-cache \
   -e G7_D2_ISOLATED_NETWORK_ACK=1 \
   -e G7_D2_CA_FILE=/tmp/g7d2-public-ca.pem \
+  -e G7_D2_PEER_IPV4="$G7_D2_PEER_IPV4" \
   ghcr.io/cirruslabs/flutter:stable \
   sh -c 'flutter test --no-pub test/g7_d2_https_live_test.dart --reporter expanded'
 
