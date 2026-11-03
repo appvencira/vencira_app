@@ -175,3 +175,30 @@ No hace falta repetir PG17, reconstruir imágenes, migrar ni desplegar.
 Resultado aportado por el operador: `flutter pub get` OK, `flutter analyze: No issues found!`, `flutter test test/native_lab_login_shell_test.dart test/native_http_login_integration_test.dart --reporter expanded`: **11/11 pruebas PASS** y `G7_SPLIT_RESULT=0`. Son 6 casos G7-A de UI/fixture y 5 G7-B de HTTP simulado con ejecución asíncrona real. Las advertencias sobre 17 paquetes más recientes no son errores de dependencia y no bloquean este gate. Los 11 PASS **no constituyen** un E2E Flutter→Django de red real ni validan la APK Android.
 
 Se conserva la separación de suites porque widget FakeAsync y lectura de streams HTTP de `package:http` requieren entornos asíncronos distintos. G7-A/G7-B están validados **localmente en laboratorio**, con el control estático comprobado `N1_STATIC_GATE_RESULT=OK` por el operador en el intento anterior. `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. El siguiente paso es ampliar la verificación HTTP de un servidor Django real en entorno test desechable, sin modificar rutas operativas, y después diseñar TLS de laboratorio para Flutter.
+
+## G7-C — Contrato HTTP de socket Django real en loopback (PENDIENTE VALIDACIÓN)
+
+Se añade `backend/native_sessions_lab/test_loopback_http_contract.py`: **3 pruebas de `LiveServerTestCase`** contra un servidor WSGI/HTTP real en `127.0.0.1`, puerto efímero, URLConf sustituido **solo durante la clase de test** por `native_sessions_lab.test_urls`, sin registrar rutas en la aplicación habitual. Las peticiones se envían con `http.client.HTTPConnection` (sin proxies, cookies por defecto ni red pública) y reciben respuestas reales del servidor Django. Prueban:
+
+- Password sintético → `v1.a`/ `v1.r`, `GET /api/v1/mobile/me/` con Bearer, rechazo de refresh como access, revocación y denegación del access anterior.
+- Rotación de refresh y access, invalidación del access anterior, y rechazo de replay de refresh que invalida también la sesión nueva.
+- Contraseña errónea, cookie web y Origin rechazados, sin sesión Bearer anónima.
+
+**Esta prueba NO conecta Flutter con Django**, ni usa TLS, ni prueba la APK ni habilita rutas móviles reales. Sirve para verificar el salto de las vistas Django/test client a HTTP sobre socket con persistencia en una **base creada y eliminada por Django test runner**. **No es un servidor desplegable**. El script PG17 `n1_identity_pg17_ephemeral.sh --lab` y los jobs CI SQLite/PG17 de `m3-product-contracts.yml` incorporan la nueva suite. El gate estático incorpora `g7_socket_lab_loopback_only` y valida sintaxis Python; conserva todos los controles previos.
+
+**VALIDACIÓN PENDIENTE**: no existe una ejecución local/CI de G7-C en este instante y no debe declararse PASS. G7-A + G7-B **11/11 PASS local** sí se conservan. Antes de cualquier E2E Flutter→Django real queda por diseñar un laboratorio HTTPS con certificados confiables, DNS de red estrictamente aislado, garantía de que ni `dev.vencira.es` operativo ni BD persistente sean alcanzables, y un emisor Django test-only con revocación real.
+
+Para validar sin reconstruir ni ejecutar Flutter innecesariamente, desde checkout actualizado y usando la imagen de backend de pruebas si sigue disponible:
+
+```bash
+cd ~/vencira-m3-localcheck
+git status --short
+git fetch origin feature/m3-android-local-notifications
+git merge --ff-only FETCH_HEAD
+python3 scripts/n1_static_security_gate.py
+sudo docker build -t vencira-m3-backend-test ./backend
+bash scripts/n1_identity_pg17_ephemeral.sh --lab
+printf 'G7_C_LOOPBACK_PG17_RESULT=%s\\n' "$?"
+```
+
+El script usa PostgreSQL17 en `tmpfs` y una red Docker interna **sin puertos publicados**. La clase de socket abre únicamente loopback dentro del contenedor de test y no requiere acceso externo. Mantener `NO_DEPLOY_NO_LIVE_MIGRATION=1` y `RELEASE_AUTHORIZED=NO`.
