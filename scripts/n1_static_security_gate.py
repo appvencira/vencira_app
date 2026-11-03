@@ -30,6 +30,7 @@ def verify():
     flutter_http = read("clients/flutter/lib/api/native_http_auth_port.dart")
     flutter_main = read("clients/flutter/lib/main.dart")
     flutter_lab_shell = read("clients/flutter/lib/ui/native_lab_login_shell.dart")
+    flutter_lab_http_test = read("clients/flutter/test/native_http_login_integration_test.dart")
     recovery_gateway = read("clients/flutter/lib/api/native_recovery_login_gateway.dart")
     recovery_migration = read(
         "backend/native_sessions_lab/migrations/0004_mobile_challenge_recovery_flag.py"
@@ -180,6 +181,13 @@ def verify():
             and "widget.coordinator.fence.ticket" in flutter_lab_shell
             and "widget.coordinator.logout()" in flutter_lab_shell
             and "VenciraDashboardScreen" not in flutter_lab_shell,
+        "g7_http_stack_mock_only":
+            "MockClient(" in flutter_lab_http_test
+            and "NativeHttpAuthPort(endpoint: endpoint, client: client)" in flutter_lab_http_test
+            and "NativeApiTransport(" in flutter_lab_http_test
+            and "NativeLabLoginShell(coordinator: fixture.coordinator)" in flutter_lab_http_test
+            and "native_sessions_lab.test_urls" not in read("backend/config/urls.py")
+            and "NativeHttpAuthPort(" not in flutter_main,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
