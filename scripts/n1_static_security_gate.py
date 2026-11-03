@@ -230,6 +230,12 @@ def verify():
             and '--read-only' in g7_d2_runner
             and '--network-alias dev.vencira.es' in g7_d2_runner
             and 'G7_D2_PEER_IPV4="$G7_D2_PEER_IPV4"' in g7_d2_runner
+            and 'exec "$SERVER" cat /tmp/g7d2-public-ca.pem' in g7_d2_runner
+            and 'test -s /tmp/g7d2-public-ca.pem' in g7_d2_runner
+            and 'chmod 600 "$TMP/public-ca.pem"' in g7_d2_runner
+            and 'docker cp' not in g7_d2_runner.replace(
+                '# docker cp may be unable to resolve files inside an ephemeral tmpfs mount,', ''
+            )
             and '"$IMAGE" python -u -m native_sessions_lab.g7_d2_https_fixture' in g7_d2_runner
             and 'flutter test --no-pub test/g7_d2_https_live_test.dart' in g7_d2_runner
             and 'SecurityContext(withTrustedRoots: false)' in dart_d2_probe
