@@ -485,6 +485,10 @@ Future<void> _verifyAmbiguousRefreshRecoveryHttps(
 }
 
 Future<void> main() async {
+  final group = Platform.environment['G7_LAB_GROUP'] ?? 'all';
+  if (!const <String>{'all', 'd2', 'e', 'f'}.contains(group)) {
+    throw StateError('G7_LAB_GROUP_NOT_ALLOWED');
+  }
   if (Platform.environment['G7_D2_ISOLATED_NETWORK_ACK'] != '1') {
     throw StateError('G7_D2_ISOLATION_REQUIRED');
   }
@@ -500,6 +504,7 @@ Future<void> main() async {
   final httpClient = _SafeHttpTraceClient(IOClient(_httpsClient(trust)));
 
   try {
+    if (group == 'all' || group == 'd2') {
     final store = _DisposableSecretStore();
     final fence = NativeSessionFence();
     final port = NativeHttpAuthPort(endpoint: endpoint, client: httpClient);
@@ -640,12 +645,16 @@ Future<void> main() async {
       wrongHostClient.close();
     }
 
-    // Extend the already-green G7-D2 socket fixture: the new checks are
-    // separate markers and must pass before the original PASS is emitted.
-    await _verifyMfaHttps(endpoint, httpClient);
-    await _verifyRefreshHttps(endpoint, httpClient);
-    await _verifyAmbiguousRefreshRecoveryHttps(endpoint, httpClient);
     stdout.writeln('G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0');
+    }
+    if (group == 'all' || group == 'e') {
+      await _verifyMfaHttps(endpoint, httpClient);
+      await _verifyRefreshHttps(endpoint, httpClient);
+    }
+    if (group == 'all' || group == 'f') {
+      await _verifyAmbiguousRefreshRecoveryHttps(endpoint, httpClient);
+    }
+    stdout.writeln('G7_LAB_GROUP_COMPLETE=$group');
   } finally {
     httpClient.close();
   }
