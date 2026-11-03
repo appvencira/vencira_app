@@ -6,7 +6,9 @@
 /// credentials, trust-bypass callbacks, or operational URLs are used.
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:vencira/api/native_api_endpoint.dart';
@@ -138,6 +140,7 @@ class _SafeHttpTraceClient extends http.BaseClient {
     final kind = switch (path) {
       '/api/v1/mobile/auth/password/' => 'PASSWORD',
       '/api/v1/mobile/auth/mfa/' => 'MFA',
+      '/api/v1/mobile/token/refresh/' => 'REFRESH',
       '/api/v1/mobile/me/' => 'ME',
       '/api/v1/mobile/token/revoke/' => 'REVOKE',
       _ => 'UNEXPECTED_PATH',
@@ -189,6 +192,169 @@ Future<void> _expectHttpAuthDenied(Future<Object?> Function() operation) async {
     denied = true;
   }
   if (!denied) throw StateError('G7_D2_EXPECTED_DENIAL_MISSING');
+}
+
+/// RFC 6238/HMAC-SHA1, computed only for the disposable MFA fixture.
+/// The 20-byte ASCII secret is the public RFC test vector (not a real key).
+/// Never print the generated code or export encrypted MFA key material.
+String _syntheticTotp() {
+  final counter = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 30000;
+  final timestamp = ByteData(8)..setUint64(0, counter, Endian.big);
+  final digest = Hmac(
+    sha1, utf8.encode('12345678901234567890'),
+  ).convert(timestamp.buffer.asUint8List()).bytes;
+  final offset = digest.last & 0x0f;
+  final value = ((digest[offset] & 0x7f) << 24) |
+      ((digest[offset + 1] & 0xff) << 16) |
+      ((digest[offset + 2] & 0xff) << 8) |
+      (digest[offset + 3] & 0xff);
+  return (value % 1000000).toString().padLeft(6, '0');
+}
+
+/// A direct Bearer check verifies what Django accepts, independently of
+/// any already-revoked local coordinator fence. No token reaches logs.
+Future<int> _bearerHttpStatus(
+  http.Client client, NativeApiEndpoint endpoint, String access,
+) async {
+  final request = http.Request(
+    'GET', endpoint.resolveApiPath('/api/v1/mobile/me/'),
+  )..headers['Authorization'] = 'Bearer $access';
+  final response = await client.send(request);
+  await response.stream.drain<void>();
+  return response.statusCode;
+}
+
+/// G7-E1: real Django-issued MFA challenge + RFC TOTP over verified HTTPS.
+/// Password alone must never open the request gate or write a refresh token.
+Future<void> _verifyMfaHttps(
+  NativeApiEndpoint endpoint, http.Client client,
+) async {
+  final store = _DisposableSecretStore();
+  final fence = NativeSessionFence();
+  final port = NativeHttpAuthPort(endpoint: endpoint, client: client);
+  final coordinator = NativeSessionCoordinator(
+    port: port,
+    vault: NativeRefreshCredentialVault(endpoint: endpoint, store: store),
+    fence: fence,
+  );
+  final transport = NativeApiTransport(
+    endpoint: endpoint, client: client,
+    accessToken: coordinator.accessToken,
+    sessionFence: fence,
+  );
+
+  final passwordDecision = await coordinator.verifyPassword(
+    username: 'g7-e-mfa-synthetic',
+    password: 'G7-E-Only-Synthetic-Mfa-Password-2026!',
+  );
+  _require(
+    passwordDecision == NativePasswordDecision.mfaRequired &&
+        fence.ticket == null &&
+        store.values.isEmpty &&
+        await coordinator.accessToken() == null,
+    'MFA_PASSWORD_ONLY_CHALLENGE',
+  );
+  var protectedReadDenied = false;
+  try {
+    await transport.getJson('/api/v1/mobile/me/');
+  } on NativeApiSessionUnavailable {
+    protectedReadDenied = true;
+  }
+  _require(
+    protectedReadDenied && fence.ticket == null,
+    'MFA_PENDING_BEARER_DENIED',
+  );
+
+  final consumedCode = _syntheticTotp();
+  await coordinator.verifyTotp(consumedCode);
+  final access = await coordinator.accessToken();
+  _require(
+    fence.ticket != null && store.values.length == 1 &&
+        access != null && access.startsWith('v1.a.'),
+    'MFA_VERIFIED_SESSION_ISSUED',
+  );
+  final me = await transport.getJson('/api/v1/mobile/me/');
+  _require(
+    me is Map<String, dynamic> && me['authenticated'] == true,
+    'MFA_VERIFIED_BEARER_ME',
+  );
+
+  // An already-consumed OTP must not open another challenge. Keep the
+  // original authenticated session unaffected until explicit logout.
+  final another = await port.password(
+    username: 'g7-e-mfa-synthetic',
+    password: 'G7-E-Only-Synthetic-Mfa-Password-2026!',
+  );
+  if (another is! NativePasswordMfaRequired) {
+    throw StateError('G7_E_EXPECTED_NEW_MFA_CHALLENGE');
+  }
+  await _expectHttpAuthDenied(
+    () => port.mfa(challenge: another.challenge, code: consumedCode),
+  );
+  _require(
+    fence.ticket != null && store.values.length == 1,
+    'MFA_REUSED_TOTP_DENIED',
+  );
+
+  final logout = coordinator.logout();
+  _require(fence.ticket == null, 'MFA_LOGOUT_FENCE_SYNCHRONOUS');
+  await logout;
+  _require(
+    store.values.isEmpty && fence.ticket == null &&
+        await _bearerHttpStatus(client, endpoint, access!) == 401,
+    'MFA_REMOTE_REVOKE_AND_VAULT_CLEAR',
+  );
+  stdout.writeln('G7_E_MFA_HTTPS_RESULT=0');
+}
+
+/// G7-E2: HTTP token rotation/replay using NativeHttpAuthPort, not the
+/// coordinator (its crash-safe refresh recovery adapter is NOT implemented).
+/// A stale refresh replay must invalidate even the newly rotated access.
+Future<void> _verifyRefreshHttps(
+  NativeApiEndpoint endpoint, http.Client client,
+) async {
+  final port = NativeHttpAuthPort(endpoint: endpoint, client: client);
+  Future<NativeIssuedTokens> login() async {
+    final reply = await port.password(
+      username: _username, password: _password,
+    );
+    if (reply is! NativePasswordGranted) {
+      throw StateError('G7_E_UNEXPECTED_MFA_ON_ROTATION_ACCOUNT');
+    }
+    return reply.tokens;
+  }
+
+  final oldTokens = await login();
+  final rotated = await port.rotateRefresh(oldTokens.refresh);
+  _require(
+    rotated.access != oldTokens.access &&
+        rotated.refresh != oldTokens.refresh,
+    'REFRESH_BOTH_TOKENS_ROTATED',
+  );
+  _require(
+    await _bearerHttpStatus(client, endpoint, oldTokens.access) == 401 &&
+        await _bearerHttpStatus(client, endpoint, rotated.access) == 200,
+    'REFRESH_OLD_ACCESS_DENIED',
+  );
+
+  await _expectHttpAuthDenied(
+    () => port.rotateRefresh(oldTokens.refresh),
+  );
+  _require(
+    await _bearerHttpStatus(client, endpoint, rotated.access) == 401,
+    'REFRESH_REPLAY_REVOKES_NEW_ACCESS',
+  );
+
+  // Also test normal rotation then a successful remote revoke, separately
+  // from the replay-invalidated device.
+  final fresh = await login();
+  final active = await port.rotateRefresh(fresh.refresh);
+  await port.revoke(refresh: active.refresh);
+  _require(
+    await _bearerHttpStatus(client, endpoint, active.access) == 401,
+    'REFRESH_NEW_CREDENTIAL_REVOKED',
+  );
+  stdout.writeln('G7_E_REFRESH_REPLAY_RESULT=0');
 }
 
 Future<void> main() async {
@@ -347,6 +513,10 @@ Future<void> main() async {
       wrongHostClient.close();
     }
 
+    // Extend the already-green G7-D2 socket fixture: the new checks are
+    // separate markers and must pass before the original PASS is emitted.
+    await _verifyMfaHttps(endpoint, httpClient);
+    await _verifyRefreshHttps(endpoint, httpClient);
     stdout.writeln('G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0');
   } finally {
     httpClient.close();
