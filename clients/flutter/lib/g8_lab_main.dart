@@ -99,7 +99,7 @@ class _G8LabHomeState extends State<_G8LabHome> {
     }
   }
 
-  Future<void> _clear() async {
+  Future<List<String>> _clear() async {
     await G8PhoneStorageCheck.cleanup();
     return const ['G8_PHONE_MANUAL_LAB_CLEANUP=OK'];
   }
@@ -205,9 +205,7 @@ class _G8LabHomeState extends State<_G8LabHome> {
                         ))),
                   ]),
                 ),
-              ),
-            ),
-            if (_failure != null)
+              if (_failure != null)
               Card(
                 color: scheme.errorContainer,
                 child: Padding(
