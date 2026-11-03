@@ -520,6 +520,15 @@ Future<void> _verifyMfaRecoveryHttps(
   if (first is! NativePasswordMfaRequired) {
     throw StateError('G7_G_BASELINE_MFA_REQUIRED');
   }
+  // Avoid starting the two-step MFA recovery flow immediately before
+  // a 30-second rollover. This bounds rare CI timing flakes without waiting
+  // a full TOTP interval on every run.
+  final withinStep = DateTime.now().millisecondsSinceEpoch % 30000;
+  if (withinStep > 26000) {
+    await Future<void>.delayed(
+      Duration(milliseconds: 30500 - withinStep),
+    );
+  }
   final priorCode = _syntheticTotp(
     DateTime.now().subtract(const Duration(seconds: 30)),
   );
