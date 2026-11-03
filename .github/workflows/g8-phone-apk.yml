@@ -1,0 +1,60 @@
+name: G8 physical-phone laboratory APK (debug only)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/m3-android-local-notifications
+    paths:
+      - 'clients/flutter/lib/g8_lab_main.dart'
+      - 'clients/flutter/lib/g8_lab/physical_store_checks.dart'
+      - 'clients/flutter/lib/api/native_refresh_credential_vault.dart'
+      - 'clients/flutter/lib/api/native_refresh_recovery_journal.dart'
+      - 'clients/flutter/android/app/build.gradle.kts'
+      - 'clients/flutter/android/app/src/main/AndroidManifest.xml'
+      - 'clients/flutter/pubspec.yaml'
+      - 'scripts/g8_phone_apk_build.sh'
+      - 'scripts/n1_static_security_gate.py'
+      - '.github/workflows/g8-phone-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  debug-only-synthetic-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Static safety and runner syntax
+        run: |
+          python3 scripts/n1_static_security_gate.py
+          bash -n scripts/g8_phone_apk_build.sh
+
+      - name: Build separated APK with Android SDK and verify package identity
+        run: |
+          docker run --rm \
+            -v "$PWD:/src" -w /src \
+            ghcr.io/cirruslabs/flutter:stable \
+            bash scripts/g8_phone_apk_build.sh
+
+      - name: Publish only verified G8 lab APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VENCIRA-G8-PHONE-DEBUG-ONLY
+          path: |
+            clients/flutter/build/g8-phone/VENCIRA-G8-LAB-debug.apk
+            clients/flutter/build/g8-phone/VENCIRA-G8-LAB-debug.apk.sha256
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Release and device validation remain blocked
+        if: always()
+        run: |
+          echo 'G8_PHONE_APK_RUNTIME_RESULT=NOT_RUN'
+          echo 'G8_PHONE_PHYSICAL_STORAGE_RESULT=NOT_RUN'
+          echo 'G8_PHONE_RELEASE_AUTHORIZED=NO'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
