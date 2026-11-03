@@ -47,7 +47,7 @@ bash scripts/g9_native_startup_gate.sh
 echo "G9_LOCAL_RESULT=$?"
 ```
 
-`scripts/g9_native_startup_gate.sh` usa `ghcr.io/cirruslabs/flutter:stable` y cache Pub de dependencias públicas, más `scripts/n1_static_security_gate.py`. Analiza los dos nuevos archivos Dart y ejecuta **cuatro suites en un único proceso Flutter**: nueva puerta de arranque, nuevo adaptador de recuperación y las suites previas de diario y coordinador. Al pasar debe emitir:
+`scripts/g9_native_startup_gate.sh` usa `ghcr.io/cirruslabs/flutter:stable` y cache Pub de dependencias públicas, más `scripts/n1_static_security_gate.py`. Analiza los dos nuevos archivos Dart y ejecuta **cinco suites en una única invocación Flutter**: nueva puerta de arranque, nuevo adaptador de recuperación y las suites previas de diario, gateway de recuperación y coordinador. Al pasar debe emitir:
 
 ```text
 G9_STARTUP_ANALYZE=OK
