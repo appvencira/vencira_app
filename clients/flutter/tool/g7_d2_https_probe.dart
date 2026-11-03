@@ -724,7 +724,7 @@ Future<void> _verifyRecoveryStorageFaultsHttps(
         refresh != initial.refresh &&
         fence.ticket != null &&
         !await journal.requiresReauthentication() &&
-        await _bearerHttpStatus(client, endpoint, access!) == 200,
+        await _bearerHttpStatus(client, endpoint, access) == 200,
     'RECOVERY_STORAGE_RETRY_VERIFIED',
   );
   fence.revoke();
