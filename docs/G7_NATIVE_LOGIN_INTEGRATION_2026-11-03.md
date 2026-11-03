@@ -88,24 +88,24 @@ Validación: tras actualizar rama, ejecutar `flutter pub get && flutter test tes
 
 ### Recibo local G7-A
 
-El operador confirma \`G7_RECHECK_RESULT=0\`, \`All tests passed!\`, **6/6** en \`native_lab_login_shell_test.dart\`. El test incluye comprobación directa de formato de credenciales y coordinador, login/password, MFA, logout exitoso, revocación fallida con reintento y montaje de \`VenciraApp\` con inyección explícita. Este resultado sigue siendo **solo laboratorio**; no autoriza beta ni activación en servidor.
+El operador confirma `G7_RECHECK_RESULT=0`, `All tests passed!`, **6/6** en `native_lab_login_shell_test.dart`. El test incluye comprobación directa de formato de credenciales y coordinador, login/password, MFA, logout exitoso, revocación fallida con reintento y montaje de `VenciraApp` con inyección explícita. Este resultado sigue siendo **solo laboratorio**; no autoriza beta ni activación en servidor.
 
 ### G7-B — nuevo bloque de pruebas integradas Flutter con contrato Django simulado
 
-Nuevo archivo \`clients/flutter/test/native_http_login_integration_test.dart\` con cuatro tests \`testWidgets\`. Encadena los componentes de producción potenciales, sin ejecutarlos contra una API real: 
-- \`NativeLoginScreen\` → \`NativeLabLoginShell\` → \`NativeSessionCoordinator\` → \`NativeHttpAuthPort\` con \`MockClient\` → \`NativeRefreshCredentialVault\` con almacenamiento sintético.
-- Valida el GET \`/api/v1/mobile/me/\` por \`NativeApiTransport\`, con \`Authorization: Bearer\` únicamente **después** de recibir tokens con forma correcta y de escribir/verificar refresh; no permite GET antes de login ni después de logout.
-- MFA: comprueba que \`mfa_required\` no escribe refresh ni abre el \`fence\`; TOTP aceptado activa la sesión y el puerto exige el contrato de desafío.
+Nuevo archivo `clients/flutter/test/native_http_login_integration_test.dart` con cuatro tests `testWidgets`. Encadena los componentes de producción potenciales, sin ejecutarlos contra una API real: 
+- `NativeLoginScreen` → `NativeLabLoginShell` → `NativeSessionCoordinator` → `NativeHttpAuthPort` con `MockClient` → `NativeRefreshCredentialVault` con almacenamiento sintético.
+- Valida el GET `/api/v1/mobile/me/` por `NativeApiTransport`, con `Authorization: Bearer` únicamente **después** de recibir tokens con forma correcta y de escribir/verificar refresh; no permite GET antes de login ni después de logout.
+- MFA: comprueba que `mfa_required` no escribe refresh ni abre el `fence`; TOTP aceptado activa la sesión y el puerto exige el contrato de desafío.
 - Contraseña denegada: HTTP 401 no desbloquea ni persiste credenciales.
 - Revocación fallida: el cierre deja el fence bloqueado, conserva refresh para reintento explícito y no permite volver a login hasta recibir acuse de revocación.
 
-Estas respuestas son **simuladas según** \`native_sessions_lab.test_http_contract\`, cuyos HTTP Django están probados por separado en PostgreSQL17 desechable. Esto NO es todavía una prueba de red extremo a extremo Flutter→Django. No se crean rutas de autenticación operativa, migraciones persistentes, usuario real, claves reales, APK pública ni endpoint remoto accesible.
+Estas respuestas son **simuladas según** `native_sessions_lab.test_http_contract`, cuyos HTTP Django están probados por separado en PostgreSQL17 desechable. Esto NO es todavía una prueba de red extremo a extremo Flutter→Django. No se crean rutas de autenticación operativa, migraciones persistentes, usuario real, claves reales, APK pública ni endpoint remoto accesible.
 
-Actualizados \`scripts/m3_native_http_contract_batch.sh\`, \`.github/workflows/m3-product-contracts.yml\` y \`scripts/n1_static_security_gate.py\` para incluir y vigilar la nueva suite en el entorno aislado. **G7_B_HTTP_WIDGETS=PENDING** tras estos commits; no afirmar CI verde.
+Actualizados `scripts/m3_native_http_contract_batch.sh`, `.github/workflows/m3-product-contracts.yml` y `scripts/n1_static_security_gate.py` para incluir y vigilar la nueva suite en el entorno aislado. **G7_B_HTTP_WIDGETS=PENDING** tras estos commits; no afirmar CI verde.
 
 ### Próxima validación local específica
 
-\`\`\`bash
+```bash
 cd ~/vencira-m3-localcheck
 git status --short
 git fetch origin feature/m3-android-local-notifications
@@ -113,6 +113,6 @@ git merge --ff-only FETCH_HEAD
 sudo docker run --rm -v "$PWD/clients/flutter:/work" -w /work ghcr.io/cirruslabs/flutter:stable sh -c \
   'flutter pub get && flutter analyze && flutter test test/native_lab_login_shell_test.dart test/native_http_login_integration_test.dart --reporter expanded'
 echo "G7_B_HTTP_TEST_RESULT=$?"
-\`\`\`
+```
 
-Si da PASS, el siguiente paso será diseñar una prueba E2E **aislada** en la que Flutter y Django se comuniquen realmente por HTTPS, sin utilizar \`dev.vencira.es\` productivo, sin alterar la whitelist pública y sin abrir rutas de usuario reales. Para ello habrá que preparar certificados de laboratorio confiables y un emisor temporal controlado, además de asegurar que la aplicación release no lo pueda habilitar.
+Si da PASS, el siguiente paso será diseñar una prueba E2E **aislada** en la que Flutter y Django se comuniquen realmente por HTTPS, sin utilizar `dev.vencira.es` productivo, sin alterar la whitelist pública y sin abrir rutas de usuario reales. Para ello habrá que preparar certificados de laboratorio confiables y un emisor temporal controlado, además de asegurar que la aplicación release no lo pueda habilitar.
