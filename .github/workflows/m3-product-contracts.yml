@@ -52,7 +52,7 @@ jobs:
           VENCIRA_NATIVE_SESSION_LAB: '1'
         run: |
           python manage.py makemigrations native_sessions_lab --check --dry-run
-          python manage.py test reminders.test_native_mobile_identity_database reminders.test_native_mobile_token_primitives native_sessions_lab.tests native_sessions_lab.test_pg17_race native_sessions_lab.test_login_rules native_sessions_lab.test_pg17_login_race native_sessions_lab.test_http_contract_cases native_sessions_lab.test_loopback_http_contract
+          python manage.py test reminders.test_native_mobile_identity_database reminders.test_native_mobile_token_primitives native_sessions_lab.tests native_sessions_lab.test_pg17_race native_sessions_lab.test_login_rules native_sessions_lab.test_pg17_login_race native_sessions_lab.test_http_contract_cases native_sessions_lab.test_loopback_http_contract native_sessions_lab.test_verified_https_loopback
       - name: Reject G4 candidate registration in production
         run: |
           if VENCIRA_ENV=production DJANGO_DEBUG=0 VENCIRA_NATIVE_SERVICE_CANDIDATE=1 python manage.py check > /tmp/g4-prod-candidate-denied.log 2>&1; then
@@ -124,7 +124,7 @@ jobs:
           VENCIRA_NATIVE_SESSION_LAB: '1'
         run: |
           python manage.py makemigrations native_sessions_lab --check --dry-run
-          python manage.py test reminders.test_native_mobile_identity_database reminders.test_native_mobile_token_primitives native_sessions_lab.tests native_sessions_lab.test_pg17_race native_sessions_lab.test_login_rules native_sessions_lab.test_pg17_login_race native_sessions_lab.test_http_contract_cases native_sessions_lab.test_loopback_http_contract
+          python manage.py test reminders.test_native_mobile_identity_database reminders.test_native_mobile_token_primitives native_sessions_lab.tests native_sessions_lab.test_pg17_race native_sessions_lab.test_login_rules native_sessions_lab.test_pg17_login_race native_sessions_lab.test_http_contract_cases native_sessions_lab.test_loopback_http_contract native_sessions_lab.test_verified_https_loopback
       - name: G4 candidate isolated PostgreSQL 17 contract and race
         env:
           VENCIRA_NATIVE_SERVICE_CANDIDATE: '1'
