@@ -244,6 +244,11 @@ class NativeSessionCoordinator implements NativeLoginGateway {
     _start();
     final epoch = _epoch;
     try {
+      if (firstIssuanceJournal != null &&
+          (!await firstIssuanceJournal!.requiresReauthentication() ||
+           await vault.read() != null)) {
+        throw StateError('G10 checkpoint required before MFA');
+      }
       final tokens = await port.mfa(challenge: challenge, code: code);
       await _activate(tokens, epoch);
       if (epoch != _epoch || fence.ticket == null) {
