@@ -73,6 +73,9 @@ class NativeSessionCoordinator implements NativeLoginGateway {
   bool _busy = false;
   bool _logoutRequired = false;
   String? _unrevokedIssuedRefresh;
+  // A completed remote revoke must not be replayed merely because the
+  // subsequent protected-vault deletion failed in this same process.
+  String? _revokedStoredRefresh;
   Future<void>? _logoutInProgress;
   Completer<void>? _finished;
 
@@ -293,11 +296,15 @@ class NativeSessionCoordinator implements NativeLoginGateway {
         _unrevokedIssuedRefresh = null;
       }
       final refresh = await vault.read();
-      if (refresh != null) await port.revoke(refresh: refresh);
+      if (refresh != null && refresh != _revokedStoredRefresh) {
+        await port.revoke(refresh: refresh);
+        _revokedStoredRefresh = refresh;
+      }
       await vault.clear();
       if (issuance != null) {
         await issuance.confirmLogoutCompleted(vault: vault);
       }
+      _revokedStoredRefresh = null;
       _logoutRequired = false;
     } finally {
       // Failed server/storage cleanup leaves _logoutRequired=true. Another
