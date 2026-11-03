@@ -47,6 +47,7 @@ case "$MODE" in
       native_mobile_service.test_g5_network_identity
       native_mobile_service.test_g5_throttle
       native_mobile_service.test_g5_pg17_races
+      native_mobile_service.test_g5_audit
     )
     ;;
   --lab-case)
