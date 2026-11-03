@@ -71,3 +71,21 @@ El operador ejecutó `bash scripts/g11_https_first_issue_logout.sh` e informó: 
 Causa exacta verificada en código: la comprobación `g7_fast_batch_isolation_and_full_suite_gates` en `scripts/n1_static_security_gate.py` todavía requería la cadena literal `d2|e|f|g|h)` del selector del runner de G7. G11 había extendido correctamente el selector a `d2|e|f|g|h|g11)`, haciendo fallar un guard obsoleto. Se actualizó N1 para exigir el selector nuevo y, además, **se añadieron verificaciones explícitas de que todos los marcadores obligatorios de G7 D2/E/F/G/H permanecen en el runner**, con `g11) required+=` independiente. Se revisaron remotamente presencia de las cinco ramas de Dart, marcadores históricos, aislamiento y nueva condición de grupo: todas las comprobaciones literales revisadas OK. **No se alteraron endpoints, claves, lógica de autenticación ni se relajaron garantías de seguridad**.
 
 **G11 continúa PENDING:** solo se corrigió el bloqueo estático; no hay aún PASS de Dart o Django HTTPS. Reejecutar `bash scripts/g11_https_first_issue_logout.sh` tras fast-forward de la rama para obtener los resultados del lote G11. No repetir G7–G10 ni instalar nada en producción. PR #17 DRAFT, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## G11 — N1 PASS, Flutter analyzer warning line 189 repaired (03/11/2026)
+
+El operador reejecutó `bash scripts/g11_https_first_issue_logout.sh` tras reparar la whitelist G7/G11. El **control N1 completo pasó**: `N1_STATIC_g7_fast_batch_isolation_and_full_suite_gates=OK`, `N1_STATIC_g11_real_https_first_issue_logout_isolated=OK`, `N1_STATIC_GATE_RESULT=OK`.
+
+El runner se detuvo después, durante `flutter analyze`, antes de iniciar Django/HTTPS:
+
+```text
+Analyzing 2 items...
+warning • The '!' will have no effect because the receiver can't be null. Try removing the '!' operator • tool/g11_https_scenarios.dart:189:37 • unnecessary_non_null_assertion
+1 issue found. (ran in 8.9s)
+G11_HTTPS_GATE_RESULT=1
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
+
+Causa: el primer uso de `firstAccess!` en la línea 179 promueve a no nulo esa variable local y el segundo `firstAccess!` de la línea 189 se considera innecesario. Se ha eliminado **exclusivamente** el segundo `!`, quedando `await bearerStatus(firstAccess) == 401`. El resto de las comprobaciones de emisión, acceso y revocación permanecen idénticas. Verificación remota de línea 189 y control N1/runner presente: OK. La ejecución Flutter aún no se ha repetido: **G11=PENDING RECHECK**, sin declarar PASS ni adelantar pruebas HTTPS.
+
+Reejecutar solo G11 tras fast-forward: `bash scripts/g11_https_first_issue_logout.sh`. G7–G10 permanecen validados. PR sigue DRAFT, `NO_DEPLOY_NO_LIVE_MIGRATION=1`; no desplegar ni migrar bases productivas.
