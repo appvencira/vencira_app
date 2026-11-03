@@ -58,3 +58,11 @@ echo "G10_LOCAL_RESULT=$?"
 El PASS exige `G10_ISSUANCE_ANALYZE=OK`, `G10_ISSUANCE_LOGOUT_UNIT=OK`, `G10_G9_G6_REGRESSION=OK`, `G10_ISSUANCE_LOGOUT_BATCH=OK`, `G10_ISSUANCE_LOGOUT_GATE_RESULT=0` y `G10_LOCAL_RESULT=0`. **Pendiente de recepción y verificación; no publicar PASS sin log.**
 
 **Gates operativos:** `MB1_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `GLOBAL_FREEZE=NOT_VERIFIED`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, PR #17 DRAFT.
+
+## G10 primera ejecución local: fallo aislado de aserción síncrona, corregido (03/11/2026)
+
+El operador ejecutó `scripts/g10_issuance_logout_gate.sh`. **N1 estático íntegro OK**, incluidas las comprobaciones G9/G10; `flutter analyze` de los 4 archivos informó **`No issues found!`**. En la ejecución unitaria agrupada, **63 tests pasaron y 1 falló**: `native_first_issuance_entry_test.dart: failed password leaves durable marker for reboot recovery`, con `Bad state: Native startup fence mismatch` en `native_mobile_startup_gate.dart:47` y test línea 226. Resultado final `G10_FLUTTER_BATCH=FAIL`, `G10_ISSUANCE_LOGOUT_GATE_RESULT=1`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+**Diagnóstico:** el caso negativo construía deliberadamente `NativeMobileStartupGate` con un `fence` distinto del del `NativeRefreshRecoveryJournal`. `inspect()` comprueba identidad de fence y lanza **StateError síncronamente antes de devolver un Future**. La prueba usaba `await expectLater(cold.inspect(), throwsStateError)`, que evalúa `cold.inspect()` *fuera* del matcher: por ello el `StateError` intencional escapó y señaló un falso fallo de la prueba. Se sustituyó exclusivamente por `expect(() => cold.inspect(), throwsStateError)`, que entrega una función para que el matcher capture la excepción síncrona. **No se tocó la lógica de seguridad de producción ni se flexibilizó el bloqueo por mismatch**. La segunda parte del mismo test, con `rebootFence` compartido, conserva la comprobación positiva de `fullReauthentication` después de un inicio fallido.
+
+**Estado:** fuente corregida y publicada; G10 **PENDING RECHECK**, NO PASS hasta la nueva salida de `bash scripts/g10_issuance_logout_gate.sh`. Repetir solo la batería agrupada G10; no repetir G7 HTTPS, G8 móvil físico ni G9 aislado. Sigue PR DRAFT, `NO_DEPLOY_NO_LIVE_MIGRATION=1` y release MFA/MB1/C-FICHA no autorizado.
