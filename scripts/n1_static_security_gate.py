@@ -232,7 +232,13 @@ def verify():
             and 'G7_D2_PEER_IPV4="$G7_D2_PEER_IPV4"' in g7_d2_runner
             and 'exec "$SERVER" cat /tmp/g7d2-public-ca.pem' in g7_d2_runner
             and 'test -s /tmp/g7d2-public-ca.pem' in g7_d2_runner
-            and 'chmod 600 "$TMP/public-ca.pem"' in g7_d2_runner
+            and 'chmod 0644 "$TMP/public-ca.pem"' in g7_d2_runner
+            and 'ssl.PEM_cert_to_DER_cert(raw)' in g7_d2_runner
+            and 'PRIVATE KEY" not in raw' in g7_d2_runner
+            and g7_d2_runner.count('flutter test --no-pub test/g7_d2_https_live_test.dart') == 1
+            and g7_d2_runner.count('echo "G7_D2_FLUTTER_DJANGO_HTTPS=OK"') == 1
+            and "grep -Fq -- 'G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0'" in g7_d2_runner
+            and "grep -Fq -- 'All tests passed!'" in g7_d2_runner
             and '"${DOCKER[@]}" cp ' not in g7_d2_runner
             and '"$IMAGE" python -u -m native_sessions_lab.g7_d2_https_fixture' in g7_d2_runner
             and 'flutter test --no-pub test/g7_d2_https_live_test.dart' in g7_d2_runner
