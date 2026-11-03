@@ -113,7 +113,7 @@ Future<void> _enterPassword(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('native-login-submit')));
 }
 
-void _requireNativeRequest(http.Request request, String path) {
+void _requireNativeRequest(http.BaseRequest request, String path) {
   expect(request.url.scheme, 'https');
   expect(request.url.host, 'dev.vencira.es');
   expect(request.url.path, path);
@@ -128,13 +128,13 @@ void main() {
     var passwordCalls = 0;
     var bearerReads = 0;
     var revokeCalls = 0;
-    final client = MockClient.streaming((request) async {
+    final client = MockClient.streaming((request, bodyStream) async {
       if (request.url.path == '/api/v1/mobile/auth/password/') {
         passwordCalls++;
         _requireNativeRequest(request, '/api/v1/mobile/auth/password/');
         expect(request.method, 'POST');
         expect(request.headers['Authorization'], isNull);
-        expect(jsonDecode(request.body), {
+        expect(jsonDecode(await bodyStream.bytesToString()), {
           'username': 'lab-user', 'password': 'lab-password',
         });
         return _syncStream(_grant());
@@ -150,7 +150,7 @@ void main() {
         revokeCalls++;
         _requireNativeRequest(request, '/api/v1/mobile/token/revoke/');
         expect(request.method, 'POST');
-        expect(jsonDecode(request.body), {'refresh': _refresh});
+        expect(jsonDecode(await bodyStream.bytesToString()), {'refresh': _refresh});
         return _syncStream(_reply({'status': 'revoked'}));
       }
       throw StateError('Unexpected native HTTP path');
@@ -195,7 +195,7 @@ void main() {
       (tester) async {
     var mfaCalls = 0;
     var bearerReads = 0;
-    final client = MockClient.streaming((request) async {
+    final client = MockClient.streaming((request, bodyStream) async {
       if (request.url.path == '/api/v1/mobile/auth/password/') {
         _requireNativeRequest(request, '/api/v1/mobile/auth/password/');
         return _syncStream(_reply({'status': 'mfa_required', 'challenge': _challenge}));
@@ -203,7 +203,7 @@ void main() {
       if (request.url.path == '/api/v1/mobile/auth/mfa/') {
         mfaCalls++;
         _requireNativeRequest(request, '/api/v1/mobile/auth/mfa/');
-        expect(jsonDecode(request.body), {
+        expect(jsonDecode(await bodyStream.bytesToString()), {
           'challenge': _challenge, 'code': '123456',
         });
         return _syncStream(_grant());
@@ -243,7 +243,7 @@ void main() {
   testWidgets('HTTP 401 on password cannot grant or store native session',
       (tester) async {
     var calls = 0;
-    final client = MockClient.streaming((request) async {
+    final client = MockClient.streaming((request, bodyStream) async {
       calls++;
       _requireNativeRequest(request, '/api/v1/mobile/auth/password/');
       return _syncStream(_reply({'error': 'native_auth_unavailable'}, status: 401));
@@ -265,7 +265,7 @@ void main() {
       (tester) async {
     var allowRevoke = false;
     var revokeCalls = 0;
-    final client = MockClient.streaming((request) async {
+    final client = MockClient.streaming((request, bodyStream) async {
       if (request.url.path == '/api/v1/mobile/auth/password/') return _syncStream(_grant());
       if (request.url.path == '/api/v1/mobile/token/revoke/') {
         revokeCalls++;
