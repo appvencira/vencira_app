@@ -39,6 +39,10 @@ def verify():
     g7_d2_runner = read("scripts/g7_d2_https_flutter_django.sh")
     g8_device_test = read("clients/flutter/integration_test/g8_protected_store_device_test.dart")
     g8_emulator_runner = read("scripts/g8_android_store_lab.sh")
+    g8_phone_main = read("clients/flutter/lib/g8_lab_main.dart")
+    g8_phone_store = read("clients/flutter/lib/g8_lab/physical_store_checks.dart")
+    g8_phone_runner = read("scripts/g8_phone_apk_build.sh")
+    g8_gradle = read("clients/flutter/android/app/build.gradle.kts")
     flutter_pubspec = read("clients/flutter/pubspec.yaml")
     android_manifest = read("clients/flutter/android/app/src/main/AndroidManifest.xml")
     recovery_gateway = read("clients/flutter/lib/api/native_recovery_login_gateway.dart")
@@ -396,6 +400,42 @@ def verify():
             and 'native_sessions_lab.test_urls' not in config
             and 'native_sessions_lab.test_urls' not in routes
             and 'NativeRefreshRecoveryJournal' not in flutter_main,
+        "g8_physical_phone_debug_apk_isolated":
+            'VENCIRA_G8_LAB_BUILD' in g8_gradle
+            and 'applicationIdSuffix = ".g8lab"' in g8_gradle
+            and 'contains("Release"' in g8_gradle
+            and 'contains("Profile"' in g8_gradle
+            and 'VENCIRA G8 Pruebas' in g8_gradle
+            and 'android:label="${venciraAppLabel}"' in android_manifest
+            and "bool.fromEnvironment('VENCIRA_G8_LAB_BUILD')" in g8_phone_main
+            and 'kReleaseMode' in g8_phone_main
+            and 'G8_DEBUG_ANDROID_LAB_ONLY' in g8_phone_main
+            and 'G8PhoneStorageCheck.prepare' in g8_phone_main
+            and 'G8PhoneStorageCheck.verifyAfterRestart' in g8_phone_main
+            and "G8PhoneStorageCheck.cleanup" in g8_phone_main
+            and 'vencira_g8_phone_only_v1' in g8_phone_store
+            and 'FlutterNativeSecretStore(' in g8_phone_store
+            and 'NativeRefreshRecoveryJournal(' in g8_phone_store
+            and 'NativeRefreshCredentialVault(' in g8_phone_store
+            and 'previousPid == pid' in g8_phone_store
+            and 'G8_PHONE_FORCE_STOP_REQUIRED' in g8_phone_store
+            and 'G8_PHONE_PHYSICAL_STORAGE_RESULT=0' in g8_phone_store
+            and 'await store.delete(_refreshKey)' in g8_phone_store
+            and 'await store.delete(_markerKey)' in g8_phone_store
+            and 'http://' not in g8_phone_main
+            and 'package:http/' not in g8_phone_store
+            and 'NativeHttpAuthPort' not in g8_phone_store
+            and 'scripts/g8_phone_apk_build.sh' not in flutter_main
+            and "VENCIRA_G8_LAB_BUILD=1 flutter build apk --debug" in g8_phone_runner
+            and '--target=lib/g8_lab_main.dart' in g8_phone_runner
+            and '--dart-define=VENCIRA_G8_LAB_BUILD=true' in g8_phone_runner
+            and 'es.vencira.vencira.g8lab' in g8_phone_runner
+            and 'G8_PHONE_APK_ID_VERIFY=OK' in g8_phone_runner
+            and 'G8_PHONE_RELEASE_AUTHORIZED=NO' in g8_phone_runner
+            and 'NO_DEPLOY_NO_LIVE_MIGRATION=1' in g8_phone_runner
+            and 'NativeRefreshRecoveryJournal' not in flutter_main
+            and 'native_sessions_lab.test_urls' not in config
+            and 'native_sessions_lab.test_urls' not in routes,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
