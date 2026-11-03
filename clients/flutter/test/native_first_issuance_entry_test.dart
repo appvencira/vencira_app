@@ -367,7 +367,7 @@ void main() {
       coordinator.verifyPassword(username: 'u', password: 'p'),
       throwsStateError,
     );
-    expect(port.passwordCalls, 1);
+    expect(port.passwordCalls, 0);
     expect(port.markerPresentOnPassword, isFalse);
     expect(fence.ticket, isNull);
     expect(await vault.read(), isNull);
