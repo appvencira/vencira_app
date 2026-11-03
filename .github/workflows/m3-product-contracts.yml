@@ -66,7 +66,7 @@ jobs:
           VENCIRA_NATIVE_SERVICE_CANDIDATE: '1'
         run: |
           python manage.py makemigrations native_mobile_service --check --dry-run
-          python manage.py test native_mobile_service.test_contract native_mobile_service.test_g5_network_identity native_mobile_service.test_g5_throttle
+          python manage.py test native_mobile_service.test_contract native_mobile_service.test_g5_network_identity native_mobile_service.test_g5_throttle native_mobile_service.test_g5_audit
       - name: No operational release
         run: |
           echo 'M3_02_DELIVERY=NOT_IMPLEMENTED'
@@ -130,7 +130,7 @@ jobs:
           VENCIRA_NATIVE_SERVICE_CANDIDATE: '1'
         run: |
           python manage.py makemigrations native_mobile_service --check --dry-run
-          python manage.py test native_mobile_service.test_contract native_mobile_service.test_pg17_races native_mobile_service.test_g5_network_identity native_mobile_service.test_g5_throttle native_mobile_service.test_g5_pg17_races
+          python manage.py test native_mobile_service.test_contract native_mobile_service.test_pg17_races native_mobile_service.test_g5_network_identity native_mobile_service.test_g5_throttle native_mobile_service.test_g5_pg17_races native_mobile_service.test_g5_audit
       - name: Keep release blocked
         run: |
           echo 'M3_02_PG17_EPHEMERAL_ONLY=1'
