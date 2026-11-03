@@ -28,6 +28,8 @@ def verify():
     login_rules = read("backend/native_sessions_lab/login_rules.py")
     lab_urls = read("backend/native_sessions_lab/test_urls.py")
     flutter_http = read("clients/flutter/lib/api/native_http_auth_port.dart")
+    flutter_main = read("clients/flutter/lib/main.dart")
+    flutter_lab_shell = read("clients/flutter/lib/ui/native_lab_login_shell.dart")
     recovery_gateway = read("clients/flutter/lib/api/native_recovery_login_gateway.dart")
     recovery_migration = read(
         "backend/native_sessions_lab/migrations/0004_mobile_challenge_recovery_flag.py"
@@ -168,6 +170,16 @@ def verify():
             "max_length=96" in candidate_schema
             and "0004_digest_envelope_capacity" not in config
             and "native_mobile_service" not in routes,
+        "g7_native_ui_lab_entrypoint_only":
+            "nativeLoginLab != null" in flutter_main
+            and "!kReleaseMode" in flutter_main
+            and "NativeLabLoginShell" in flutter_main
+            and "NativeHttpAuthPort(" not in flutter_main
+            and "NativeSessionCoordinator(" not in flutter_main
+            and "AndroidWebAccessScreen()" in flutter_main
+            and "widget.coordinator.fence.ticket" in flutter_lab_shell
+            and "widget.coordinator.logout()" in flutter_lab_shell
+            and "VenciraDashboardScreen" not in flutter_lab_shell,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
