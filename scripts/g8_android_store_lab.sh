@@ -52,6 +52,7 @@ trap cleanup EXIT
 
 # The test's injected flutter_secure_storage namespace is reserved entirely
 # for synthetic values. It has NO HTTP requests or production credentials.
+cd clients/flutter
 flutter pub get
 flutter analyze integration_test/g8_protected_store_device_test.dart
 
