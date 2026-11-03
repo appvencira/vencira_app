@@ -14,7 +14,9 @@ import 'package:http/io_client.dart';
 import 'package:vencira/api/native_api_endpoint.dart';
 import 'package:vencira/api/native_api_transport.dart';
 import 'package:vencira/api/native_http_auth_port.dart';
+import 'package:vencira/api/native_recovery_login_gateway.dart';
 import 'package:vencira/api/native_refresh_credential_vault.dart';
+import 'package:vencira/api/native_refresh_recovery_journal.dart';
 import 'package:vencira/api/native_session_coordinator.dart';
 import 'package:vencira/api/native_session_fence.dart';
 import 'package:vencira/ui/native_login_screen.dart';
@@ -369,6 +371,119 @@ Future<void> _verifyRefreshHttps(
   stdout.writeln('G7_E_REFRESH_REPLAY_RESULT=0');
 }
 
+/// G7-F1: password reauthentication after the backend committed a refresh
+/// rotation but the response was discarded. The journal is armed and checked
+/// BEFORE the one-use refresh can be sent. The gateway must not retry refresh:
+/// it must obtain fresh credentials via the separate recover/password route.
+Future<void> _verifyAmbiguousRefreshRecoveryHttps(
+  NativeApiEndpoint endpoint, http.Client client,
+) async {
+  final port = NativeHttpAuthPort(endpoint: endpoint, client: client);
+  final original = await port.password(
+    username: _username, password: _password,
+  );
+  if (original is! NativePasswordGranted) {
+    throw StateError('G7_F_EXPECTED_PASSWORD_CREDENTIALS');
+  }
+
+  final fence = NativeSessionFence();
+  final store = _DisposableSecretStore();
+  final vault = NativeRefreshCredentialVault(
+    endpoint: endpoint, store: store,
+  );
+  final journal = NativeRefreshRecoveryJournal(
+    endpoint: endpoint, store: store, fence: fence,
+  );
+  final gateway = NativeRecoveryLoginGateway(
+    port: port, journal: journal, vault: vault, fence: fence,
+  );
+
+  await vault.replace(original.tokens.refresh);
+  await journal.arm();
+  _require(
+    fence.ticket == null &&
+        await journal.requiresReauthentication() &&
+        await vault.read() == original.tokens.refresh,
+    'RECOVERY_MARKER_DURABLE_BEFORE_NETWORK',
+  );
+
+  // This exchange represents a successfully committed backend rotation
+  // whose response is LOST to the app. The test retains only the new access
+  // as an oracle to verify that Django revoked it after recovery.
+  final lostResponse = await port.rotateRefresh(original.tokens.refresh);
+  _require(
+    await _bearerHttpStatus(
+      client, endpoint, lostResponse.access,
+    ) == 200 &&
+        await vault.read() == original.tokens.refresh &&
+        fence.ticket == null,
+    'RECOVERY_LOST_ROTATION_RESPONSE_LOCKED',
+  );
+
+  // Simulate cold start: no access token is ever reconstructed from the
+  // stale refresh; the durable marker requires a full password exchange.
+  _require(
+    await gateway.requiresRecovery() &&
+        await gateway.accessToken() == null &&
+        fence.ticket == null,
+    'RECOVERY_COLD_START_DENIES_ACCESS',
+  );
+
+  await _expectHttpAuthDenied(
+    () => gateway.verifyPassword(
+      username: _username, password: 'incorrect-synthetic-only',
+    ),
+  );
+  _require(
+    await journal.requiresReauthentication() &&
+        fence.ticket == null &&
+        await _bearerHttpStatus(
+          client, endpoint, lostResponse.access,
+        ) == 200,
+    'RECOVERY_WRONG_PASSWORD_PRESERVES_OLD_DEVICE',
+  );
+
+  final result = await gateway.verifyPassword(
+    username: _username, password: _password,
+  );
+  final access = await gateway.accessToken();
+  final refresh = await vault.read();
+  _require(
+    result == NativePasswordDecision.authenticated &&
+        access != null &&
+        refresh != null &&
+        refresh != original.tokens.refresh &&
+        refresh != lostResponse.refresh &&
+        !await journal.requiresReauthentication() &&
+        fence.ticket != null &&
+        store.values.length == 1,
+    'RECOVERY_REAUTH_COMMIT_AND_CLEAR_MARKER',
+  );
+  _require(
+    await _bearerHttpStatus(
+      client, endpoint, lostResponse.access,
+    ) == 401 &&
+        await _bearerHttpStatus(client, endpoint, access!) == 200,
+    'RECOVERY_ACCOUNT_WIDE_REVOKE',
+  );
+  await _expectHttpAuthDenied(
+    () => port.rotateRefresh(lostResponse.refresh),
+  );
+
+  // Explicitly revoke the newly recovered session before ending the
+  // disposable laboratory, so a recovered token never remains live.
+  fence.revoke();
+  await port.revoke(refresh: refresh!);
+  await vault.clear();
+  _require(
+    fence.ticket == null &&
+        store.values.isEmpty &&
+        await _bearerHttpStatus(client, endpoint, access) == 401,
+    'RECOVERY_FINAL_REVOKE_CLEARS_VAULT',
+  );
+  stdout.writeln('G7_F_AMBIGUOUS_REFRESH_RECOVERY_RESULT=0');
+}
+
 Future<void> main() async {
   if (Platform.environment['G7_D2_ISOLATED_NETWORK_ACK'] != '1') {
     throw StateError('G7_D2_ISOLATION_REQUIRED');
@@ -529,6 +644,7 @@ Future<void> main() async {
     // separate markers and must pass before the original PASS is emitted.
     await _verifyMfaHttps(endpoint, httpClient);
     await _verifyRefreshHttps(endpoint, httpClient);
+    await _verifyAmbiguousRefreshRecoveryHttps(endpoint, httpClient);
     stdout.writeln('G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0');
   } finally {
     httpClient.close();
