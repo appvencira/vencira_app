@@ -39,11 +39,14 @@ case "$MODE" in
     )
     ;;
   --candidate)
-    # Isolated G4 persistent-schema proposal, no operational route or DB.
+    # Isolated G4/G5 persistent-schema proposal, no operational route or DB.
     EXTRA_ENV=(-e VENCIRA_NATIVE_SERVICE_CANDIDATE=1)
     SUITES=(
       native_mobile_service.test_contract
       native_mobile_service.test_pg17_races
+      native_mobile_service.test_g5_network_identity
+      native_mobile_service.test_g5_throttle
+      native_mobile_service.test_g5_pg17_races
     )
     ;;
   --lab-case)
@@ -127,6 +130,7 @@ elif [ "$MODE" = "--lab-case" ]; then
   echo "N1_PG17_LAB_CASE_RESULT=$result"
 elif [ "$MODE" = "--candidate" ]; then
   echo "G4_CANDIDATE_PG17_RESULT=$result"
+  echo "G5_CANDIDATE_PG17_RESULT=$result"
 else
   echo "N1_IDENTITY_PG17_RESULT=$result"
 fi
