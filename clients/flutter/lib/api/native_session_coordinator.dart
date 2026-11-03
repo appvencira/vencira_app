@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../ui/native_login_screen.dart';
 import 'native_mobile_token_shape.dart';
 import 'native_refresh_credential_vault.dart';
+import 'native_refresh_recovery_journal.dart';
 import 'native_session_fence.dart';
 
 /// All responses are provided by a FUTURE audited mobile-auth backend.
@@ -54,11 +55,16 @@ class NativeSessionCoordinator implements NativeLoginGateway {
     required this.port,
     required this.vault,
     required this.fence,
+    this.firstIssuanceJournal,
   });
 
   final NativeAuthPort port;
   final NativeRefreshCredentialVault vault;
   final NativeSessionFence fence;
+
+  /// G10 opt-in pre-network checkpoint mode. Not set for legacy G7 unit
+  /// harnesses; the G10 entry must enforce durable arm() before HTTP.
+  final NativeRefreshRecoveryJournal? firstIssuanceJournal;
 
   int _epoch = 0;
   String? _challenge;
@@ -125,7 +131,22 @@ class NativeSessionCoordinator implements NativeLoginGateway {
       throw StateError('Native login cancelled');
     }
     try {
-      await vault.replace(tokens.refresh);
+      final issuance = firstIssuanceJournal;
+      if (issuance != null) {
+        if (!identical(issuance.fence, fence)) {
+          throw StateError('First issuance fence mismatch');
+        }
+        await issuance.confirmFirstIssuance(
+          vault: vault,
+          verifyAndReplace: () async {
+            if (epoch != _epoch) throw StateError('Native login cancelled');
+            await vault.replace(tokens.refresh);
+            if (epoch != _epoch) throw StateError('Native login cancelled');
+          },
+        );
+      } else {
+        await vault.replace(tokens.refresh);
+      }
       if (epoch != _epoch) {
         throw StateError('Native login cancelled');
       }
@@ -138,10 +159,23 @@ class NativeSessionCoordinator implements NativeLoginGateway {
       _access = null;
       _accessDeadline = null;
       fence.revoke();
-      try {
-        await vault.clear();
-      } catch (_) {
-        // Storage failure must not become an apparent authentication success.
+      final issuance = firstIssuanceJournal;
+      if (issuance != null) {
+        // Retain a durable marker (or an orphaned protected refresh) across
+        // any uncertain commit. A blind clear here could otherwise erase
+        // the only crash evidence of a remotely issued credential.
+        try {
+          await issuance.arm();
+        } catch (_) {
+          // Fenced in-memory. If marker write failed, the protected refresh
+          // remains for G9 orphan detection at the next app startup.
+        }
+      } else {
+        try {
+          await vault.clear();
+        } catch (_) {
+          // Storage failure must not become an apparent auth success.
+        }
       }
       await _revokeIssued(tokens);
       rethrow;
@@ -248,6 +282,11 @@ class NativeSessionCoordinator implements NativeLoginGateway {
     try {
       final pending = _finished?.future;
       if (pending != null) await pending;
+      final issuance = firstIssuanceJournal;
+      // Close the durable gate BEFORE any potentially non-idempotent
+      // remote revocation. If storage fails, keep the session fenced and
+      // do not contact the backend.
+      if (issuance != null) await issuance.arm();
       final unrevoked = _unrevokedIssuedRefresh;
       if (unrevoked != null) {
         await port.revoke(refresh: unrevoked);
@@ -256,6 +295,9 @@ class NativeSessionCoordinator implements NativeLoginGateway {
       final refresh = await vault.read();
       if (refresh != null) await port.revoke(refresh: refresh);
       await vault.clear();
+      if (issuance != null) {
+        await issuance.confirmLogoutCompleted(vault: vault);
+      }
       _logoutRequired = false;
     } finally {
       // Failed server/storage cleanup leaves _logoutRequired=true. Another
