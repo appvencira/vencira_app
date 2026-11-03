@@ -1,3 +1,5 @@
+> **ESTADO VIGENTE — 03/11/2026 — G4 CANDIDATO PG17 PASS, G5 PENDIENTE.** Empezar un nuevo chat por [HANDOFF G4→G5](docs/HANDOFF_G4_G5_2026-11-03.md) y [gates de beta](docs/M3_NATIVE_BETA_RELEASE_GATES_2026-11-02.md). Rama `feature/m3-android-local-notifications`, [PR #17 DRAFT](https://github.com/appvencira/vencira_app/pull/17). G4 `G4_CANDIDATE_PG17_RESULT=0` con 20/20 tests en PG17 desechable; G6 `M3_HTTP_RESULT=0` histórico **previo a G4**. El runner integral actualizado con G4 **no ha sido verificado**, no existe servicio nativo operativo; gates MFA/MB1/C-FICHA `NO`, `GLOBAL_FREEZE=NOT_VERIFIED`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Los enlaces de continuidad de octubre que siguen debajo son históricos.
+
 # VENCIRA
 
 > **Continuidad entre chats:** abrir [NEXT_CHAT_HANDOFF_SHORT.md](docs/NEXT_CHAT_HANDOFF_SHORT.md) y [NEXT_CHAT_HANDOFF.md](docs/NEXT_CHAT_HANDOFF.md) para el estado y el siguiente paso, y [CONTINUITY_RUNBOOK.md](docs/CONTINUITY_RUNBOOK.md) para el histórico completo. Actualizar el handoff al cerrar cada hito; no reconstruir el proyecto desde cero.
