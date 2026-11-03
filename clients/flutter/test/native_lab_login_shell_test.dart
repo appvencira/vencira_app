@@ -88,7 +88,7 @@ void main() {
       port: port,
       fence: fence,
       vault: NativeRefreshCredentialVault(
-        endpoint: NativeApiEndpoint.parse('https://lab.invalid'),
+        endpoint: NativeApiEndpoint.parse('https://dev.vencira.es'),
         store: store,
       ),
     );
