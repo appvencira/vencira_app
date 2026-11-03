@@ -18,7 +18,7 @@ El operador comunicó que el runner integral `m3-http-contract-20261103T095043Z`
 ## Límites de seguridad — aún sin cerrar
 
 1. **No hay conexión a los eventos reales** de `session_store` ni de las vistas HTTP. Esto evita aparentar seguridad de auditoría productiva: ninguna autenticación efectiva genera aún estas filas.
-2. La idempotencia secuencial está cubierta por tests; **la carrera de inserción del mismo UUID bajo múltiples procesos aún necesita prueba y tratamiento explícito de `IntegrityError`**. No declarar deduplicación concurrente verificada.
+2. La idempotencia secuencial y la carrera de inserción del mismo UUID están ahora **cubiertas por código y por dos tests PG17 nuevos**, con `get_or_create` y bloqueo de fila tras el insert ganador. **Los tests nuevos todavía NO se han ejecutado localmente ni tienen CI confirmada**, por lo que no declarar deduplicación concurrente PASS.
 3. El esquema no proporciona por sí solo protección de integridad frente a administradores DB maliciosos o capacidad de borrado arbitrario; falta cadena verificable, exportación, custodia y permisos DB mínimos.
 4. La pseudonimización no convierte necesariamente los eventos en datos anónimos a efectos RGPD: falta evaluación formal, política de acceso, retención aprobada y mecanismo programado de purga.
 5. El llamador todavía podría pasar una cadena sensible como `actor`; será obligatorio tipar y normalizar identidades antes de conectar el módulo a un endpoint. No registrar errores completos, headers ni bodies de login.
@@ -45,3 +45,7 @@ El runner `scripts/m3_native_http_contract_batch.sh` reconstruye la imagen de te
 ## Próximo trabajo
 
 Tratar explícitamente concurrencia de la auditoría y la atribución de eventos, versionado de claves y rotación, supresión/desidentificación y controles de acceso antes de habilitar una ruta pública. Toda migración se ejecutará solo en base descartable.
+
+## Refuerzo de concurrencia posterior
+
+Se añadió `test_g5_audit_pg17_races.py`: (1) dos procesos que insertan el mismo UUID deben producir una única fila y un único `created=True`; (2) dos tipos de evento distintos con UUID idéntico deben aceptar uno y rechazar el otro sin doble inserción. El runner PG17, CI y el guard estático incluyen estos casos. **Estado: pendientes de ejecución.**
