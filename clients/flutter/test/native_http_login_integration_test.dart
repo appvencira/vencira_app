@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 import 'package:vencira/api/native_api_endpoint.dart';
 import 'package:vencira/api/native_api_transport.dart';
 import 'package:vencira/api/native_http_auth_port.dart';
@@ -49,6 +48,34 @@ http.StreamedResponse _syncStream(http.Response response) {
     response.statusCode,
     headers: response.headers,
   );
+}
+
+/// Deterministic, in-process HTTP transport for testWidgets. The real
+/// NativeHttpAuthPort and NativeApiTransport still build and parse streamed
+/// HTTP requests/responses; only the network boundary is simulated.
+/// This adapter avoids awaiting a forwarded request ByteStream during FakeAsync.
+class _LabHttpClient extends http.BaseClient {
+  _LabHttpClient(this._respond);
+
+  final http.Response Function(http.Request) _respond;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    if (request is! http.Request) {
+      return Future<http.StreamedResponse>.error(
+        StateError('Unexpected native HTTP request type'),
+      );
+    }
+    try {
+      final reply = _respond(request);
+      return Future<http.StreamedResponse>.value(_syncStream(reply));
+    } catch (error, stack) {
+      return Future<http.StreamedResponse>.error(error, stack);
+    }
+  }
+
+  @override
+  void close() {}
 }
 
 class _MemoryProtectedStore implements NativeSecretStore {
@@ -113,7 +140,7 @@ Future<void> _enterPassword(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('native-login-submit')));
 }
 
-void _requireNativeRequest(http.BaseRequest request, String path) {
+void _requireNativeRequest(http.Request request, String path) {
   expect(request.url.scheme, 'https');
   expect(request.url.host, 'dev.vencira.es');
   expect(request.url.path, path);
@@ -128,30 +155,30 @@ void main() {
     var passwordCalls = 0;
     var bearerReads = 0;
     var revokeCalls = 0;
-    final client = MockClient.streaming((request, bodyStream) async {
+    final client = _LabHttpClient((request) {
       if (request.url.path == '/api/v1/mobile/auth/password/') {
         passwordCalls++;
         _requireNativeRequest(request, '/api/v1/mobile/auth/password/');
         expect(request.method, 'POST');
         expect(request.headers['Authorization'], isNull);
-        expect(jsonDecode(await bodyStream.bytesToString()), {
+        expect(jsonDecode(request.body), {
           'username': 'lab-user', 'password': 'lab-password',
         });
-        return _syncStream(_grant());
+        return _grant();
       }
       if (request.url.path == '/api/v1/mobile/me/') {
         bearerReads++;
         _requireNativeRequest(request, '/api/v1/mobile/me/');
         expect(request.method, 'GET');
         expect(request.headers['Authorization'], 'Bearer ' + _access);
-        return _syncStream(_reply({'authenticated': true, 'user_id': 27}));
+        return _reply({'authenticated': true, 'user_id': 27});
       }
       if (request.url.path == '/api/v1/mobile/token/revoke/') {
         revokeCalls++;
         _requireNativeRequest(request, '/api/v1/mobile/token/revoke/');
         expect(request.method, 'POST');
-        expect(jsonDecode(await bodyStream.bytesToString()), {'refresh': _refresh});
-        return _syncStream(_reply({'status': 'revoked'}));
+        expect(jsonDecode(request.body), {'refresh': _refresh});
+        return _reply({'status': 'revoked'});
       }
       throw StateError('Unexpected native HTTP path');
     });
@@ -195,22 +222,22 @@ void main() {
       (tester) async {
     var mfaCalls = 0;
     var bearerReads = 0;
-    final client = MockClient.streaming((request, bodyStream) async {
+    final client = _LabHttpClient((request) {
       if (request.url.path == '/api/v1/mobile/auth/password/') {
         _requireNativeRequest(request, '/api/v1/mobile/auth/password/');
-        return _syncStream(_reply({'status': 'mfa_required', 'challenge': _challenge}));
+        return _reply({'status': 'mfa_required', 'challenge': _challenge});
       }
       if (request.url.path == '/api/v1/mobile/auth/mfa/') {
         mfaCalls++;
         _requireNativeRequest(request, '/api/v1/mobile/auth/mfa/');
-        expect(jsonDecode(await bodyStream.bytesToString()), {
+        expect(jsonDecode(request.body), {
           'challenge': _challenge, 'code': '123456',
         });
-        return _syncStream(_grant());
+        return _grant();
       }
       if (request.url.path == '/api/v1/mobile/me/') {
         bearerReads++;
-        return _syncStream(_reply({'authenticated': true, 'user_id': 27}));
+        return _reply({'authenticated': true, 'user_id': 27});
       }
       throw StateError('Unexpected native HTTP path');
     });
@@ -243,10 +270,10 @@ void main() {
   testWidgets('HTTP 401 on password cannot grant or store native session',
       (tester) async {
     var calls = 0;
-    final client = MockClient.streaming((request, bodyStream) async {
+    final client = _LabHttpClient((request) {
       calls++;
       _requireNativeRequest(request, '/api/v1/mobile/auth/password/');
-      return _syncStream(_reply({'error': 'native_auth_unavailable'}, status: 401));
+      return _reply({'error': 'native_auth_unavailable'}, status: 401);
     });
     final fixture = _Fixture(client);
     await tester.pumpWidget(MaterialApp(
@@ -265,13 +292,13 @@ void main() {
       (tester) async {
     var allowRevoke = false;
     var revokeCalls = 0;
-    final client = MockClient.streaming((request, bodyStream) async {
-      if (request.url.path == '/api/v1/mobile/auth/password/') return _syncStream(_grant());
+    final client = _LabHttpClient((request) {
+      if (request.url.path == '/api/v1/mobile/auth/password/') return _grant();
       if (request.url.path == '/api/v1/mobile/token/revoke/') {
         revokeCalls++;
-        return _syncStream(allowRevoke
+        return allowRevoke
             ? _reply({'status': 'revoked'})
-            : _reply({'error': 'native_auth_unavailable'}, status: 503));
+            : _reply({'error': 'native_auth_unavailable'}, status: 503);
       }
       throw StateError('Unexpected native HTTP path');
     });
