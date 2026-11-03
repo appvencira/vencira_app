@@ -1,5 +1,6 @@
 // G11 independent HTTPS scenarios, invoked ONLY by the G7 disposable TLS lab.
 // No production URL, key, user credentials or Android storage is used.
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
@@ -57,6 +58,8 @@ class _ObservedClient extends http.BaseClient {
   int recoveryCalls = 0;
   bool loseNextPasswordResponse = false;
   bool refuseNextRevoke = false;
+  bool loseNextRevokeResponse = false;
+  String? lostServerAccess;
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
@@ -85,9 +88,21 @@ class _ObservedClient extends http.BaseClient {
     if (path == '/api/v1/mobile/auth/password/' &&
         loseNextPasswordResponse) {
       loseNextPasswordResponse = false;
-      // Django completed issuance, but the client is denied the response.
-      await response.stream.drain<void>();
+      // The parsed value remains memory-only in this disposable probe.
+      // Never print or persist an access token. It proves that G6 account
+      // recovery invalidates a credential that the client never received.
+      final issued = await http.Response.fromStream(response);
+      final body = jsonDecode(issued.body);
+      if (body is Map<String, dynamic> && body['access'] is String) {
+        lostServerAccess = body['access'] as String;
+      }
       throw const SocketException('G11_SYNTHETIC_RESPONSE_LOST');
+    }
+    if (path == '/api/v1/mobile/token/revoke/' &&
+        loseNextRevokeResponse) {
+      loseNextRevokeResponse = false;
+      await response.stream.drain<void>();
+      throw const SocketException('G11_SYNTHETIC_REVOKE_RESPONSE_LOST');
     }
     return response;
   }
@@ -237,6 +252,8 @@ Future<void> verifyG11Https(
   );
   _check(recovered == NativePasswordDecision.authenticated &&
       rebootClient.recoveryCalls == 1 &&
+      uncertain.observed.lostServerAccess != null &&
+      await bearerStatus(uncertain.observed.lostServerAccess!) == 401 &&
       await rebootVault.read() != null &&
       !await rebootJournal.requiresReauthentication() &&
       rebootFence.ticket != null,
@@ -269,6 +286,29 @@ Future<void> verifyG11Https(
       !await brokenLogout.journal.requiresReauthentication() &&
       await bearerStatus(pendingAccess!) == 401,
       'REVOKE_RETRY_SERVER_DENIES_OLD_ACCESS');
+
+  // Django commits revocation, then the response is lost. A blind retry
+  // gets 401 from the same one-use refresh, so logout must remain *blocked*.
+  // The server MUST already deny the old bearer, independent of local state.
+  final ambiguousRevoke = _Case(endpoint, trustedIsolatedClient);
+  _check(await ambiguousRevoke.entry.inspect() ==
+      NativeStartupDisposition.cleanLogin, 'AMBIGUOUS_REVOKE_PREFLIGHT');
+  await ambiguousRevoke.entry.verifyPassword(
+    username: _username, password: _password,
+  );
+  final ambiguousAccess = await ambiguousRevoke.entry.accessToken();
+  ambiguousRevoke.observed.loseNextRevokeResponse = true;
+  await _expectHttpFailure(() => ambiguousRevoke.entry.logout());
+  _check(ambiguousRevoke.fence.ticket == null &&
+      await ambiguousRevoke.journal.requiresReauthentication() &&
+      await ambiguousRevoke.vault.read() != null &&
+      await bearerStatus(ambiguousAccess!) == 401,
+      'POST_COMMIT_REVOKE_RESPONSE_LOSS_FENCED');
+  await _expectHttpFailure(() => ambiguousRevoke.entry.logout());
+  _check(await ambiguousRevoke.journal.requiresReauthentication() &&
+      ambiguousRevoke.fence.ticket == null &&
+      ambiguousRevoke.observed.revokeCalls == 2,
+      'AMBIGUOUS_REVOKE_RETRY_CANNOT_REOPEN');
 
   // Real MFA completes only with the pre-issued durable checkpoint present.
   final mfa = _Case(endpoint, trustedIsolatedClient);
