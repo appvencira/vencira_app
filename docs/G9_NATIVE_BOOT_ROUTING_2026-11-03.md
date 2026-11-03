@@ -61,3 +61,9 @@ G9_LOCAL_RESULT=0
 La CI `.github/workflows/g9-native-startup-gate.yml` ejecuta el mismo lote en PR y cambios relevantes. Los guardas estáticos `g9_native_startup_recovers_orphan_fail_closed` y `g9_recovery_entry_never_downgrades_to_regular_login` prohíben perder los requisitos o enlazar el prototipo a `main.dart`.
 
 **Estado: G9-A/B PENDING hasta recibo local o CI del lote.** No confundir un test unitario sintético con una prueba completa de login móvil operativo ni elevar estado de release.
+
+## G9 — Resultado local PASS confirmado (03/11/2026)
+
+El operador ejecutó `scripts/g9_native_startup_gate.sh` después de actualizar la rama. El control N1 mostró todas las comprobaciones `N1_STATIC_*=OK`, incluidas `N1_STATIC_g9_native_startup_recovers_orphan_fail_closed=OK`, `N1_STATIC_g9_recovery_entry_never_downgrades_to_regular_login=OK` y `N1_STATIC_GATE_RESULT=OK`. El lote Flutter mostró `G9_STARTUP_ANALYZE=OK`, `G9_STARTUP_AND_RECOVERY_UNIT=OK`, `G9_STARTUP_GATE_BATCH=OK`, `G9_STARTUP_GATE_RESULT=0` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`. La primera petición de `sudo` fue rechazada, pero tras reintroducir la contraseña el runner acabó con resultado 0. **G9-A/B = PASS en suite unitaria sintética**; no son HTTP E2E ni login operativo.
+
+El siguiente bloque G10 debe resolver **primer checkpoint de emisión protegido y logout fail-closed** sin permitir un acceso al backend antes de persistir el marcador. Mantener `main.dart` y `config.urls` desconectados. No repetir G7/G8/G9 salvo que cambien los contratos ya verificados.
