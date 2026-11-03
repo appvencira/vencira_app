@@ -24,7 +24,10 @@ step BUILD "${DOCKER[@]}" build -t vencira-m3-backend-test ./backend
 
 if [ "${RESULT[BUILD]}" -eq 0 ]; then
   step PG17_LAB bash scripts/n1_identity_pg17_ephemeral.sh --lab
+  step G4_PG17 bash scripts/n1_identity_pg17_ephemeral.sh --candidate
 else
+  RESULT[G4_PG17]=99
+  echo "M3_HTTP_G4_PG17=99"
   RESULT[PG17_LAB]=99
   echo "M3_HTTP_PG17_LAB=99"
 fi
@@ -36,7 +39,7 @@ step FLUTTER "${DOCKER[@]}" run --rm \
 
 echo "=== M3 HTTP CONTRACT FINAL SUMMARY ==="
 failed=0
-for name in STATIC BUILD PG17_LAB FLUTTER; do
+for name in STATIC BUILD PG17_LAB G4_PG17 FLUTTER; do
   code="${RESULT[$name]:-99}"
   echo "M3_HTTP_$name=$code"
   if [ "$code" -ne 0 ]; then failed=1; fi
