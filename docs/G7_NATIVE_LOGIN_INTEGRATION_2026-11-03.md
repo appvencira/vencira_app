@@ -37,3 +37,22 @@ G7_A_LAB_UI_TESTS=PENDING
 ```
 
 PR #17 continúa DRAFT; no merge ni migración de la BD persistente.
+
+## Incidencia de validación y corrección de tests — 03/11/2026
+
+El operador comunica `m3-http-contract-20261103T133437Z`: `M3_HTTP_STATIC=0`, `BUILD=0`, `PG17_LAB=0`, `G4_PG17=0`, `FLUTTER=1`, `M3_HTTP_RESULT=1`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Los cinco fallos están en `native_lab_login_shell_test.dart`; el extracto muestra `pumpAndSettle timed out` durante el login y un override global de plataforma sin limpiar antes del chequeo de invariantes.
+
+Se corrigió **solo el archivo de pruebas**: espera limitada por objetivos observables del widget (MFA, logout, error o vuelta a login) en lugar de `pumpAndSettle` sobre widgets que pueden animarse indefinidamente; `debugDefaultTargetPlatformOverride` se restablece en `finally` antes de terminar el test. En el caso de fallo de revocación, la prueba espera el error de cierre y no el login (que debe permanecer bloqueado). **Esta corrección aún no está validada localmente: no afirmar PASS.**
+
+Primero ejecutar **solo Flutter** usando el contenedor de herramientas Flutter sobre el checkout actualizado, sin correr Docker backend ni PG17:
+
+```bash
+cd ~/vencira-m3-localcheck
+git status --short
+git fetch origin feature/m3-android-local-notifications
+git merge --ff-only FETCH_HEAD
+sudo docker run --rm -v "$PWD/clients/flutter:/work" -w /work ghcr.io/cirruslabs/flutter:stable sh -c 'flutter pub get && flutter analyze && flutter test test/native_lab_login_shell_test.dart'
+echo "G7_FLUTTER_TARGETED_RESULT=$?"
+```
+
+Los logs no se incorporan a GitHub (repo público). Si falla, solicitar primeras líneas de excepción/estado observado, no repetir PG17. No desplegar, migrar ni liberar autenticación operativa.
