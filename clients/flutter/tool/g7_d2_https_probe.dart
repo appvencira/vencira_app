@@ -303,7 +303,7 @@ Future<void> main() async {
       final cookieName = cookieHeader.split('=').first.trim();
       final isSessionCookie = cookieName == 'vencira_sessionid';
       final isDeletion = RegExp(
-        r'(?:^|;)\\s*max-age=0(?:;|$)', caseSensitive: false,
+        r'(?:^|;)\s*max-age=0(?:;|$)', caseSensitive: false,
       ).hasMatch(cookieHeader);
       stdout.writeln(
         'G7_D2_REJECT_COOKIE_SESSION_NAME=$isSessionCookie',
