@@ -365,3 +365,24 @@ El operador ejecutó `scripts/g10_issuance_logout_gate.sh`. **N1 estático ínte
 **Diagnóstico:** el caso negativo construía deliberadamente `NativeMobileStartupGate` con un `fence` distinto del del `NativeRefreshRecoveryJournal`. `inspect()` comprueba identidad de fence y lanza **StateError síncronamente antes de devolver un Future**. La prueba usaba `await expectLater(cold.inspect(), throwsStateError)`, que evalúa `cold.inspect()` *fuera* del matcher: por ello el `StateError` intencional escapó y señaló un falso fallo de la prueba. Se sustituyó exclusivamente por `expect(() => cold.inspect(), throwsStateError)`, que entrega una función para que el matcher capture la excepción síncrona. **No se tocó la lógica de seguridad de producción ni se flexibilizó el bloqueo por mismatch**. La segunda parte del mismo test, con `rebootFence` compartido, conserva la comprobación positiva de `fullReauthentication` después de un inicio fallido.
 
 **Estado:** fuente corregida y publicada; G10 **PENDING RECHECK**, NO PASS hasta la nueva salida de `bash scripts/g10_issuance_logout_gate.sh`. Repetir solo la batería agrupada G10; no repetir G7 HTTPS, G8 móvil físico ni G9 aislado. Sigue PR DRAFT, `NO_DEPLOY_NO_LIVE_MIGRATION=1` y release MFA/MB1/C-FICHA no autorizado.
+
+## G10 — Reejecución integral PASS confirmada por operador (03/11/2026)
+
+Tras la corrección de la aserción síncrona del test negativo, el operador ejecutó de nuevo el runner G10 en Ubuntu, con los siguientes marcadores:
+
+```text
+N1_STATIC_g9_recovery_entry_never_downgrades_to_regular_login=OK
+N1_STATIC_g10_first_issuance_logout_checkpoint=OK
+N1_STATIC_lab_issuer_requires_epoch=OK
+N1_STATIC_GATE_RESULT=OK
+G10_ISSUANCE_ANALYZE=OK
+G10_ISSUANCE_LOGOUT_UNIT=OK
+G10_G9_G6_REGRESSION=OK
+G10_ISSUANCE_LOGOUT_BATCH=OK
+G10_ISSUANCE_LOGOUT_GATE_RESULT=0
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
+
+**Resultado: G10 = PASS, suite unitaria Flutter agrupada y guardia estática.** La salida no incluye la línea opcional `G10_LOCAL_RESULT=0` de un `echo` posterior, pero el propio runner informa `G10_ISSUANCE_LOGOUT_GATE_RESULT=0`. Se cierra el incidente anterior de 63/64, causado por un matcher inadecuado para una excepción síncrona; no fue un fallo del protocolo de seguridad. El bloqueo por `Native startup fence mismatch` permanece sin modificaciones.
+
+**Alcance:** primera emisión con marcador duradero, acceso cerrado hasta confirmar vault y limpieza de marcador, revocación/cierre fail-closed y regresiones G9/G6 en condiciones de prueba con puertos simulados. **Todavía NO existe evidencia de G10 contra Django por HTTPS ni de este protocolo completo en Android físico.** El siguiente paso razonable es el ensayo HTTPS aislado G11 (o la auditoría correspondiente), sin desplegar ni montar emisores reales. No reejecutar G7/G8/G9 salvo que cambien sus contratos. PR #17 DRAFT, `MB1_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `GLOBAL_FREEZE=NOT_VERIFIED`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
