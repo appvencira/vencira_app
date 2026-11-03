@@ -86,6 +86,12 @@ void main() {
     port = _SyntheticPort();
     store = _SyntheticStore();
     fence = NativeSessionFence();
+  });
+
+  void buildCoordinatorInCurrentZone() {
+    // NativeRefreshCredentialVault starts a Future chain on construction.
+    // Constructing it in setUp (outside testWidgets' fake-async zone) can
+    // strand the credential write/read continuation despite normal pumping.
     coordinator = NativeSessionCoordinator(
       port: port,
       fence: fence,
@@ -94,7 +100,7 @@ void main() {
         store: store,
       ),
     );
-  });
+  }
 
   Future<void> waitFor(WidgetTester tester, Finder target) async {
     // A busy login/secure-logout screen may show an indefinitely animated
@@ -139,6 +145,7 @@ void main() {
   }
 
   test('synthetic fixture satisfies native credential shape and coordinator', () async {
+    buildCoordinatorInCurrentZone();
     expect(NativeMobileTokenShape.accepts(_access, kind: 'a'), isTrue);
     expect(NativeMobileTokenShape.accepts(_refresh, kind: 'r'), isTrue);
     final decision = await coordinator.verifyPassword(
@@ -152,6 +159,7 @@ void main() {
 
   testWidgets('native shell starts locked; password success stays lab-only',
       (tester) async {
+    buildCoordinatorInCurrentZone();
     await tester.pumpWidget(MaterialApp(
       home: NativeLabLoginShell(coordinator: coordinator),
     ));
@@ -168,6 +176,7 @@ void main() {
   testWidgets('MFA challenge cannot open shell before verified code',
       (tester) async {
     port.requireMfa = true;
+    buildCoordinatorInCurrentZone();
     await tester.pumpWidget(MaterialApp(
       home: NativeLabLoginShell(coordinator: coordinator),
     ));
@@ -187,6 +196,7 @@ void main() {
 
   testWidgets('logout closes fence, revokes and clears vault',
       (tester) async {
+    buildCoordinatorInCurrentZone();
     await tester.pumpWidget(MaterialApp(
       home: NativeLabLoginShell(coordinator: coordinator),
     ));
@@ -202,6 +212,7 @@ void main() {
   testWidgets('revocation failure never unlocks and allows cleanup retry',
       (tester) async {
     port.failRevocation = true;
+    buildCoordinatorInCurrentZone();
     await tester.pumpWidget(MaterialApp(
       home: NativeLabLoginShell(coordinator: coordinator),
     ));
@@ -223,6 +234,7 @@ void main() {
   testWidgets('app entrypoint only accepts explicitly injected lab coordinator',
       (tester) async {
     // Avoid Android OS alarm method channel in an entirely synthetic test.
+    buildCoordinatorInCurrentZone();
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
     try {
       await tester.pumpWidget(VenciraApp(nativeLoginLab: coordinator));
