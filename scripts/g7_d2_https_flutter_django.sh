@@ -67,7 +67,7 @@ bash -n scripts/g7_d2_https_flutter_django.sh
   -e PUB_CACHE=/tmp/g7-d2-pub-cache \
   -e G7_BATCH_FAST="$FAST" \
   ghcr.io/cirruslabs/flutter:stable \
-  sh -c 'flutter pub get && if [ "${G7_BATCH_FAST}" = "0" ]; then flutter analyze tool/g7_d2_https_probe.dart test/g7_d2_https_live_test.dart; else echo G7_BATCH_ANALYZE=SKIPPED_FAST_MODE; fi'
+  sh -c 'if [ "${G7_BATCH_FAST}" = "1" ]; then flutter pub get --offline || flutter pub get; echo G7_BATCH_ANALYZE=SKIPPED_FAST_MODE; else flutter pub get && flutter analyze tool/g7_d2_https_probe.dart test/g7_d2_https_live_test.dart; fi'
 
 "${DOCKER[@]}" network create --internal "$NETWORK" >/dev/null
 test "$("${DOCKER[@]}" network inspect -f '{{.Internal}}' "$NETWORK")" = "true"
