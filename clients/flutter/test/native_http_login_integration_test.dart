@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -33,6 +34,22 @@ http.Response _grant() => _reply({
   'access': _access,
   'refresh': _refresh,
 });
+
+/// A deterministic synchronous byte stream is required for widget tests:
+/// MockClient(Response) internally adapts the body to a deferred stream,
+/// which may not complete while the fake-async widget clock is being pumped.
+/// This helper tests the actual streamed-body parser rather than bypassing it.
+http.StreamedResponse _syncStream(http.Response response) {
+  final stream = Stream<List<int>>.multi((controller) {
+    controller.addSync(response.bodyBytes);
+    controller.closeSync();
+  });
+  return http.StreamedResponse(
+    stream,
+    response.statusCode,
+    headers: response.headers,
+  );
+}
 
 class _MemoryProtectedStore implements NativeSecretStore {
   final values = <String, String>{};
@@ -111,7 +128,7 @@ void main() {
     var passwordCalls = 0;
     var bearerReads = 0;
     var revokeCalls = 0;
-    final client = MockClient((request) async {
+    final client = MockClient.streaming((request) async {
       if (request.url.path == '/api/v1/mobile/auth/password/') {
         passwordCalls++;
         _requireNativeRequest(request, '/api/v1/mobile/auth/password/');
@@ -120,21 +137,21 @@ void main() {
         expect(jsonDecode(request.body), {
           'username': 'lab-user', 'password': 'lab-password',
         });
-        return _grant();
+        return _syncStream(_grant());
       }
       if (request.url.path == '/api/v1/mobile/me/') {
         bearerReads++;
         _requireNativeRequest(request, '/api/v1/mobile/me/');
         expect(request.method, 'GET');
         expect(request.headers['Authorization'], 'Bearer ' + _access);
-        return _reply({'authenticated': true, 'user_id': 27});
+        return _syncStream(_reply({'authenticated': true, 'user_id': 27}));
       }
       if (request.url.path == '/api/v1/mobile/token/revoke/') {
         revokeCalls++;
         _requireNativeRequest(request, '/api/v1/mobile/token/revoke/');
         expect(request.method, 'POST');
         expect(jsonDecode(request.body), {'refresh': _refresh});
-        return _reply({'status': 'revoked'});
+        return _syncStream(_reply({'status': 'revoked'}));
       }
       throw StateError('Unexpected native HTTP path');
     });
@@ -178,10 +195,10 @@ void main() {
       (tester) async {
     var mfaCalls = 0;
     var bearerReads = 0;
-    final client = MockClient((request) async {
+    final client = MockClient.streaming((request) async {
       if (request.url.path == '/api/v1/mobile/auth/password/') {
         _requireNativeRequest(request, '/api/v1/mobile/auth/password/');
-        return _reply({'status': 'mfa_required', 'challenge': _challenge});
+        return _syncStream(_reply({'status': 'mfa_required', 'challenge': _challenge}));
       }
       if (request.url.path == '/api/v1/mobile/auth/mfa/') {
         mfaCalls++;
@@ -189,11 +206,11 @@ void main() {
         expect(jsonDecode(request.body), {
           'challenge': _challenge, 'code': '123456',
         });
-        return _grant();
+        return _syncStream(_grant());
       }
       if (request.url.path == '/api/v1/mobile/me/') {
         bearerReads++;
-        return _reply({'authenticated': true, 'user_id': 27});
+        return _syncStream(_reply({'authenticated': true, 'user_id': 27}));
       }
       throw StateError('Unexpected native HTTP path');
     });
@@ -226,10 +243,10 @@ void main() {
   testWidgets('HTTP 401 on password cannot grant or store native session',
       (tester) async {
     var calls = 0;
-    final client = MockClient((request) async {
+    final client = MockClient.streaming((request) async {
       calls++;
       _requireNativeRequest(request, '/api/v1/mobile/auth/password/');
-      return _reply({'error': 'native_auth_unavailable'}, status: 401);
+      return _syncStream(_reply({'error': 'native_auth_unavailable'}, status: 401));
     });
     final fixture = _Fixture(client);
     await tester.pumpWidget(MaterialApp(
@@ -248,13 +265,13 @@ void main() {
       (tester) async {
     var allowRevoke = false;
     var revokeCalls = 0;
-    final client = MockClient((request) async {
-      if (request.url.path == '/api/v1/mobile/auth/password/') return _grant();
+    final client = MockClient.streaming((request) async {
+      if (request.url.path == '/api/v1/mobile/auth/password/') return _syncStream(_grant());
       if (request.url.path == '/api/v1/mobile/token/revoke/') {
         revokeCalls++;
-        return allowRevoke
+        return _syncStream(allowRevoke
             ? _reply({'status': 'revoked'})
-            : _reply({'error': 'native_auth_unavailable'}, status: 503);
+            : _reply({'error': 'native_auth_unavailable'}, status: 503));
       }
       throw StateError('Unexpected native HTTP path');
     });
