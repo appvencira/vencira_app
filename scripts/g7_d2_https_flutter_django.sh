@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# G7-D2: Flutter/Dart -> real verified HTTPS -> Django test issuer.
-# Isolated Docker-only runtime: no published ports, no live DB or credentials.
-# The image used for Django is rebuilt from the local checkout.
+# G7-D2: Dart/Flutter verified HTTPS -> isolated Django test issuer.
+# Disposable Docker-internal network and SQLite tmpfs; NO published ports.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -31,8 +30,7 @@ python3 scripts/n1_static_security_gate.py
 bash -n scripts/g7_d2_https_flutter_django.sh
 "${DOCKER[@]}" build -t "$IMAGE" ./backend
 
-# Dependency acquisition occurs BEFORE the isolated network is created.
-# The runtime test uses the cached package resolution with --internal only.
+# Preload package dependencies before opening the internal-only Docker network.
 mkdir -p "$TMP/pub-cache"
 "${DOCKER[@]}" run --rm \
   -v "$PWD/clients/flutter:/work" -w /work \
@@ -44,10 +42,7 @@ mkdir -p "$TMP/pub-cache"
 "${DOCKER[@]}" network create --internal "$NETWORK" >/dev/null
 test "$("${DOCKER[@]}" network inspect -f '{{.Internal}}' "$NETWORK")" = "true"
 
-# Django runs without root on a read-only filesystem. Its SQLite DB,
-# temporary certificate/private key, and generated CA are in tmpfs.
-# The TLS service listens on 8443 ONLY in the private Docker network.
-# No -p, --publish, host networking, or host secrets are permitted.
+# Django: read-only filesystem, SQLite/certificate in tmpfs, no host port.
 "${DOCKER[@]}" run --rm -d \
   --name "$SERVER" \
   --network "$NETWORK" \
@@ -79,17 +74,14 @@ if [[ "$ready" != 1 ]]; then
   exit 1
 fi
 echo "G7_D2_FIXTURE_READY=OK"
+
 G7_D2_PEER_IPV4="$("${DOCKER[@]}" inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$SERVER")"
 if [[ ! "$G7_D2_PEER_IPV4" =~ ^[0-9]{1,3}([.][0-9]{1,3}){3}$ ]]; then
   echo "G7_D2_PRIVATE_PEER=INVALID" >&2
   exit 1
 fi
 
-# Export ONLY the public test CA; private keys stay in backend tmpfs.
-# docker cp may be unable to resolve files inside an ephemeral tmpfs mount,
-# even after the ready marker has been observed via docker exec. Stream the
-# public certificate from the running container instead of copying its path.
-# Verify the *source file* first and never log certificate bytes or keys.
+# Export the PUBLIC temporary CA via the running container. Never export a key.
 if ! "${DOCKER[@]}" exec "$SERVER" sh -c \
     'test -f /tmp/g7d2-ready && test -s /tmp/g7d2-public-ca.pem'; then
   echo "G7_D2_PUBLIC_CA_SOURCE=MISSING" >&2
@@ -99,60 +91,28 @@ if ! "${DOCKER[@]}" exec "$SERVER" cat /tmp/g7d2-public-ca.pem > "$TMP/public-ca
   echo "G7_D2_PUBLIC_CA_STREAM=FAIL" >&2
   exit 1
 fi
-chmod 600 "$TMP/public-ca.pem"
-if ! test -s "$TMP/public-ca.pem" ||
-   ! grep -q '^-----BEGIN CERTIFICATE-----
 
-# The Dart peer address comes directly from the isolated Docker network,
-# without DNS. The URI/SNI remains dev.vencira.es and the temporary CA is
-# strictly verified, never accepted through a bad-certificate callback.
-"${DOCKER[@]}" run --rm \
-  --network "$NETWORK" \
-  --tmpfs /tmp:rw,nosuid,size=268435456,mode=1777 \
-  --cap-drop ALL --security-opt no-new-privileges \
-  --pids-limit 128 \
-  -v "$PWD/clients/flutter:/work" -w /work \
-  -v "$TMP/pub-cache:/tmp/g7-d2-pub-cache" \
-  -v "$TMP/public-ca.pem:/tmp/g7d2-public-ca.pem:ro" \
-  -e PUB_CACHE=/tmp/g7-d2-pub-cache \
-  -e G7_D2_ISOLATED_NETWORK_ACK=1 \
-  -e G7_D2_CA_FILE=/tmp/g7d2-public-ca.pem \
-  -e G7_D2_PEER_IPV4="$G7_D2_PEER_IPV4" \
-  ghcr.io/cirruslabs/flutter:stable \
-  sh -c 'flutter test --no-pub test/g7_d2_https_live_test.dart --reporter expanded'
+# CA certificate contains no private key. World-readable bind-mount file is
+# intentional: Flutter's container user need not match the Ubuntu user.
+# The host's parent TMP directory remains 0700; no private PEM is shared.
+chmod 0644 "$TMP/public-ca.pem"
+python3 - "$TMP/public-ca.pem" <<'PY'
+import ssl
+import sys
+from pathlib import Path
 
-echo "G7_D2_FLUTTER_DJANGO_HTTPS=OK"
- "$TMP/public-ca.pem" ||
-   ! grep -q '^-----END CERTIFICATE-----
-
-# The Dart peer address comes directly from the isolated Docker network,
-# without DNS. The URI/SNI remains dev.vencira.es and the temporary CA is
-# strictly verified, never accepted through a bad-certificate callback.
-"${DOCKER[@]}" run --rm \
-  --network "$NETWORK" \
-  --tmpfs /tmp:rw,nosuid,size=268435456,mode=1777 \
-  --cap-drop ALL --security-opt no-new-privileges \
-  --pids-limit 128 \
-  -v "$PWD/clients/flutter:/work" -w /work \
-  -v "$TMP/pub-cache:/tmp/g7-d2-pub-cache" \
-  -v "$TMP/public-ca.pem:/tmp/g7d2-public-ca.pem:ro" \
-  -e PUB_CACHE=/tmp/g7-d2-pub-cache \
-  -e G7_D2_ISOLATED_NETWORK_ACK=1 \
-  -e G7_D2_CA_FILE=/tmp/g7d2-public-ca.pem \
-  -e G7_D2_PEER_IPV4="$G7_D2_PEER_IPV4" \
-  ghcr.io/cirruslabs/flutter:stable \
-  sh -c 'flutter test --no-pub test/g7_d2_https_live_test.dart --reporter expanded'
-
-echo "G7_D2_FLUTTER_DJANGO_HTTPS=OK"
- "$TMP/public-ca.pem"; then
-  echo "G7_D2_PUBLIC_CA_FORMAT=FAIL" >&2
-  exit 1
-fi
+raw = Path(sys.argv[1]).read_text(encoding="ascii")
+assert raw.count("-----BEGIN CERTIFICATE-----") == 1
+assert raw.count("-----END CERTIFICATE-----") == 1
+assert "PRIVATE KEY" not in raw
+assert len(raw) <= 16384
+assert len(ssl.PEM_cert_to_DER_cert(raw)) > 128
+PY
 echo "G7_D2_PUBLIC_CA_READY=OK"
 
-# The Dart peer address comes directly from the isolated Docker network,
-# without DNS. The URI/SNI remains dev.vencira.es and the temporary CA is
-# strictly verified, never accepted through a bad-certificate callback.
+# Flutter uses real HttpClient/IOClient. The TCP peer is the private IPv4,
+# but URI/SNI remains dev.vencira.es and the ephemeral CA must verify.
+# The PEM is a read-only mount; we do NOT use badCertificateCallback.
 "${DOCKER[@]}" run --rm \
   --network "$NETWORK" \
   --tmpfs /tmp:rw,nosuid,size=268435456,mode=1777 \
@@ -166,6 +126,10 @@ echo "G7_D2_PUBLIC_CA_READY=OK"
   -e G7_D2_CA_FILE=/tmp/g7d2-public-ca.pem \
   -e G7_D2_PEER_IPV4="$G7_D2_PEER_IPV4" \
   ghcr.io/cirruslabs/flutter:stable \
-  sh -c 'flutter test --no-pub test/g7_d2_https_live_test.dart --reporter expanded'
+  sh -c 'flutter test --no-pub test/g7_d2_https_live_test.dart --reporter expanded' \
+  | tee "$TMP/flutter-result.log"
 
+# A skipped or failed Flutter test must not produce a false success marker.
+grep -Fq -- 'G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0' "$TMP/flutter-result.log"
+grep -Fq -- 'All tests passed!' "$TMP/flutter-result.log"
 echo "G7_D2_FLUTTER_DJANGO_HTTPS=OK"
