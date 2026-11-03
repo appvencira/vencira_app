@@ -202,3 +202,31 @@ printf 'G7_C_LOOPBACK_PG17_RESULT=%s\\n' "$?"
 ```
 
 El script usa PostgreSQL17 en `tmpfs` y una red Docker interna **sin puertos publicados**. La clase de socket abre únicamente loopback dentro del contenedor de test y no requiere acceso externo. Mantener `NO_DEPLOY_NO_LIVE_MIGRATION=1` y `RELEASE_AUTHORIZED=NO`.
+
+## G7-D1 — TLS verificado en loopback con Django desechable (pendiente de prueba)
+
+Se incorpora `backend/native_sessions_lab/test_verified_https_loopback.py` con tres `LiveServerTestCase` para comprobar **HTTPS real hasta un proxy local efímero** delante del servidor de test Django. El servidor Django sigue escuchando HTTP **solo en 127.0.0.1** (análogamente al reverse proxy operativo), mientras el proxy TLS escucha también **exclusivamente en 127.0.0.1 sobre un puerto aleatorio**. No se publica Docker `443` ni se cambia Caddy, Nginx o configuración de producción.
+
+Cada caso crea una **CA temporal y una identidad de servidor temporal para `dev.vencira.es`**, con extensión SAN DNS. Los materiales de prueba se generan al ejecutar el test en un directorio temporal, la clave privada usa permisos 0600 y se elimina al acabar; no se incluyen ni distribuyen certificados o claves en el repositorio. El cliente se conecta físicamente a `127.0.0.1`, no consulta DNS público y establece SNI `dev.vencira.es`. La verificación de identidad y cadena de confianza permanece habilitada: `ssl.CERT_REQUIRED`, `check_hostname=True`; las pruebas exigen fallar ante una CA no confiable o un nombre de servidor incorrecto.
+
+Las tres comprobaciones son (a) contraseña contra el emisor Django de laboratorio → Bearer `/me/` → revocación → denegación posterior, (b) CA/hostname incorrectos rechazados en handshake TLS, (c) Cookie web y Origin no permitido rechazados atravesando TLS. La configuración `ROOT_URLCONF=native_sessions_lab.test_urls` está limitada a esta clase de test; las rutas reales continúan ausentes.
+
+Se integra en el runner de PG17 `--lab` y en SQLite/PG17 CI, y se añade un modo rápido **`--lab-https`** que ejecuta solo estas tres pruebas mediante PostgreSQL17 desechable en `tmpfs` y red Docker privada. El gate estático exige aislamiento loopback, TLS con validación de CA y hostname, y ausencia de desactivación de la verificación.
+
+**`G7_D1_TLS_PG17_RESULT=PENDING`**: código publicado pero no ejecutado en local/CI de forma acreditada. Este bloque **no es aún una prueba Flutter→Django**, pues el cliente de las tres pruebas es Python `http.client` con TLS real; no es una APK Android ni debe presentarse como una aprobación de autenticación nativa. `G7-A/B=11/11 PASS local`; `G7-C/N1_PG17_LAB_RESULT=0` sobre 84 tests. Release sigue BLOQUEADO.
+
+### Validación exclusiva G7-D1
+
+```bash
+cd ~/vencira-m3-localcheck
+git status --short
+git fetch origin feature/m3-android-local-notifications
+git merge --ff-only FETCH_HEAD
+python3 scripts/n1_static_security_gate.py &&
+bash -n scripts/n1_identity_pg17_ephemeral.sh &&
+sudo docker build -t vencira-m3-backend-test ./backend &&
+bash scripts/n1_identity_pg17_ephemeral.sh --lab-https
+echo "G7_D1_GATE_RESULT=$?"
+```
+
+No forzar `git merge` si existen conflictos con cambios locales. No desplegar, migrar BD persistente, abrir firewall ni utilizar claves de producción. Para G7-D2 quedará pendiente incorporar **el cliente Flutter a un servidor Django HTTPS aislado**, usando una política de certificados explícita y sin debilitar `NativeApiEndpoint`.
