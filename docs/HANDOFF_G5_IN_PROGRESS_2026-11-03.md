@@ -156,3 +156,11 @@ echo "G7_D1_GATE_RESULT=$?"
 ```
 
 Conservar `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. PR #17 sigue **DRAFT**, no fusionar.
+
+## G7-D1 PASS y G7-D2 Flutter-Django HTTPS candidato (03/11/2026)
+
+El operador comunicó `Ran 3 tests in 2.279s; OK; G7_D1_TLS_PG17_RESULT=0` en PostgreSQL 17 temporal. Se suman G7-A+B `11 PASS` y G7-C `84 PASS` previos. Estos recibos acreditan la capa de servidor, UI sintética y puertos Flutter con mock, **no** una APK ni login móvil operativo.
+
+Añadido **G7-D2 pendiente**: el script `scripts/g7_d2_https_flutter_django.sh` arranca Django test-only y el cliente Flutter en **red Docker --internal sin puertos publicados**, emisor WSGI Django con SQLite en `tmpfs`, proxy HTTPS con CA/certificado efímeros, y cliente `HttpClient` real con CA explícita, hostname/SNI, peer IPv4 privado y sin desactivar la verificación. Verifica contraseña, Bearer `/me/`, persistencia de refresh en store sintético, revocación, cookie, contraseña incorrecta y fallos TLS. La prueba Flutter de red `g7_d2_https_live_test.dart` se omite fuera de un entorno G7-D2 explícito; G7-A/B permanecen separados. CI propio `g7-d2-isolated-https.yml` y static guard incluidos. No es todavía Android en dispositivo ni MFA real entre procesos.
+
+`G7_D2_LOCAL_RESULT=PENDING`; no indicar PASS ni merge/deploy/migrate. Validar con checkout actualizado y `bash scripts/g7_d2_https_flutter_django.sh` (el script compila imagen Django, precarga Flutter, ejecuta el test y limpia contenedores/red incluso al fallar). Mantener `MB1_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
