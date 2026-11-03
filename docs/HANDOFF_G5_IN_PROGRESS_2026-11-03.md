@@ -109,3 +109,7 @@ Siguiente validación: **Flutter focalizado** con `flutter pub get && flutter an
 ## G7-B primer intento local rojo; streaming mock candidato
 
 Resultado del operador: `G7_B_HTTP_TEST_RESULT=1`, `flutter analyze` limpio, seis pruebas G7-A correctas y de cuatro G7-B solo la denegación HTTP 401 pasa. El flujo de éxito/MFA no alcanza UI esperada. Hipótesis: el cuerpo de `MockClient(Response)` entrega eventos diferidos incompatibles con el avance `FakeAsync` esperado, mientras 401 se rechaza antes de leer el cuerpo. Cambio limitado a `native_http_login_integration_test.dart`: streaming HTTP sincrónico via `MockClient.streaming` con `Stream.multi/addSync/closeSync`, sin bypass de parser. **NUEVA VALIDACIÓN PENDIENTE**, no hay PASS de G7-B. Detalles en [G7](G7_NATIVE_LOGIN_INTEGRATION_2026-11-03.md). Release bloqueado: `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## G7-B: 13 errores de análisis de MockClient.streaming corregidos, recheck pendiente
+
+El intento del operador contra `491f0702` terminó en `G7_B_HTTP_RECHECK=1` **antes de ejecutar tests**: `flutter analyze` encontró 13 errores por firma errónea de `MockClient.streaming` y uso de `Request.body` sobre `BaseRequest`. Código test-only actualizado para firma `(BaseRequest, ByteStream)` y lectura del cuerpo de petición desde `ByteStream.bytesToString()`. **Aún no PASS**; los tres fallos iniciales G7-B no se han revalidado. No modificar Django ni PG17, no deploy. Ver `docs/G7_NATIVE_LOGIN_INTEGRATION_2026-11-03.md`.
