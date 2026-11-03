@@ -205,7 +205,8 @@ class _G8LabHomeState extends State<_G8LabHome> {
                         ))),
                   ]),
                 ),
-              if (_failure != null)
+              ),
+            if (_failure != null)
               Card(
                 color: scheme.errorContainer,
                 child: Padding(
