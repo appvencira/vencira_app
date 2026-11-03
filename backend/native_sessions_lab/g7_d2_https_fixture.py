@@ -62,6 +62,33 @@ def run():
         password="G7-D2-Only-Synthetic-Password-2026!",
     )
 
+    # G7-E: a separate synthetic MFA account; the RFC 6238 sample key is
+    # deliberately public test material, NEVER an operational account key.
+    # The Fernet encryption key is newly generated each run and remains
+    # inside the disposable backend process (not in Docker environment args,
+    # Git, logs, host mounts or client containers).
+    from cryptography.fernet import Fernet
+    from reminders.mfa_secrets import encrypt_totp_secret
+    from reminders.models import UserMfaState
+
+    mfa_key = Fernet.generate_key().decode("ascii")
+    os.environ["VENCIRA_MFA_FERNET_KEYS"] = mfa_key
+    os.environ["VENCIRA_MFA_FERNET_KEYS_FILE"] = ""
+    mfa_user = user.objects.create_user(
+        username="g7-e-mfa-synthetic",
+        password="G7-E-Only-Synthetic-Mfa-Password-2026!",
+    )
+    UserMfaState.objects.create(
+        user=mfa_user,
+        enabled=True,
+        session_epoch=1,
+        encrypted_totp_secret=encrypt_totp_secret(
+            "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+            user_id=mfa_user.pk,
+            keys=[mfa_key],
+        ),
+    )
+
     application = get_wsgi_application()
     django_server = make_server("127.0.0.1", 0, application)
     upstream_port = django_server.server_port
