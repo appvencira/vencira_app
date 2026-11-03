@@ -116,3 +116,13 @@ echo "G7_B_HTTP_TEST_RESULT=$?"
 ```
 
 Si da PASS, el siguiente paso será diseñar una prueba E2E **aislada** en la que Flutter y Django se comuniquen realmente por HTTPS, sin utilizar `dev.vencira.es` productivo, sin alterar la whitelist pública y sin abrir rutas de usuario reales. Para ello habrá que preparar certificados de laboratorio confiables y un emisor temporal controlado, además de asegurar que la aplicación release no lo pueda habilitar.
+
+## G7-B primer intento: 7 PASS / 3 FAIL y corrección de streaming mock
+
+El operador ejecutó `flutter pub get && flutter analyze && flutter test test/native_lab_login_shell_test.dart test/native_http_login_integration_test.dart --reporter expanded`. `flutter analyze` informó `No issues found!` y la prueba terminó `G7_B_HTTP_TEST_RESULT=1`. **G7-A 6/6 PASS**, G7-B 1/4 PASS (denegación HTTP 401). Los otros tres casos no encontraron el destino tras respuestas simuladas correctas: `g7-native-logout` o `Verificación en dos pasos`. No existe evidencia de fallo Django ni error en tokens reales; la nueva suite HTTP continúa roja.
+
+Hipótesis técnica: `MockClient` con `http.Response` convierte el cuerpo en flujo de eventos diferidos; dentro de `testWidgets`/`FakeAsync` la lectura de los cuerpos correctos no progresa en los intervalos de `pump`. La denegación HTTP 401 pasa porque `NativeHttpAuthPort` la rechaza **antes de leer el cuerpo**, lo que apoya aislar este punto, aunque no prueba el diagnóstico por sí solo.
+
+Corrección **solo del fixture de pruebas**: se usa `MockClient.streaming` y `http.StreamedResponse` con `Stream.multi`, `addSync` y `closeSync` para entregar bytes en el mismo turno del listener y ejercitar el parser HTTP. No hay modificación en `NativeHttpAuthPort`, Django, sesión real ni datos operativos. **PENDIENTE validación Flutter** posterior al commit de esta corrección; no declarar PASS sin prueba.
+
+Comprobar de nuevo únicamente la nueva suite y regresión G7-A con `flutter pub get && flutter analyze && flutter test test/native_lab_login_shell_test.dart test/native_http_login_integration_test.dart --reporter expanded` en el contenedor Flutter. Ante un nuevo FAIL, conservar el primer error y añadir instrumentación de estado sin credenciales antes de probar cambios más amplios.
