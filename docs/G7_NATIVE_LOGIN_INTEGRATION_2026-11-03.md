@@ -144,3 +144,28 @@ En lugar de modificar autenticación ni aflojar las aserciones, se ha sustituido
 **Candidata sin validación local**, `G7_B_HTTP_WIDGETS=PENDING`. El objetivo para la siguiente ejecución sigue siendo `flutter analyze` limpio y diez tests correctos. No hacer deploy, migrar DB persistente ni cerrar los gates MFA/MB1/C-FICHA.
 
 La comprobación estática `g7_http_stack_mock_only` se ha adaptado al cliente `_LabHttpClient` (ya no usa `MockClient`) para conservar la validación del aislamiento. Se exige tanto el tipo inyectado `BaseClient` como la ausencia de un cliente HTTP real construido por esta suite o por `main.dart`. Además del test Flutter dirigido, ejecutar `python3 scripts/n1_static_security_gate.py`; ambos resultados permanecen **PENDING** tras estos cambios. Si sigue fallando una transición, copiar únicamente la línea `G7-B state mismatch`, que deliberadamente omite secretos.
+
+## G7-B — Reestructuración tras `httpCalls=1 status=200` sin transición (03/11/2026)
+
+El operador repitió el ensayo con el `_LabHttpClient` determinista. `N1_STATIC_GATE_RESULT=OK`, `flutter analyze: No issues found!`, pero `G7_B_RESULT=1` y tres transiciones no alcanzaron su estado: `httpCalls=1 status=200 fenceActive=false vaultPopulated=false loginError=false logoutError=false`. Esto **demuestra que el cliente de prueba recibió una respuesta 200**, pero no que el parser la completase; no es una justificación para modificar autenticación Django ni emitir una conclusión sobre seguridad de producción.
+
+Se ha corregido el diseño del gate, que mezclaba en el mismo `testWidgets` dos modelos asíncronos distintos. `NativeHttpAuthPort._post` consume `Stream<bytes>` bajo `await for`; el `testWidgets` usa `FakeAsync` para el reloj virtual. La suite G7-B se ha reformulado a **cinco pruebas `test()` con asíncrono real**. Usan `MockClient` in-process y respuestas sintéticas, comprobando el recorrido completo `NativeHttpAuthPort → NativeSessionCoordinator → NativeRefreshCredentialVault → NativeApiTransport`, incluido Bearer de lectura, MFA, 401, fallo de revocación con reintento y 401 del Bearer que cierra el fence.
+
+Los **seis tests de G7-A** siguen comprobando por separado pantalla, callbacks y cierre seguro con su `NativeAuthPort` sintético. La nueva suite **ya no pretende** que cada widget invoque el HTTP real dentro del propio `testWidgets`; **ese E2E de UI-red sigue pendiente** en el laboratorio HTTPS Django. No presentar las 11 pruebas conjuntas como una sola prueba E2E. Se ha modificado el gate `g7_http_stack_mock_only` para exigir `MockClient` sin clientes HTTP reales y para verificar la pantalla en su suite distinta.
+
+**Estado tras estos commits: G7-A LOCAL PASS 6/6; G7-B RESTRUCTURED PENDING**, sin ejecución local ni GitHub Actions verde acreditada. Controlar que los cinco nuevos casos G7-B pasen sin cambiar la lógica de producción. Cualquier prueba real debe usar Django con DB desechable y credenciales de prueba, sin habilitar URLConf ni servicios operativos.
+
+### Comprobación acotada posterior a la reestructuración
+
+```bash
+cd ~/vencira-m3-localcheck
+git status --short
+git fetch origin feature/m3-android-local-notifications
+git merge --ff-only FETCH_HEAD
+python3 scripts/n1_static_security_gate.py
+sudo docker run --rm -v "$PWD/clients/flutter:/work" -w /work ghcr.io/cirruslabs/flutter:stable sh -c \
+  'flutter pub get && flutter analyze && flutter test test/native_http_login_integration_test.dart test/native_lab_login_shell_test.dart --reporter expanded'
+echo "G7_COMBINED_RESULT=$?"
+```
+
+No hace falta repetir PG17, reconstruir imágenes, migrar ni desplegar.
