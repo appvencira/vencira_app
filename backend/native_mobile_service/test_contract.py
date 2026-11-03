@@ -4,10 +4,9 @@ Run ONLY with VENCIRA_ENV=test VENCIRA_NATIVE_SERVICE_CANDIDATE=1
 against a disposable PostgreSQL17 instance or temporary SQLite test DB.
 """
 from datetime import date, timedelta
-from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.test import Client, SimpleTestCase, TestCase, override_settings
+from django.test import Client, TestCase, override_settings
 from django.urls import Resolver404, resolve
 from django.utils import timezone
 
@@ -16,7 +15,7 @@ from .models import MobileAccountFence, MobileDeviceSession, MobileSpentRefresh
 from .session_store import (
     MobileTokenDenied, issue_verified_candidate_session,
     revoke_all_candidate_devices, revoke_candidate_device,
-    rotate_candidate_refresh, validate_candidate_access,
+    rotate_candidate_refresh,
 )
 
 
@@ -239,6 +238,32 @@ class MobileCandidateContractTests(TestCase):
         state.session_epoch = 8
         state.save(update_fields=["session_epoch"])
         self.assertEqual(self.get("/api/v1/mobile/me/", access).status_code, 401)
+
+    def test_inactive_account_cannot_use_or_refresh_previous_device(self):
+        access, refresh = self.tokens()
+        self.owner.is_active = False
+        self.owner.save(update_fields=["is_active"])
+        self.assertEqual(self.get("/api/v1/mobile/me/", access).status_code, 401)
+        with self.assertRaises(MobileTokenDenied):
+            rotate_candidate_refresh(refresh)
+
+    def test_password_change_invalidates_refresh_before_rotation(self):
+        _, refresh = self.tokens()
+        self.owner.set_password("RotatedSyntheticPasswordG4-2026")
+        self.owner.save(update_fields=["password"])
+        with self.assertRaises(MobileTokenDenied):
+            rotate_candidate_refresh(refresh)
+        self.assertFalse(MobileSpentRefresh.objects.exists())
+
+    def test_old_generation_cannot_issue_after_account_wide_revoke(self):
+        old_access, _ = self.tokens()
+        revoke_all_candidate_devices(user_id=self.owner.pk)
+        with self.assertRaises(MobileTokenDenied):
+            self.tokens(generation=0)
+        self.assertEqual(self.get(
+            "/api/v1/mobile/me/", old_access,
+        ).status_code, 401)
+        self.assertEqual(MobileDeviceSession.objects.count(), 1)
 
     @override_settings(ROOT_URLCONF="config.urls")
     def test_candidate_routes_not_exposed_in_operational_urlconf(self):
