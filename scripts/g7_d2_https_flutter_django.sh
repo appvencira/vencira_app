@@ -39,7 +39,7 @@ mkdir -p "$TMP/pub-cache"
   -v "$TMP/pub-cache:/tmp/g7-d2-pub-cache" \
   -e PUB_CACHE=/tmp/g7-d2-pub-cache \
   ghcr.io/cirruslabs/flutter:stable \
-  sh -c 'flutter pub get && flutter analyze tool/g7_d2_https_probe.dart'
+  sh -c 'flutter pub get && flutter analyze tool/g7_d2_https_probe.dart test/g7_d2_https_live_test.dart'
 
 "${DOCKER[@]}" network create --internal "$NETWORK" >/dev/null
 test "$("${DOCKER[@]}" network inspect -f '{{.Internal}}' "$NETWORK")" = "true"
@@ -89,7 +89,7 @@ test -s "$TMP/public-ca.pem"
 # original SNI/host and validates the temporary CA (no badCertificateCallback).
 "${DOCKER[@]}" run --rm \
   --network "$NETWORK" \
-  --read-only \
+  --tmpfs /tmp:rw,nosuid,size=268435456,mode=1777 \
   --cap-drop ALL --security-opt no-new-privileges \
   --pids-limit 128 \
   -v "$PWD/clients/flutter:/work" -w /work \
@@ -99,6 +99,6 @@ test -s "$TMP/public-ca.pem"
   -e G7_D2_ISOLATED_NETWORK_ACK=1 \
   -e G7_D2_CA_FILE=/tmp/g7d2-public-ca.pem \
   ghcr.io/cirruslabs/flutter:stable \
-  sh -c 'dart run tool/g7_d2_https_probe.dart'
+  sh -c 'flutter test --no-pub test/g7_d2_https_live_test.dart --reporter expanded'
 
 echo "G7_D2_FLUTTER_DJANGO_HTTPS=OK"
