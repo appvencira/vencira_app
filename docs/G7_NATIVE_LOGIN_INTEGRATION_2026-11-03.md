@@ -352,3 +352,17 @@ El mismo script `scripts/g7_d2_https_flutter_django.sh` ahora exige obligatoriam
 ## G7-E adicionales: vector RFC6238 y rechazo de redirecciones
 
 Antes de la validación local se añadió un vector conocido RFC6238 para HMAC-SHA1: a los 59 segundos con la semilla sintética de prueba, TOTP de 6 cifras `287082`. Esto verifica que el generador Dart del ensayo coincide con RFC6238, sin mostrar TOTP operativo. Las peticiones Bearer de inspección directa bloquean redirecciones HTTP. El gate estático exige ambos controles. G7-E sigue PENDING hasta ejecución local. No hay cambios en autenticación ni rutas de producción.
+
+## G7-E — MFA y rotación/replay HTTPS: validación local PASS (03/11/2026)
+
+El operador aporta `flutter analyze: No issues found!`, `G7_E_MFA_HTTPS_RESULT=0`, `G7_E_REFRESH_REPLAY_RESULT=0`, `G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0`, `All tests passed!` y `G7_D2_GATE_RESULT=0`, ejecutados sobre cliente Flutter/Dart real conectado vía TLS con CA temporal a Django solo laboratorio en Docker --internal/SQLite tmpfs.
+
+Recibo de seguridad MFA: vector RFC6238 OK, contraseña de usuario MFA devuelve challenge y no abre fence ni guarda refresh, GET protegido bloqueado hasta TOTP, TOTP válido da sesión y Bearer 200, TOTP ya consumido 401, logout síncrono, revocación remota HTTP 200 y posterior Bearer 401. Recibo refresh: rotación HTTP 200, tokens nuevos diferentes, antiguo access 401 y nuevo 200, reutilización de refresh antiguo HTTP 401 y nuevo access invalidado 401; otra rotación y revocación también correctas. No se imprime ninguna clave MFA ni material de sesión.
+
+**G7-E íntegro PASS local.** No equivale a renovación automática de una sesión de Android; `NativeSessionCoordinator` no implementa una recuperación de rotación ambigua ni un refresco autónomo. La CA temporal, rutas Django y datos siguen fuera de producción.
+
+## G7-F1 — recuperación explícita por refresh de respuesta incierta (implementado, NO validado)
+
+Se añade al probe G7-D2 el caso `_verifyAmbiguousRefreshRecoveryHttps`, que emplea implementaciones existentes `NativeRefreshRecoveryJournal`, `NativeRecoveryLoginGateway` y `NativeHttpAuthPort` contra Django HTTPS real. La prueba arma y verifica primero el marcador persistente, mantiene cerrado el fence, permite que Django **confirme la rotación** pero descarta la respuesta al cliente, simula arranque frío y exige recuperación con nueva contraseña **por endpoint distinto** (no reenvía refresh antiguo). Comprueba que contraseña errónea conserva marcador y no revoca todavía el dispositivo, que la contraseña correcta sustituye refresh en vault, borra marcador, activa fence y revoca en el servidor los tokens previos. Termina revocando la sesión recuperada y limpiando vault. No incluye persistencia protegida Android real ni recuperación MFA de una sesión cuyo refresh falló.
+
+El script `scripts/g7_d2_https_flutter_django.sh` exige ahora adicionalmente `G7_F_AMBIGUOUS_REFRESH_RECOVERY_RESULT=0` antes de `G7_F_HTTPS_RECOVERY=OK`. `scripts/n1_static_security_gate.py` añade `g7_f_disposable_https_uncertain_refresh`; la prueba está separada de código de producción y no habilita el refresh automático. **G7-F1 PENDING**: requiere validación Flutter analyze/runtime local; no afirmar PASS ni recontabilizar G7-E como pendiente. No desplegar ni migrar DB operativa. 
