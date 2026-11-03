@@ -266,3 +266,9 @@ echo "G7_D2_LOCAL_RESULT=$?"
 ```
 
 Solo ejecutar si no existen conflictos locales; no usar `git reset --hard`. El script ejecuta el gate estático y `flutter analyze` antes de iniciar el laboratorio. `NO_DEPLOY_NO_LIVE_MIGRATION=1`; todos los permisos de release siguen **NO**. 
+
+## G7-D2 primer intento: compilación Dart FALLA, corrección solo del probe
+
+El operador ejecutó `scripts/g7_d2_https_flutter_django.sh` sobre el candidato anterior. Build Docker y `flutter pub get` completaron, pero `flutter analyze` falló con **tres errores** `undefined_setter` sobre `connectionTimeout`, `idleTimeout`, `connectionFactory` en `tool/g7_d2_https_probe.dart`; `G7_D2_GATE_RESULT=1`. **No llegaron a iniciarse las pruebas reales HTTPS contra Django**: el fallo es exclusivamente de tipado/sintaxis Dart. Causa: la cadena de cascada inmediatamente tras la asignación de `findProxy = (_) => 'DIRECT'` se asoció al retorno de tipo `String` de la función. Se sustituyeron las cascadas por asignaciones explícitas independientes sobre `HttpClient`, conservando `findProxy = DIRECT`, socket forzado a IPv4 privada, CA y verificación TLS, timeouts y callback de conexión sin cambios de comportamiento deseados. **Nueva validación PENDING**; no afirmar G7-D2 PASS.
+
+Comprobación recomendada, sin datos persistentes: `git fetch origin feature/m3-android-local-notifications && git merge --ff-only FETCH_HEAD && bash scripts/g7_d2_https_flutter_django.sh`. Este script ejecuta el control estático y `flutter analyze` antes de iniciar la red privada. El resultado requerido es `G7_D2_GATE_RESULT=0` y `G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0`. No cambiar backend, configuración de Caddy ni migrar BD operativa.
