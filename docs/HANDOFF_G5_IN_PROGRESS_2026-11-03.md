@@ -83,3 +83,9 @@ El operador comunica el tercer lote `m3-http-contract-20261103T125155Z` con los 
 ## Transición prioritaria G7-A — login nativo antes de pruebas visuales
 
 Por decisión del operador (03/11/2026) se prioriza [G7 entrada nativa inyectable](G7_NATIVE_LOGIN_INTEGRATION_2026-11-03.md). Se han conectado `NativeLoginScreen` y `NativeSessionCoordinator` mediante `NativeLabLoginShell` con posibilidad de inyección exclusiva en builds no-release, sin construir un issuer ni rutas operativas, y con pantalla de sesión sintética **sin acceso a recursos**. En ausencia de inyección, Android continúa usando la pantalla web externa. Tests nuevos verifican password+MFA simulados, apertura solo tras fence, revocación, limpieza segura y reintento; CI y runner M3 actualizados. **G7_A_LAB_UI_TESTS=PENDING; el último PASS comunicado `20261103T131438Z` es anterior a estos commits.** Pendiente crítico: emisor password/MFA real, backend temporal aislado, adapter HTTPS y prueba en dispositivo. No habilitar el acceso nativo productivo ni desplegar/migrar.
+
+## G7-A Flutter rojo y corrección candidata
+
+El operador ejecutó `m3-http-contract-20261103T133437Z`, con `STATIC=0`, `BUILD=0`, `PG17_LAB=0`, `G4_PG17=0`, **`FLUTTER=1`**, **`M3_HTTP_RESULT=1`** y `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Cinco errores en la suite nueva `native_lab_login_shell_test.dart`: al menos `pumpAndSettle timed out` e invariante `debugDefaultTargetPlatformOverride` sin restablecer antes del cierre del test. Ver [incidencia y validación focalizada](G7_NATIVE_LOGIN_INTEGRATION_2026-11-03.md).
+
+Se han publicado correcciones de **tests únicamente**, usando espera acotada por estado observable y `finally` para restaurar el override. **El nuevo estado es PENDING**: aún no hay ejecución verde de `flutter test test/native_lab_login_shell_test.dart`. No repetir PG17; pedir solo validación Flutter focalizada. Ningún backend real fue activado.
