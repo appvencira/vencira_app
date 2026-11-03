@@ -69,8 +69,13 @@ def _find(token, kind, *, lock=False):
         raise MobileTokenDenied() from exc
     rows = MobileDeviceSession.objects
     if lock:
-        rows = rows.select_for_update()
-    row = rows.select_related("user").filter(pk=pk).first()
+        # Lock ONLY the device row. Locking the joined user row here would
+        # invert the ordering used by account-wide revoke (user -> devices)
+        # and could deadlock two simultaneous operations in PostgreSQL.
+        rows = rows.select_for_update(of=("self",))
+    else:
+        rows = rows.select_related("user")
+    row = rows.filter(pk=pk).first()
     if row is None:
         raise MobileTokenDenied()
     return row
