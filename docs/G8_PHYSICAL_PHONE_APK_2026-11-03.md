@@ -59,3 +59,21 @@ La CI publica ambos como artefacto `VENCIRA-G8-PHONE-DEBUG-ONLY` de GitHub Actio
 ## Límites a resolver después
 
 Un PASS de G8 confirmará funcionamiento de `flutter_secure_storage` y de nuestro protocolo de marcador/recuperación con un nuevo proceso en **ese teléfono**, pero no prueba atestación de hardware (StrongBox, TEE), seguridad contra root, reinstalación, backup/restore, integridad de sistema ni credenciales reales. La integración operativa de MFA y sesiones queda explícitamente desconectada de `main.dart`.
+
+## Incidencia compilación G8 en GitHub Actions (03/11/2026)
+
+El operador comunica que la compilación de la APK G8 por GitHub Actions **falló**. La API GitHub conectada ha permitido revisar el workflow `.github/workflows/g8-phone-apk.yml` y el script `scripts/g8_phone_apk_build.sh`, pero no proporciona **las ejecuciones push** ni sus logs por SHA: las consultas de estados y ejecuciones PR devolvieron listas vacías. El acceso público de navegación a la URL de Actions tampoco dio contenido del run. **La causa exacta del fallo no está determinada**: no atribuir a Gradle, Flutter, Android SDK, permisos o `aapt` sin el log de la ejecución.
+
+Para mejorar visibilidad se añadió evento `pull_request` (además de `push` y `workflow_dispatch`) al workflow G8 Phone, con filtros por rutas G8. Permite registrar pruebas PR donde el conector soporte resultados. No se ha demostrado aún un PASS de esa nueva configuración. Se puede reproducir la compilación local con Docker ya utilizado para G7, sin necesidad de Flutter ni Android SDK instalados en el host:
+
+```bash
+cd ~/vencira-m3-localcheck
+git status --short
+git fetch origin feature/m3-android-local-notifications
+git merge --ff-only FETCH_HEAD
+set -o pipefail
+sudo docker run --rm -v "$PWD:/src" -w /src ghcr.io/cirruslabs/flutter:stable bash scripts/g8_phone_apk_build.sh 2>&1 | tee /tmp/vencira-g8-phone-build.log
+echo "G8_DOCKER_BUILD_RESULT=${PIPESTATUS[0]}"
+```
+
+El propio script rechaza compilar o publicar APK si `flutter analyze`, compilación debug y verificación del `applicationId` por `aapt` no terminan correctamente. Para diagnosticar una ejecución fallida, observar **el primer error real** del log local o compartir el enlace del workflow/run que terminó en rojo y las líneas del paso fallido (eliminar cualquier secreto que pudiera aparecer). **No instalar ninguna APK hasta conseguir `G8_PHONE_APK_ID_VERIFY=OK` y `G8_PHONE_APK_BUILD=OK`.** G7 completo sigue validado; G8 Phone build y prueba física siguen PENDING.
