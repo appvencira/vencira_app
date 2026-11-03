@@ -207,11 +207,14 @@ class NativeSessionCoordinator implements NativeLoginGateway {
     _start();
     final epoch = _epoch;
     try {
-      if (firstIssuanceJournal != null &&
-          (!await firstIssuanceJournal!.requiresReauthentication() ||
-           await vault.read() != null)) {
+      final firstJournal = firstIssuanceJournal;
+      if (firstJournal != null &&
+          (!identical(firstJournal.fence, fence) ||
+              !await firstJournal.requiresReauthentication() ||
+              await vault.read() != null)) {
         throw StateError('G10 checkpoint required before password');
       }
+      if (epoch != _epoch) throw StateError('Native login cancelled');
       final result = await port.password(
         username: username, password: password,
       );
@@ -244,11 +247,14 @@ class NativeSessionCoordinator implements NativeLoginGateway {
     _start();
     final epoch = _epoch;
     try {
-      if (firstIssuanceJournal != null &&
-          (!await firstIssuanceJournal!.requiresReauthentication() ||
-           await vault.read() != null)) {
+      final firstJournal = firstIssuanceJournal;
+      if (firstJournal != null &&
+          (!identical(firstJournal.fence, fence) ||
+              !await firstJournal.requiresReauthentication() ||
+              await vault.read() != null)) {
         throw StateError('G10 checkpoint required before MFA');
       }
+      if (epoch != _epoch) throw StateError('Native login cancelled');
       final tokens = await port.mfa(challenge: challenge, code: code);
       await _activate(tokens, epoch);
       if (epoch != _epoch || fence.ticket == null) {
