@@ -20,10 +20,10 @@ case "${1:---all}" in
     test "$#" -eq 2 || exit 2
     GROUP="$2"
     FAST=1
-    case "$GROUP" in d2|e|f|g|h) ;; *) echo "Invalid test group" >&2; exit 2 ;; esac
+    case "$GROUP" in d2|e|f|g|h|g11) ;; *) echo "Invalid test group" >&2; exit 2 ;; esac
     ;;
   *)
-    echo "Usage: $0 [--all|--fast|--group d2|e|f|g|h]" >&2
+    echo "Usage: $0 [--all|--fast|--group d2|e|f|g|h|g11]" >&2
     exit 2
     ;;
 esac
@@ -185,6 +185,14 @@ case "$GROUP" in
   f) required+=("G7_F_AMBIGUOUS_REFRESH_RECOVERY_RESULT=0") ;;
   g) required+=("G7_G_MFA_RECOVERY_HTTPS_RESULT=0") ;;
   h) required+=("G7_H_RECOVERY_STORAGE_FAULTS_RESULT=0") ;;
+  g11) required+=("G11_HTTPS_FIRST_ISSUANCE_LOGOUT_RESULT=0"
+    "G11_FIRST_ISSUANCE_HTTPS_COMMITTED=OK"
+    "G11_STORAGE_FAILURE_NO_PASSWORD_HTTP=OK"
+    "G11_LOST_ISSUANCE_RESPONSE_FENCED=OK"
+    "G11_FULL_RECOVERY_VERIFIED_HTTPS=OK"
+    "G11_REMOTE_REVOKE_FAILURE_DURABLE=OK"
+    "G11_REVOKE_RETRY_SERVER_DENIES_OLD_ACCESS=OK"
+    "G11_MFA_SERVER_REVOKED_AFTER_LOGOUT=OK") ;;
 esac
 for marker in "${required[@]}"; do
   if ! grep -Fq -- "$marker" "$TMP/flutter-result.log"; then
