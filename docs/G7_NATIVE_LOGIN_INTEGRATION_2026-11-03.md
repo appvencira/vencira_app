@@ -134,3 +134,11 @@ El operador actualizó `491f0702` y ejecutó `flutter pub get && flutter analyze
 Corregido el archivo de tests: cuatro manejadores aceptan dos parámetros, el helper de comprobación recibe `http.BaseRequest` y los tres cuerpos JSON se comprueban con `jsonDecode(await bodyStream.bytesToString())`. No se cambia código operativo ni contratos HTTP Django. **Corrección aún no probada localmente; G7_B_HTTP_WIDGETS=PENDING**. Conservar el marcador de 6/6 G7-A como evidencia del commit previo, no como aprobación de G7-B. No desplegar ni migrar.
 
 Validar primero con `flutter pub get && flutter analyze && flutter test test/native_lab_login_shell_test.dart test/native_http_login_integration_test.dart --reporter expanded` en el contenedor, sin reconstruir backend ni repetir PostgreSQL17.
+
+## G7-B segundo test local: analyzer verde, 7/10 PASS y transporte mock aislado
+
+El operador confirma `flutter analyze: No issues found!` y `G7_B_HTTP_RECHECK=1` con **7 PASS, 3 FAIL**. Los seis casos G7-A vuelven a pasar; en la nueva suite G7-B pasa HTTP 401 pero siguen fallando el login HTTP correcto, la pantalla MFA y la revocación (por falta de sesión inicial). Las excepciones únicamente indican falta de widgets esperados, no afirman todavía por qué no se completó el transporte.
+
+En lugar de modificar autenticación ni aflojar las aserciones, se ha sustituido en la **prueba de integración** `MockClient.streaming` por un pequeño `_LabHttpClient extends http.BaseClient` que recibe un `http.Request`, valida URL, método, cabeceras y JSON de petición, y devuelve `http.StreamedResponse` sin puente asíncrono del cuerpo de petición. Se preserva la lectura/validación de HTTP JSON real en `NativeHttpAuthPort` y `NativeApiTransport`, los límites Bearer, la barrera de sesión y la bóveda sintética; no se usa una URL de Django operativa ni red externa. El test imprime en caso de bloqueo **únicamente metadatos no secretos**: cantidad de peticiones, último estado HTTP, estado del fence/bóveda y presencia de errores en UI.
+
+**Candidata sin validación local**, `G7_B_HTTP_WIDGETS=PENDING`. El objetivo para la siguiente ejecución sigue siendo `flutter analyze` limpio y diez tests correctos. No hacer deploy, migrar DB persistente ni cerrar los gates MFA/MB1/C-FICHA.
