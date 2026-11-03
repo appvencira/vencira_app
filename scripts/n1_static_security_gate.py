@@ -271,11 +271,15 @@ def verify():
             and "crypto: ^3.0.6" in read("clients/flutter/pubspec.yaml")
             and "Hmac(" in dart_d2_probe
             and "sha1, utf8.encode(" in dart_d2_probe
+            and "RFC6238_TOTP_VECTOR" in dart_d2_probe
+            and "_syntheticTotp(DateTime.fromMillisecondsSinceEpoch(" in dart_d2_probe
+            and "287082" in dart_d2_probe
             and "await coordinator.verifyTotp(consumedCode)" in dart_d2_probe
             and "'MFA_PENDING_BEARER_DENIED'" in dart_d2_probe
             and "'MFA_REUSED_TOTP_DENIED'" in dart_d2_probe
             and "await port.rotateRefresh(oldTokens.refresh)" in dart_d2_probe
             and "'REFRESH_REPLAY_REVOKES_NEW_ACCESS'" in dart_d2_probe
+            and "..followRedirects = false" in dart_d2_probe
             and "G7_E_MFA_HTTPS_RESULT=0" in dart_d2_probe
             and "G7_E_REFRESH_REPLAY_RESULT=0" in dart_d2_probe
             and "grep -Fq -- 'G7_E_MFA_HTTPS_RESULT=0'" in g7_d2_runner
