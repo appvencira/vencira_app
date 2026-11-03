@@ -129,3 +129,7 @@ El operador confirmó `N1_STATIC_GATE_RESULT=OK`, análisis Flutter limpio y `G7
 ## G7-A/G7-B verificados localmente: 11 PASS
 
 Operador comunica `G7_SPLIT_RESULT=0`, `All tests passed!` con **6 pruebas G7-A** de UI/coordinador y **5 G7-B** de HTTP `MockClient`/MFA/Bearer/vault/revocación. `flutter analyze` sin problemas. El gate estático se informó `N1_STATIC_GATE_RESULT=OK` en el intento inmediatamente anterior. Este paso cierra el **bloque local simulado**, no el E2E Flutter↔Django ni APK Android. Continuar con Django socket de laboratorio en BD desechable; mantener gates de release cerrados y sin despliegue.
+
+## G7-C Django socket loopback — implementación candidata, pruebas pendientes
+
+A partir de G7-A+B local **11/11 PASS**, se añadió `native_sessions_lab.test_loopback_http_contract` (tres `LiveServerTestCase`) para verificar por sockets TCP/HTTP exclusivamente en `127.0.0.1` una autenticación real de Django **solo en entorno de test con BD desechable**: password, Bearer, refresh y replay, revocación, cookies/Origin, rechazo de credenciales. No es E2E Flutter→Django y **no es HTTPS**. Incluido en `n1_identity_pg17_ephemeral.sh --lab`, CI SQLite y PG17, gate estático que impide confundir URLConf de test con operacional. **G7-C RESULTADO PENDING**; ejecutar gate estático, build imagen de test y PG17 --lab sobre checkout actualizado. Sin deploy ni migraciones persistentes; el PR sigue draft.
