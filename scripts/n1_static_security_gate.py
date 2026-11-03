@@ -334,7 +334,13 @@ def verify():
             and "group == 'all' || group == 'g'" in dart_d2_probe
             and "group == 'all' || group == 'h'" in dart_d2_probe
             and 'GROUP="h"' in g7_d2_runner
-            and "d2|e|f|g|h)" in g7_d2_runner
+            and "d2|e|f|g|h|g11)" in g7_d2_runner
+            and "g11) required+=" in g7_d2_runner
+            and 'G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0' in g7_d2_runner
+            and 'G7_E_MFA_HTTPS_RESULT=0' in g7_d2_runner
+            and 'G7_F_AMBIGUOUS_REFRESH_RECOVERY_RESULT=0' in g7_d2_runner
+            and 'G7_G_MFA_RECOVERY_HTTPS_RESULT=0' in g7_d2_runner
+            and 'G7_H_RECOVERY_STORAGE_FAULTS_RESULT=0' in g7_d2_runner
             and 'GROUP="all"' in g7_d2_runner
             and "--fast)" in g7_d2_runner
             and "--group)" in g7_d2_runner
