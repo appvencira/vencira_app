@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import '../tool/g7_d2_https_probe.dart' as live_probe;
@@ -17,5 +19,5 @@ void main() {
     // The probe checks G7_D2_ISOLATED_NETWORK_ACK and the temporary CA file.
     // Running on a normal machine must fail closed before any TCP connection.
     await live_probe.main();
-  });
+  }, skip: Platform.environment['G7_D2_ISOLATED_NETWORK_ACK'] != '1');
 }
