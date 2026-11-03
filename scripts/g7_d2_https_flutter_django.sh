@@ -3,11 +3,40 @@
 # Disposable Docker-internal network and SQLite tmpfs; NO published ports.
 set -euo pipefail
 
+# One Docker lab per invocation. Focused checks run only one established
+# group; --all is required at the end of each macrofase / in CI.
+GROUP="all"
+FAST=0
+case "${1:---all}" in
+  --all)
+    test "$#" -le 1 || exit 2
+    ;;
+  --fast)
+    test "$#" -eq 1 || exit 2
+    GROUP="f"
+    FAST=1
+    ;;
+  --group)
+    test "$#" -eq 2 || exit 2
+    GROUP="$2"
+    FAST=1
+    case "$GROUP" in d2|e|f) ;; *) echo "Invalid test group" >&2; exit 2 ;; esac
+    ;;
+  *)
+    echo "Usage: $0 [--all|--fast|--group d2|e|f]" >&2
+    exit 2
+    ;;
+esac
+echo "G7_BATCH_GROUP=$GROUP"
+echo "G7_BATCH_FAST=$FAST"
+
 cd "$(dirname "$0")/.."
 DOCKER=(sudo docker)
 NETWORK="vencira-g7d2-isolated-$$"
 SERVER="vencira-g7d2-django-$$"
 IMAGE="vencira-m3-backend-test"
+# Package cache contains public dependencies only, no credentials or artifacts.
+PUB_VOLUME="vencira-g7-public-dart-pub-v1"
 TMP="$(mktemp -d /tmp/vencira-g7d2.XXXXXXXX)"
 chmod 700 "$TMP"
 
@@ -31,13 +60,14 @@ bash -n scripts/g7_d2_https_flutter_django.sh
 "${DOCKER[@]}" build -t "$IMAGE" ./backend
 
 # Preload package dependencies before opening the internal-only Docker network.
-mkdir -p "$TMP/pub-cache"
+"${DOCKER[@]}" volume create "$PUB_VOLUME" >/dev/null
 "${DOCKER[@]}" run --rm \
   -v "$PWD/clients/flutter:/work" -w /work \
-  -v "$TMP/pub-cache:/tmp/g7-d2-pub-cache" \
+  -v "$PUB_VOLUME:/tmp/g7-d2-pub-cache" \
   -e PUB_CACHE=/tmp/g7-d2-pub-cache \
+  -e G7_BATCH_FAST="$FAST" \
   ghcr.io/cirruslabs/flutter:stable \
-  sh -c 'flutter pub get && flutter analyze tool/g7_d2_https_probe.dart test/g7_d2_https_live_test.dart'
+  sh -c 'flutter pub get && if [ "${G7_BATCH_FAST}" = "0" ]; then flutter analyze tool/g7_d2_https_probe.dart test/g7_d2_https_live_test.dart; else echo G7_BATCH_ANALYZE=SKIPPED_FAST_MODE; fi'
 
 "${DOCKER[@]}" network create --internal "$NETWORK" >/dev/null
 test "$("${DOCKER[@]}" network inspect -f '{{.Internal}}' "$NETWORK")" = "true"
@@ -113,28 +143,57 @@ echo "G7_D2_PUBLIC_CA_READY=OK"
 # Flutter uses real HttpClient/IOClient. The TCP peer is the private IPv4,
 # but URI/SNI remains dev.vencira.es and the ephemeral CA must verify.
 # The PEM is a read-only mount; we do NOT use badCertificateCallback.
-"${DOCKER[@]}" run --rm \
+# Capture verbose per-request metadata in a temporary file. Show only
+# group-level results on PASS; on failure show diagnostic tail. The shell
+# preserves the Flutter process exit status, never declaring a false PASS.
+if ! "${DOCKER[@]}" run --rm \
   --network "$NETWORK" \
   --tmpfs /tmp:rw,nosuid,size=268435456,mode=1777 \
   --cap-drop ALL --security-opt no-new-privileges \
   --pids-limit 128 \
   -v "$PWD/clients/flutter:/work" -w /work \
-  -v "$TMP/pub-cache:/tmp/g7-d2-pub-cache" \
+  -v "$PUB_VOLUME:/tmp/g7-d2-pub-cache" \
   -v "$TMP/public-ca.pem:/tmp/g7d2-public-ca.pem:ro" \
   -e PUB_CACHE=/tmp/g7-d2-pub-cache \
   -e G7_D2_ISOLATED_NETWORK_ACK=1 \
   -e G7_D2_CA_FILE=/tmp/g7d2-public-ca.pem \
   -e G7_D2_PEER_IPV4="$G7_D2_PEER_IPV4" \
+  -e G7_LAB_GROUP="$GROUP" \
   ghcr.io/cirruslabs/flutter:stable \
   sh -c 'flutter test --no-pub test/g7_d2_https_live_test.dart --reporter expanded' \
-  | tee "$TMP/flutter-result.log"
+  > "$TMP/flutter-result.log" 2>&1; then
+  tail -n 90 "$TMP/flutter-result.log" >&2
+  exit 1
+fi
 
-# A skipped or failed Flutter test must not produce a false success marker.
-grep -Fq -- 'G7_E_MFA_HTTPS_RESULT=0' "$TMP/flutter-result.log"
-grep -Fq -- 'G7_E_REFRESH_REPLAY_RESULT=0' "$TMP/flutter-result.log"
-grep -Fq -- 'G7_F_AMBIGUOUS_REFRESH_RECOVERY_RESULT=0' "$TMP/flutter-result.log"
-grep -Fq -- 'G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0' "$TMP/flutter-result.log"
-grep -Fq -- 'All tests passed!' "$TMP/flutter-result.log"
-echo "G7_E_HTTPS_MFA_REFRESH=OK"
-echo "G7_F_HTTPS_RECOVERY=OK"
-echo "G7_D2_FLUTTER_DJANGO_HTTPS=OK"
+# Distinct suite markers. Focused mode cannot pretend unexecuted groups passed.
+required=("G7_LAB_GROUP_COMPLETE=$GROUP" "All tests passed!")
+case "$GROUP" in
+  all)
+    required+=("G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0"
+      "G7_E_MFA_HTTPS_RESULT=0"
+      "G7_E_REFRESH_REPLAY_RESULT=0"
+      "G7_F_AMBIGUOUS_REFRESH_RECOVERY_RESULT=0")
+    ;;
+  d2) required+=("G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0") ;;
+  e) required+=("G7_E_MFA_HTTPS_RESULT=0" "G7_E_REFRESH_REPLAY_RESULT=0") ;;
+  f) required+=("G7_F_AMBIGUOUS_REFRESH_RECOVERY_RESULT=0") ;;
+esac
+for marker in "${required[@]}"; do
+  if ! grep -Fq -- "$marker" "$TMP/flutter-result.log"; then
+    echo "G7_BATCH_REQUIRED_MARKER=MISSING" >&2
+    tail -n 90 "$TMP/flutter-result.log" >&2
+    exit 1
+  fi
+  echo "$marker"
+done
+if [[ "$GROUP" == all || "$GROUP" == e ]]; then
+  echo "G7_E_HTTPS_MFA_REFRESH=OK"
+fi
+if [[ "$GROUP" == all || "$GROUP" == f ]]; then
+  echo "G7_F_HTTPS_RECOVERY=OK"
+fi
+if [[ "$GROUP" == all || "$GROUP" == d2 ]]; then
+  echo "G7_D2_FLUTTER_DJANGO_HTTPS=OK"
+fi
+echo "G7_BATCH_RESULT=0"
