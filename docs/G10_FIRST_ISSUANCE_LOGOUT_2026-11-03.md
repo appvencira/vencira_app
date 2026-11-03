@@ -1,0 +1,60 @@
+# G10 — Primera emisión y cierre remoto con checkpoint duradero
+
+Fecha: 03/11/2026. **CANDIDATO PUBLICADO / PENDING EJECUCIÓN FLUTTER LOCAL O CI.**
+
+## Evidencia anterior
+
+- G7-D2/E/F/G/H: `G7_MACRO_RESULT=0` en laboratorio Django+Flutter HTTPS aislado.
+- G8-PHONE: `G8_PHONE_PHYSICAL_STORAGE_RESULT=0` en teléfono Android de pruebas, con tokens sintéticos y proceso reiniciado.
+- G9: `N1_STATIC_GATE_RESULT=OK`, `G9_STARTUP_ANALYZE=OK`, `G9_STARTUP_AND_RECOVERY_UNIT=OK`, `G9_STARTUP_GATE_RESULT=0`; bloque de arranque fail-closed y selección de recuperación validado por operador.
+- No hay MFA operativo autorizado, publicación del emisor de tokens, congelación global de escritores MB1 verificada ni habilitación de la aplicación para credenciales de producción. `NO_DEPLOY_NO_LIVE_MIGRATION=1` siempre.
+
+## Riesgo que cubre
+
+No basta con persistir el refresh después de obtenerlo. Si el proceso se cierra tras emitir credenciales en el servidor y antes de guardarlas, el cliente no sabe si existe una sesión remota activa. G10 protege la **primera emisión**: antes de enviar la primera contraseña/MFA, persiste un marcador de reautenticación obligatoria. Si el intercambio falla o se desconoce la respuesta, dicho marcador sobrevive y G9 exige recuperación de cuenta, en vez de repetir una emisión a ciegas.
+
+De forma análoga, antes de cerrar la sesión, el cliente bloquea el fence de inmediato y deja constancia persistente antes de contactar con la revocación remota. La limpieza nunca se presenta como realizada si una revocación, borrado de credencial o borrado de marcador no pudo verificarse.
+
+## Componentes
+
+### G10-A — Diario de emisión inicial
+
+`clients/flutter/lib/api/native_refresh_recovery_journal.dart`, nuevos métodos:
+
+- `confirmFirstIssuance`: exige marcador `full-reauth-required-v1` ya duradero y **vault previamente vacío**. Ejecuta el reemplazo y verificación de refresh, comprueba que el fence siga cerrado, borra marcador y verifica lectura vacía; solo después el coordinador activa el fence. No equivale al `confirmFullReauthentication` de G6, que presupone revocación global de sesiones.
+- `confirmLogoutCompleted`: exige marcador pendiente y vault vacío **tras** revocación remota confirmada. Borra y relee el marcador. Cualquier fallo deja la sesión cerrada.
+
+### G10-B — Coordinador con opt-in de diario
+
+`clients/flutter/lib/api/native_session_coordinator.dart` admite el parámetro opcional `firstIssuanceJournal` (el G7 antiguo sigue compilando sin él).
+
+- Antes de `port.password` y `port.mfa`, si se activó G10, obliga a encontrar el marcador, vault vacío y el mismo fence. Ninguna solicitud sale si falta.
+- La activación usa `confirmFirstIssuance` en vez de `vault.replace` directo: exige confirmación de persistencia de refresh y borrado del checkpoint.
+- En caso de error durante commit se reintenta **armar el marcador**; no se elimina ciegamente el refresh, que sirve como evidencia de huérfano si falla el diario protegido. Se intenta revocar el refresh emitido y, si no puede, se mantiene bloqueado el coordinador.
+- `logout()` revoca el fence de forma sincrónica, espera operaciones pendientes, persiste el marcador, revoca el refresh remoto, verifica `vault.clear` y solo entonces confirma el borrado del checkpoint. Repetir logout después de una limpieza local fallida evita repetir una revocación **ya confirmada** del mismo refresh dentro del mismo proceso.
+
+### G10-C — Entrada de primera emisión de uso único
+
+`clients/flutter/lib/api/native_first_issuance_entry.dart` exige selección G9 `cleanLogin` y que fence/vault/journal sean las mismas instancias revisadas. Arma y relee el checkpoint **antes de llamar al coordinador** para la primera contraseña. El intento es único: fallo de contraseña, respuesta perdida, cancelación o marcador incierto impiden un segundo login normal; corresponde reautenticación completa. `verifyTotp` solamente después del inicio preparado. El logout admite reintento de revocación/limpieza, pero no reabre login. El adaptador no hace HTTP directamente y no está instanciado desde `main.dart`.
+
+**Limitación importante:** no se garantiza aún una única custodia de vault entre procesos, ni se ha integrado con la UI/Android real, ni se ha ensayado este protocolo completo sobre el emisor candidato con HTTPS real. Los métodos son candidatos de arquitectura, no APIs de producción. El marcador G10 no representa por sí solo una autorización de MFA o de revocación global en Django; es un bloqueo local.
+
+## Test y gate
+
+15 pruebas de G10 en `clients/flutter/test/native_first_issuance_entry_test.dart` cubren: denegación antes de G9; persistencia antes de password; primera emisión+logout; estado huérfano; MFA con marcador pendiente; fallo silencioso de escritura; contraseña fallida; respuesta incierta; fallos de refresh o borrado de marcador; rechazo de doble envío; cancelación mientras se escribe el marcador; fallo de revocación remota; reintentos de limpieza local sin revocación duplicada; imposibilidad de contactar directamente al backend desde coordinador G10 sin marcador.
+
+`scripts/g10_issuance_logout_gate.sh`: un único control N1, `flutter analyze` de archivos G10 y 6 suites Flutter (G10 más G9-A/B y G6/coordinador), reutilizando caché pública de Pub. CI `.github/workflows/g10-issuance-logout-gate.yml`, guard `g10_first_issuance_logout_checkpoint` en `scripts/n1_static_security_gate.py`.
+
+Una sola prueba en Ubuntu, sin repetir G7 HTTPS ni G8 Android:
+
+```bash
+cd ~/vencira-m3-localcheck
+git fetch origin feature/m3-android-local-notifications
+git merge --ff-only FETCH_HEAD
+bash scripts/g10_issuance_logout_gate.sh
+echo "G10_LOCAL_RESULT=$?"
+```
+
+El PASS exige `G10_ISSUANCE_ANALYZE=OK`, `G10_ISSUANCE_LOGOUT_UNIT=OK`, `G10_G9_G6_REGRESSION=OK`, `G10_ISSUANCE_LOGOUT_BATCH=OK`, `G10_ISSUANCE_LOGOUT_GATE_RESULT=0` y `G10_LOCAL_RESULT=0`. **Pendiente de recepción y verificación; no publicar PASS sin log.**
+
+**Gates operativos:** `MB1_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `GLOBAL_FREEZE=NOT_VERIFIED`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, PR #17 DRAFT.
