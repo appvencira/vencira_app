@@ -56,3 +56,22 @@ echo "G7_FLUTTER_TARGETED_RESULT=$?"
 ```
 
 Los logs no se incorporan a GitHub (repo público). Si falla, solicitar primeras líneas de excepción/estado observado, no repetir PG17. No desplegar, migrar ni liberar autenticación operativa.
+
+## Segundo resultado focalizado G7-A — fallo de activación aún sin causa confirmada
+
+El operador informa `flutter analyze: No issues found!` pero 4 fallos de widget de `native_lab_login_shell_test.dart` por ausencia de `g7-native-logout` tras esperar la transición; el quinto (prueba del punto de entrada) pasa. Esto evidencia que cambiar `pumpAndSettle` **no solucionó la transición del login**; no declarar el frontend validado. Tampoco deducir que es fallo de Django o del vault a partir de un finder ausente.
+
+Se introduce una comprobación unitaria aislada de *fixture* (`NativeMobileTokenShape`, `NativeSessionCoordinator.verifyPassword`, apertura del fence y persistencia de refresh) y un diagnóstico acotado en la espera del widget que informa **solo** estado del fence, número de llamadas sintéticas, existencia de error genérico UI y presencia de valor en la bóveda; sin contraseñas, refresh, access ni TOTP. Esto permite discriminar **coordinador** frente a **widget/callback**. Requiere validación focalizada posterior a este commit.
+
+No modificar rutas backend, middleware MFA, BD persistente o autorizaciones para superar un test sintético.
+
+Validación recomendada únicamente del test focalizado (sin repetir `flutter pub get` salvo necesitar dependencias):
+
+```bash
+cd ~/vencira-m3-localcheck
+git status --short
+git fetch origin feature/m3-android-local-notifications
+git merge --ff-only FETCH_HEAD
+sudo docker run --rm -v "$PWD/clients/flutter:/work" -w /work ghcr.io/cirruslabs/flutter:stable sh -c 'flutter test test/native_lab_login_shell_test.dart --reporter expanded'
+echo "G7_DIAG_RESULT=$?"
+```
