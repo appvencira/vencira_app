@@ -26,7 +26,7 @@ Esto acredita **el ensayo de contratos, no un release**. Las rutas HTTP experime
 | G1 MFA y recuperación real | **BLOCKED** — `MFA_RELEASE_AUTHORIZED=NO` | Custodia externa real y procedimiento probado, autorización expresa de la fase MFA |
 | G2 Integridad y corte multi-escritor MB1 | **BLOCKED** — `GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO` | Evidencia completa de exclusión de escritores, captura y restauración física independiente, corte consistente |
 | G3 Adjuntos C-FICHA | **BLOCKED** — `C_FICHA_RELEASE_AUTHORIZED=NO` | Confirmar gates reales de ClamAV, migraciones y custodia, sin habilitar endpoints por inferencia |
-| G4 Servicio nativo persistente | **CANDIDATO EN CÓDIGO / PRUEBAS PENDIENTES** | Nueva app separada `native_mobile_service` solo registrada en test; exige revisión de autenticación y autorización, G4 PG17/SQLite verde, custodia y autorización antes de instalar en producción |
+| G4 Servicio nativo persistente | **CANDIDATO PG17 PASS / OPERACIONAL NO** | Esquema sin deriva y 20 pruebas PG17 desechables aprobadas; SQLite, emisión autorizada de contraseña/MFA, control antiabuso, claves y despliegue no habilitados |
 | G5 MFA/token móvil y antiabuso | **LAB PASS / OPERATIONAL NOT IMPLEMENTED** | Garantizar rate-limits distribuidos por cuenta y IP de proxy confiable, rotación de secretos, MFA/recovery en cada solicitud, revocación multiinstancia |
 | G6 Refresh con respuesta ambigua | **LAB PASS / OPERACIONAL NO** | Ensayo PG17 + Flutter integrados finalizados con `M3_HTTP_RESULT=0`; faltan integración real, custodia, fallo físico de proceso, antiabuso y autorización de despliegue |
 | G7 Cliente Android/iOS instalable | **UI/COORDINATOR LAB PASS / INTEGRATION NOT DONE** | Conectar pantalla y gateway revisados, restauración de sesión desde vault, cierre/account switching, UX de errores, dispositivos físicos Android+iOS |
@@ -133,3 +133,11 @@ Contrato requerido:
 - `MFA_RELEASE_AUTHORIZED=NO`; `MB1_RELEASE_AUTHORIZED=NO`; `C_FICHA_RELEASE_AUTHORIZED=NO`; `GLOBAL_FREEZE=NOT_VERIFIED`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
 
 **Siguiente comprobación:** revisión de GitHub Actions si produce evidencia disponible; si no, una única ejecución local `bash scripts/m3_native_http_contract_batch.sh` en el checkout actualizado. No abrir backend operativo automáticamente cuando aparezca PASS.
+
+## G4 — Evidencia de cierre del candidato PostgreSQL17 (03/11/2026)
+
+- `bash scripts/n1_identity_pg17_ephemeral.sh --candidate` confirmó `N1_PG17_POSTGRES_READY=OK`, `No changes detected in app 'native_mobile_service'`, `Found 20 test(s)`, `System check identified no issues`, `Ran 20 tests in 2.376s`, `OK` y `G4_CANDIDATE_PG17_RESULT=0`.
+- `G4_CANDIDATE_PG17=PASS` en migraciones/contratos/concurrencia; `G4_CANDIDATE_SQLITE=NOT_VERIFIED`; `G4_OPERATIONAL_RELEASE=NO`. Ni el backend de login de producción ni el procedimiento de emisión de credenciales tras MFA existen en este candidato. La aprobación de un ensayo con sesiones inyectadas no prueba la autenticación real.
+- El gate `M3_HTTP_RESULT=0` de 02/11/2026 es histórico, anterior al nuevo servicio: no usarlo para declarar la rama G4 completamente aprobada.
+- **Ruta crítica ahora:** G5 resistencia a abuso (cuenta/IP de proxy confiable), auditabilidad de accesos/revocaciones sin guardar tokens, custodia HMAC y rotación, identificación inicial con password + MFA autorizada, restauración física y aprobación explícita de los gates externos MB1/MFA/C-FICHA.
+- `NO_DEPLOY_NO_LIVE_MIGRATION=1`; `GLOBAL_FREEZE=NOT_VERIFIED`; `MFA_RELEASE_AUTHORIZED=NO`; `MB1_RELEASE_AUTHORIZED=NO`; `C_FICHA_RELEASE_AUTHORIZED=NO`.
