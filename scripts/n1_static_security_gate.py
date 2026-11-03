@@ -562,6 +562,12 @@ def verify():
             and "'FULL_RECOVERY_VERIFIED_HTTPS'" in g11_scenarios
             and "'REMOTE_REVOKE_FAILURE_DURABLE'" in g11_scenarios
             and "'REVOKE_RETRY_SERVER_DENIES_OLD_ACCESS'" in g11_scenarios
+            and "'POST_COMMIT_REVOKE_RESPONSE_LOSS_FENCED'" in g11_scenarios
+            and "'AMBIGUOUS_REVOKE_RETRY_CANNOT_REOPEN'" in g11_scenarios
+            and "lostServerAccess" in g11_scenarios
+            and "loseNextRevokeResponse" in g11_scenarios
+            and "G11_POST_COMMIT_REVOKE_RESPONSE_LOSS_FENCED=OK" in g11_lab_runner
+            and "G11_AMBIGUOUS_REVOKE_RETRY_CANNOT_REOPEN=OK" in g11_lab_runner
             and "'MFA_SERVER_REVOKED_AFTER_LOGOUT'" in g11_scenarios
             and "G11_HTTPS_FIRST_ISSUANCE_LOGOUT_RESULT=0" in g11_scenarios
             and "loseNextPasswordResponse" in g11_scenarios
