@@ -37,6 +37,10 @@ def verify():
     dart_d2_probe = read("clients/flutter/tool/g7_d2_https_probe.dart")
     dart_d2_binding = read("clients/flutter/test/g7_d2_https_live_test.dart")
     g7_d2_runner = read("scripts/g7_d2_https_flutter_django.sh")
+    g8_device_test = read("clients/flutter/integration_test/g8_protected_store_device_test.dart")
+    g8_emulator_runner = read("scripts/g8_android_store_lab.sh")
+    flutter_pubspec = read("clients/flutter/pubspec.yaml")
+    android_manifest = read("clients/flutter/android/app/src/main/AndroidManifest.xml")
     recovery_gateway = read("clients/flutter/lib/api/native_recovery_login_gateway.dart")
     recovery_migration = read(
         "backend/native_sessions_lab/migrations/0004_mobile_challenge_recovery_flag.py"
@@ -363,6 +367,35 @@ def verify():
             and "G7_H_HTTPS_STORAGE_FAULTS=OK" in g7_d2_runner
             and "native_sessions_lab.test_urls" not in config
             and "native_sessions_lab.test_urls" not in routes,
+        "g8_android_plugin_device_test_isolated":
+            'integration_test:' in flutter_pubspec
+            and 'sdk: flutter' in flutter_pubspec
+            and 'IntegrationTestWidgetsFlutterBinding.ensureInitialized()' in g8_device_test
+            and 'if (!Platform.isAndroid)' in g8_device_test
+            and "storageNamespace: _labNamespace" in g8_device_test
+            and "'vencira_g8_emulator_credential_lab_v1'" in g8_device_test
+            and 'FlutterNativeSecretStore(' in g8_device_test
+            and 'NativeRefreshCredentialVault(' in g8_device_test
+            and 'NativeRefreshRecoveryJournal(' in g8_device_test
+            and 'await reopenedJournal.confirmFullReauthentication(' in g8_device_test
+            and 'await store.delete(_devRefreshKey)' in g8_device_test
+            and 'await store.delete(_devJournalKey)' in g8_device_test
+            and 'G8_ANDROID_PROTECTED_STORE_RESULT=0' in g8_device_test
+            and 'package:http/' not in g8_device_test
+            and 'NativeHttpAuthPort' not in g8_device_test
+            and 'Socket.connect' not in g8_device_test
+            and 'ro.kernel.qemu' in g8_emulator_runner
+            and 'DENIED_NON_EMULATOR' in g8_emulator_runner
+            and 'DENIED_VENCIRA_ALREADY_INSTALLED' in g8_emulator_runner
+            and 'shell pm path es.vencira.vencira' in g8_emulator_runner
+            and 'integration_test/g8_protected_store_device_test.dart' in g8_emulator_runner
+            and 'G8_ANDROID_EMULATOR_STORE=OK' in g8_emulator_runner
+            and 'G8_EMULATOR_GATE_RESULT=$status' in g8_emulator_runner
+            and 'NO_DEPLOY_NO_LIVE_MIGRATION=1' in g8_emulator_runner
+            and 'android:allowBackup="false"' in android_manifest
+            and 'native_sessions_lab.test_urls' not in config
+            and 'native_sessions_lab.test_urls' not in routes
+            and 'NativeRefreshRecoveryJournal' not in flutter_main,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
