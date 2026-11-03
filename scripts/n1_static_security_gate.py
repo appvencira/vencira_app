@@ -309,8 +309,9 @@ def verify():
             and "group == 'all' || group == 'e'" in dart_d2_probe
             and "group == 'all' || group == 'f'" in dart_d2_probe
             and "group == 'all' || group == 'g'" in dart_d2_probe
-            and 'GROUP="g"' in g7_d2_runner
-            and "d2|e|f|g)" in g7_d2_runner
+            and "group == 'all' || group == 'h'" in dart_d2_probe
+            and 'GROUP="h"' in g7_d2_runner
+            and "d2|e|f|g|h)" in g7_d2_runner
             and 'GROUP="all"' in g7_d2_runner
             and "--fast)" in g7_d2_runner
             and "--group)" in g7_d2_runner
@@ -346,6 +347,22 @@ def verify():
             and 'G7_LAB_GROUP_COMPLETE=$GROUP' in g7_d2_runner
             and 'native_sessions_lab.test_urls' not in config
             and 'native_sessions_lab.test_urls' not in routes,
+        "g7_h_https_secure_vault_faults_fail_closed":
+            "class _FaultInjectStore extends _DisposableSecretStore" in dart_d2_probe
+            and "ignoreRefreshWrite" in dart_d2_probe
+            and "ignoreRecoveryDelete" in dart_d2_probe
+            and "await journal.arm()" in dart_d2_probe
+            and "RECOVERY_STORAGE_CHECKPOINT_READY" in dart_d2_probe
+            and "RECOVERY_STORAGE_REFRESH_WRITE_FAILURE_FENCED" in dart_d2_probe
+            and "RECOVERY_STORAGE_MARKER_DELETE_FAILURE_FENCED" in dart_d2_probe
+            and "RECOVERY_STORAGE_RETRY_VERIFIED" in dart_d2_probe
+            and "RECOVERY_STORAGE_FINAL_CLEANUP" in dart_d2_probe
+            and "G7_H_RECOVERY_STORAGE_FAULTS_RESULT=0" in dart_d2_probe
+            and "await _verifyRecoveryStorageFaultsHttps(endpoint, httpClient)" in dart_d2_probe
+            and "G7_H_RECOVERY_STORAGE_FAULTS_RESULT=0" in g7_d2_runner
+            and "G7_H_HTTPS_STORAGE_FAULTS=OK" in g7_d2_runner
+            and "native_sessions_lab.test_urls" not in config
+            and "native_sessions_lab.test_urls" not in routes,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
