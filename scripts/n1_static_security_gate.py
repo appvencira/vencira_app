@@ -42,6 +42,7 @@ def verify():
     g8_phone_main = read("clients/flutter/lib/g8_lab_main.dart")
     g8_phone_store = read("clients/flutter/lib/g8_lab/physical_store_checks.dart")
     g8_phone_runner = read("scripts/g8_phone_apk_build.sh")
+    g8_phone_ci = read(".github/workflows/g8-phone-apk.yml")
     g8_gradle = read("clients/flutter/android/app/build.gradle.kts")
     flutter_pubspec = read("clients/flutter/pubspec.yaml")
     android_manifest = read("clients/flutter/android/app/src/main/AndroidManifest.xml")
@@ -433,6 +434,11 @@ def verify():
             and 'G8_PHONE_APK_ID_VERIFY=OK' in g8_phone_runner
             and 'G8_PHONE_RELEASE_AUTHORIZED=NO' in g8_phone_runner
             and 'NO_DEPLOY_NO_LIVE_MIGRATION=1' in g8_phone_runner
+            and 'bash scripts/g8_phone_apk_build.sh' in g8_phone_ci
+            and 'actions/upload-artifact@v4' in g8_phone_ci
+            and 'VENCIRA-G8-PHONE-DEBUG-ONLY' in g8_phone_ci
+            and 'G8_PHONE_PHYSICAL_STORAGE_RESULT=NOT_RUN' in g8_phone_ci
+            and 'G8_PHONE_RELEASE_AUTHORIZED=NO' in g8_phone_ci
             and 'NativeRefreshRecoveryJournal' not in flutter_main
             and 'native_sessions_lab.test_urls' not in config
             and 'native_sessions_lab.test_urls' not in routes,
