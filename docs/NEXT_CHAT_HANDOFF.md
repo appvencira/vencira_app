@@ -1,3 +1,7 @@
+> **CONTINUIDAD VIGENTE 03/11/2026 — CONSULTAR PRIMERO [TRASPASO G4→G5](HANDOFF_G4_G5_2026-11-03.md).** Repo `appvencira/vencira_app`, rama `feature/m3-android-local-notifications`, PR #17 DRAFT. G4 PostgreSQL17 desechable: `G4_CANDIDATE_PG17_RESULT=0`, 20/20 pruebas; G6 integrado `M3_HTTP_RESULT=0` antes de G4. No hay gate integrado post-G4 ni aprobación operativa; siguiente G5. `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `GLOBAL_FREEZE=NOT_VERIFIED`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. El contenido de octubre que sigue aquí es histórico y puede contener ramas/migraciones desactualizadas.
+
+---
+
 # VENCIRA — RESUMEN DE CONTINUIDAD PARA NUEVO CHAT
 
 ## Estado confirmado el 25/10/2026 — O8c DEPLOY DEV CORRECTO; aceptación manual pendiente
