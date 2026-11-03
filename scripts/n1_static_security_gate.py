@@ -237,8 +237,8 @@ def verify():
             and 'PRIVATE KEY" not in raw' in g7_d2_runner
             and g7_d2_runner.count('flutter test --no-pub test/g7_d2_https_live_test.dart') == 1
             and g7_d2_runner.count('echo "G7_D2_FLUTTER_DJANGO_HTTPS=OK"') == 1
-            and "grep -Fq -- 'G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0'" in g7_d2_runner
-            and "grep -Fq -- 'All tests passed!'" in g7_d2_runner
+            and '"G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0"' in g7_d2_runner
+            and '"All tests passed!"' in g7_d2_runner
             and '"${DOCKER[@]}" cp ' not in g7_d2_runner
             and '"$IMAGE" python -u -m native_sessions_lab.g7_d2_https_fixture' in g7_d2_runner
             and 'flutter test --no-pub test/g7_d2_https_live_test.dart' in g7_d2_runner
@@ -282,8 +282,8 @@ def verify():
             and "..followRedirects = false" in dart_d2_probe
             and "G7_E_MFA_HTTPS_RESULT=0" in dart_d2_probe
             and "G7_E_REFRESH_REPLAY_RESULT=0" in dart_d2_probe
-            and "grep -Fq -- 'G7_E_MFA_HTTPS_RESULT=0'" in g7_d2_runner
-            and "grep -Fq -- 'G7_E_REFRESH_REPLAY_RESULT=0'" in g7_d2_runner
+            and '"G7_E_MFA_HTTPS_RESULT=0"' in g7_d2_runner
+            and '"G7_E_REFRESH_REPLAY_RESULT=0"' in g7_d2_runner
             and "G7_E_HTTPS_MFA_REFRESH=OK" in g7_d2_runner
             and "VENCIRA_MFA_FERNET_KEYS=" not in g7_d2_runner
             and "native_sessions_lab.test_urls" not in config
@@ -298,10 +298,27 @@ def verify():
             and "RECOVERY_REAUTH_COMMIT_AND_CLEAR_MARKER" in dart_d2_probe
             and "RECOVERY_ACCOUNT_WIDE_REVOKE" in dart_d2_probe
             and "G7_F_AMBIGUOUS_REFRESH_RECOVERY_RESULT=0" in dart_d2_probe
-            and "grep -Fq -- 'G7_F_AMBIGUOUS_REFRESH_RECOVERY_RESULT=0'" in g7_d2_runner
+            and '"G7_F_AMBIGUOUS_REFRESH_RECOVERY_RESULT=0"' in g7_d2_runner
             and "G7_F_HTTPS_RECOVERY=OK" in g7_d2_runner
             and "native_sessions_lab.test_urls" not in config
             and "native_sessions_lab.test_urls" not in routes,
+        "g7_fast_batch_isolation_and_full_suite_gates":
+            "G7_LAB_GROUP" in dart_d2_probe
+            and "G7_LAB_GROUP_COMPLETE=$group" in dart_d2_probe
+            and "group == 'all' || group == 'd2'" in dart_d2_probe
+            and "group == 'all' || group == 'e'" in dart_d2_probe
+            and "group == 'all' || group == 'f'" in dart_d2_probe
+            and 'GROUP="all"' in g7_d2_runner
+            and "--fast)" in g7_d2_runner
+            and "--group)" in g7_d2_runner
+            and 'PUB_VOLUME="vencira-g7-public-dart-pub-v1"' in g7_d2_runner
+            and '"${DOCKER[@]}" volume create "$PUB_VOLUME"' in g7_d2_runner
+            and '-e G7_LAB_GROUP="$GROUP"' in g7_d2_runner
+            and 'required=("G7_LAB_GROUP_COMPLETE=$GROUP" "All tests passed!")' in g7_d2_runner
+            and 'grep -Fq -- "$marker" "$TMP/flutter-result.log"' in g7_d2_runner
+            and 'echo "G7_BATCH_RESULT=0"' in g7_d2_runner
+            and '--internal "$NETWORK"' in g7_d2_runner
+            and 'NO_DEPLOY_NO_LIVE_MIGRATION=1' in g7_d2_runner,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
