@@ -60,14 +60,85 @@ HttpClient _httpsClient(SecurityContext trust, {String host = _serverAlias}) {
         uri.host != host ||
         uri.scheme != 'https' ||
         uri.port != 443) {
+      stdout.writeln(
+        'G7_D2_FACTORY_REJECTED: '
+        'schemeHttps=${uri.scheme == 'https'} '
+        'port443=${uri.port == 443} '
+        'expectedHost=${uri.host == host} '
+        'proxyPresent=${proxyHost != null || proxyPort != null}',
+      );
       throw StateError('G7_D2_UNEXPECTED_REMOTE_TARGET');
     }
+    stdout.writeln('G7_D2_FACTORY_PRIVATE_TCP=OK');
     // The peer is the private IPv4 reported by docker inspect for the
     // server's isolated network. No DNS resolution or public fallback.
     // TLS still validates the *original URI host* through SNI/SAN.
     return Socket.startConnect(_privateLabPeer(), _tlsPort);
   };
   return client;
+}
+
+/// Independent strict TLS handshake. It uses a private TCP peer and the
+/// original DNS name for SNI/certificate verification, with no DNS lookup.
+Future<void> _preflightTls(SecurityContext trust) async {
+  Socket? raw;
+  try {
+    raw = await Socket.connect(
+      _privateLabPeer(), _tlsPort,
+      timeout: const Duration(seconds: 5),
+    );
+    final secure = await SecureSocket.secure(
+      raw, host: _serverAlias, context: trust,
+    );
+    raw = null; // SecureSocket now owns the underlying connection.
+    secure.destroy();
+    stdout.writeln('G7_D2_TLS_PREFLIGHT=OK');
+  } catch (error) {
+    // Only the runtime type, never host addresses, certificates or secrets.
+    stdout.writeln('G7_D2_TLS_PREFLIGHT_FAILURE_TYPE=${error.runtimeType}');
+    rethrow;
+  } finally {
+    raw?.destroy();
+  }
+}
+
+/// Observe only transport metadata; leave the production auth parser intact.
+/// In particular, no authorization headers, request bodies, cookies, tokens,
+/// response bodies or exception strings are ever sent to stdout.
+class _SafeHttpTraceClient extends http.BaseClient {
+  _SafeHttpTraceClient(this._inner);
+  final http.Client _inner;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final path = request.url.path;
+    final kind = switch (path) {
+      '/api/v1/mobile/auth/password/' => 'PASSWORD',
+      '/api/v1/mobile/auth/mfa/' => 'MFA',
+      '/api/v1/mobile/me/' => 'ME',
+      '/api/v1/mobile/token/revoke/' => 'REVOKE',
+      _ => 'UNEXPECTED_PATH',
+    };
+    try {
+      final response = await _inner.send(request);
+      stdout.writeln('G7_D2_HTTP_${kind}_STATUS=${response.statusCode}');
+      final contentType = (response.headers['content-type'] ?? '')
+          .toLowerCase().split(';').first.trim();
+      stdout.writeln(
+        'G7_D2_HTTP_${kind}_JSON_CONTENT_TYPE=${contentType == 'application/json'}',
+      );
+      stdout.writeln(
+        'G7_D2_HTTP_${kind}_HAS_SET_COOKIE=${response.headers.containsKey('set-cookie')}',
+      );
+      return response;
+    } catch (error) {
+      stdout.writeln('G7_D2_HTTP_${kind}_TRANSPORT_FAILURE_TYPE=${error.runtimeType}');
+      rethrow;
+    }
+  }
+
+  @override
+  void close() => _inner.close();
 }
 
 class _DisposableSecretStore implements NativeSecretStore {
@@ -109,7 +180,8 @@ Future<void> main() async {
   final trust = SecurityContext(withTrustedRoots: false)
     ..setTrustedCertificatesBytes(caBytes);
   final endpoint = NativeApiEndpoint.parse('https://dev.vencira.es');
-  final httpClient = IOClient(_httpsClient(trust));
+  await _preflightTls(trust);
+  final httpClient = _SafeHttpTraceClient(IOClient(_httpsClient(trust)));
 
   try {
     final store = _DisposableSecretStore();
