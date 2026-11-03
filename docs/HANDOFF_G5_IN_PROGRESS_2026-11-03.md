@@ -117,3 +117,5 @@ El intento del operador contra `491f0702` terminó en `G7_B_HTTP_RECHECK=1` **an
 ## G7-B siguiente iteración candidata: cliente HTTP de test determinista
 
 El segundo resultado local `G7_B_HTTP_RECHECK=1` pasó análisis y 7/10 pruebas; las seis G7-A pasan y tres de las cuatro G7-B siguen bloqueadas en respuestas HTTP 200. Para reducir el área de fallo, la suite `native_http_login_integration_test.dart` usa un `http.BaseClient` simulado con `send` inmediato, validación estricta de request y respuesta JSON por el **puerto operativo potencial**, sin tocar implementación, backend ni seguridad. Añade diagnóstico sin credenciales para el próximo fallo. **Aún no PASS de G7-B**. Ver `docs/G7_NATIVE_LOGIN_INTEGRATION_2026-11-03.md`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+El gate `scripts/n1_static_security_gate.py` se actualizó para reconocer el nuevo `BaseClient` de prueba sin dejar un falso fallo por la búsqueda antigua `MockClient(`. Ejecutar gate estático y la suite Flutter dirigida tras actualizar; ambos **PENDING**, no marcar green por commits.
