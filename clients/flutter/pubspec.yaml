@@ -24,6 +24,9 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # G8 is run only on an isolated Android emulator. Not part of runtime.
+  integration_test:
+    sdk: flutter
   # G7-E lab-only RFC 6238 TOTP generator (no production runtime dependency).
   crypto: ^3.0.6
 
