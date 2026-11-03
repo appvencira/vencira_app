@@ -189,7 +189,7 @@ def verify():
             and "IOClient(" not in flutter_lab_http_test
             and "NativeHttpAuthPort(endpoint: endpoint, client: client)" in flutter_lab_http_test
             and "NativeApiTransport(" in flutter_lab_http_test
-            and "NativeLabLoginShell(coordinator: fixture.coordinator)" in flutter_lab_http_test
+            and "NativeLabLoginShell(coordinator: coordinator)" in read("clients/flutter/test/native_lab_login_shell_test.dart")
             and "native_sessions_lab.test_urls" not in read("backend/config/urls.py")
             and "NativeHttpAuthPort(" not in flutter_main,
         "lab_issuer_requires_epoch":
