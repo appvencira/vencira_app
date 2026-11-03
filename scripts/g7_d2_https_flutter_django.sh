@@ -13,17 +13,17 @@ case "${1:---all}" in
     ;;
   --fast)
     test "$#" -eq 1 || exit 2
-    GROUP="g"
+    GROUP="h"
     FAST=1
     ;;
   --group)
     test "$#" -eq 2 || exit 2
     GROUP="$2"
     FAST=1
-    case "$GROUP" in d2|e|f|g) ;; *) echo "Invalid test group" >&2; exit 2 ;; esac
+    case "$GROUP" in d2|e|f|g|h) ;; *) echo "Invalid test group" >&2; exit 2 ;; esac
     ;;
   *)
-    echo "Usage: $0 [--all|--fast|--group d2|e|f|g]" >&2
+    echo "Usage: $0 [--all|--fast|--group d2|e|f|g|h]" >&2
     exit 2
     ;;
 esac
@@ -177,12 +177,14 @@ case "$GROUP" in
       "G7_E_MFA_HTTPS_RESULT=0"
       "G7_E_REFRESH_REPLAY_RESULT=0"
       "G7_F_AMBIGUOUS_REFRESH_RECOVERY_RESULT=0"
-      "G7_G_MFA_RECOVERY_HTTPS_RESULT=0")
+      "G7_G_MFA_RECOVERY_HTTPS_RESULT=0"
+      "G7_H_RECOVERY_STORAGE_FAULTS_RESULT=0")
     ;;
   d2) required+=("G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0") ;;
   e) required+=("G7_E_MFA_HTTPS_RESULT=0" "G7_E_REFRESH_REPLAY_RESULT=0") ;;
   f) required+=("G7_F_AMBIGUOUS_REFRESH_RECOVERY_RESULT=0") ;;
   g) required+=("G7_G_MFA_RECOVERY_HTTPS_RESULT=0") ;;
+  h) required+=("G7_H_RECOVERY_STORAGE_FAULTS_RESULT=0") ;;
 esac
 for marker in "${required[@]}"; do
   if ! grep -Fq -- "$marker" "$TMP/flutter-result.log"; then
@@ -200,6 +202,9 @@ if [[ "$GROUP" == all || "$GROUP" == f ]]; then
 fi
 if [[ "$GROUP" == all || "$GROUP" == g ]]; then
   echo "G7_G_HTTPS_MFA_RECOVERY=OK"
+fi
+if [[ "$GROUP" == all || "$GROUP" == h ]]; then
+  echo "G7_H_HTTPS_STORAGE_FAULTS=OK"
 fi
 if [[ "$GROUP" == all || "$GROUP" == d2 ]]; then
   echo "G7_D2_FLUTTER_DJANGO_HTTPS=OK"
