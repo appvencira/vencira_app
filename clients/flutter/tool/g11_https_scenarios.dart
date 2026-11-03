@@ -242,9 +242,10 @@ Future<void> verifyG11Https(
       rebootFence.ticket != null,
       'FULL_RECOVERY_VERIFIED_HTTPS');
   // Test fixture does not survive teardown. Revoke the new synthetic session.
-  rebootFence.revoke();
+  await rebootJournal.arm();
   await rebootPort.revoke(refresh: (await rebootVault.read())!);
   await rebootVault.clear();
+  await rebootJournal.confirmLogoutCompleted(vault: rebootVault);
 
   // Pre-revocation network failure: no local success, no credential erasure.
   final brokenLogout = _Case(endpoint, trustedIsolatedClient);
