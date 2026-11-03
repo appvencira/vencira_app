@@ -54,3 +54,7 @@ El batch debe construir una nueva imagen, utilizar PG17 `tmpfs` y no conectar a 
 - Emisión password+MFA desde un verificador de confianza y tests de carrera/replay; ninguna vista pública antes de pasar gates.
 
 **No marcar PASS, release o custodia real sin evidencia.** Esta nota es documental y no constituye prueba ejecutada.
+
+## G5 macrobloque 3 añadido después del PASS local
+
+[Auditoría mínima candidata](G5_MOBILE_AUTH_AUDIT_2026-11-03.md): modelo `MobileAuthAuditEvent`, migración test-only `0003`, HMAC de actor, UUID de idempotencia, eventos restringidos, retención explícita y 8 tests de contrato. CI y runner PG17 están actualizados. **Estas modificaciones son posteriores al lote `20261103T095043Z`: el PASS anterior NO las cubre.** Falta prueba de deduplicación concurrente, integridad ante administradores de la DB, vinculación a login real y custodia de claves. Las migraciones 0002/0003 permanecen **exclusivamente en el grafo del candidato test-only**.
