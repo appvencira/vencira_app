@@ -243,7 +243,12 @@ def verify():
             and '"$IMAGE" python -u -m native_sessions_lab.g7_d2_https_fixture' in g7_d2_runner
             and 'flutter test --no-pub test/g7_d2_https_live_test.dart' in g7_d2_runner
             and 'SecurityContext(withTrustedRoots: false)' in dart_d2_probe
-            and 'Socket.startConnect(_privateLabPeer(), _tlsPort)' in dart_d2_probe
+            and 'Socket.startConnect(_privateLabPeer(), _tlsPort).then((task)' in dart_d2_probe
+            and 'final secure = await SecureSocket.secure(' in dart_d2_probe
+            and 'raw, host: uri.host, context: trust' in dart_d2_probe
+            and 'ConnectionTask.fromSocket<Socket>(verified,' in dart_d2_probe
+            and 'G7_D2_FACTORY_VERIFIED_TLS=OK' in dart_d2_probe
+            and 'return Socket.startConnect(_privateLabPeer(), _tlsPort);' not in dart_d2_probe
             and 'SecureSocket.secure(' in dart_d2_probe
             and 'host: _serverAlias, context: trust' in dart_d2_probe
             and 'class _SafeHttpTraceClient extends http.BaseClient' in dart_d2_probe
