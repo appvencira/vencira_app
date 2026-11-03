@@ -197,8 +197,9 @@ Future<void> _expectHttpAuthDenied(Future<Object?> Function() operation) async {
 /// RFC 6238/HMAC-SHA1, computed only for the disposable MFA fixture.
 /// The 20-byte ASCII secret is the public RFC test vector (not a real key).
 /// Never print the generated code or export encrypted MFA key material.
-String _syntheticTotp() {
-  final counter = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 30000;
+String _syntheticTotp([DateTime? at]) {
+  final counter =
+      (at ?? DateTime.now()).toUtc().millisecondsSinceEpoch ~/ 30000;
   final timestamp = ByteData(8)..setUint64(0, counter, Endian.big);
   final digest = Hmac(
     sha1, utf8.encode('12345678901234567890'),
@@ -218,7 +219,10 @@ Future<int> _bearerHttpStatus(
 ) async {
   final request = http.Request(
     'GET', endpoint.resolveApiPath('/api/v1/mobile/me/'),
-  )..headers['Authorization'] = 'Bearer $access';
+  )
+    ..followRedirects = false
+    ..maxRedirects = 0
+    ..headers['Authorization'] = 'Bearer $access';
   final response = await client.send(request);
   await response.stream.drain<void>();
   return response.statusCode;
@@ -229,6 +233,14 @@ Future<int> _bearerHttpStatus(
 Future<void> _verifyMfaHttps(
   NativeApiEndpoint endpoint, http.Client client,
 ) async {
+  // RFC 6238 Appendix B at 59 s: SHA-1 eight-digit 94287082,
+  // six-digit projection 287082, using ASCII 12345678901234567890.
+  _require(
+    _syntheticTotp(DateTime.fromMillisecondsSinceEpoch(
+      59000, isUtc: true,
+    )) == '287082',
+    'RFC6238_TOTP_VECTOR',
+  );
   final store = _DisposableSecretStore();
   final fence = NativeSessionFence();
   final port = NativeHttpAuthPort(endpoint: endpoint, client: client);
