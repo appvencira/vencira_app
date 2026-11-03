@@ -48,23 +48,25 @@ void _require(bool passed, String name) {
 /// URI hostname remains unchanged for SNI and SAN verification. Never
 /// resolve or connect to the public operational domain over the internet.
 HttpClient _httpsClient(SecurityContext trust, {String host = _serverAlias}) {
-  final client = HttpClient(context: trust)
-    ..findProxy = (_) => 'DIRECT'
-    ..connectionTimeout = const Duration(seconds: 5)
-    ..idleTimeout = const Duration(seconds: 3)
-    ..connectionFactory = (uri, proxyHost, proxyPort) {
-      if (proxyHost != null ||
-          proxyPort != null ||
-          uri.host != host ||
-          uri.scheme != 'https' ||
-          uri.port != 443) {
-        throw StateError('G7_D2_UNEXPECTED_REMOTE_TARGET');
-      }
-      // The peer is the private IPv4 reported by docker inspect for the
-      // server's isolated network. No DNS resolution or public fallback.
-      // TLS still validates the *original URI host* through SNI/SAN.
-      return Socket.startConnect(_privateLabPeer(), _tlsPort);
-    };
+  // Keep assignments separate: a cascade immediately after a function
+  // expression could otherwise bind to the function's String return value.
+  final client = HttpClient(context: trust);
+  client.findProxy = (_) => 'DIRECT';
+  client.connectionTimeout = const Duration(seconds: 5);
+  client.idleTimeout = const Duration(seconds: 3);
+  client.connectionFactory = (uri, proxyHost, proxyPort) {
+    if (proxyHost != null ||
+        proxyPort != null ||
+        uri.host != host ||
+        uri.scheme != 'https' ||
+        uri.port != 443) {
+      throw StateError('G7_D2_UNEXPECTED_REMOTE_TARGET');
+    }
+    // The peer is the private IPv4 reported by docker inspect for the
+    // server's isolated network. No DNS resolution or public fallback.
+    // TLS still validates the *original URI host* through SNI/SAN.
+    return Socket.startConnect(_privateLabPeer(), _tlsPort);
+  };
   return client;
 }
 
