@@ -47,6 +47,7 @@ class MobileAuthBoundaryTests(SimpleTestCase):
             "/api/v1/mobile/auth/recover/password/",
             "/api/v1/mobile/auth/recover/mfa/",
             "/api/v1/mobile/me/",
+            "/api/v1/mobile/workspaces/00000000-0000-0000-0000-000000000001/renewals/",
         ):
             with self.subTest(path=path), self.assertRaises(Resolver404):
                 resolve(path)
@@ -59,6 +60,19 @@ class MobileAuthBoundaryTests(SimpleTestCase):
     def test_device_session_lab_is_absent_from_normal_django(self):
         self.assertFalse(getattr(settings, "VENCIRA_NATIVE_SESSION_LAB", False))
         self.assertNotIn("native_sessions_lab", settings.INSTALLED_APPS)
+
+    def test_operational_django_does_not_install_g4_candidate(self):
+        self.assertFalse(
+            getattr(settings, "VENCIRA_NATIVE_SERVICE_CANDIDATE", False)
+        )
+        self.assertFalse(
+            getattr(settings, "VENCIRA_NATIVE_BEARER_ENABLED", False)
+        )
+        self.assertNotIn("native_mobile_service", settings.INSTALLED_APPS)
+        self.assertEqual(
+            settings.REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"],
+            ["rest_framework.authentication.SessionAuthentication"],
+        )
 
     def test_bearer_header_cannot_authenticate_web_session_api(self):
         # The mobile gateway is disabled; never silently treat arbitrary
