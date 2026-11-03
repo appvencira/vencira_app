@@ -12,6 +12,7 @@ import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:vencira/api/native_api_endpoint.dart';
+import 'g11_https_scenarios.dart' as g11;
 import 'package:vencira/api/native_api_transport.dart';
 import 'package:vencira/api/native_http_auth_port.dart';
 import 'package:vencira/api/native_recovery_login_gateway.dart';
@@ -741,7 +742,7 @@ Future<void> _verifyRecoveryStorageFaultsHttps(
 
 Future<void> main() async {
   final group = Platform.environment['G7_LAB_GROUP'] ?? 'all';
-  if (group != 'all' && group != 'd2' && group != 'e' && group != 'f' && group != 'g' && group != 'h') {
+  if (group != 'all' && group != 'd2' && group != 'e' && group != 'f' && group != 'g' && group != 'h' && group != 'g11') {
     throw StateError('G7_LAB_GROUP_NOT_ALLOWED');
   }
   if (Platform.environment['G7_D2_ISOLATED_NETWORK_ACK'] != '1') {
@@ -914,6 +915,14 @@ Future<void> main() async {
     }
     if (group == 'all' || group == 'h') {
       await _verifyRecoveryStorageFaultsHttps(endpoint, httpClient);
+    }
+    if (group == 'g11') {
+      await g11.verifyG11Https(
+        endpoint,
+        httpClient,
+        bearerStatus: (access) => _bearerHttpStatus(httpClient, endpoint, access),
+        syntheticTotp: _syntheticTotp,
+      );
     }
     stdout.writeln('G7_LAB_GROUP_COMPLETE=$group');
   } finally {
