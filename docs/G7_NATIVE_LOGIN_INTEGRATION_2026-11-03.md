@@ -75,3 +75,11 @@ git merge --ff-only FETCH_HEAD
 sudo docker run --rm -v "$PWD/clients/flutter:/work" -w /work ghcr.io/cirruslabs/flutter:stable sh -c 'flutter test test/native_lab_login_shell_test.dart --reporter expanded'
 echo "G7_DIAG_RESULT=$?"
 ```
+
+## Tercer diagnóstico local: coordinación directa PASS, widget sigue bloqueado (03/11/2026)
+
+El operador notifica `flutter pub get` OK, `flutter analyze` OK y seis pruebas focalizadas: 2 PASS y 4 FAIL. El test `synthetic fixture satisfies native credential shape and coordinator` PASA; el punto de entrada inyectado también. En los cuatro widgets, `passwordCalls=1` (y en MFA, `mfaCalls=1`), pero `fenceActive=false`, `vaultPopulated=false`, `loginError=false`. No hay evidencia de fallo del backend ni de formato de token.
+
+Hipótesis de test a verificar: el fixture instanciaba `NativeRefreshCredentialVault` en `setUp`, fuera de la zona `FakeAsync` de `testWidgets`. El constructor inicializa `Future<void>.value()` para serializar la bóveda. La zona de creación podría impedir que se complete la cadena en widget tests, aunque pase el test normal `test()`. **Se ha movido la construcción del coordinador/bóveda a la función de cada test**, ya dentro de su zona asíncrona; no se ha cambiado el código de login, de la bóveda ni Django. **Corrección candidata sin PASS confirmado**.
+
+Validación: tras actualizar rama, ejecutar `flutter pub get && flutter test test/native_lab_login_shell_test.dart --reporter expanded` con el contenedor Flutter. Si sigue rojo, registrar la primera excepción y el diagnóstico no secreto, sin ejecutar PG17 ni modificar permisos de release.
