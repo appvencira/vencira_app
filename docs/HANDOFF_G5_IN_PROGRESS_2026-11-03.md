@@ -272,3 +272,21 @@ El operador ha elegido expresamente **instalar una APK en su móvil de pruebas**
 El teléfono ejecutará **dos pasos** con `FlutterNativeSecretStore` y namespace `vencira_g8_phone_only_v1`, usando credenciales sintéticas y sin contactar con Django: 1) almacenar refresh sintético y marcador duradero; 2) forzar detención del proceso desde Ajustes Android, reabrir, comparar PID, comprobar persistencia real, commit de cambio de refresh, rechazo de marcador corrupto y limpieza total. `SharedPreferences` almacena exclusivamente PID del proceso anterior (no credenciales). La interfaz tiene botones explícitos de preparación, verificación y limpieza. El resultado esperado es `G8_PHONE_PHYSICAL_STORAGE_RESULT=0`, mostrado solo tras finalización válida.
 
 La compilación CI ofrecerá un artefacto `VENCIRA-G8-PHONE-DEBUG-ONLY` con APK y SHA256; no se ha confirmado todavía compilación ni subida de artefacto. El test G8 del emulador se conserva como alternativa y no se debe ejecutar en el móvil físico. Procedimiento detallado: `docs/G8_PHYSICAL_PHONE_APK_2026-11-03.md`. Static guard `g8_physical_phone_debug_apk_isolated` inspecciona aislamiento, debug-only y prohibición de rutas operativas. **G8-PHONE = PENDING build+device; G7 D2/E/F/G/H sigue PASS integral.** Se mantiene PR #17 en borrador y `NO_DEPLOY_NO_LIVE_MIGRATION=1`, MB1/MFA/C_FICHA release NO.
+
+## Incidencia compilación G8 en GitHub Actions (03/11/2026)
+
+El operador comunica que la compilación de la APK G8 por GitHub Actions **falló**. La API GitHub conectada ha permitido revisar el workflow `.github/workflows/g8-phone-apk.yml` y el script `scripts/g8_phone_apk_build.sh`, pero no proporciona **las ejecuciones push** ni sus logs por SHA: las consultas de estados y ejecuciones PR devolvieron listas vacías. El acceso público de navegación a la URL de Actions tampoco dio contenido del run. **La causa exacta del fallo no está determinada**: no atribuir a Gradle, Flutter, Android SDK, permisos o `aapt` sin el log de la ejecución.
+
+Para mejorar visibilidad se añadió evento `pull_request` (además de `push` y `workflow_dispatch`) al workflow G8 Phone, con filtros por rutas G8. Permite registrar pruebas PR donde el conector soporte resultados. No se ha demostrado aún un PASS de esa nueva configuración. Se puede reproducir la compilación local con Docker ya utilizado para G7, sin necesidad de Flutter ni Android SDK instalados en el host:
+
+```bash
+cd ~/vencira-m3-localcheck
+git status --short
+git fetch origin feature/m3-android-local-notifications
+git merge --ff-only FETCH_HEAD
+set -o pipefail
+sudo docker run --rm -v "$PWD:/src" -w /src ghcr.io/cirruslabs/flutter:stable bash scripts/g8_phone_apk_build.sh 2>&1 | tee /tmp/vencira-g8-phone-build.log
+echo "G8_DOCKER_BUILD_RESULT=${PIPESTATUS[0]}"
+```
+
+El propio script rechaza compilar o publicar APK si `flutter analyze`, compilación debug y verificación del `applicationId` por `aapt` no terminan correctamente. Para diagnosticar una ejecución fallida, observar **el primer error real** del log local o compartir el enlace del workflow/run que terminó en rojo y las líneas del paso fallido (eliminar cualquier secreto que pudiera aparecer). **No instalar ninguna APK hasta conseguir `G8_PHONE_APK_ID_VERIFY=OK` y `G8_PHONE_APK_BUILD=OK`.** G7 completo sigue validado; G8 Phone build y prueba física siguen PENDING.
