@@ -48,7 +48,10 @@ cleanup() {
   if [[ "$TMP" == /tmp/vencira-g7d2.* && -d "$TMP" ]]; then
     sudo rm -rf -- "$TMP" || true
   fi
-  echo "G7_D2_GATE_RESULT=$status"
+  echo "G7_BATCH_GATE_RESULT=$status"
+  if [[ "$GROUP" == all ]]; then
+    echo "G7_D2_GATE_RESULT=$status"
+  fi
   echo "NO_DEPLOY_NO_LIVE_MIGRATION=1"
   exit "$status"
 }
