@@ -1,0 +1,46 @@
+name: G8 Android protected storage static candidate
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/m3-android-local-notifications
+    paths:
+      - 'clients/flutter/pubspec.yaml'
+      - 'clients/flutter/integration_test/g8_protected_store_device_test.dart'
+      - 'clients/flutter/lib/api/native_refresh_credential_vault.dart'
+      - 'clients/flutter/lib/api/native_refresh_recovery_journal.dart'
+      - 'scripts/g8_android_store_lab.sh'
+      - 'scripts/n1_static_security_gate.py'
+      - '.github/workflows/g8-android-store-static.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-device-test-static:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Test-only source gates and bash syntax
+        run: |
+          python3 scripts/n1_static_security_gate.py
+          bash -n scripts/g8_android_store_lab.sh
+
+      - name: Analyze Android-only integration_test source (NO device run)
+        run: |
+          docker run --rm \
+            -v "$PWD/clients/flutter:/work" -w /work \
+            ghcr.io/cirruslabs/flutter:stable \
+            sh -c 'flutter pub get && flutter analyze integration_test/g8_protected_store_device_test.dart'
+
+      - name: Confirm no APK, no Android device, and no production release
+        if: always()
+        run: |
+          echo 'G8_ANDROID_HARDWARE_RESULT=NOT_RUN'
+          echo 'G8_STATIC_CI_DOES_NOT_AUTHORIZE_RELEASE=1'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
