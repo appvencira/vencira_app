@@ -113,3 +113,7 @@ Resultado del operador: `G7_B_HTTP_TEST_RESULT=1`, `flutter analyze` limpio, sei
 ## G7-B: 13 errores de análisis de MockClient.streaming corregidos, recheck pendiente
 
 El intento del operador contra `491f0702` terminó en `G7_B_HTTP_RECHECK=1` **antes de ejecutar tests**: `flutter analyze` encontró 13 errores por firma errónea de `MockClient.streaming` y uso de `Request.body` sobre `BaseRequest`. Código test-only actualizado para firma `(BaseRequest, ByteStream)` y lectura del cuerpo de petición desde `ByteStream.bytesToString()`. **Aún no PASS**; los tres fallos iniciales G7-B no se han revalidado. No modificar Django ni PG17, no deploy. Ver `docs/G7_NATIVE_LOGIN_INTEGRATION_2026-11-03.md`.
+
+## G7-B siguiente iteración candidata: cliente HTTP de test determinista
+
+El segundo resultado local `G7_B_HTTP_RECHECK=1` pasó análisis y 7/10 pruebas; las seis G7-A pasan y tres de las cuatro G7-B siguen bloqueadas en respuestas HTTP 200. Para reducir el área de fallo, la suite `native_http_login_integration_test.dart` usa un `http.BaseClient` simulado con `send` inmediato, validación estricta de request y respuesta JSON por el **puerto operativo potencial**, sin tocar implementación, backend ni seguridad. Añade diagnóstico sin credenciales para el próximo fallo. **Aún no PASS de G7-B**. Ver `docs/G7_NATIVE_LOGIN_INTEGRATION_2026-11-03.md`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
