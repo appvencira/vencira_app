@@ -169,3 +169,9 @@ echo "G7_COMBINED_RESULT=$?"
 ```
 
 No hace falta repetir PG17, reconstruir imágenes, migrar ni desplegar.
+
+## G7-A + G7-B SPLIT: validación local verde (03/11/2026)
+
+Resultado aportado por el operador: `flutter pub get` OK, `flutter analyze: No issues found!`, `flutter test test/native_lab_login_shell_test.dart test/native_http_login_integration_test.dart --reporter expanded`: **11/11 pruebas PASS** y `G7_SPLIT_RESULT=0`. Son 6 casos G7-A de UI/fixture y 5 G7-B de HTTP simulado con ejecución asíncrona real. Las advertencias sobre 17 paquetes más recientes no son errores de dependencia y no bloquean este gate. Los 11 PASS **no constituyen** un E2E Flutter→Django de red real ni validan la APK Android.
+
+Se conserva la separación de suites porque widget FakeAsync y lectura de streams HTTP de `package:http` requieren entornos asíncronos distintos. G7-A/G7-B están validados **localmente en laboratorio**, con el control estático comprobado `N1_STATIC_GATE_RESULT=OK` por el operador en el intento anterior. `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. El siguiente paso es ampliar la verificación HTTP de un servidor Django real en entorno test desechable, sin modificar rutas operativas, y después diseñar TLS de laboratorio para Flutter.
