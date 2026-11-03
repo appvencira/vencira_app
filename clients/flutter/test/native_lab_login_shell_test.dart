@@ -94,7 +94,20 @@ void main() {
     );
   });
 
-  Future<void> passwordLogin(WidgetTester tester) async {
+  Future<void> waitFor(WidgetTester tester, Finder target) async {
+    // A busy login/secure-logout screen may show an indefinitely animated
+    // progress indicator. pumpAndSettle is therefore not a valid completion
+    // condition: assert the actual contract state with a bounded pump loop.
+    for (var n = 0; n < 60 && target.evaluate().isEmpty; n++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(target, findsOneWidget);
+  }
+
+  Future<void> passwordLogin(
+    WidgetTester tester, {
+    bool mfaRequired = false,
+  }) async {
     await tester.enterText(
       find.byKey(const Key('native-login-username')), 'operator',
     );
@@ -102,7 +115,12 @@ void main() {
       find.byKey(const Key('native-login-password')), 'synthetic-password',
     );
     await tester.tap(find.byKey(const Key('native-login-submit')));
-    await tester.pumpAndSettle();
+    await waitFor(
+      tester,
+      mfaRequired
+          ? find.text('Verificación en dos pasos')
+          : find.byKey(const Key('g7-native-logout')),
+    );
   }
 
   testWidgets('native shell starts locked; password success stays lab-only',
@@ -126,7 +144,7 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       home: NativeLabLoginShell(coordinator: coordinator),
     ));
-    await passwordLogin(tester);
+    await passwordLogin(tester, mfaRequired: true);
     expect(fence.ticket, isNull);
     expect(find.text('Verificación en dos pasos'), findsOneWidget);
     expect(find.byKey(const Key('g7-native-logout')), findsNothing);
@@ -134,7 +152,7 @@ void main() {
       find.byKey(const Key('native-login-totp')), '123456',
     );
     await tester.tap(find.byKey(const Key('native-login-submit')));
-    await tester.pumpAndSettle();
+    await waitFor(tester, find.byKey(const Key('g7-native-logout')));
     expect(port.mfaCalls, 1);
     expect(fence.ticket, isNotNull);
     expect(find.byKey(const Key('g7-native-logout')), findsOneWidget);
@@ -147,7 +165,7 @@ void main() {
     ));
     await passwordLogin(tester);
     await tester.tap(find.byKey(const Key('g7-native-logout')));
-    await tester.pumpAndSettle();
+    await waitFor(tester, find.byKey(const Key('g7-native-login')));
     expect(fence.ticket, isNull);
     expect(port.revoked, 1);
     expect(store.data, isEmpty);
@@ -162,14 +180,14 @@ void main() {
     ));
     await passwordLogin(tester);
     await tester.tap(find.byKey(const Key('g7-native-logout')));
-    await tester.pumpAndSettle();
+    await waitFor(tester, find.byKey(const Key('g7-native-login')));
     expect(fence.ticket, isNull);
     expect(store.data.values, contains(_refresh));
     expect(find.byKey(const Key('g7-native-logout-error')), findsOneWidget);
     expect(find.byKey(const Key('g7-native-login')), findsNothing);
     port.failRevocation = false;
     await tester.tap(find.byKey(const Key('g7-native-retry-logout')));
-    await tester.pumpAndSettle();
+    await waitFor(tester, find.byKey(const Key('g7-native-login')));
     expect(port.revoked, 1);
     expect(store.data, isEmpty);
     expect(find.byKey(const Key('g7-native-login')), findsOneWidget);
@@ -179,11 +197,14 @@ void main() {
       (tester) async {
     // Avoid Android OS alarm method channel in an entirely synthetic test.
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-    addTearDown(() => debugDefaultTargetPlatformOverride = null);
-    await tester.pumpWidget(VenciraApp(nativeLoginLab: coordinator));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('g7-native-login')), findsOneWidget);
-    expect(port.passwordCalls, 0);
-    expect(fence.ticket, isNull);
+    try {
+      await tester.pumpWidget(VenciraApp(nativeLoginLab: coordinator));
+      await waitFor(tester, find.byKey(const Key('g7-native-login')));
+      expect(port.passwordCalls, 0);
+      expect(fence.ticket, isNull);
+    } finally {
+      // Invariants run before addTearDown callbacks in flutter_test.
+      debugDefaultTargetPlatformOverride = null;
+    }
   });
 }
