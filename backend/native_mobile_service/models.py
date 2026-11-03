@@ -49,3 +49,23 @@ class MobileSpentRefresh(models.Model):
     )
     digest = models.CharField(max_length=64, unique=True)
     spent_at = models.DateTimeField(auto_now_add=True)
+
+
+class MobileAuthAttemptBucket(models.Model):
+    """G5 test-only shared throttle ledger; HMAC subject, never a raw IP/login."""
+
+    scope = models.CharField(max_length=12)
+    subject_digest = models.CharField(max_length=64)
+    window_started_at = models.DateTimeField()
+    attempt_count = models.PositiveIntegerField(default=0)
+    blocked_until = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["scope", "subject_digest"], name="nms_abuse_scope_subject_uq",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["blocked_until"], name="nms_abuse_block_idx"),
+        ]
