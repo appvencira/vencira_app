@@ -1,20 +1,22 @@
-import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:vencira/api/native_api_endpoint.dart';
 import 'package:vencira/api/native_api_transport.dart';
 import 'package:vencira/api/native_http_auth_port.dart';
 import 'package:vencira/api/native_refresh_credential_vault.dart';
 import 'package:vencira/api/native_session_coordinator.dart';
 import 'package:vencira/api/native_session_fence.dart';
-import 'package:vencira/ui/native_lab_login_shell.dart';
+import 'package:vencira/ui/native_login_screen.dart';
 
-/// G7-B: Flutter HTTP-to-session integration against deterministic responses
-/// conforming to native_sessions_lab.test_http_contract. NO live network,
-/// credentials, cookies, backend routing, or operational resource access.
+/// G7-B: in-process HTTP integration, without a live network or issuer.
+///
+/// Run with test() rather than testWidgets(): this suite tests streamed HTTP,
+/// vault futures, session fencing and Bearer authorization with real async
+/// streams. The G7-A native_lab_login_shell_test.dart suite separately tests
+/// the widget/callback transitions under Flutter's FakeAsync zone.
 const _access = 'v1.a.0123456789abcdef0123456789abcdef.'
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 const _refresh = 'v1.r.0123456789abcdef0123456789abcdef.'
@@ -33,52 +35,6 @@ http.Response _grant() => _reply({
   'access': _access,
   'refresh': _refresh,
 });
-
-/// Serve a one-chunk JSON body to the real NativeHttpAuthPort parser without
-/// using the network. No token is logged or written outside the fake vault.
-http.StreamedResponse _syncStream(http.Response response) {
-  final stream = Stream<List<int>>.multi((controller) {
-    controller.addSync(response.bodyBytes);
-    controller.closeSync();
-  });
-  return http.StreamedResponse(
-    stream,
-    response.statusCode,
-    headers: response.headers,
-  );
-}
-
-/// Deterministic, in-process HTTP transport for testWidgets. The real
-/// NativeHttpAuthPort and NativeApiTransport still build and parse streamed
-/// HTTP requests/responses; only the network boundary is simulated.
-/// This adapter avoids awaiting a forwarded request ByteStream during FakeAsync.
-class _LabHttpClient extends http.BaseClient {
-  _LabHttpClient(this._respond);
-
-  final http.Response Function(http.Request) _respond;
-  int calls = 0;
-  int? lastResponseStatus;
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
-    if (request is! http.Request) {
-      return Future<http.StreamedResponse>.error(
-        StateError('Unexpected native HTTP request type'),
-      );
-    }
-    try {
-      calls++;
-      final reply = _respond(request);
-      lastResponseStatus = reply.statusCode;
-      return Future<http.StreamedResponse>.value(_syncStream(reply));
-    } catch (error, stack) {
-      return Future<http.StreamedResponse>.error(error, stack);
-    }
-  }
-
-  @override
-  void close() {}
-}
 
 class _MemoryProtectedStore implements NativeSecretStore {
   final values = <String, String>{};
@@ -102,7 +58,6 @@ class _Fixture {
       : endpoint = NativeApiEndpoint.parse('https://dev.vencira.es'),
         store = _MemoryProtectedStore(),
         fence = NativeSessionFence() {
-    // Construct the vault within testWidgets' FakeAsync zone.
     coordinator = NativeSessionCoordinator(
       port: NativeHttpAuthPort(endpoint: endpoint, client: client),
       vault: NativeRefreshCredentialVault(endpoint: endpoint, store: store),
@@ -124,41 +79,6 @@ class _Fixture {
   late final NativeApiTransport transport;
 }
 
-Future<void> _waitFor(
-  WidgetTester tester,
-  Finder target, {
-  required _Fixture fixture,
-}) async {
-  // Waiting for a specific security state avoids pumpAndSettle problems with
-  // indefinitely animated progress indicators.
-  for (var i = 0; i < 80 && target.evaluate().isEmpty; i++) {
-    await tester.pump(const Duration(milliseconds: 50));
-  }
-  if (target.evaluate().length != 1) {
-    // Only report safe state: no username, password, token, or response body.
-    final client = fixture.client;
-    final lab = client is _LabHttpClient ? client : null;
-    fail(
-      'G7-B state mismatch: '
-      'httpCalls=${lab?.calls} status=${lab?.lastResponseStatus} '
-      'fenceActive=${fixture.fence.ticket != null} '
-      'vaultPopulated=${fixture.store.values.isNotEmpty} '
-      'loginError=${find.byKey(const Key('native-login-error')).evaluate().isNotEmpty} '
-      'logoutError=${find.byKey(const Key('g7-native-logout-error')).evaluate().isNotEmpty}',
-    );
-  }
-}
-
-Future<void> _enterPassword(WidgetTester tester) async {
-  await tester.enterText(
-    find.byKey(const Key('native-login-username')), 'lab-user',
-  );
-  await tester.enterText(
-    find.byKey(const Key('native-login-password')), 'lab-password',
-  );
-  await tester.tap(find.byKey(const Key('native-login-submit')));
-}
-
 void _requireNativeRequest(http.Request request, String path) {
   expect(request.url.scheme, 'https');
   expect(request.url.host, 'dev.vencira.es');
@@ -169,43 +89,41 @@ void _requireNativeRequest(http.Request request, String path) {
 }
 
 void main() {
-  testWidgets('HTTP password, protected refresh, Bearer read and logout',
-      (tester) async {
+  test('G7-B HTTP password, verified vault, scoped Bearer GET and logout',
+      () async {
     var passwordCalls = 0;
     var bearerReads = 0;
     var revokeCalls = 0;
-    final client = _LabHttpClient((request) {
-      if (request.url.path == '/api/v1/mobile/auth/password/') {
-        passwordCalls++;
-        _requireNativeRequest(request, '/api/v1/mobile/auth/password/');
-        expect(request.method, 'POST');
-        expect(request.headers['Authorization'], isNull);
-        expect(jsonDecode(request.body), {
-          'username': 'lab-user', 'password': 'lab-password',
-        });
-        return _grant();
+    final client = MockClient((request) async {
+      switch (request.url.path) {
+        case '/api/v1/mobile/auth/password/':
+          passwordCalls++;
+          _requireNativeRequest(request, '/api/v1/mobile/auth/password/');
+          expect(request.method, 'POST');
+          expect(request.headers['Authorization'], isNull);
+          expect(jsonDecode(request.body), {
+            'username': 'lab-user', 'password': 'lab-password',
+          });
+          return _grant();
+        case '/api/v1/mobile/me/':
+          bearerReads++;
+          _requireNativeRequest(request, '/api/v1/mobile/me/');
+          expect(request.method, 'GET');
+          expect(request.headers['Authorization'], 'Bearer $_access');
+          return _reply({'authenticated': true, 'user_id': 27});
+        case '/api/v1/mobile/token/revoke/':
+          revokeCalls++;
+          _requireNativeRequest(request, '/api/v1/mobile/token/revoke/');
+          expect(request.method, 'POST');
+          expect(jsonDecode(request.body), {'refresh': _refresh});
+          expect(request.headers['Authorization'], isNull);
+          return _reply({'status': 'revoked'});
+        default:
+          throw StateError('Unexpected native HTTP path');
       }
-      if (request.url.path == '/api/v1/mobile/me/') {
-        bearerReads++;
-        _requireNativeRequest(request, '/api/v1/mobile/me/');
-        expect(request.method, 'GET');
-        expect(request.headers['Authorization'], 'Bearer ' + _access);
-        return _reply({'authenticated': true, 'user_id': 27});
-      }
-      if (request.url.path == '/api/v1/mobile/token/revoke/') {
-        revokeCalls++;
-        _requireNativeRequest(request, '/api/v1/mobile/token/revoke/');
-        expect(request.method, 'POST');
-        expect(jsonDecode(request.body), {'refresh': _refresh});
-        return _reply({'status': 'revoked'});
-      }
-      throw StateError('Unexpected native HTTP path');
     });
-
+    addTearDown(client.close);
     final fixture = _Fixture(client);
-    await tester.pumpWidget(MaterialApp(
-      home: NativeLabLoginShell(coordinator: fixture.coordinator),
-    ));
     expect(fixture.fence.ticket, isNull);
     await expectLater(
       fixture.transport.getJson('/api/v1/mobile/me/'),
@@ -214,59 +132,65 @@ void main() {
     expect(passwordCalls, 0);
     expect(bearerReads, 0);
 
-    await _enterPassword(tester);
-    await _waitFor(tester, find.byKey(const Key('g7-native-logout')), fixture: fixture);
+    final decision = await fixture.coordinator.verifyPassword(
+      username: 'lab-user',
+      password: 'lab-password',
+    );
+    expect(decision, NativePasswordDecision.authenticated);
     expect(passwordCalls, 1);
     expect(fixture.fence.ticket, isNotNull);
     expect(fixture.store.values.values.single, _refresh);
+    expect(await fixture.coordinator.accessToken(), _access);
 
     final profile = await fixture.transport.getJson('/api/v1/mobile/me/');
     expect(profile, {'authenticated': true, 'user_id': 27});
     expect(bearerReads, 1);
 
-    await tester.tap(find.byKey(const Key('g7-native-logout')));
-    await _waitFor(tester, find.byKey(const Key('g7-native-login')), fixture: fixture);
+    final closing = fixture.coordinator.logout();
+    expect(fixture.fence.ticket, isNull); // synchronous fence closure
+    await closing;
     expect(revokeCalls, 1);
-    expect(fixture.fence.ticket, isNull);
     expect(fixture.store.values, isEmpty);
     await expectLater(
       fixture.transport.getJson('/api/v1/mobile/me/'),
       throwsA(isA<NativeApiSessionUnavailable>()),
     );
     expect(bearerReads, 1);
-    client.close();
   });
 
-  testWidgets('HTTP MFA challenge holds fence closed until TOTP is accepted',
-      (tester) async {
+  test('G7-B HTTP MFA challenge never opens session before accepted TOTP',
+      () async {
+    var passwordCalls = 0;
     var mfaCalls = 0;
     var bearerReads = 0;
-    final client = _LabHttpClient((request) {
-      if (request.url.path == '/api/v1/mobile/auth/password/') {
-        _requireNativeRequest(request, '/api/v1/mobile/auth/password/');
-        return _reply({'status': 'mfa_required', 'challenge': _challenge});
+    final client = MockClient((request) async {
+      switch (request.url.path) {
+        case '/api/v1/mobile/auth/password/':
+          passwordCalls++;
+          _requireNativeRequest(request, '/api/v1/mobile/auth/password/');
+          return _reply({'status': 'mfa_required', 'challenge': _challenge});
+        case '/api/v1/mobile/auth/mfa/':
+          mfaCalls++;
+          _requireNativeRequest(request, '/api/v1/mobile/auth/mfa/');
+          expect(jsonDecode(request.body), {
+            'challenge': _challenge, 'code': '123456',
+          });
+          return _grant();
+        case '/api/v1/mobile/me/':
+          bearerReads++;
+          return _reply({'authenticated': true, 'user_id': 27});
+        default:
+          throw StateError('Unexpected native HTTP path');
       }
-      if (request.url.path == '/api/v1/mobile/auth/mfa/') {
-        mfaCalls++;
-        _requireNativeRequest(request, '/api/v1/mobile/auth/mfa/');
-        expect(jsonDecode(request.body), {
-          'challenge': _challenge, 'code': '123456',
-        });
-        return _grant();
-      }
-      if (request.url.path == '/api/v1/mobile/me/') {
-        bearerReads++;
-        return _reply({'authenticated': true, 'user_id': 27});
-      }
-      throw StateError('Unexpected native HTTP path');
     });
-
+    addTearDown(client.close);
     final fixture = _Fixture(client);
-    await tester.pumpWidget(MaterialApp(
-      home: NativeLabLoginShell(coordinator: fixture.coordinator),
-    ));
-    await _enterPassword(tester);
-    await _waitFor(tester, find.text('Verificación en dos pasos'), fixture: fixture);
+    final decision = await fixture.coordinator.verifyPassword(
+      username: 'lab-user', password: 'lab-password',
+    );
+    expect(decision, NativePasswordDecision.mfaRequired);
+    expect(passwordCalls, 1);
+    expect(mfaCalls, 0);
     expect(fixture.fence.ticket, isNull);
     expect(fixture.store.values, isEmpty);
     await expectLater(
@@ -275,71 +199,117 @@ void main() {
     );
     expect(bearerReads, 0);
 
-    await tester.enterText(
-      find.byKey(const Key('native-login-totp')), '123456',
-    );
-    await tester.tap(find.byKey(const Key('native-login-submit')));
-    await _waitFor(tester, find.byKey(const Key('g7-native-logout')), fixture: fixture);
+    await fixture.coordinator.verifyTotp('123456');
     expect(mfaCalls, 1);
     expect(fixture.fence.ticket, isNotNull);
     expect(fixture.store.values.values.single, _refresh);
-    client.close();
+    expect(await fixture.coordinator.accessToken(), _access);
   });
 
-  testWidgets('HTTP 401 on password cannot grant or store native session',
-      (tester) async {
+  test('G7-B HTTP 401 rejects password without credentials or fence',
+      () async {
     var calls = 0;
-    final client = _LabHttpClient((request) {
+    final client = MockClient((request) async {
       calls++;
       _requireNativeRequest(request, '/api/v1/mobile/auth/password/');
       return _reply({'error': 'native_auth_unavailable'}, status: 401);
     });
+    addTearDown(client.close);
     final fixture = _Fixture(client);
-    await tester.pumpWidget(MaterialApp(
-      home: NativeLabLoginShell(coordinator: fixture.coordinator),
-    ));
-    await _enterPassword(tester);
-    await _waitFor(tester, find.byKey(const Key('native-login-error')), fixture: fixture);
+    await expectLater(
+      fixture.coordinator.verifyPassword(
+        username: 'lab-user', password: 'bad-password',
+      ),
+      throwsA(isA<NativeHttpAuthFailure>()),
+    );
     expect(calls, 1);
     expect(fixture.fence.ticket, isNull);
     expect(fixture.store.values, isEmpty);
-    expect(find.byKey(const Key('g7-native-logout')), findsNothing);
-    client.close();
+    expect(await fixture.coordinator.accessToken(), isNull);
   });
 
-  testWidgets('HTTP revoke denial closes gate and requires explicit retry',
-      (tester) async {
+  test('G7-B HTTP revoke denial keeps fence closed until explicit retry',
+      () async {
     var allowRevoke = false;
     var revokeCalls = 0;
-    final client = _LabHttpClient((request) {
-      if (request.url.path == '/api/v1/mobile/auth/password/') return _grant();
-      if (request.url.path == '/api/v1/mobile/token/revoke/') {
-        revokeCalls++;
-        return allowRevoke
-            ? _reply({'status': 'revoked'})
-            : _reply({'error': 'native_auth_unavailable'}, status: 503);
+    final client = MockClient((request) async {
+      switch (request.url.path) {
+        case '/api/v1/mobile/auth/password/':
+          return _grant();
+        case '/api/v1/mobile/token/revoke/':
+          revokeCalls++;
+          _requireNativeRequest(request, '/api/v1/mobile/token/revoke/');
+          expect(jsonDecode(request.body), {'refresh': _refresh});
+          return allowRevoke
+              ? _reply({'status': 'revoked'})
+              : _reply({'error': 'native_auth_unavailable'}, status: 503);
+        default:
+          throw StateError('Unexpected native HTTP path');
       }
-      throw StateError('Unexpected native HTTP path');
     });
+    addTearDown(client.close);
     final fixture = _Fixture(client);
-    await tester.pumpWidget(MaterialApp(
-      home: NativeLabLoginShell(coordinator: fixture.coordinator),
-    ));
-    await _enterPassword(tester);
-    await _waitFor(tester, find.byKey(const Key('g7-native-logout')), fixture: fixture);
-    await tester.tap(find.byKey(const Key('g7-native-logout')));
-    await _waitFor(tester, find.byKey(const Key('g7-native-logout-error')), fixture: fixture);
+    expect(await fixture.coordinator.verifyPassword(
+      username: 'lab-user', password: 'lab-password',
+    ), NativePasswordDecision.authenticated);
+
+    final closing = fixture.coordinator.logout();
     expect(fixture.fence.ticket, isNull);
-    expect(fixture.store.values.values.single, _refresh);
-    expect(find.byKey(const Key('g7-native-login')), findsNothing);
+    await expectLater(closing, throwsA(isA<NativeHttpAuthFailure>()));
     expect(revokeCalls, 1);
+    expect(fixture.store.values.values.single, _refresh);
+    expect(fixture.fence.ticket, isNull);
+    await expectLater(
+      fixture.coordinator.verifyPassword(
+        username: 'lab-user', password: 'lab-password',
+      ),
+      throwsStateError,
+    );
 
     allowRevoke = true;
-    await tester.tap(find.byKey(const Key('g7-native-retry-logout')));
-    await _waitFor(tester, find.byKey(const Key('g7-native-login')), fixture: fixture);
+    await fixture.coordinator.logout();
     expect(revokeCalls, 2);
     expect(fixture.store.values, isEmpty);
     expect(fixture.fence.ticket, isNull);
-    client.close();
+  });
+
+  test('G7-B remote Bearer 401 revokes local request gate',
+      () async {
+    var reads = 0;
+    var revokes = 0;
+    final client = MockClient((request) async {
+      switch (request.url.path) {
+        case '/api/v1/mobile/auth/password/':
+          return _grant();
+        case '/api/v1/mobile/me/':
+          reads++;
+          expect(request.headers['Authorization'], 'Bearer $_access');
+          return _reply({'error': 'native_auth_unavailable'}, status: 401);
+        case '/api/v1/mobile/token/revoke/':
+          revokes++;
+          return _reply({'status': 'revoked'});
+        default:
+          throw StateError('Unexpected native HTTP path');
+      }
+    });
+    addTearDown(client.close);
+    final fixture = _Fixture(client);
+    await fixture.coordinator.verifyPassword(
+      username: 'lab-user', password: 'lab-password',
+    );
+    await expectLater(
+      fixture.transport.getJson('/api/v1/mobile/me/'),
+      throwsA(isA<NativeApiSessionUnavailable>()),
+    );
+    expect(reads, 1);
+    expect(fixture.fence.ticket, isNull);
+    await expectLater(
+      fixture.transport.getJson('/api/v1/mobile/me/'),
+      throwsA(isA<NativeApiSessionUnavailable>()),
+    );
+    expect(reads, 1);
+    await fixture.coordinator.logout();
+    expect(revokes, 1);
+    expect(fixture.store.values, isEmpty);
   });
 }
