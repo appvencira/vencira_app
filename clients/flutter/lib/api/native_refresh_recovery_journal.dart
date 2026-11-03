@@ -98,4 +98,59 @@ class NativeRefreshRecoveryJournal {
       }
     });
   }
+  /// G10 first issuance differs from full *account-wide* recovery: only an
+  /// EMPTY protected vault may enter this commit. The durable journal must
+  /// already be armed BEFORE the password/MFA HTTP request was sent.
+  /// The session fence stays closed until refresh storage and marker erase
+  /// are both read-back verified. On any failure a new full account recovery
+  /// is required; never retry the potentially committed issuance.
+  Future<void> confirmFirstIssuance({
+    required NativeRefreshCredentialVault vault,
+    required Future<void> Function() verifyAndReplace,
+  }) {
+    fence.revoke();
+    return _serial(() async {
+      if (await _store.read(_key) != _pending) {
+        throw StateError('First issuance checkpoint missing');
+      }
+      if (await vault.read() != null) {
+        throw StateError('First issuance requires an empty protected vault');
+      }
+      try {
+        await verifyAndReplace();
+        if (fence.ticket != null || await vault.read() == null) {
+          throw StateError('First issuance storage commit not verified');
+        }
+        await _store.delete(_key);
+        if (await _store.read(_key) != null) {
+          throw StateError('First issuance marker deletion not verified');
+        }
+      } catch (_) {
+        fence.revoke();
+        rethrow;
+      }
+    });
+  }
+
+  /// G10 logout completion: caller MUST have verified remote revocation and
+  /// vault.clear() before invoking this. The checkpoint remains durable if
+  /// revocation, vault removal or marker deletion cannot be verified.
+  Future<void> confirmLogoutCompleted({
+    required NativeRefreshCredentialVault vault,
+  }) {
+    fence.revoke();
+    return _serial(() async {
+      if (await _store.read(_key) != _pending) {
+        throw StateError('Logout checkpoint missing');
+      }
+      if (await vault.read() != null) {
+        throw StateError('Logout credential still protected');
+      }
+      await _store.delete(_key);
+      if (await _store.read(_key) != null) {
+        throw StateError('Logout checkpoint deletion not verified');
+      }
+    });
+  }
+
 }
