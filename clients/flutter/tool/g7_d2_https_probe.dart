@@ -295,6 +295,30 @@ Future<void> main() async {
     await cookieReply.stream.drain<void>();
     _require(cookieReply.statusCode == 403, 'WEB_COOKIE_DENIED');
 
+    // On a rejected browser-cookie request, Django's SessionMiddleware may
+    // delete the supplied invalid cookie. Distinguish cookie deletion from
+    // issuing an active session without ever logging a Set-Cookie value.
+    final cookieHeader = cookieReply.headers['set-cookie'];
+    if (cookieHeader != null) {
+      final cookieName = cookieHeader.split('=').first.trim();
+      final isSessionCookie = cookieName == 'vencira_sessionid';
+      final isDeletion = RegExp(
+        r'(?:^|;)\\s*max-age=0(?:;|$)', caseSensitive: false,
+      ).hasMatch(cookieHeader);
+      stdout.writeln(
+        'G7_D2_REJECT_COOKIE_SESSION_NAME=$isSessionCookie',
+      );
+      stdout.writeln(
+        'G7_D2_REJECT_COOKIE_DELETION=$isDeletion',
+      );
+      _require(
+        isSessionCookie && isDeletion,
+        'WEB_COOKIE_RESPONSE_ONLY_DELETES_SESSION',
+      );
+    } else {
+      stdout.writeln('G7_D2_REJECT_COOKIE_ABSENT=OK');
+    }
+
     final invalidTrustClient = IOClient(
       _httpsClient(SecurityContext(withTrustedRoots: false)),
     );
