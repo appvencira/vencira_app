@@ -192,3 +192,11 @@ Recibo local: `G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0`, `All tests passed!`, `G7_D2
 ## G7-D2: comprobación de borrado de cookie PASS (03/11/2026)
 
 El operador confirma `G7_D2_REJECT_COOKIE_SESSION_NAME=true`, `G7_D2_REJECT_COOKIE_DELETION=true`, `G7_D2_WEB_COOKIE_RESPONSE_ONLY_DELETES_SESSION=OK`, junto con `G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0`, `All tests passed!` y `G7_D2_GATE_RESULT=0`. La cabecera de respuesta en el rechazo HTTP 403 elimina exclusivamente la cookie web previa; no concede autenticación. G7-D2 y su subgate de cookie quedan validados en red Docker privada con SQLite efímera. Siguiente grupo G7-E: MFA TOTP y rotación/replay de refresh contra Django vía cliente Dart/Flutter real. La APK y los gates de despliegue siguen pendientes.
+
+## G7-D2 cookie PASS y G7-E MFA/refresh HTTPS candidato (03/11/2026)
+
+El operador confirmó después de la primera prueba verde el borrado seguro de cookie HTTP403: `G7_D2_REJECT_COOKIE_SESSION_NAME=true`, `G7_D2_REJECT_COOKIE_DELETION=true`, `G7_D2_WEB_COOKIE_RESPONSE_ONLY_DELETES_SESSION=OK`; `G7_D2_GATE_RESULT=0`. **G7-D2 íntegro PASS local**.
+
+En la misma rama está implementado **G7-E pendiente**: usuario de laboratorio Django con `UserMfaState` habilitado, TOTP RFC6238 sintético cifrado y Fernet efímera dentro del contenedor; Dart genera su código de test mediante `crypto` en `dev_dependencies`. La prueba usa realmente `NativeHttpAuthPort` y `NativeSessionCoordinator` sobre HTTPS para demostrar challenge sin fence ni refresh, MFA correcto y denegación de OTP reutilizado, acceso y logout revocado. El segundo bloque valida por HTTPS rotación y replay del refresh, invalidación del Bearer antiguo/nuevo, y revocación del token girado. **Importante:** `NativeSessionCoordinator` sigue sin adaptador de renovación automática o recuperación de refresh ante crash. La rotación se ensaya en `NativeHttpAuthPort`, no constituye funcionalidad operativa.
+
+El runner G7-D2 exige además `G7_E_MFA_HTTPS_RESULT=0` y `G7_E_REFRESH_REPLAY_RESULT=0` antes del éxito final, con control estático `g7_e_https_mfa_rotation_only_in_lab`. Validación local focalizada: fast-forward y `bash scripts/g7_d2_https_flutter_django.sh`; no repetir el conjunto PG17 ni habilitar rutas. G7-E **PENDING**, PR draft y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
