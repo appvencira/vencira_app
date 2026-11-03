@@ -5,7 +5,9 @@ on:
   pull_request:
     paths:
       - 'clients/flutter/lib/api/native_mobile_startup_gate.dart'
+      - 'clients/flutter/lib/api/native_mobile_recovery_entry.dart'
       - 'clients/flutter/test/native_mobile_startup_gate_test.dart'
+      - 'clients/flutter/test/native_mobile_recovery_entry_test.dart'
       - 'clients/flutter/lib/api/native_refresh_recovery_journal.dart'
       - 'clients/flutter/lib/api/native_refresh_credential_vault.dart'
       - 'clients/flutter/lib/api/native_session_coordinator.dart'
@@ -18,7 +20,9 @@ on:
       - feature/m3-android-local-notifications
     paths:
       - 'clients/flutter/lib/api/native_mobile_startup_gate.dart'
+      - 'clients/flutter/lib/api/native_mobile_recovery_entry.dart'
       - 'clients/flutter/test/native_mobile_startup_gate_test.dart'
+      - 'clients/flutter/test/native_mobile_recovery_entry_test.dart'
       - 'clients/flutter/lib/api/native_refresh_recovery_journal.dart'
       - 'clients/flutter/lib/api/native_refresh_credential_vault.dart'
       - 'clients/flutter/lib/api/native_session_coordinator.dart'
