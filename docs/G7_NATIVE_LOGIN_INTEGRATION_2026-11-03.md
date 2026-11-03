@@ -290,3 +290,21 @@ Revisión del archivo exacto en GitHub: la condición `grep` de validación PEM 
 Corrección: **sustitución completa** de `scripts/g7_d2_https_flutter_django.sh` por una única secuencia de arranque/validación/probe/limpieza. Desde el contenedor Django se comprueba el archivo CA, se transmite **solo certificado público** por `docker exec cat`, se valida localmente con `python3 ssl.PEM_cert_to_DER_cert` exigiendo un certificado y ninguna clave privada, y se establece `0644` para el archivo público (el directorio temporal del host conserva `0700`; la montura es `:ro`). Se elimina el `grep` mal formado, se conserva `set -euo pipefail` y el runner usa `tee` con `pipefail`; comprueba `G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0` y `All tests passed!` del resultado real **antes** de imprimir el único `G7_D2_FLUTTER_DJANGO_HTTPS=OK`. El gate estático exige exactamente **una ejecución Flutter** y **un marcador de éxito**, además de la validación PEM y el aislamiento previo. Código de producción, CA temporal, URLConf operativa y DB persistente **sin cambios**.
 
 **G7-D2 continúa PENDING** hasta repetir el script y obtener `G7_D2_GATE_RESULT=0` y `G7_D2_LOCAL_RESULT=0` sobre esta versión. No considerar el `G7_D2_FLUTTER_DJANGO_HTTPS=OK` anterior como evidencia. Verificación focalizada: `git fetch origin feature/m3-android-local-notifications && git merge --ff-only FETCH_HEAD && bash -n scripts/g7_d2_https_flutter_django.sh && bash scripts/g7_d2_https_flutter_django.sh`. No repetir los ensayos G7-A/B/C/D1; los datos operativos permanecen intactos.
+
+## G7-D2: primera ejecución de Dart frente al emisor real; diagnóstico HTTP pendiente
+
+El operador confirma tras la corrección del PEM:
+```text
+flutter analyze: No issues found!
+G7_D2_FIXTURE_READY=OK
+G7_D2_PUBLIC_CA_READY=OK
+G7_D2_INITIAL_FENCE=OK
+NativeHttpAuthFailure (NativeHttpAuthPort._post, línea 71)
+G7_D2_GATE_RESULT=1
+```
+
+Esto confirma que el contenedor Flutter **puede leer la CA pública**, iniciar la suite live y verificar el fence inicial. La excepción **no permite atribuir el fallo a TLS, HTTP, Django o forma de tokens**: `NativeHttpAuthPort._post` deliberadamente transforma diferentes fallos en `NativeHttpAuthFailure`. G7-D2 sigue rojo, **NO PASS**; el marcador de éxito y de cleanup ya no es falso.
+
+Se añade instrumentación *solo del laboratorio* en `clients/flutter/tool/g7_d2_https_probe.dart`, sin cambiar la lógica `lib/api/native_http_auth_port.dart`: (1) `_preflightTls` usa `Socket.connect` hacia la IPv4 privada de Docker y `SecureSocket.secure(host: dev.vencira.es, context: CA temporal)`, sin DNS ni desactivar verificación, para diferenciar fallo TLS de HTTP; (2) `_SafeHttpTraceClient` mantiene `IOClient` real pero registra **solo** etiqueta de endpoint de una lista fija, código HTTP, si Content-Type es JSON, presencia de Set-Cookie y clase del error de transporte; (3) el `connectionFactory` registra la comprobación de destino y los booleanos de guardia, nunca URL completa, credenciales, tokens, cuerpos ni cabeceras sensibles. El gate estático exige estos componentes.
+
+En el próximo `bash scripts/g7_d2_https_flutter_django.sh`, obtener `G7_D2_TLS_PREFLIGHT`, `G7_D2_FACTORY_...` y `G7_D2_HTTP_PASSWORD_...` para clasificar la causa. Si falla, compartir únicamente las líneas de resultado/primera excepción. **No** relajar `SecurityContext`, no desactivar verificación TLS, no habilitar rutas operativas. G7-A/B/C/D1 siguen PASS anteriores.
