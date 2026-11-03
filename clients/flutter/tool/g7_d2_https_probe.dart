@@ -22,6 +22,22 @@ const _password = 'G7-D2-Only-Synthetic-Password-2026!';
 const _serverAlias = 'dev.vencira.es';
 const _tlsPort = 8443;
 
+InternetAddress _privateLabPeer() {
+  final value = Platform.environment['G7_D2_PEER_IPV4'];
+  final address = InternetAddress.tryParse(value ?? '');
+  if (address == null || address.type != InternetAddressType.IPv4) {
+    throw StateError('G7_D2_PRIVATE_PEER_REQUIRED');
+  }
+  final bytes = address.rawAddress;
+  final privateRange = bytes[0] == 10 ||
+      (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) ||
+      (bytes[0] == 192 && bytes[1] == 168);
+  if (!privateRange) {
+    throw StateError('G7_D2_PUBLIC_PEER_FORBIDDEN');
+  }
+  return address;
+}
+
 void _require(bool passed, String name) {
   if (!passed) throw StateError('G7_D2_${name}_FAILED');
   stdout.writeln('G7_D2_${name}=OK');
@@ -44,9 +60,10 @@ HttpClient _httpsClient(SecurityContext trust, {String host = _serverAlias}) {
           uri.port != 443) {
         throw StateError('G7_D2_UNEXPECTED_REMOTE_TARGET');
       }
-      // This name is a Docker --network-alias on a --internal network;
-      // no published ports, public DNS fallback, or host-network access.
-      return Socket.startConnect(_serverAlias, _tlsPort);
+      // The peer is the private IPv4 reported by docker inspect for the
+      // server's isolated network. No DNS resolution or public fallback.
+      // TLS still validates the *original URI host* through SNI/SAN.
+      return Socket.startConnect(_privateLabPeer(), _tlsPort);
     };
   return client;
 }
