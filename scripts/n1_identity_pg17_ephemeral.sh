@@ -36,6 +36,7 @@ case "$MODE" in
       native_sessions_lab.test_login_rules
       native_sessions_lab.test_pg17_login_race
       native_sessions_lab.test_http_contract_cases
+      native_sessions_lab.test_loopback_http_contract
     )
     ;;
   --candidate)
