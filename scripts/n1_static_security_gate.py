@@ -164,6 +164,10 @@ def verify():
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
             and "g5_keyring_policy" not in config
             and "g5_keyring_policy" not in routes,
+        "g5_versioned_digest_capacity":
+            "max_length=96" in candidate_schema
+            and "0004_digest_envelope_capacity" not in config
+            and "native_mobile_service" not in routes,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
@@ -211,6 +215,8 @@ def verify():
         "backend/native_mobile_service/test_g5_audit_pg17_races.py",
         "backend/native_mobile_service/g5_keyring_policy.py",
         "backend/native_mobile_service/test_g5_keyring_policy.py",
+        "backend/native_mobile_service/migrations/0004_digest_envelope_capacity.py",
+        "backend/native_mobile_service/test_g5_digest_capacity.py",
         "backend/reminders/native_mobile_identity_gate.py",
         "backend/reminders/native_mobile_token_primitives.py",
     ):
