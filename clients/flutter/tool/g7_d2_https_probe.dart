@@ -478,7 +478,7 @@ Future<void> _verifyAmbiguousRefreshRecoveryHttps(
   _require(
     fence.ticket == null &&
         store.values.isEmpty &&
-        await _bearerHttpStatus(client, endpoint, access) == 401,
+        await _bearerHttpStatus(client, endpoint, access!) == 401,
     'RECOVERY_FINAL_REVOKE_CLEARS_VAULT',
   );
   stdout.writeln('G7_F_AMBIGUOUS_REFRESH_RECOVERY_RESULT=0');
