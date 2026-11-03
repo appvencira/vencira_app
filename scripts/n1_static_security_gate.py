@@ -31,6 +31,7 @@ def verify():
     flutter_main = read("clients/flutter/lib/main.dart")
     flutter_lab_shell = read("clients/flutter/lib/ui/native_lab_login_shell.dart")
     flutter_lab_http_test = read("clients/flutter/test/native_http_login_integration_test.dart")
+    django_socket_lab_test = read("backend/native_sessions_lab/test_loopback_http_contract.py")
     recovery_gateway = read("clients/flutter/lib/api/native_recovery_login_gateway.dart")
     recovery_migration = read(
         "backend/native_sessions_lab/migrations/0004_mobile_challenge_recovery_flag.py"
@@ -192,6 +193,14 @@ def verify():
             and "NativeLabLoginShell(coordinator: coordinator)" in read("clients/flutter/test/native_lab_login_shell_test.dart")
             and "native_sessions_lab.test_urls" not in read("backend/config/urls.py")
             and "NativeHttpAuthPort(" not in flutter_main,
+        "g7_socket_lab_loopback_only":
+            'host = "127.0.0.1"' in django_socket_lab_test
+            and "LiveServerTestCase" in django_socket_lab_test
+            and "http.client.HTTPConnection(" in django_socket_lab_test
+            and 'ROOT_URLCONF="native_sessions_lab.test_urls"' in django_socket_lab_test
+            and "http://" not in read("clients/flutter/lib/api/native_api_endpoint.dart")
+            and "native_sessions_lab.test_urls" not in config
+            and "native_sessions_lab.test_urls" not in routes,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
@@ -219,6 +228,7 @@ def verify():
         "backend/native_sessions_lab/test_urls.py",
         "backend/native_sessions_lab/test_http_contract.py",
         "backend/native_sessions_lab/test_http_contract_cases.py",
+        "backend/native_sessions_lab/test_loopback_http_contract.py",
         "backend/native_mobile_service/models.py",
         "backend/native_mobile_service/migrations/0001_initial.py",
         "backend/native_mobile_service/authentication.py",
