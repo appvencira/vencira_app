@@ -431,3 +431,37 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 Causa: el primer uso de `firstAccess!` en la línea 179 promueve a no nulo esa variable local y el segundo `firstAccess!` de la línea 189 se considera innecesario. Se ha eliminado **exclusivamente** el segundo `!`, quedando `await bearerStatus(firstAccess) == 401`. El resto de las comprobaciones de emisión, acceso y revocación permanecen idénticas. Verificación remota de línea 189 y control N1/runner presente: OK. La ejecución Flutter aún no se ha repetido: **G11=PENDING RECHECK**, sin declarar PASS ni adelantar pruebas HTTPS.
 
 Reejecutar solo G11 tras fast-forward: `bash scripts/g11_https_first_issue_logout.sh`. G7–G10 permanecen validados. PR sigue DRAFT, `NO_DEPLOY_NO_LIVE_MIGRATION=1`; no desplegar ni migrar bases productivas.
+
+## G11 — Validación final HTTPS PASS confirmada por el operador (04/11/2026)
+
+El operador ha reenviado el resultado de `bash scripts/g11_https_first_issue_logout.sh` después de corregir el warning de Dart. **G11 = PASS en el laboratorio HTTPS aislado**, según el recibo:
+
+```text
+G7_BATCH_ANALYZE=SKIPPED_FAST_MODE
+G7_D2_FIXTURE_READY=OK
+G7_D2_PUBLIC_CA_READY=OK
+G7_LAB_GROUP_COMPLETE=g11
+All tests passed!
+G11_HTTPS_FIRST_ISSUANCE_LOGOUT_RESULT=0
+G11_FIRST_ISSUANCE_HTTPS_COMMITTED=OK
+G11_STORAGE_FAILURE_NO_PASSWORD_HTTP=OK
+G11_LOST_ISSUANCE_RESPONSE_FENCED=OK
+G11_FULL_RECOVERY_VERIFIED_HTTPS=OK
+G11_REMOTE_REVOKE_FAILURE_DURABLE=OK
+G11_REVOKE_RETRY_SERVER_DENIES_OLD_ACCESS=OK
+G11_POST_COMMIT_REVOKE_RESPONSE_LOSS_FENCED=OK
+G11_AMBIGUOUS_REVOKE_RETRY_CANNOT_REOPEN=OK
+G11_MFA_SERVER_REVOKED_AFTER_LOGOUT=OK
+G7_BATCH_RESULT=0
+G7_BATCH_GATE_RESULT=0
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+G11_HTTPS_FIRST_ISSUANCE_LOGOUT=OK
+G11_HTTPS_GATE_RESULT=0
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
+
+**Interpretación:** `G7_BATCH_ANALYZE=SKIPPED_FAST_MODE` se refiere al `flutter analyze` del runner heredado G7 en su modo focalizado, no a un salto de escenarios G11. El ejecutor superior G11 ejecuta previamente el análisis de sus dos archivos Dart y solo llega a `G11_HTTPS_GATE_RESULT=0` si dicha invocación no falla. No aparece en este fragmento el eco opcional `G11_LOCAL_RESULT=0`; el resultado propio del ejecutor es explícitamente `G11_HTTPS_GATE_RESULT=0`. Todos los marcadores del grupo g11 y `All tests passed!` están presentes. N1 completo ya constaba OK en la ejecución previa, y el runner bloquea al encontrar FAIL.
+
+**Resultado consolidado:** G7-D2/E/F/G/H PASS (laboratorio HTTPS), G8-PHONE PASS (almacenamiento cifrado sintético en Android físico), G9-A/B PASS (arranque y recuperación unitarios), G10 PASS (emisión/cierre con almacenamiento simulado), **G11 PASS** (emisión/cierre, pérdida de respuesta, recuperación de cuenta, MFA y revocación bajo HTTPS verificado contra Django temporal). Ninguna de estas pruebas establece aún la secuencia completa en Android físico conectada al servicio de autenticación de producción.
+
+**Gates sin modificar:** `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `GLOBAL_FREEZE=NOT_VERIFIED`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. PR #17 permanece DRAFT; no conectar `main.dart`, publicar endpoints, ejecutar migraciones persistentes ni asumir custodia externa MFA verificada. Siguiente bloque sugerido: validación Android física de la secuencia de inicio/cierre en entorno de laboratorio **sin** credenciales productivas, junto con una revisión de la política de reinicio y logout ambivalente.
