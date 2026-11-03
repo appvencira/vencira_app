@@ -15,7 +15,7 @@ class _G7D2NetworkTestBinding extends AutomatedTestWidgetsFlutterBinding {
 void main() {
   _G7D2NetworkTestBinding();
 
-  test('G7-D2 real Dart HTTPS -> disposable Django issuer', () async {
+  test('G7 HTTPS batch: selected real Dart -> disposable Django', () async {
     // The probe checks G7_D2_ISOLATED_NETWORK_ACK and the temporary CA file.
     // Running on a normal machine must fail closed before any TCP connection.
     await live_probe.main();
