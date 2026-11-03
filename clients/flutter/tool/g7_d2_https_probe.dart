@@ -486,7 +486,7 @@ Future<void> _verifyAmbiguousRefreshRecoveryHttps(
 
 Future<void> main() async {
   final group = Platform.environment['G7_LAB_GROUP'] ?? 'all';
-  if (!const <String>{'all', 'd2', 'e', 'f'}.contains(group)) {
+  if (group != 'all' && group != 'd2' && group != 'e' && group != 'f') {
     throw StateError('G7_LAB_GROUP_NOT_ALLOWED');
   }
   if (Platform.environment['G7_D2_ISOLATED_NETWORK_ACK'] != '1') {
@@ -505,147 +505,147 @@ Future<void> main() async {
 
   try {
     if (group == 'all' || group == 'd2') {
-    final store = _DisposableSecretStore();
-    final fence = NativeSessionFence();
-    final port = NativeHttpAuthPort(endpoint: endpoint, client: httpClient);
-    final coordinator = NativeSessionCoordinator(
-      port: port,
-      vault: NativeRefreshCredentialVault(endpoint: endpoint, store: store),
-      fence: fence,
-    );
-    final transport = NativeApiTransport(
-      endpoint: endpoint,
-      client: httpClient,
-      accessToken: coordinator.accessToken,
-      sessionFence: fence,
-    );
-
-    // Server must never see an unauthenticated read attempt at this step.
-    var lockedBeforeLogin = false;
-    try {
-      await transport.getJson('/api/v1/mobile/me/');
-    } on NativeApiSessionUnavailable {
-      lockedBeforeLogin = true;
-    }
-    _require(lockedBeforeLogin && fence.ticket == null, 'INITIAL_FENCE');
-
-    final decision = await coordinator.verifyPassword(
-      username: _username, password: _password,
-    );
-    _require(
-      decision == NativePasswordDecision.authenticated &&
-          fence.ticket != null &&
-          store.values.length == 1,
-      'REAL_HTTPS_LOGIN_AND_VAULT',
-    );
-
-    final access = await coordinator.accessToken();
-    _require(access != null && access.startsWith('v1.a.'),
-        'REAL_HTTPS_ACCESS_SHAPE');
-    final result = await transport.getJson('/api/v1/mobile/me/');
-    _require(
-      result is Map<String, dynamic> &&
-          result['authenticated'] == true &&
-          result['user_id'] is int,
-      'REAL_HTTPS_BEARER_ME',
-    );
-
-    final closing = coordinator.logout();
-    _require(fence.ticket == null, 'LOGOUT_FENCE_SYNCHRONOUS');
-    await closing;
-    _require(store.values.isEmpty && fence.ticket == null,
-        'REMOTE_REVOKE_AND_LOCAL_CLEAR');
-
-    // The server must refuse the previously issued Bearer, not just the
-    // local fence. Nothing from this request is persisted or printed.
-    final oldAccessRequest = http.Request(
-      'GET', endpoint.resolveApiPath('/api/v1/mobile/me/'),
-    )..headers['Authorization'] = 'Bearer $access';
-    final oldAccessReply = await httpClient.send(oldAccessRequest);
-    await oldAccessReply.stream.drain<void>();
-    _require(oldAccessReply.statusCode == 401,
-        'SERVER_REJECTS_REVOKED_ACCESS');
-
-    final deniedStore = _DisposableSecretStore();
-    final deniedFence = NativeSessionFence();
-    final deniedCoordinator = NativeSessionCoordinator(
-      port: port,
-      vault: NativeRefreshCredentialVault(
-        endpoint: endpoint, store: deniedStore,
-      ),
-      fence: deniedFence,
-    );
-    await _expectHttpAuthDenied(() => deniedCoordinator.verifyPassword(
-      username: _username, password: 'incorrect-synthetic-only',
-    ));
-    _require(deniedFence.ticket == null && deniedStore.values.isEmpty,
-        'INVALID_PASSWORD_FAILS_CLOSED');
-
-    // Deliberately send a *synthetic* cookie: the native issuer must
-    // never accept browser sessions.
-    final cookieRequest = http.Request(
-      'POST', endpoint.resolveApiPath('/api/v1/mobile/auth/password/'),
-    )
-      ..headers['Content-Type'] = 'application/json'
-      ..headers['Cookie'] = 'vencira_sessionid=synthetic'
-      ..body = jsonEncode({'username': _username, 'password': _password});
-    final cookieReply = await httpClient.send(cookieRequest);
-    await cookieReply.stream.drain<void>();
-    _require(cookieReply.statusCode == 403, 'WEB_COOKIE_DENIED');
-
-    // On a rejected browser-cookie request, Django's SessionMiddleware may
-    // delete the supplied invalid cookie. Distinguish cookie deletion from
-    // issuing an active session without ever logging a Set-Cookie value.
-    final cookieHeader = cookieReply.headers['set-cookie'];
-    if (cookieHeader != null) {
-      final cookieName = cookieHeader.split('=').first.trim();
-      final isSessionCookie = cookieName == 'vencira_sessionid';
-      final isDeletion = RegExp(
-        r'(?:^|;)\s*max-age=0(?:;|$)', caseSensitive: false,
-      ).hasMatch(cookieHeader);
-      stdout.writeln(
-        'G7_D2_REJECT_COOKIE_SESSION_NAME=$isSessionCookie',
+      final store = _DisposableSecretStore();
+      final fence = NativeSessionFence();
+      final port = NativeHttpAuthPort(endpoint: endpoint, client: httpClient);
+      final coordinator = NativeSessionCoordinator(
+        port: port,
+        vault: NativeRefreshCredentialVault(endpoint: endpoint, store: store),
+        fence: fence,
       );
-      stdout.writeln(
-        'G7_D2_REJECT_COOKIE_DELETION=$isDeletion',
+      final transport = NativeApiTransport(
+        endpoint: endpoint,
+        client: httpClient,
+        accessToken: coordinator.accessToken,
+        sessionFence: fence,
+      );
+
+      // Server must never see an unauthenticated read attempt at this step.
+      var lockedBeforeLogin = false;
+      try {
+        await transport.getJson('/api/v1/mobile/me/');
+      } on NativeApiSessionUnavailable {
+        lockedBeforeLogin = true;
+      }
+      _require(lockedBeforeLogin && fence.ticket == null, 'INITIAL_FENCE');
+
+      final decision = await coordinator.verifyPassword(
+        username: _username, password: _password,
       );
       _require(
-        isSessionCookie && isDeletion,
-        'WEB_COOKIE_RESPONSE_ONLY_DELETES_SESSION',
+        decision == NativePasswordDecision.authenticated &&
+            fence.ticket != null &&
+            store.values.length == 1,
+        'REAL_HTTPS_LOGIN_AND_VAULT',
       );
-    } else {
-      stdout.writeln('G7_D2_REJECT_COOKIE_ABSENT=OK');
-    }
 
-    final invalidTrustClient = IOClient(
-      _httpsClient(SecurityContext(withTrustedRoots: false)),
-    );
-    try {
-      await _expectHttpAuthDenied(() => NativeHttpAuthPort(
-        endpoint: endpoint,
-        client: invalidTrustClient,
-      ).password(username: _username, password: 'incorrect-synthetic-only'));
-      stdout.writeln('G7_D2_UNTRUSTED_CA_DENIED=OK');
-    } finally {
-      invalidTrustClient.close();
-    }
+      final access = await coordinator.accessToken();
+      _require(access != null && access.startsWith('v1.a.'),
+          'REAL_HTTPS_ACCESS_SHAPE');
+      final result = await transport.getJson('/api/v1/mobile/me/');
+      _require(
+        result is Map<String, dynamic> &&
+            result['authenticated'] == true &&
+            result['user_id'] is int,
+        'REAL_HTTPS_BEARER_ME',
+      );
 
-    // "vencira.es" is policy-allowlisted in general, but this lab leaf is
-    // valid ONLY for dev.vencira.es. Route it to the same isolated service
-    // and require a TLS hostname mismatch, never a trust-bypass.
-    final wrongHost = NativeApiEndpoint.parse('https://vencira.es');
-    final wrongHostClient = IOClient(_httpsClient(trust, host: 'vencira.es'));
-    try {
-      await _expectHttpAuthDenied(() => NativeHttpAuthPort(
-        endpoint: wrongHost,
-        client: wrongHostClient,
-      ).password(username: _username, password: 'incorrect-synthetic-only'));
-      stdout.writeln('G7_D2_HOSTNAME_MISMATCH_DENIED=OK');
-    } finally {
-      wrongHostClient.close();
-    }
+      final closing = coordinator.logout();
+      _require(fence.ticket == null, 'LOGOUT_FENCE_SYNCHRONOUS');
+      await closing;
+      _require(store.values.isEmpty && fence.ticket == null,
+          'REMOTE_REVOKE_AND_LOCAL_CLEAR');
 
-    stdout.writeln('G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0');
+      // The server must refuse the previously issued Bearer, not just the
+      // local fence. Nothing from this request is persisted or printed.
+      final oldAccessRequest = http.Request(
+        'GET', endpoint.resolveApiPath('/api/v1/mobile/me/'),
+      )..headers['Authorization'] = 'Bearer $access';
+      final oldAccessReply = await httpClient.send(oldAccessRequest);
+      await oldAccessReply.stream.drain<void>();
+      _require(oldAccessReply.statusCode == 401,
+          'SERVER_REJECTS_REVOKED_ACCESS');
+
+      final deniedStore = _DisposableSecretStore();
+      final deniedFence = NativeSessionFence();
+      final deniedCoordinator = NativeSessionCoordinator(
+        port: port,
+        vault: NativeRefreshCredentialVault(
+          endpoint: endpoint, store: deniedStore,
+        ),
+        fence: deniedFence,
+      );
+      await _expectHttpAuthDenied(() => deniedCoordinator.verifyPassword(
+        username: _username, password: 'incorrect-synthetic-only',
+      ));
+      _require(deniedFence.ticket == null && deniedStore.values.isEmpty,
+          'INVALID_PASSWORD_FAILS_CLOSED');
+
+      // Deliberately send a *synthetic* cookie: the native issuer must
+      // never accept browser sessions.
+      final cookieRequest = http.Request(
+        'POST', endpoint.resolveApiPath('/api/v1/mobile/auth/password/'),
+      )
+        ..headers['Content-Type'] = 'application/json'
+        ..headers['Cookie'] = 'vencira_sessionid=synthetic'
+        ..body = jsonEncode({'username': _username, 'password': _password});
+      final cookieReply = await httpClient.send(cookieRequest);
+      await cookieReply.stream.drain<void>();
+      _require(cookieReply.statusCode == 403, 'WEB_COOKIE_DENIED');
+
+      // On a rejected browser-cookie request, Django's SessionMiddleware may
+      // delete the supplied invalid cookie. Distinguish cookie deletion from
+      // issuing an active session without ever logging a Set-Cookie value.
+      final cookieHeader = cookieReply.headers['set-cookie'];
+      if (cookieHeader != null) {
+        final cookieName = cookieHeader.split('=').first.trim();
+        final isSessionCookie = cookieName == 'vencira_sessionid';
+        final isDeletion = RegExp(
+          r'(?:^|;)\s*max-age=0(?:;|$)', caseSensitive: false,
+        ).hasMatch(cookieHeader);
+        stdout.writeln(
+          'G7_D2_REJECT_COOKIE_SESSION_NAME=$isSessionCookie',
+        );
+        stdout.writeln(
+          'G7_D2_REJECT_COOKIE_DELETION=$isDeletion',
+        );
+        _require(
+          isSessionCookie && isDeletion,
+          'WEB_COOKIE_RESPONSE_ONLY_DELETES_SESSION',
+        );
+      } else {
+        stdout.writeln('G7_D2_REJECT_COOKIE_ABSENT=OK');
+      }
+
+      final invalidTrustClient = IOClient(
+        _httpsClient(SecurityContext(withTrustedRoots: false)),
+      );
+      try {
+        await _expectHttpAuthDenied(() => NativeHttpAuthPort(
+          endpoint: endpoint,
+          client: invalidTrustClient,
+        ).password(username: _username, password: 'incorrect-synthetic-only'));
+        stdout.writeln('G7_D2_UNTRUSTED_CA_DENIED=OK');
+      } finally {
+        invalidTrustClient.close();
+      }
+
+      // "vencira.es" is policy-allowlisted in general, but this lab leaf is
+      // valid ONLY for dev.vencira.es. Route it to the same isolated service
+      // and require a TLS hostname mismatch, never a trust-bypass.
+      final wrongHost = NativeApiEndpoint.parse('https://vencira.es');
+      final wrongHostClient = IOClient(_httpsClient(trust, host: 'vencira.es'));
+      try {
+        await _expectHttpAuthDenied(() => NativeHttpAuthPort(
+          endpoint: wrongHost,
+          client: wrongHostClient,
+        ).password(username: _username, password: 'incorrect-synthetic-only'));
+        stdout.writeln('G7_D2_HOSTNAME_MISMATCH_DENIED=OK');
+      } finally {
+        wrongHostClient.close();
+      }
+
+      stdout.writeln('G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0');
     }
     if (group == 'all' || group == 'e') {
       await _verifyMfaHttps(endpoint, httpClient);
