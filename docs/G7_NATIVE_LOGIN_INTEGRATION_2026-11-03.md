@@ -348,3 +348,7 @@ El cliente `clients/flutter/tool/g7_d2_https_probe.dart` incorpora en la misma c
 El mismo script `scripts/g7_d2_https_flutter_django.sh` ahora exige obligatoriamente `G7_E_MFA_HTTPS_RESULT=0`, `G7_E_REFRESH_REPLAY_RESULT=0`, `G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0` y `All tests passed!` antes de declarar éxito. Gate estático `g7_e_https_mfa_rotation_only_in_lab` supervisa separación de test, TOTP, replay, rotación y marcadores.
 
 **G7-E aún PENDING:** no ejecutar despliegue ni migración persistente; no contabilizarlo como PASS antes de recibir el resultado local. Reutilizar script y entorno aislado G7-D2 con `git fetch origin feature/m3-android-local-notifications`, `git merge --ff-only FETCH_HEAD`, `bash scripts/g7_d2_https_flutter_django.sh`. Se omite repetir PG17, G7-A/B/C/D1. La APK Android real, el soporte de refresh en coordinador, la custodia externa MFA y los gates de producción permanecen sin autorización.
+
+## G7-E adicionales: vector RFC6238 y rechazo de redirecciones
+
+Antes de la validación local se añadió un vector conocido RFC6238 para HMAC-SHA1: a los 59 segundos con la semilla sintética de prueba, TOTP de 6 cifras `287082`. Esto verifica que el generador Dart del ensayo coincide con RFC6238, sin mostrar TOTP operativo. Las peticiones Bearer de inspección directa bloquean redirecciones HTTP. El gate estático exige ambos controles. G7-E sigue PENDING hasta ejecución local. No hay cambios en autenticación ni rutas de producción.
