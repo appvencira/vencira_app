@@ -4,6 +4,15 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Set ONLY by scripts/g8_phone_apk_build.sh. The debug laboratory APK
+// receives a distinct Android package ID; normal builds are unchanged.
+val g8LabBuild = System.getenv("VENCIRA_G8_LAB_BUILD") == "1"
+if (g8LabBuild && gradle.startParameter.taskNames.any {
+    it.contains("Release", ignoreCase = true) || it.contains("Profile", ignoreCase = true)
+}) {
+    throw GradleException("G8 lab must never be built as release/profile")
+}
+
 android {
     namespace = "es.vencira.vencira"
     compileSdk = flutter.compileSdkVersion
@@ -18,6 +27,7 @@ android {
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "es.vencira.vencira"
+        manifestPlaceholders["venciraAppLabel"] = "vencira"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -27,6 +37,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            if (g8LabBuild) {
+                applicationIdSuffix = ".g8lab"
+                manifestPlaceholders["venciraAppLabel"] = "VENCIRA G8 Pruebas"
+            }
+        }
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
