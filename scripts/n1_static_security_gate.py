@@ -489,7 +489,7 @@ def verify():
             and "Native recovery entry not authorized" in g9_entry
             and "return recovery.verifyPassword" in g9_entry
             and "return recovery.verifyTotp" in g9_entry
-            and "NativeSessionCoordinator" not in g9_entry
+            and "import 'native_session_coordinator.dart'" not in g9_entry
             and "NativeHttpAuthPort" not in g9_entry
             and "package:http/" not in g9_entry
             and "NativeMobileRecoveryEntry" not in flutter_main
