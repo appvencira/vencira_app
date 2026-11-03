@@ -49,6 +49,7 @@ case "$MODE" in
       native_mobile_service.test_g5_pg17_races
       native_mobile_service.test_g5_audit
       native_mobile_service.test_g5_audit_pg17_races
+      native_mobile_service.test_g5_keyring_policy
     )
     ;;
   --lab-case)
