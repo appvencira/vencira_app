@@ -74,8 +74,9 @@ class NativeFirstIssuanceEntry implements NativeLoginGateway {
 
     // The old session fence is still closed. If another actor placed a
     // credential in the same vault after boot, refuse the normal issuance.
-    if (await startup.vault.read() != null) {
-      throw StateError('First issuance vault no longer empty');
+    if (await startup.vault.read() != null ||
+        await journal.requiresReauthentication()) {
+      throw StateError('First issuance storage changed after startup');
     }
     await journal.arm();
     if (!await journal.requiresReauthentication()) {
