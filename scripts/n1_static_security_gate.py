@@ -182,7 +182,11 @@ def verify():
             and "widget.coordinator.logout()" in flutter_lab_shell
             and "VenciraDashboardScreen" not in flutter_lab_shell,
         "g7_http_stack_mock_only":
-            "MockClient(" in flutter_lab_http_test
+            "class _LabHttpClient extends http.BaseClient" in flutter_lab_http_test
+            and "Future<http.StreamedResponse> send(http.BaseRequest request)" in flutter_lab_http_test
+            and "final http.Response Function(http.Request) _respond;" in flutter_lab_http_test
+            and "http.Client()" not in flutter_lab_http_test
+            and "IOClient(" not in flutter_lab_http_test
             and "NativeHttpAuthPort(endpoint: endpoint, client: client)" in flutter_lab_http_test
             and "NativeApiTransport(" in flutter_lab_http_test
             and "NativeLabLoginShell(coordinator: fixture.coordinator)" in flutter_lab_http_test
