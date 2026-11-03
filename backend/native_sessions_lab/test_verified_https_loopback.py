@@ -237,9 +237,9 @@ class NativeVerifiedHttpsLoopbackTests(LiveServerTestCase):
         connection = http.client.HTTPSConnection(
             "dev.vencira.es", self._tls_port, timeout=5,
         )
-        connection.connect = lambda: setattr(
-            connection, "sock", self._client(),
-        )
+        # Supply the already-verified loopback TLS socket directly, so
+        # HTTPSConnection never performs hostname lookup or outbound connect.
+        connection.sock = self._client()
         try:
             connection.request(method, path, body=body, headers=request_headers)
             response = connection.getresponse()
