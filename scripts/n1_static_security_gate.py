@@ -33,6 +33,10 @@ def verify():
     flutter_lab_http_test = read("clients/flutter/test/native_http_login_integration_test.dart")
     django_socket_lab_test = read("backend/native_sessions_lab/test_loopback_http_contract.py")
     django_https_lab_test = read("backend/native_sessions_lab/test_verified_https_loopback.py")
+    django_d2_fixture = read("backend/native_sessions_lab/g7_d2_https_fixture.py")
+    dart_d2_probe = read("clients/flutter/tool/g7_d2_https_probe.dart")
+    dart_d2_binding = read("clients/flutter/test/g7_d2_https_live_test.dart")
+    g7_d2_runner = read("scripts/g7_d2_https_flutter_django.sh")
     recovery_gateway = read("clients/flutter/lib/api/native_recovery_login_gateway.dart")
     recovery_migration = read(
         "backend/native_sessions_lab/migrations/0004_mobile_challenge_recovery_flag.py"
@@ -214,6 +218,27 @@ def verify():
             and "CERT_NONE" not in django_https_lab_test
             and "native_sessions_lab.test_urls" not in config
             and "native_sessions_lab.test_urls" not in routes,
+        "g7_d2_django_flutter_tls_isolation":
+            'VENCIRA_NATIVE_SESSION_LAB") != "1"' in django_d2_fixture
+            and 'VENCIRA_DB_ENGINE") != "sqlite"' in django_d2_fixture
+            and 'G7_D2_ISOLATED_NETWORK_ACK") != "1"' in django_d2_fixture
+            and 'settings.ROOT_URLCONF = "native_sessions_lab.test_urls"' in django_d2_fixture
+            and '"/tmp/g7d2-disposable.sqlite3"' in django_d2_fixture
+            and '("0.0.0.0", 8443)' in django_d2_fixture
+            and '--internal "$NETWORK"' in g7_d2_runner
+            and '--network "$NETWORK"' in g7_d2_runner
+            and '--read-only' in g7_d2_runner
+            and '--network-alias dev.vencira.es' in g7_d2_runner
+            and 'G7_D2_PEER_IPV4="$G7_D2_PEER_IPV4"' in g7_d2_runner
+            and '"$IMAGE" python -u -m native_sessions_lab.g7_d2_https_fixture' in g7_d2_runner
+            and 'flutter test --no-pub test/g7_d2_https_live_test.dart' in g7_d2_runner
+            and 'SecurityContext(withTrustedRoots: false)' in dart_d2_probe
+            and 'Socket.startConnect(_privateLabPeer(), _tlsPort)' in dart_d2_probe
+            and 'badCertificateCallback' not in dart_d2_probe
+            and 'bool get overrideHttpClient => false' in dart_d2_binding
+            and 'G7_D2_ISOLATED_NETWORK_ACK' in dart_d2_binding
+            and 'native_sessions_lab.test_urls' not in config
+            and 'native_sessions_lab.test_urls' not in routes,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
@@ -243,6 +268,7 @@ def verify():
         "backend/native_sessions_lab/test_http_contract_cases.py",
         "backend/native_sessions_lab/test_loopback_http_contract.py",
         "backend/native_sessions_lab/test_verified_https_loopback.py",
+        "backend/native_sessions_lab/g7_d2_https_fixture.py",
         "backend/native_mobile_service/models.py",
         "backend/native_mobile_service/migrations/0001_initial.py",
         "backend/native_mobile_service/authentication.py",
