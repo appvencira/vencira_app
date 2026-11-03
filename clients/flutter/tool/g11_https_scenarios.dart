@@ -186,7 +186,7 @@ Future<void> verifyG11Https(
       normal.fence.ticket == null &&
       await normal.vault.read() == null &&
       !await normal.journal.requiresReauthentication() &&
-      await bearerStatus(firstAccess!) == 401,
+      await bearerStatus(firstAccess) == 401,
       'REMOTE_REVOKE_AND_LOCAL_CLEANUP');
 
   final cannotWrite = _Case(endpoint, trustedIsolatedClient);
