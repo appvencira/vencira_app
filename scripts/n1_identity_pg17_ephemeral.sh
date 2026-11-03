@@ -43,6 +43,7 @@ case "$MODE" in
     EXTRA_ENV=(-e VENCIRA_NATIVE_SERVICE_CANDIDATE=1)
     SUITES=(
       native_mobile_service.test_contract
+      native_mobile_service.test_pg17_races
     )
     ;;
   --lab-case)
