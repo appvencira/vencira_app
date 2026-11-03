@@ -244,6 +244,12 @@ def verify():
             and 'flutter test --no-pub test/g7_d2_https_live_test.dart' in g7_d2_runner
             and 'SecurityContext(withTrustedRoots: false)' in dart_d2_probe
             and 'Socket.startConnect(_privateLabPeer(), _tlsPort)' in dart_d2_probe
+            and 'SecureSocket.secure(' in dart_d2_probe
+            and 'host: _serverAlias, context: trust' in dart_d2_probe
+            and 'class _SafeHttpTraceClient extends http.BaseClient' in dart_d2_probe
+            and 'final httpClient = _SafeHttpTraceClient(IOClient(_httpsClient(trust)));' in dart_d2_probe
+            and 'G7_D2_HTTP_${kind}_STATUS=' in dart_d2_probe
+            and 'G7_D2_TLS_PREFLIGHT=OK' in dart_d2_probe
             and 'badCertificateCallback' not in dart_d2_probe
             and 'bool get overrideHttpClient => false' in dart_d2_binding
             and 'G7_D2_ISOLATED_NETWORK_ACK' in dart_d2_binding
