@@ -202,6 +202,7 @@ def verify():
         "backend/native_mobile_service/migrations/0003_mobileauthauditevent.py",
         "backend/native_mobile_service/g5_audit.py",
         "backend/native_mobile_service/test_g5_audit.py",
+        "backend/native_mobile_service/test_g5_audit_pg17_races.py",
         "backend/reminders/native_mobile_identity_gate.py",
         "backend/reminders/native_mobile_token_primitives.py",
     ):
