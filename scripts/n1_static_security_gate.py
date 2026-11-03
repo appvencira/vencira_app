@@ -32,6 +32,15 @@ def verify():
     recovery_migration = read(
         "backend/native_sessions_lab/migrations/0004_mobile_challenge_recovery_flag.py"
     )
+    candidate_schema = read("backend/native_mobile_service/models.py")
+    candidate_migration = read(
+        "backend/native_mobile_service/migrations/0001_initial.py"
+    )
+    candidate_auth = read("backend/native_mobile_service/authentication.py")
+    candidate_store = read("backend/native_mobile_service/session_store.py")
+    candidate_urls = read("backend/native_mobile_service/test_urls.py")
+    candidate_test = read("backend/native_mobile_service/test_contract.py")
+    candidate_races = read("backend/native_mobile_service/test_pg17_races.py")
 
     failures = []
     checks = {
@@ -95,6 +104,39 @@ def verify():
             and "journal.requiresReauthentication()" in recovery_gateway
             and "NativeRecoveryAuthPort" in flutter_http
             and "NativeRecoveryLoginGateway" not in read("clients/flutter/lib/main.dart"),
+        "g4_candidate_opt_in_test_only":
+            'VENCIRA_NATIVE_SERVICE_CANDIDATE = (' in settings
+            and 'if VENCIRA_NATIVE_SERVICE_CANDIDATE:' in settings
+            and 'if VENCIRA_ENV != "test":' in settings
+            and 'INSTALLED_APPS.append("native_mobile_service")' in settings
+            and "VENCIRA_NATIVE_BEARER_ENABLED = False" in settings
+            and "native_mobile_service" not in config
+            and "native_mobile_service" not in routes
+            and "native_mobile_service" not in read("backend/config/urls.py"),
+        "g4_drf_bearer_no_global_fallback":
+            '"rest_framework.authentication.SessionAuthentication"' in settings
+            and "CandidateMobileBearerAuthentication" in candidate_auth
+            and "settings.VENCIRA_NATIVE_BEARER_ENABLED" in candidate_auth
+            and "settings.VENCIRA_ENV == \"test\"" in candidate_auth
+            and 'request.META.get("HTTP_COOKIE")' in candidate_auth
+            and "request.is_secure()" in candidate_auth
+            and "authentication_classes = [CandidateMobileBearerAuthentication]" in read(
+                "backend/native_mobile_service/test_views.py"
+            ),
+        "g4_candidate_no_plaintext_refresh":
+            "class MobileDeviceSession" in candidate_schema
+            and "refresh_digest" in candidate_schema
+            and "MobileSpentRefresh" in candidate_schema
+            and "refresh_digest" in candidate_migration
+            and 'native_token_digest(refresh, kind="r")' in candidate_store
+            and "MobileSpentRefresh.objects.create(" in candidate_store
+            and 'rows.select_for_update(of=("self",))' in candidate_store,
+        "g4_candidate_lab_suites_present":
+            "class MobileCandidateContractTests" in candidate_test
+            and "class CandidateRacePG17Tests" in candidate_races
+            and 'path("api/v1/mobile/me/"' in candidate_urls
+            and "native_mobile_service.test_urls" not in config
+            and "native_mobile_service.test_urls" not in routes,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
@@ -122,6 +164,14 @@ def verify():
         "backend/native_sessions_lab/test_urls.py",
         "backend/native_sessions_lab/test_http_contract.py",
         "backend/native_sessions_lab/test_http_contract_cases.py",
+        "backend/native_mobile_service/models.py",
+        "backend/native_mobile_service/migrations/0001_initial.py",
+        "backend/native_mobile_service/authentication.py",
+        "backend/native_mobile_service/session_store.py",
+        "backend/native_mobile_service/test_views.py",
+        "backend/native_mobile_service/test_urls.py",
+        "backend/native_mobile_service/test_contract.py",
+        "backend/native_mobile_service/test_pg17_races.py",
         "backend/reminders/native_mobile_identity_gate.py",
         "backend/reminders/native_mobile_token_primitives.py",
     ):
