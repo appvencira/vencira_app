@@ -263,6 +263,27 @@ def verify():
             and 'G7_D2_ISOLATED_NETWORK_ACK' in dart_d2_binding
             and 'native_sessions_lab.test_urls' not in config
             and 'native_sessions_lab.test_urls' not in routes,
+        "g7_e_https_mfa_rotation_only_in_lab":
+            "Fernet.generate_key()" in django_d2_fixture
+            and "UserMfaState.objects.create(" in django_d2_fixture
+            and "encrypt_totp_secret(" in django_d2_fixture
+            and 'username="g7-e-mfa-synthetic"' in django_d2_fixture
+            and "crypto: ^3.0.6" in read("clients/flutter/pubspec.yaml")
+            and "Hmac(" in dart_d2_probe
+            and "sha1, utf8.encode(" in dart_d2_probe
+            and "await coordinator.verifyTotp(consumedCode)" in dart_d2_probe
+            and "'MFA_PENDING_BEARER_DENIED'" in dart_d2_probe
+            and "'MFA_REUSED_TOTP_DENIED'" in dart_d2_probe
+            and "await port.rotateRefresh(oldTokens.refresh)" in dart_d2_probe
+            and "'REFRESH_REPLAY_REVOKES_NEW_ACCESS'" in dart_d2_probe
+            and "G7_E_MFA_HTTPS_RESULT=0" in dart_d2_probe
+            and "G7_E_REFRESH_REPLAY_RESULT=0" in dart_d2_probe
+            and "grep -Fq -- 'G7_E_MFA_HTTPS_RESULT=0'" in g7_d2_runner
+            and "grep -Fq -- 'G7_E_REFRESH_REPLAY_RESULT=0'" in g7_d2_runner
+            and "G7_E_HTTPS_MFA_REFRESH=OK" in g7_d2_runner
+            and "VENCIRA_MFA_FERNET_KEYS=" not in g7_d2_runner
+            and "native_sessions_lab.test_urls" not in config
+            and "native_sessions_lab.test_urls" not in routes,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
