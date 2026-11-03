@@ -89,6 +89,24 @@ def run():
         ),
     )
 
+    # G7-G test-only MFA recovery identity. Separate account means its
+    # counter is not consumed by G7-E in the same all-in-one fixture.
+    # Same PUBLIC RFC TOTP vector; Fernet key remains ephemeral and private.
+    recovery_mfa_user = user.objects.create_user(
+        username="g7-g-mfa-recovery",
+        password="G7-G-Only-Synthetic-Mfa-Password-2026!",
+    )
+    UserMfaState.objects.create(
+        user=recovery_mfa_user,
+        enabled=True,
+        session_epoch=1,
+        encrypted_totp_secret=encrypt_totp_secret(
+            "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+            user_id=recovery_mfa_user.pk,
+            keys=[mfa_key],
+        ),
+    )
+
     application = get_wsgi_application()
     django_server = make_server("127.0.0.1", 0, application)
     upstream_port = django_server.server_port
