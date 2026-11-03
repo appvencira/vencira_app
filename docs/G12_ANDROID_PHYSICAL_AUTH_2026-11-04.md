@@ -85,3 +85,25 @@ bash scripts/g12_phone_apk_build.sh
 El experimento usa un simulador de servidor en el teléfono y, por diseño, NO valida transporte HTTPS Android ni el emisor real de producción; G11 solo cubre HTTPS bajo Docker. Tampoco demuestra protección contra root, hardware TEE/StrongBox, copia/restauración tras reinstalar o multi-proceso concurrente. El gateway de recuperación no tiene todavía API integral de logout segura, y esa prueba se hace a nivel de diario/vault. No instalar esta entrada en `main.dart` ni habilitar endpoints de Django.
 
 **G12=NO VALIDADO mientras falten compilación/ensayo físico. PR #17 DRAFT. `MB1_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `GLOBAL_FREEZE=NOT_VERIFIED`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.**
+
+## G12 — Ensayo físico Android PASS confirmado por operador (04/11/2026)
+
+Recibidos exactamente los siguientes resultados de la APK de laboratorio Android `es.vencira.vencira.g12lab` tras forzar detención y reabrir:
+
+```text
+G12_ANDROID_NEW_PROCESS_CONFIRMED=OK
+G12_ANDROID_PENDING_MARKER_SURVIVED=OK
+G12_ANDROID_G9_RECOVERY_ONLY=OK
+G12_ANDROID_MFA_RECOVERY_COMMITTED=OK
+G12_ANDROID_CORRUPT_MARKER_DENIED=OK
+G12_ANDROID_STORAGE_CLEARED=OK
+G12_ANDROID_PHYSICAL_AUTH_RESULT=0
+```
+
+**Resultado: G12 PHONE = PASS**, exclusivamente para este dispositivo, APK y secuencia offline sintética. El marcador protegido persistió entre procesos reales de Android, G9 obligó a recuperar, el flujo de contraseña + MFA sintético confirmó escritura/lectura de credencial nueva, el marcador corrupto fue rechazado y la limpieza dejó vacías las claves del laboratorio. Las comprobaciones de primera emisión/logout/errores realizadas en la etapa de preparación forman parte del flujo que precede al marcador final, pero **no se ha facilitado el log de compilación G12 ni los seis marcadores de la etapa de preparación por separado**; no atribuirle pruebas CI/HTTPS adicionales ni un build verde no mostrado.
+
+**No autoriza despliegue:** G12 no envía peticiones HTTP y usa un puerto simulado; G11 probó por separado HTTPS real solo con Django temporal. Sigue sin verificarse el camino integral Android físico → conexión TLS real → servidor Django temporal, ni control del gateway de logout desde recuperación, ni StrongBox/TEE, root, backup/restore o concurrencia multiproceso. Próximo bloque a estudiar: G13 integración Android-TLS de laboratorio con red contenida, pinning/CA de ensayo y limitación explícita a credenciales sintéticas, sin romper aislamiento ni conectar endpoints operativos.
+
+Estado acumulado: G7-D2/E/F/G/H PASS (Django HTTPS temporal); G8-PHONE PASS (almacén protegido Android físico); G9-A/B PASS (arranque/recovery unitario); G10 PASS (emisión/logout y fallos unitarios); G11 PASS (HTTPS Django temporal); **G12-PHONE PASS** (flujo Android offline en dispositivo físico).
+
+La PR #17 continúa DRAFT: `GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
