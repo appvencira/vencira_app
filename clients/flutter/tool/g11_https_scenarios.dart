@@ -144,7 +144,7 @@ class _Case {
   late final NativeFirstIssuanceEntry entry;
 }
 
-Future<void> _expectHttpFailure(Future<Object?> Function() action) async {
+Future<void> _expectHttpFailure(Future<void> Function() action) async {
   var failed = false;
   try {
     await action();
@@ -211,9 +211,11 @@ Future<void> verifyG11Https(
   _check(await uncertain.entry.inspect() ==
       NativeStartupDisposition.cleanLogin, 'LOST_RESPONSE_PREFLIGHT');
   uncertain.observed.loseNextPasswordResponse = true;
-  await _expectHttpFailure(() => uncertain.entry.verifyPassword(
-    username: _username, password: _password,
-  ));
+  await _expectHttpFailure(() async {
+    await uncertain.entry.verifyPassword(
+      username: _username, password: _password,
+    );
+  });
   _check(uncertain.observed.passwordCalls == 1 &&
       await uncertain.journal.requiresReauthentication() &&
       await uncertain.vault.read() == null &&
