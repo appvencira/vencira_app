@@ -40,6 +40,21 @@ if VENCIRA_NATIVE_SESSION_LAB:
         raise ImproperlyConfigured("Native device session lab only allowed in test")
     INSTALLED_APPS.append("native_sessions_lab")
 
+# G4 candidate: operational-shaped schema exercised ONLY in disposable test DBs.
+# This is deliberately NOT a production feature flag. Production has no route,
+# no Django app registration, and no DRF bearer fallback.
+VENCIRA_NATIVE_SERVICE_CANDIDATE = (
+    os.getenv("VENCIRA_NATIVE_SERVICE_CANDIDATE", "0") == "1"
+)
+VENCIRA_NATIVE_BEARER_ENABLED = False
+if VENCIRA_NATIVE_SERVICE_CANDIDATE:
+    if VENCIRA_ENV != "test":
+        raise ImproperlyConfigured(
+            "Native mobile service candidate only allowed in isolated tests"
+        )
+    INSTALLED_APPS.append("native_mobile_service")
+
+
 # Only in an explicitly isolated test lab, omit the historical registered
 # model whose table requires MFA-gated reminders.0027. Does not touch schema.
 VENCIRA_M103_SPLIT_DELETE_LAB = os.getenv("VENCIRA_M103_SPLIT_DELETE_LAB", "0") == "1"
