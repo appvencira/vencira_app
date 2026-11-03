@@ -142,6 +142,8 @@ class _SafeHttpTraceClient extends http.BaseClient {
     final kind = switch (path) {
       '/api/v1/mobile/auth/password/' => 'PASSWORD',
       '/api/v1/mobile/auth/mfa/' => 'MFA',
+      '/api/v1/mobile/auth/recover/password/' => 'RECOVER_PASSWORD',
+      '/api/v1/mobile/auth/recover/mfa/' => 'RECOVER_MFA',
       '/api/v1/mobile/token/refresh/' => 'REFRESH',
       '/api/v1/mobile/me/' => 'ME',
       '/api/v1/mobile/token/revoke/' => 'REVOKE',
