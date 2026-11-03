@@ -1,3 +1,5 @@
+> **LECTURA PRIORITARIA 03/11/2026:** el estado consolidado para continuar en un nuevo chat está en [HANDOFF G4→G5](HANDOFF_G4_G5_2026-11-03.md). G4 candidato PostgreSQL17 **20/20 PASS**, G6 integral **PASS previo a G4**. El runner integral post-G4 y SQLite/CI no tienen recibo verde; G4 operativo NO. Los apartados previos con «pendiente» son históricos; conservar como cronología. `NO_DEPLOY_NO_LIVE_MIGRATION=1` y gates MFA/MB1/C-FICHA cerrados.
+
 # VENCIRA — Conectividad y autenticación NATIVAS Android e iOS
 Fecha: 2026-11-02
 Estado: CONTRATO / DISEÑO PENDIENTE DE IMPLEMENTACIÓN Y VALIDACIÓN
