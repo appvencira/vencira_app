@@ -1,0 +1,42 @@
+name: G7-D2 isolated HTTPS Flutter Django
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/m3-android-local-notifications
+    paths:
+      - 'backend/native_sessions_lab/g7_d2_https_fixture.py'
+      - 'backend/native_sessions_lab/test_verified_https_loopback.py'
+      - 'clients/flutter/tool/g7_d2_https_probe.dart'
+      - 'clients/flutter/test/g7_d2_https_live_test.dart'
+      - 'scripts/g7_d2_https_flutter_django.sh'
+      - 'scripts/n1_static_security_gate.py'
+      - '.github/workflows/g7-d2-isolated-https.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verified-cross-container-https:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Preflight static guard and bash syntax
+        run: |
+          python3 scripts/n1_static_security_gate.py
+          bash -n scripts/g7_d2_https_flutter_django.sh
+
+      - name: Run strict Docker internal-network Flutter to Django HTTPS
+        run: |
+          bash scripts/g7_d2_https_flutter_django.sh
+
+      - name: Release remains blocked
+        if: always()
+        run: |
+          echo 'G7_D2_OPERATIONAL_RELEASE=NO'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
