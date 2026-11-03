@@ -23,6 +23,7 @@ class NativeFirstIssuanceEntry implements NativeLoginGateway {
   bool _clean = false;
   bool _attempted = false;
   bool _logoutRequested = false;
+  bool _abandoned = false;
 
   Future<NativeStartupDisposition> inspect() async {
     if (_opening || _inspected) {
@@ -53,7 +54,8 @@ class NativeFirstIssuanceEntry implements NativeLoginGateway {
   }
 
   void _requireAttempt() {
-    if (!_inspected || !_clean || !_attempted || _logoutRequested) {
+    if (!_inspected || !_clean || !_attempted ||
+        _logoutRequested || _abandoned) {
       throw StateError('First issuance entry unavailable');
     }
   }
@@ -79,6 +81,9 @@ class NativeFirstIssuanceEntry implements NativeLoginGateway {
     if (!await journal.requiresReauthentication()) {
       throw StateError('First issuance journal not durable');
     }
+    if (_abandoned || _logoutRequested) {
+      throw StateError('First issuance cancelled before network');
+    }
     // The earliest HTTP request is only after the checkpoint readback.
     return coordinator.verifyPassword(username: username, password: password);
   }
@@ -92,19 +97,27 @@ class NativeFirstIssuanceEntry implements NativeLoginGateway {
   @override
   Future<void> abandonChallenge() {
     _requireAttempt();
+    _abandoned = true;
     return coordinator.abandonChallenge();
   }
 
   Future<String?> accessToken() async {
-    if (!_inspected || !_clean || !_attempted || _logoutRequested) return null;
+    if (!_inspected || !_clean || !_attempted ||
+        _logoutRequested || _abandoned) {
+      return null;
+    }
     return coordinator.accessToken();
   }
 
   /// Synchronous fence close precedes remote revocation and secure deletion.
   /// A failed logout must not be reported as success or allow a new sign-in.
   Future<void> logout() {
-    _requireAttempt();
+    if (!_inspected || !_clean || !_attempted) {
+      throw StateError('First issuance logout unavailable');
+    }
     _logoutRequested = true;
+    // A failed remote/storage cleanup may be retried with the same coordinator
+    // while the fence stays closed. Never allow another password issuance.
     return coordinator.logout();
   }
 }
