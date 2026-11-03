@@ -41,6 +41,8 @@ def verify():
     candidate_urls = read("backend/native_mobile_service/test_urls.py")
     candidate_test = read("backend/native_mobile_service/test_contract.py")
     candidate_races = read("backend/native_mobile_service/test_pg17_races.py")
+    g5_throttle = read("backend/native_mobile_service/g5_throttle.py")
+    g5_schema = read("backend/native_mobile_service/migrations/0002_mobileauthattemptbucket.py")
 
     failures = []
     checks = {
@@ -138,6 +140,18 @@ def verify():
             and 'path("api/v1/mobile/me/"' in candidate_urls
             and "native_mobile_service.test_urls" not in config
             and "native_mobile_service.test_urls" not in routes,
+        "g5_throttle_is_test_only":
+            'settings.VENCIRA_ENV == "test"' in g5_throttle
+            and "settings.VENCIRA_NATIVE_SERVICE_CANDIDATE" in g5_throttle
+            and "select_for_update()" in g5_throttle
+            and "transaction.atomic()" in g5_throttle
+            and "VENCIRA_G5_ABUSE_KEY" in g5_throttle
+            and "DJANGO_SECRET_KEY" not in g5_throttle.replace(
+                "no fallback to DJANGO_SECRET_KEY", ""
+            )
+            and "MobileAuthAttemptBucket" in g5_schema
+            and "native_mobile_service" not in config
+            and "native_mobile_service" not in routes,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
@@ -173,6 +187,12 @@ def verify():
         "backend/native_mobile_service/test_urls.py",
         "backend/native_mobile_service/test_contract.py",
         "backend/native_mobile_service/test_pg17_races.py",
+        "backend/native_mobile_service/migrations/0002_mobileauthattemptbucket.py",
+        "backend/native_mobile_service/g5_network_identity.py",
+        "backend/native_mobile_service/g5_throttle.py",
+        "backend/native_mobile_service/test_g5_network_identity.py",
+        "backend/native_mobile_service/test_g5_throttle.py",
+        "backend/native_mobile_service/test_g5_pg17_races.py",
         "backend/reminders/native_mobile_identity_gate.py",
         "backend/reminders/native_mobile_token_primitives.py",
     ):
