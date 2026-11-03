@@ -35,7 +35,7 @@ fi
 step FLUTTER "${DOCKER[@]}" run --rm \
   -v "$PWD/clients/flutter:/work" -w /work \
   ghcr.io/cirruslabs/flutter:stable sh -c \
-  'flutter pub get && flutter analyze && flutter test test/native_recovery_login_gateway_test.dart test/native_refresh_recovery_journal_test.dart test/native_workspace_read_port_test.dart test/native_http_auth_port_test.dart test/native_session_coordinator_test.dart test/native_login_screen_test.dart test/native_lab_login_shell_test.dart test/native_refresh_credential_vault_test.dart test/native_api_transport_test.dart'
+  'flutter pub get && flutter analyze && flutter test test/native_recovery_login_gateway_test.dart test/native_refresh_recovery_journal_test.dart test/native_workspace_read_port_test.dart test/native_http_auth_port_test.dart test/native_session_coordinator_test.dart test/native_login_screen_test.dart test/native_lab_login_shell_test.dart test/native_http_login_integration_test.dart test/native_refresh_credential_vault_test.dart test/native_api_transport_test.dart'
 
 echo "=== M3 HTTP CONTRACT FINAL SUMMARY ==="
 failed=0
