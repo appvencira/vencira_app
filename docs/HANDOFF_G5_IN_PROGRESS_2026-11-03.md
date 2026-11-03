@@ -222,3 +222,7 @@ A petición del operador se incorporó el **runner agrupado**: `scripts/g7_d2_ht
 ### Corrección de marcadores del runner agrupado
 
 Los modos `--fast` y `--group d2|e|f` informan `G7_BATCH_GATE_RESULT` y `G7_BATCH_RESULT`, además de sus marcadores de grupo; **no** informan `G7_D2_GATE_RESULT=0`, reservado exclusivamente para `--all`. Esto evita confundir un PASS focalizado con una validación integral. El nombre de la prueba Flutter ahora identifica el lote seleccionado. El control estático exige esa separación. Estas mejoras del runner permanecen pendientes de verificación local; G7-F, E y D2 conservan sus PASS anteriores.
+
+## G7 runner --fast PASS confirmado por operador (03/11/2026)
+
+Resultado de la versión agrupada: `G7_BATCH_ANALYZE=SKIPPED_FAST_MODE`, `G7_LAB_GROUP_COMPLETE=f`, `All tests passed!`, `G7_F_AMBIGUOUS_REFRESH_RECOVERY_RESULT=0`, `G7_F_HTTPS_RECOVERY=OK`, `G7_BATCH_RESULT=0`, `G7_BATCH_GATE_RESULT=0`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `G7_FAST_LOCAL_RESULT=0`. Se demuestra que la selección focalizada G7-F ejecuta únicamente ese bloque y evita repetir el análisis de Flutter. **No equivale a `--all` de la versión nueva.** La suite integral previa D2+E+F pasó con el ejecutor anterior; el runner agrupado `--all` todavía necesita su propia ejecución al cerrar la macrofase, no en cada commit. Se mantiene red aislada, Django y SQLite temporales, sin release.
