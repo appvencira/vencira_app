@@ -1,4 +1,4 @@
-# G5 — Macrobloque 1: atribución de red y controles de emisión móvil (03/11/2026)
+> **Actualización G5:** existe ya el [macrobloque 2 de antiabuso transaccional](G5_MOBILE_THROTTLE_2026-11-03.md), con migración de test 0002 y suites SQLite/PG17 en CI y runner local. Los pendientes de este documento deben leerse junto con el bloque 2; ambos siguen sin pruebas ejecutadas confirmadas ni autorización de release.\n\n# G5 — Macrobloque 1: atribución de red y controles de emisión móvil (03/11/2026)
 
 **Rama:** `feature/m3-android-local-notifications`; **PR:** #17, borrador. **Entorno:** pruebas exclusivamente. **NO_DEPLOY_NO_LIVE_MIGRATION=1**.
 
