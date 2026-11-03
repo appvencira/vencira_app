@@ -230,3 +230,39 @@ echo "G7_D1_GATE_RESULT=$?"
 ```
 
 No forzar `git merge` si existen conflictos con cambios locales. No desplegar, migrar BD persistente, abrir firewall ni utilizar claves de producción. Para G7-D2 quedará pendiente incorporar **el cliente Flutter a un servidor Django HTTPS aislado**, usando una política de certificados explícita y sin debilitar `NativeApiEndpoint`.
+
+## G7-D1 validado — 3/3 pruebas TLS PostgreSQL17
+
+El operador ha confirmado explícitamente:
+```text
+Ran 3 tests in 2.279s
+OK
+Destroying test database for alias 'default'...
+G7_D1_TLS_PG17_RESULT=0
+```
+Conservar G7-A/B **11/11 PASS** y G7-C **84 PASS** (incluye pruebas reales de socket Django HTTP), ambos del operador. G7-D1 está **PASS local**; esto acredita TLS y Django con `http.client` Python y PostgreSQL desechable, pero aún no el cliente Flutter sobre una conexión HTTPS real.
+
+## G7-D2 candidato — Dart/Flutter contra emisor Django real con HTTPS
+
+Implementado en esta rama y **pendiente de ejecutar**:
+
+- `backend/native_sessions_lab/g7_d2_https_fixture.py`: arranca Django WSGI de laboratorio con `ROOT_URLCONF=native_sessions_lab.test_urls`, registro de usuario sintético, SQLite exclusivamente en `/tmp/g7d2-disposable.sqlite3` del contenedor, HTTP upstream **127.0.0.1** y relay TLS interno a puerto 8443. La CA temporal se crea como en G7-D1; solo su **certificado público** se comparte con el cliente. El fixture rechaza entornos diferentes de `VENCIRA_ENV=test`, `VENCIRA_NATIVE_SESSION_LAB=1`, SQLite o ausencia de confirmación de red aislada.
+- `clients/flutter/tool/g7_d2_https_probe.dart`: utiliza `HttpClient` y `IOClient` auténticos, `NativeHttpAuthPort`, `NativeSessionCoordinator`, `NativeRefreshCredentialVault` sintética y `NativeApiTransport`. El socket se conecta directamente a la **IP privada** de Docker, sin DNS externo, mientras conserva la URI/SNI `https://dev.vencira.es` y valida una CA de test con `SecurityContext(withTrustedRoots: false)`. No se usa `badCertificateCallback`.
+- `clients/flutter/test/g7_d2_https_live_test.dart`: binding de Flutter explícitamente habilitado para red real, para evitar la respuesta HTTP 400 ficticia del binding de widget tests. La prueba está **omitida fuera del entorno de laboratorio**. No modifica los seis tests G7-A ni los cinco G7-B.
+- `scripts/g7_d2_https_flutter_django.sh`: crea red Docker `--internal` con **cero puertos publicados**, imagen Django de pruebas, proceso Django read-only, DB/certificados en `tmpfs`, paquete Flutter precargado **antes** de crear la red interna, IP privada verificada, Flutter test en contenedor en la misma red, eliminación automática de red y contenedores. No se usan variables reales de producción, Caddy, la base persistente ni `dev.vencira.es` público.
+- `.github/workflows/g7-d2-isolated-https.yml`: ejecución aislada en Actions para la rama de desarrollo o manual, sin publicar artefactos secretos. Gate estático `g7_d2_django_flutter_tls_isolation` y validación de sintaxis Python completan los controles.
+
+El programa comprobará login de verdad contra Django, escritura y lectura de refresh sintético, GET `/me/` con Bearer, revocación remota y cierre local, rechazo de password inválida, rechazo de cookie web, CA no confiable y nombre TLS incorrecto. El token no se imprime en el log. **Todavía no demuestra una sesión de APK Android ni una UI Flutter que opere por HTTP real, ni MFA real entre ambos procesos**. El resultado G7-D2 sigue **PENDING**, no contabilizarlo como PASS.
+
+Validación local focalizada después de actualizar la rama:
+
+```bash
+cd ~/vencira-m3-localcheck
+git status --short
+git fetch origin feature/m3-android-local-notifications
+git merge --ff-only FETCH_HEAD
+bash scripts/g7_d2_https_flutter_django.sh
+echo "G7_D2_LOCAL_RESULT=$?"
+```
+
+Solo ejecutar si no existen conflictos locales; no usar `git reset --hard`. El script ejecuta el gate estático y `flutter analyze` antes de iniciar el laboratorio. `NO_DEPLOY_NO_LIVE_MIGRATION=1`; todos los permisos de release siguen **NO**. 
