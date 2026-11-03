@@ -60,22 +60,24 @@ def record_candidate_auth_event(
         if actor is not None else ""
     )
     with transaction.atomic():
-        existing = MobileAuthAuditEvent.objects.select_for_update().filter(
+        # get_or_create handles a competing insert via the unique event UUID;
+        # serialize payload comparison against the row that actually won.
+        row, created = MobileAuthAuditEvent.objects.get_or_create(
             event_id=event_id,
-        ).first()
-        if existing is not None:
-            if (
-                existing.event_type != event_type
-                or existing.actor_digest != digest
-                or existing.session_id != session_id
-            ):
-                raise MobileAuditDenied()
-            return existing, False
-        return MobileAuthAuditEvent.objects.create(
-            event_id=event_id, event_type=event_type,
-            actor_digest=digest, session_id=session_id,
-        ), True
-
+            defaults={
+                "event_type": event_type,
+                "actor_digest": digest,
+                "session_id": session_id,
+            },
+        )
+        row = MobileAuthAuditEvent.objects.select_for_update().get(pk=row.pk)
+        if (
+            row.event_type != event_type
+            or row.actor_digest != digest
+            or row.session_id != session_id
+        ):
+            raise MobileAuditDenied()
+        return row, created
 
 def purge_candidate_auth_events(*, before=None):
     """Explicit lab-only retention task; never delete newer events."""
