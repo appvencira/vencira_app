@@ -85,9 +85,70 @@ if [[ ! "$G7_D2_PEER_IPV4" =~ ^[0-9]{1,3}([.][0-9]{1,3}){3}$ ]]; then
   exit 1
 fi
 
-# Export ONLY the public test CA; private keys stay in the backend tmpfs.
-"${DOCKER[@]}" cp "$SERVER:/tmp/g7d2-public-ca.pem" "$TMP/public-ca.pem" >/dev/null
-test -s "$TMP/public-ca.pem"
+# Export ONLY the public test CA; private keys stay in backend tmpfs.
+# docker cp may be unable to resolve files inside an ephemeral tmpfs mount,
+# even after the ready marker has been observed via docker exec. Stream the
+# public certificate from the running container instead of copying its path.
+# Verify the *source file* first and never log certificate bytes or keys.
+if ! "${DOCKER[@]}" exec "$SERVER" sh -c \
+    'test -f /tmp/g7d2-ready && test -s /tmp/g7d2-public-ca.pem'; then
+  echo "G7_D2_PUBLIC_CA_SOURCE=MISSING" >&2
+  exit 1
+fi
+if ! "${DOCKER[@]}" exec "$SERVER" cat /tmp/g7d2-public-ca.pem > "$TMP/public-ca.pem"; then
+  echo "G7_D2_PUBLIC_CA_STREAM=FAIL" >&2
+  exit 1
+fi
+chmod 600 "$TMP/public-ca.pem"
+if ! test -s "$TMP/public-ca.pem" ||
+   ! grep -q '^-----BEGIN CERTIFICATE-----
+
+# The Dart peer address comes directly from the isolated Docker network,
+# without DNS. The URI/SNI remains dev.vencira.es and the temporary CA is
+# strictly verified, never accepted through a bad-certificate callback.
+"${DOCKER[@]}" run --rm \
+  --network "$NETWORK" \
+  --tmpfs /tmp:rw,nosuid,size=268435456,mode=1777 \
+  --cap-drop ALL --security-opt no-new-privileges \
+  --pids-limit 128 \
+  -v "$PWD/clients/flutter:/work" -w /work \
+  -v "$TMP/pub-cache:/tmp/g7-d2-pub-cache" \
+  -v "$TMP/public-ca.pem:/tmp/g7d2-public-ca.pem:ro" \
+  -e PUB_CACHE=/tmp/g7-d2-pub-cache \
+  -e G7_D2_ISOLATED_NETWORK_ACK=1 \
+  -e G7_D2_CA_FILE=/tmp/g7d2-public-ca.pem \
+  -e G7_D2_PEER_IPV4="$G7_D2_PEER_IPV4" \
+  ghcr.io/cirruslabs/flutter:stable \
+  sh -c 'flutter test --no-pub test/g7_d2_https_live_test.dart --reporter expanded'
+
+echo "G7_D2_FLUTTER_DJANGO_HTTPS=OK"
+ "$TMP/public-ca.pem" ||
+   ! grep -q '^-----END CERTIFICATE-----
+
+# The Dart peer address comes directly from the isolated Docker network,
+# without DNS. The URI/SNI remains dev.vencira.es and the temporary CA is
+# strictly verified, never accepted through a bad-certificate callback.
+"${DOCKER[@]}" run --rm \
+  --network "$NETWORK" \
+  --tmpfs /tmp:rw,nosuid,size=268435456,mode=1777 \
+  --cap-drop ALL --security-opt no-new-privileges \
+  --pids-limit 128 \
+  -v "$PWD/clients/flutter:/work" -w /work \
+  -v "$TMP/pub-cache:/tmp/g7-d2-pub-cache" \
+  -v "$TMP/public-ca.pem:/tmp/g7d2-public-ca.pem:ro" \
+  -e PUB_CACHE=/tmp/g7-d2-pub-cache \
+  -e G7_D2_ISOLATED_NETWORK_ACK=1 \
+  -e G7_D2_CA_FILE=/tmp/g7d2-public-ca.pem \
+  -e G7_D2_PEER_IPV4="$G7_D2_PEER_IPV4" \
+  ghcr.io/cirruslabs/flutter:stable \
+  sh -c 'flutter test --no-pub test/g7_d2_https_live_test.dart --reporter expanded'
+
+echo "G7_D2_FLUTTER_DJANGO_HTTPS=OK"
+ "$TMP/public-ca.pem"; then
+  echo "G7_D2_PUBLIC_CA_FORMAT=FAIL" >&2
+  exit 1
+fi
+echo "G7_D2_PUBLIC_CA_READY=OK"
 
 # The Dart peer address comes directly from the isolated Docker network,
 # without DNS. The URI/SNI remains dev.vencira.es and the temporary CA is
