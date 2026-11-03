@@ -30,9 +30,14 @@ PUB_VOLUME="vencira-g7-public-dart-pub-v1"
   sh -c '
     set -e
     flutter pub get --offline || flutter pub get
-    flutter analyze lib/api/native_mobile_startup_gate.dart test/native_mobile_startup_gate_test.dart
+    flutter analyze \
+      lib/api/native_mobile_startup_gate.dart \
+      lib/api/native_mobile_recovery_entry.dart \
+      test/native_mobile_startup_gate_test.dart \
+      test/native_mobile_recovery_entry_test.dart
     flutter test --no-pub --reporter expanded \
       test/native_mobile_startup_gate_test.dart \
+      test/native_mobile_recovery_entry_test.dart \
       test/native_refresh_recovery_journal_test.dart \
       test/native_recovery_login_gateway_test.dart \
       test/native_session_coordinator_test.dart
