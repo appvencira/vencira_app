@@ -42,6 +42,9 @@ def verify():
     g8_phone_main = read("clients/flutter/lib/g8_lab_main.dart")
     g8_phone_store = read("clients/flutter/lib/g8_lab/physical_store_checks.dart")
     g8_phone_runner = read("scripts/g8_phone_apk_build.sh")
+    g9_boot = read("clients/flutter/lib/api/native_mobile_startup_gate.dart")
+    g9_boot_test = read("clients/flutter/test/native_mobile_startup_gate_test.dart")
+    g9_boot_runner = read("scripts/g9_native_startup_gate.sh")
     g8_phone_ci = read(".github/workflows/g8-phone-apk.yml")
     g8_gradle = read("clients/flutter/android/app/build.gradle.kts")
     flutter_pubspec = read("clients/flutter/pubspec.yaml")
@@ -442,6 +445,37 @@ def verify():
             and 'NativeRefreshRecoveryJournal' not in flutter_main
             and 'native_sessions_lab.test_urls' not in config
             and 'native_sessions_lab.test_urls' not in routes,
+        "g9_native_startup_recovers_orphan_fail_closed":
+            "enum NativeStartupDisposition" in g9_boot
+            and "locked, cleanLogin, fullReauthentication" in g9_boot
+            and "fence.revoke();" in g9_boot
+            and "journal.fence.revoke();" in g9_boot
+            and "final markerExists = await journal.requiresReauthentication();" in g9_boot
+            and "final refresh = await vault.read();" in g9_boot
+            and "if (markerExists || refresh != null)" in g9_boot
+            and "if (!markerExists)" in g9_boot
+            and "await journal.arm();" in g9_boot
+            and "if (!await journal.requiresReauthentication())" in g9_boot
+            and "NativeStartupDisposition.fullReauthentication" in g9_boot
+            and "NativeStartupDisposition.cleanLogin" in g9_boot
+            and "Future<NativeStartupDisposition>? _inFlight;" in g9_boot
+            and "if (_inFlight != null) return _inFlight!;" in g9_boot
+            and "Future<void>" not in g9_boot
+            and "NativeHttpAuthPort" not in g9_boot
+            and "package:http/" not in g9_boot
+            and "NativeMobileStartupGate" not in flutter_main
+            and "native_sessions_lab.test_urls" not in config
+            and "native_sessions_lab.test_urls" not in routes
+            and "orphan refresh is fenced and gets durable marker" in g9_boot_test
+            and "silently ignored orphan marker write fails closed" in g9_boot_test
+            and "concurrent inspections share one locked transition" in g9_boot_test
+            and "wrong journal fence fails without any protected read" in g9_boot_test
+            and "native_mobile_startup_gate_test.dart" in g9_boot_runner
+            and "native_refresh_recovery_journal_test.dart" in g9_boot_runner
+            and "native_recovery_login_gateway_test.dart" in g9_boot_runner
+            and "native_session_coordinator_test.dart" in g9_boot_runner
+            and "G9_STARTUP_GATE_BATCH=OK" in g9_boot_runner
+            and "NO_DEPLOY_NO_LIVE_MIGRATION=1" in g9_boot_runner,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
