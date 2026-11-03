@@ -330,3 +330,21 @@ El operador aportó el log completo de `flutter test test/g7_d2_https_live_test.
 ## G7-D2 cookie response regression: candidate not yet validated
 
 The successful G7-D2 HTTPS run showed HTTP 403 for a browser-cookie request, but the response included a Set-Cookie header. A test-only regression was added in `clients/flutter/tool/g7_d2_https_probe.dart` to verify that any returned Set-Cookie is exclusively a deletion (`Max-Age=0`) of `vencira_sessionid`, with no cookie values logged. The native auth implementation and Django remain unchanged. The static guard now checks that this assertion is present. **This additional assertion remains PENDING local validation.** It does not invalidate the preceding G7-D2 PASS: login, Bearer and remote revocation over genuine HTTPS were already confirmed. If the assertion fails, inspect only safe attributes, never cookie contents or session IDs. The operational release gates remain closed.
+
+## G7-D2: subgate de cookie eliminado PASS (operador 03/11/2026)
+
+Nueva ejecución confirmada: `G7_D2_REJECT_COOKIE_SESSION_NAME=true`, `G7_D2_REJECT_COOKIE_DELETION=true`, `G7_D2_WEB_COOKIE_RESPONSE_ONLY_DELETES_SESSION=OK`, `G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0`, `All tests passed!` y `G7_D2_GATE_RESULT=0`. La cabecera `Set-Cookie` del rechazo HTTP 403 borra `vencira_sessionid` mediante `Max-Age=0`, no concede una sesión nueva. El bloque G7-D2, incluido este subgate, está localmente **PASS**.
+
+## G7-E — MFA TOTP y refresh/replay a través de HTTPS real (IMPLEMENTADO, PENDING)
+
+El laboratorio Django `backend/native_sessions_lab/g7_d2_https_fixture.py` añade un **usuario MFA sintético separado** con `UserMfaState.enabled=True`, secreto TOTP RFC 6238 de prueba cifrado mediante `encrypt_totp_secret` y clave Fernet **nueva en cada ejecución**, restringida al proceso de test y nunca expuesta a Dart, host, Docker env de arranque ni logs. No se habilita la inscripción MFA, la autenticación móvil ni las rutas operativas de producción.
+
+El cliente `clients/flutter/tool/g7_d2_https_probe.dart` incorpora en la misma conexión real de `HttpClient`/TLS estricta:
+
+- **G7-E1 MFA**: password correcto exige challenge, `fence.ticket == null`, vault sin refresh y GET bloqueado hasta verificar el TOTP generado en Dart por HMAC-SHA1/RFC6238. Un código TOTP ya consumido no abre otra challenge, la sesión creada permite `GET /me/` y logout cierra inmediatamente el fence, borra vault y revoca en Django el Bearer.
+- **G7-E2 refresh**: `NativeHttpAuthPort.rotateRefresh` recibe nuevas credenciales, invalida el Bearer antiguo, protege la nueva sesión hasta que el refresh antiguo se reproduce; el replay debe denegarse y **revocar también la sesión nueva**. Una segunda rotación seguida de `revoke` valida el cierre normal. La rotación se prueba desde el puerto HTTP, **no** desde `NativeSessionCoordinator`: el orquestador de refresh automático con recuperación tras crash **NO está implementado ni autorizado**.
+- `crypto: ^3.0.6` como dependencia exclusivamente `dev_dependencies` permite generar el TOTP de test en Flutter, sin añadir criptografía al runtime del producto.
+
+El mismo script `scripts/g7_d2_https_flutter_django.sh` ahora exige obligatoriamente `G7_E_MFA_HTTPS_RESULT=0`, `G7_E_REFRESH_REPLAY_RESULT=0`, `G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0` y `All tests passed!` antes de declarar éxito. Gate estático `g7_e_https_mfa_rotation_only_in_lab` supervisa separación de test, TOTP, replay, rotación y marcadores.
+
+**G7-E aún PENDING:** no ejecutar despliegue ni migración persistente; no contabilizarlo como PASS antes de recibir el resultado local. Reutilizar script y entorno aislado G7-D2 con `git fetch origin feature/m3-android-local-notifications`, `git merge --ff-only FETCH_HEAD`, `bash scripts/g7_d2_https_flutter_django.sh`. Se omite repetir PG17, G7-A/B/C/D1. La APK Android real, el soporte de refresh en coordinador, la custodia externa MFA y los gates de producción permanecen sin autorización.
