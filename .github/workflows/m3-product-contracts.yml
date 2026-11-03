@@ -53,6 +53,20 @@ jobs:
         run: |
           python manage.py makemigrations native_sessions_lab --check --dry-run
           python manage.py test reminders.test_native_mobile_identity_database reminders.test_native_mobile_token_primitives native_sessions_lab.tests native_sessions_lab.test_pg17_race native_sessions_lab.test_login_rules native_sessions_lab.test_pg17_login_race native_sessions_lab.test_http_contract_cases
+      - name: Reject G4 candidate registration in production
+        run: |
+          if VENCIRA_ENV=production DJANGO_DEBUG=0 VENCIRA_NATIVE_SERVICE_CANDIDATE=1 python manage.py check > /tmp/g4-prod-candidate-denied.log 2>&1; then
+            echo 'G4_CANDIDATE_PROD_GUARD=FAIL'
+            exit 1
+          fi
+          grep -q 'Native mobile service candidate only allowed in isolated tests' /tmp/g4-prod-candidate-denied.log
+          echo 'G4_CANDIDATE_PROD_GUARD=OK'
+      - name: G4 candidate SQLite contract and schema dry-run
+        env:
+          VENCIRA_NATIVE_SERVICE_CANDIDATE: '1'
+        run: |
+          python manage.py makemigrations native_mobile_service --check --dry-run
+          python manage.py test native_mobile_service.test_contract
       - name: No operational release
         run: |
           echo 'M3_02_DELIVERY=NOT_IMPLEMENTED'
@@ -111,6 +125,12 @@ jobs:
         run: |
           python manage.py makemigrations native_sessions_lab --check --dry-run
           python manage.py test reminders.test_native_mobile_identity_database reminders.test_native_mobile_token_primitives native_sessions_lab.tests native_sessions_lab.test_pg17_race native_sessions_lab.test_login_rules native_sessions_lab.test_pg17_login_race native_sessions_lab.test_http_contract_cases
+      - name: G4 candidate isolated PostgreSQL 17 contract and race
+        env:
+          VENCIRA_NATIVE_SERVICE_CANDIDATE: '1'
+        run: |
+          python manage.py makemigrations native_mobile_service --check --dry-run
+          python manage.py test native_mobile_service.test_contract native_mobile_service.test_pg17_races
       - name: Keep release blocked
         run: |
           echo 'M3_02_PG17_EPHEMERAL_ONLY=1'
