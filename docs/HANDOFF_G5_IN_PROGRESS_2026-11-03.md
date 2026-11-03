@@ -168,3 +168,7 @@ Añadido **G7-D2 pendiente**: el script `scripts/g7_d2_https_flutter_django.sh` 
 ## G7-D2 fallo de análisis Dart corregido; verificación local pendiente
 
 Operador informó `G7_D2_GATE_RESULT=1`, `flutter analyze` con tres `undefined_setter` en `connectionTimeout/idleTimeout/connectionFactory`. La cascada Dart posterior al `findProxy = (_) => 'DIRECT'` se estaba aplicando al `String` devuelto por la función. Se separaron las asignaciones `HttpClient` sin alterar la política TLS/URI/IPv4 privada. **Aún no hay conexión Django↔Flutter validada**, se detuvo antes de crear el laboratorio. Repetir el script G7-D2 focalizado en rama actualizada, sin PG17 ni deploy. Sigue `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## G7-D2 exportación de CA: corrección de runner pendiente de recheck
+
+Con código previo: `flutter analyze` PASS, fixture Django `G7_D2_FIXTURE_READY=OK`, `G7_D2_GATE_RESULT=1` por `docker cp` incapaz de encontrar `/tmp/g7d2-public-ca.pem` dentro de contenedor temporal; el cliente Dart no llegó a conectarse. Se cambió únicamente `scripts/g7_d2_https_flutter_django.sh` a verificar la CA pública y transmitirla por `docker exec cat`, validar PEM, fijar 0600, manteniendo la clave privada confinada en el contenedor. Gate estático actualizado. **G7-D2 aún NO validado**. Repetir script focalizado. Sin cambios backend ni despliegue/DB persistente, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
