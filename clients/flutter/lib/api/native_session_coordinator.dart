@@ -207,6 +207,11 @@ class NativeSessionCoordinator implements NativeLoginGateway {
     _start();
     final epoch = _epoch;
     try {
+      if (firstIssuanceJournal != null &&
+          (!await firstIssuanceJournal!.requiresReauthentication() ||
+           await vault.read() != null)) {
+        throw StateError('G10 checkpoint required before password');
+      }
       final result = await port.password(
         username: username, password: password,
       );
