@@ -42,6 +42,10 @@ def verify():
     g8_phone_main = read("clients/flutter/lib/g8_lab_main.dart")
     g8_phone_store = read("clients/flutter/lib/g8_lab/physical_store_checks.dart")
     g8_phone_runner = read("scripts/g8_phone_apk_build.sh")
+    g12_phone_main = read("clients/flutter/lib/g12_lab_main.dart")
+    g12_phone_flow = read("clients/flutter/lib/g12_lab/physical_auth_checks.dart")
+    g12_phone_runner = read("scripts/g12_phone_apk_build.sh")
+    g12_phone_ci = read(".github/workflows/g12-phone-auth-apk.yml")
     g9_boot = read("clients/flutter/lib/api/native_mobile_startup_gate.dart")
     g9_entry = read("clients/flutter/lib/api/native_mobile_recovery_entry.dart")
     g9_boot_test = read("clients/flutter/test/native_mobile_startup_gate_test.dart")
@@ -460,6 +464,62 @@ def verify():
             and 'G8_PHONE_PHYSICAL_STORAGE_RESULT=NOT_RUN' in g8_phone_ci
             and 'G8_PHONE_RELEASE_AUTHORIZED=NO' in g8_phone_ci
             and 'NativeRefreshRecoveryJournal' not in flutter_main
+            and 'native_sessions_lab.test_urls' not in config
+            and 'native_sessions_lab.test_urls' not in routes,
+        "g12_physical_android_offline_auth_isolated":
+            'VENCIRA_G12_LAB_BUILD' in g8_gradle
+            and 'g8LabBuild && g12LabBuild' in g8_gradle
+            and '(g8LabBuild || g12LabBuild)' in g8_gradle
+            and 'applicationIdSuffix = ".g12lab"' in g8_gradle
+            and 'VENCIRA G12 Pruebas' in g8_gradle
+            and 'applicationIdSuffix = ".g8lab"' in g8_gradle
+            and "bool.fromEnvironment('VENCIRA_G12_LAB_BUILD')" in g12_phone_main
+            and 'G12_DEBUG_ANDROID_LAB_ONLY' in g12_phone_main
+            and 'kReleaseMode' in g12_phone_main
+            and 'Platform.isAndroid' in g12_phone_main
+            and 'G12PhoneAuthCheck.prepare' in g12_phone_main
+            and 'G12PhoneAuthCheck.verifyAfterRestart' in g12_phone_main
+            and 'G12PhoneAuthCheck.cleanup' in g12_phone_main
+            and "vencira_g12_phone_only_v1" in g12_phone_flow
+            and 'storageNamespace: _namespace' in g12_phone_flow
+            and 'resetOnError: false' in g12_phone_flow
+            and 'migrateOnAlgorithmChange: false' in g12_phone_flow
+            and 'FlutterNativeSecretStore(' in g12_phone_flow
+            and 'NativeFirstIssuanceEntry(' in g12_phone_flow
+            and 'NativeMobileRecoveryEntry(' in g12_phone_flow
+            and 'NativeMobileStartupGate(' in g12_phone_flow
+            and 'NativeSessionCoordinator(' in g12_phone_flow
+            and 'NativeRefreshRecoveryJournal(' in g12_phone_flow
+            and 'NativeRefreshCredentialVault(' in g12_phone_flow
+            and 'firstIssuanceJournal: journal' in g12_phone_flow
+            and 'before != pid' in g12_phone_flow
+            and 'G12_REAL_PROCESS_RESTART_REQUIRED' in g12_phone_flow
+            and 'G12_ANDROID_PHYSICAL_AUTH_RESULT=0' in g12_phone_flow
+            and 'G12_ANDROID_LOST_ISSUE_MARKER=OK' in g12_phone_flow
+            and 'G12_ANDROID_MFA_RECOVERY_COMMITTED=OK' in g12_phone_flow
+            and 'G12_ANDROID_FAILED_LOGOUT_RETRY=OK' in g12_phone_flow
+            and 'G12_DEV_PROD_KEY_COLLISION' in g12_phone_flow
+            and 'G12_CORRUPT_MARKER_ACCEPTED' in g12_phone_flow
+            and 'await store.delete(_refreshKey)' in g12_phone_flow
+            and 'await store.delete(_markerKey)' in g12_phone_flow
+            and 'package:http/' not in g12_phone_flow
+            and 'NativeHttpAuthPort' not in g12_phone_flow
+            and 'package:http/' not in g12_phone_main
+            and 'NativeHttpAuthPort' not in g12_phone_main
+            and 'NativeFirstIssuanceEntry' not in flutter_main
+            and 'G12PhoneAuthCheck' not in flutter_main
+            and 'VENCIRA_G12_LAB_BUILD=1 flutter build apk --debug' in g12_phone_runner
+            and '--target=lib/g12_lab_main.dart' in g12_phone_runner
+            and '--dart-define=VENCIRA_G12_LAB_BUILD=true' in g12_phone_runner
+            and 'es.vencira.vencira.g12lab' in g12_phone_runner
+            and 'G12_PHONE_APK_ID_VERIFY=OK' in g12_phone_runner
+            and 'G12_PHONE_RELEASE_AUTHORIZED=NO' in g12_phone_runner
+            and 'NO_DEPLOY_NO_LIVE_MIGRATION=1' in g12_phone_runner
+            and 'bash scripts/g12_phone_apk_build.sh' in g12_phone_ci
+            and 'actions/upload-artifact@v4' in g12_phone_ci
+            and 'VENCIRA-G12-PHONE-DEBUG-ONLY' in g12_phone_ci
+            and 'G12_PHONE_PHYSICAL_AUTH_RESULT=NOT_RUN' in g12_phone_ci
+            and 'NO_DEPLOY_NO_LIVE_MIGRATION=1' in g12_phone_ci
             and 'native_sessions_lab.test_urls' not in config
             and 'native_sessions_lab.test_urls' not in routes,
         "g9_native_startup_recovers_orphan_fail_closed":
