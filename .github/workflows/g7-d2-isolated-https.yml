@@ -8,6 +8,13 @@ on:
     paths:
       - 'backend/native_sessions_lab/g7_d2_https_fixture.py'
       - 'backend/native_sessions_lab/test_verified_https_loopback.py'
+      - 'clients/flutter/pubspec.yaml'
+      - 'clients/flutter/lib/api/native_http_auth_port.dart'
+      - 'clients/flutter/lib/api/native_recovery_login_gateway.dart'
+      - 'clients/flutter/lib/api/native_refresh_recovery_journal.dart'
+      - 'clients/flutter/lib/api/native_session_coordinator.dart'
+      - 'clients/flutter/lib/api/native_refresh_credential_vault.dart'
+      - 'clients/flutter/lib/api/native_api_transport.dart'
       - 'clients/flutter/tool/g7_d2_https_probe.dart'
       - 'clients/flutter/test/g7_d2_https_live_test.dart'
       - 'scripts/g7_d2_https_flutter_django.sh'
@@ -33,7 +40,7 @@ jobs:
 
       - name: Run strict Docker internal-network Flutter to Django HTTPS
         run: |
-          bash scripts/g7_d2_https_flutter_django.sh
+          bash scripts/g7_d2_https_flutter_django.sh --all
 
       - name: Release remains blocked
         if: always()
