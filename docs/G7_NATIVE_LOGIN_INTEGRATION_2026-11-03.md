@@ -126,3 +126,11 @@ Hipótesis técnica: `MockClient` con `http.Response` convierte el cuerpo en flu
 Corrección **solo del fixture de pruebas**: se usa `MockClient.streaming` y `http.StreamedResponse` con `Stream.multi`, `addSync` y `closeSync` para entregar bytes en el mismo turno del listener y ejercitar el parser HTTP. No hay modificación en `NativeHttpAuthPort`, Django, sesión real ni datos operativos. **PENDIENTE validación Flutter** posterior al commit de esta corrección; no declarar PASS sin prueba.
 
 Comprobar de nuevo únicamente la nueva suite y regresión G7-A con `flutter pub get && flutter analyze && flutter test test/native_lab_login_shell_test.dart test/native_http_login_integration_test.dart --reporter expanded` en el contenedor Flutter. Ante un nuevo FAIL, conservar el primer error y añadir instrumentación de estado sin credenciales antes de probar cambios más amplios.
+
+## G7-B — corrección de compilación del test de streaming, 03/11/2026
+
+El operador actualizó `491f0702` y ejecutó `flutter pub get && flutter analyze`; el análisis detuvo la ejecución con **13 errores de tipado** en `native_http_login_integration_test.dart`, `G7_B_HTTP_RECHECK=1`. No se ejecutaron los widgets en este intento y **no se confirmó** ni refutó la hipótesis de streaming. El problema es una llamada `MockClient.streaming` con una función de un parámetro cuando `MockClientStreamHandler` exige `(BaseRequest request, ByteStream bodyStream)`; además, `BaseRequest` no expone `body`. La firma se ha contrastado con la API pública de `package:http`.
+
+Corregido el archivo de tests: cuatro manejadores aceptan dos parámetros, el helper de comprobación recibe `http.BaseRequest` y los tres cuerpos JSON se comprueban con `jsonDecode(await bodyStream.bytesToString())`. No se cambia código operativo ni contratos HTTP Django. **Corrección aún no probada localmente; G7_B_HTTP_WIDGETS=PENDING**. Conservar el marcador de 6/6 G7-A como evidencia del commit previo, no como aprobación de G7-B. No desplegar ni migrar.
+
+Validar primero con `flutter pub get && flutter analyze && flutter test test/native_lab_login_shell_test.dart test/native_http_login_integration_test.dart --reporter expanded` en el contenedor, sin reconstruir backend ni repetir PostgreSQL17.
