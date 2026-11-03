@@ -83,3 +83,22 @@ El propio script rechaza compilar o publicar APK si `flutter analyze`, compilaci
 El operador ejecutó la compilación local en la imagen `ghcr.io/cirruslabs/flutter:stable`. `flutter pub get` completó; `flutter analyze` detuvo el build con **14 incidencias** en `clients/flutter/lib/g8_lab_main.dart`: advertencias por `_failure`, `_markers` y `_clear` aparentemente no usados, **un error de retorno** en `_clear` línea 104 (`Future<void>` incompatible con `List<String>`) y una **coma/paréntesis sobrante** después de la tarjeta de resultado (anterior línea 209) que generó los restantes errores de parser (`Expected to find ']'`, `')'`, `';'`, texto inesperado). `G8_DOCKER_BUILD_RESULT=1` es correcto al fallar el análisis; no se produjo APK validada. No tiene relación con espacio de disco del VPS ni con la fase G7.
 
 Corrección publicada: `_clear` se declara `Future<List<String>>` para respetar el contrato de `_run(Future<List<String>> Function())`, y se elimina únicamente el cierre extra de `Card` entre `_resultOk` e `if (_failure != null)`, conservando los cierres correctos. El fuente resultante conserva referencias a `_failure`, `_markers` y `_clear`; comprobación local de delimitadores balanceados sobre el fichero remoto OK, **pero no se dispone aún de reejecución `flutter analyze` ni de compilación APK**. Mantener `G8_PHONE_APK_BUILD=PENDING` y no recomendar instalación hasta confirmar `G8_PHONE_APK_ID_VERIFY=OK`, `G8_PHONE_APK_BUILD=OK`, exit 0. Repetir el runner único `bash scripts/g8_phone_apk_build.sh` o su envoltorio Docker anterior tras `git fetch` + fast-forward. PR sigue DRAFT, sin deploy ni migración.
+
+## G8-PHONE: compilación DEBUG PASS (operador 03/11/2026)
+
+El operador confirma compilación local **PASS** en `ghcr.io/cirruslabs/flutter:stable`:
+
+```text
+✓ Built build/app/outputs/flutter-apk/app-debug.apk
+G8_PHONE_APK_ID_VERIFY=OK
+G8_PHONE_PACKAGE=es.vencira.vencira.g8lab
+G8_PHONE_APK_BUILD=OK
+G8_PHONE_APK_PATH=clients/flutter/build/g8-phone/VENCIRA-G8-LAB-debug.apk
+G8_PHONE_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+G8_DOCKER_BUILD_RESULT=0
+```
+
+El operador indica también **GitHub Actions DONE**; no se dispone en este registro del ID concreto de ejecución ni del artefacto verificado por consulta API, así que esta comprobación de Actions se consigna **como confirmación del operador**, no como inspección independiente de logs ni descarga. Con ello G8-PHONE **BUILD PASS** y **ANDROID DEVICE RUNTIME PENDING**. La APK debug conserva application ID `es.vencira.vencira.g8lab`, diferente de `es.vencira.vencira`; el usuario puede transferirla al móvil de pruebas desde el fichero local generado o descargar exclusivamente el artefacto `VENCIRA-G8-PHONE-DEBUG-ONLY` de la ejecución verde de GitHub. Verificar el SHA256 contra el fichero acompañante si se usa el artefacto descargado.
+
+**Procedimiento de teléfono:** instalar APK G8 en dispositivo de pruebas; abrir **VENCIRA G8 Pruebas**, pulsar `Preparar prueba`; ir a Ajustes de Android → Aplicaciones → VENCIRA G8 Pruebas → Forzar detención; reabrir y pulsar `Verificar tras reinicio`. Confirmar `G8_PHONE_PHYSICAL_STORAGE_RESULT=0` y todos los marcadores locales, sin compartir tokens ni archivos de almacenamiento. Tras el ensayo limpiar con botón **Borrar datos de laboratorio** y, si se desea, desinstalar únicamente el paquete G8. La prueba no autoriza despliegue productivo, sesión móvil operativa, atestación de hardware o migración persistente. PR sigue DRAFT; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
