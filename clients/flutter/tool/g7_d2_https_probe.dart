@@ -188,6 +188,26 @@ class _DisposableSecretStore implements NativeSecretStore {
   }
 }
 
+/// Test-only platform-vault fault injection. Never wraps or replaces
+/// flutter_secure_storage in the application. Simulates silently ignored
+/// writes/deletes and verifies the read-after-write/delete invariants.
+class _FaultInjectStore extends _DisposableSecretStore {
+  bool ignoreRefreshWrite = false;
+  bool ignoreRecoveryDelete = false;
+
+  @override
+  Future<void> write(String key, String value) async {
+    if (ignoreRefreshWrite && key.endsWith('.refresh.v1')) return;
+    await super.write(key, value);
+  }
+
+  @override
+  Future<void> delete(String key) async {
+    if (ignoreRecoveryDelete && key.endsWith('.uncertain.v1')) return;
+    await super.delete(key);
+  }
+}
+
 Future<void> _expectHttpAuthDenied(Future<Object?> Function() operation) async {
   var denied = false;
   try {
@@ -609,9 +629,110 @@ Future<void> _verifyMfaRecoveryHttps(
   stdout.writeln('G7_G_MFA_RECOVERY_HTTPS_RESULT=0');
 }
 
+/// G7-H: the backend really commits a full recovery, but a protected
+/// vault WRITE is silently ignored; then a recovery-marker DELETE is
+/// silently ignored. Neither can reopen a local session. Both failures
+/// must preserve the durable reauth checkpoint until a clean third attempt.
+Future<void> _verifyRecoveryStorageFaultsHttps(
+  NativeApiEndpoint endpoint, http.Client client,
+) async {
+  final port = NativeHttpAuthPort(endpoint: endpoint, client: client);
+  final baseline = await port.password(
+    username: _username, password: _password,
+  );
+  if (baseline is! NativePasswordGranted) {
+    throw StateError('G7_H_PASSWORD_BASELINE_REQUIRED');
+  }
+  final initial = baseline.tokens;
+  final store = _FaultInjectStore();
+  final fence = NativeSessionFence();
+  final vault = NativeRefreshCredentialVault(
+    endpoint: endpoint, store: store,
+  );
+  final journal = NativeRefreshRecoveryJournal(
+    endpoint: endpoint, store: store, fence: fence,
+  );
+  final gateway = NativeRecoveryLoginGateway(
+    port: port, journal: journal, vault: vault, fence: fence,
+  );
+  await vault.replace(initial.refresh);
+  await journal.arm();
+  _require(
+    await journal.requiresReauthentication() &&
+        fence.ticket == null,
+    'RECOVERY_STORAGE_CHECKPOINT_READY',
+  );
+
+  // Simulate a platform API reporting success without writing refresh.
+  store.ignoreRefreshWrite = true;
+  var writeRejected = false;
+  try {
+    await gateway.verifyPassword(username: _username, password: _password);
+  } catch (_) {
+    writeRejected = true;
+  }
+  _require(
+    writeRejected &&
+        await journal.requiresReauthentication() &&
+        await vault.read() == initial.refresh &&
+        await gateway.accessToken() == null &&
+        fence.ticket == null &&
+        await _bearerHttpStatus(client, endpoint, initial.access) == 401,
+    'RECOVERY_STORAGE_REFRESH_WRITE_FAILURE_FENCED',
+  );
+
+  // This time refresh replacement succeeds but the durable marker DELETE
+  // is ignored. The server's new session is revoked by gateway cleanup,
+  // while the marker remains armed and no access token is exposed.
+  store.ignoreRefreshWrite = false;
+  store.ignoreRecoveryDelete = true;
+  var deleteRejected = false;
+  try {
+    await gateway.verifyPassword(username: _username, password: _password);
+  } catch (_) {
+    deleteRejected = true;
+  }
+  _require(
+    deleteRejected &&
+        await journal.requiresReauthentication() &&
+        await gateway.accessToken() == null &&
+        fence.ticket == null,
+    'RECOVERY_STORAGE_MARKER_DELETE_FAILURE_FENCED',
+  );
+
+  // Once the synthetic store is healthy, only a NEW full password
+  // verification may replace the (potentially revoked) stored refresh.
+  store.ignoreRecoveryDelete = false;
+  final recovered = await gateway.verifyPassword(
+    username: _username, password: _password,
+  );
+  final access = await gateway.accessToken();
+  final refresh = await vault.read();
+  _require(
+    recovered == NativePasswordDecision.authenticated &&
+        access != null &&
+        refresh != null &&
+        refresh != initial.refresh &&
+        fence.ticket != null &&
+        !await journal.requiresReauthentication() &&
+        await _bearerHttpStatus(client, endpoint, access!) == 200,
+    'RECOVERY_STORAGE_RETRY_VERIFIED',
+  );
+  fence.revoke();
+  await port.revoke(refresh: refresh!);
+  await vault.clear();
+  _require(
+    fence.ticket == null &&
+        store.values.isEmpty &&
+        await _bearerHttpStatus(client, endpoint, access!) == 401,
+    'RECOVERY_STORAGE_FINAL_CLEANUP',
+  );
+  stdout.writeln('G7_H_RECOVERY_STORAGE_FAULTS_RESULT=0');
+}
+
 Future<void> main() async {
   final group = Platform.environment['G7_LAB_GROUP'] ?? 'all';
-  if (group != 'all' && group != 'd2' && group != 'e' && group != 'f' && group != 'g') {
+  if (group != 'all' && group != 'd2' && group != 'e' && group != 'f' && group != 'g' && group != 'h') {
     throw StateError('G7_LAB_GROUP_NOT_ALLOWED');
   }
   if (Platform.environment['G7_D2_ISOLATED_NETWORK_ACK'] != '1') {
@@ -781,6 +902,9 @@ Future<void> main() async {
     }
     if (group == 'all' || group == 'g') {
       await _verifyMfaRecoveryHttps(endpoint, httpClient);
+    }
+    if (group == 'all' || group == 'h') {
+      await _verifyRecoveryStorageFaultsHttps(endpoint, httpClient);
     }
     stdout.writeln('G7_LAB_GROUP_COMPLETE=$group');
   } finally {
