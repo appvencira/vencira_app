@@ -2,6 +2,19 @@ name: G8 physical-phone laboratory APK (debug only)
 
 on:
   workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'clients/flutter/lib/g8_lab_main.dart'
+      - 'clients/flutter/lib/g8_lab/physical_store_checks.dart'
+      - 'clients/flutter/lib/api/native_refresh_credential_vault.dart'
+      - 'clients/flutter/lib/api/native_refresh_recovery_journal.dart'
+      - 'clients/flutter/android/app/build.gradle.kts'
+      - 'clients/flutter/android/app/src/main/AndroidManifest.xml'
+      - 'clients/flutter/pubspec.yaml'
+      - 'scripts/g8_phone_apk_build.sh'
+      - 'scripts/n1_static_security_gate.py'
+      - '.github/workflows/g8-phone-apk.yml'
   push:
     branches:
       - feature/m3-android-local-notifications
