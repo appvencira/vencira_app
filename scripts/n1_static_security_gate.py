@@ -32,6 +32,7 @@ def verify():
     flutter_lab_shell = read("clients/flutter/lib/ui/native_lab_login_shell.dart")
     flutter_lab_http_test = read("clients/flutter/test/native_http_login_integration_test.dart")
     django_socket_lab_test = read("backend/native_sessions_lab/test_loopback_http_contract.py")
+    django_https_lab_test = read("backend/native_sessions_lab/test_verified_https_loopback.py")
     recovery_gateway = read("clients/flutter/lib/api/native_recovery_login_gateway.dart")
     recovery_migration = read(
         "backend/native_sessions_lab/migrations/0004_mobile_challenge_recovery_flag.py"
@@ -201,6 +202,18 @@ def verify():
             and "http://" not in read("clients/flutter/lib/api/native_api_endpoint.dart")
             and "native_sessions_lab.test_urls" not in config
             and "native_sessions_lab.test_urls" not in routes,
+        "g7_https_lab_ephemeral_tls_and_hostname":
+            '("127.0.0.1", 0)' in django_https_lab_test
+            and 'ROOT_URLCONF="native_sessions_lab.test_urls"' in django_https_lab_test
+            and "tempfile.TemporaryDirectory(" in django_https_lab_test
+            and 'x509.DNSName("dev.vencira.es")' in django_https_lab_test
+            and "context.check_hostname = True" in django_https_lab_test
+            and "context.verify_mode = ssl.CERT_REQUIRED" in django_https_lab_test
+            and "ssl.SSLCertVerificationError" in django_https_lab_test
+            and "check_hostname = False" not in django_https_lab_test
+            and "CERT_NONE" not in django_https_lab_test
+            and "native_sessions_lab.test_urls" not in config
+            and "native_sessions_lab.test_urls" not in routes,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
@@ -229,6 +242,7 @@ def verify():
         "backend/native_sessions_lab/test_http_contract.py",
         "backend/native_sessions_lab/test_http_contract_cases.py",
         "backend/native_sessions_lab/test_loopback_http_contract.py",
+        "backend/native_sessions_lab/test_verified_https_loopback.py",
         "backend/native_mobile_service/models.py",
         "backend/native_mobile_service/migrations/0001_initial.py",
         "backend/native_mobile_service/authentication.py",
