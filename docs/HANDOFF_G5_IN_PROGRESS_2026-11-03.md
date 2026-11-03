@@ -89,3 +89,7 @@ Por decisión del operador (03/11/2026) se prioriza [G7 entrada nativa inyectabl
 El operador ejecutó `m3-http-contract-20261103T133437Z`, con `STATIC=0`, `BUILD=0`, `PG17_LAB=0`, `G4_PG17=0`, **`FLUTTER=1`**, **`M3_HTTP_RESULT=1`** y `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Cinco errores en la suite nueva `native_lab_login_shell_test.dart`: al menos `pumpAndSettle timed out` e invariante `debugDefaultTargetPlatformOverride` sin restablecer antes del cierre del test. Ver [incidencia y validación focalizada](G7_NATIVE_LOGIN_INTEGRATION_2026-11-03.md).
 
 Se han publicado correcciones de **tests únicamente**, usando espera acotada por estado observable y `finally` para restaurar el override. **El nuevo estado es PENDING**: aún no hay ejecución verde de `flutter test test/native_lab_login_shell_test.dart`. No repetir PG17; pedir solo validación Flutter focalizada. Ningún backend real fue activado.
+
+## G7-A segundo test focalizado sigue FAIL; diagnóstico reforzado
+
+`flutter analyze` sin incidencias; la prueba `native_lab_login_shell_test.dart` muestra cuatro fallos `g7-native-logout` ausente después de login sintético y pasa el test de `VenciraApp` inyectable. **Todavía no hay causa confirmada de ausencia del callback**. Añadido test unitario que ejerce directamente el coordinador con token sintético y salida de estado no secreto si no aparece la UI esperada; código actualizado **PENDING**. Prohibido marcar G7 verde por pasar análisis o backend. Véase `docs/G7_NATIVE_LOGIN_INTEGRATION_2026-11-03.md`. No requiere repetir PG17.
