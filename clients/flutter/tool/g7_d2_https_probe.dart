@@ -484,9 +484,132 @@ Future<void> _verifyAmbiguousRefreshRecoveryHttps(
   stdout.writeln('G7_F_AMBIGUOUS_REFRESH_RECOVERY_RESULT=0');
 }
 
+/// G7-G: full MFA recovery via the distinct /recover/* contract after a
+/// refresh response is lost. Both OTPs use the RFC public synthetic vector.
+/// The initial login consumes the previous accepted 30-second step, and the
+/// reauthentication consumes the current later step. Never print either OTP.
+Future<void> _verifyMfaRecoveryHttps(
+  NativeApiEndpoint endpoint, http.Client client,
+) async {
+  const username = 'g7-g-mfa-recovery';
+  const password = 'G7-G-Only-Synthetic-Mfa-Password-2026!';
+  final port = NativeHttpAuthPort(endpoint: endpoint, client: client);
+  final first = await port.password(username: username, password: password);
+  if (first is! NativePasswordMfaRequired) {
+    throw StateError('G7_G_BASELINE_MFA_REQUIRED');
+  }
+  final priorCode = _syntheticTotp(
+    DateTime.now().subtract(const Duration(seconds: 30)),
+  );
+  final previous = await port.mfa(
+    challenge: first.challenge, code: priorCode,
+  );
+  _require(
+    await _bearerHttpStatus(client, endpoint, previous.access) == 200,
+    'MFA_RECOVERY_BASELINE_AUTHENTICATED',
+  );
+
+  final store = _DisposableSecretStore();
+  final previousFence = NativeSessionFence();
+  final originalVault = NativeRefreshCredentialVault(
+    endpoint: endpoint, store: store,
+  );
+  final originalJournal = NativeRefreshRecoveryJournal(
+    endpoint: endpoint, store: store, fence: previousFence,
+  );
+  await originalVault.replace(previous.refresh);
+  await originalJournal.arm();
+  _require(
+    previousFence.ticket == null &&
+        await originalJournal.requiresReauthentication(),
+    'MFA_RECOVERY_CHECKPOINT_BEFORE_ROTATION',
+  );
+  // Backend commits refresh rotation. The client discards the new tokens.
+  final unseen = await port.rotateRefresh(previous.refresh);
+  _require(
+    await _bearerHttpStatus(client, endpoint, unseen.access) == 200 &&
+        await originalVault.read() == previous.refresh,
+    'MFA_RECOVERY_LOST_REFRESH_RESPONSE',
+  );
+
+  // A new gateway and journal simulate a restart with the same synthetic
+  // protected store. No access is rehydrated from the old credential.
+  final fence = NativeSessionFence();
+  final vault = NativeRefreshCredentialVault(
+    endpoint: endpoint, store: store,
+  );
+  final journal = NativeRefreshRecoveryJournal(
+    endpoint: endpoint, store: store, fence: fence,
+  );
+  final gateway = NativeRecoveryLoginGateway(
+    port: port, journal: journal, vault: vault, fence: fence,
+  );
+  _require(
+    await gateway.requiresRecovery() &&
+        await gateway.accessToken() == null &&
+        fence.ticket == null,
+    'MFA_RECOVERY_COLD_START_FENCED',
+  );
+
+  final decision = await gateway.verifyPassword(
+    username: username, password: password,
+  );
+  _require(
+    decision == NativePasswordDecision.mfaRequired &&
+        await journal.requiresReauthentication() &&
+        fence.ticket == null &&
+        await vault.read() == previous.refresh &&
+        await _bearerHttpStatus(client, endpoint, unseen.access) == 200,
+    'MFA_RECOVERY_PASSWORD_CANNOT_REVOKE',
+  );
+
+  // Replaying the TOTP already consumed at baseline must fail without
+  // consuming the pending challenge or revoking any existing device.
+  await _expectHttpAuthDenied(() => gateway.verifyTotp(priorCode));
+  _require(
+    await journal.requiresReauthentication() &&
+        fence.ticket == null &&
+        await _bearerHttpStatus(client, endpoint, unseen.access) == 200,
+    'MFA_RECOVERY_REPLAY_NO_ACCOUNT_REVOKE',
+  );
+
+  await gateway.verifyTotp(_syntheticTotp());
+  final freshAccess = await gateway.accessToken();
+  final freshRefresh = await vault.read();
+  _require(
+    freshAccess != null &&
+        freshRefresh != null &&
+        freshRefresh != previous.refresh &&
+        freshRefresh != unseen.refresh &&
+        fence.ticket != null &&
+        !await journal.requiresReauthentication(),
+    'MFA_RECOVERY_VERIFIED_COMMIT',
+  );
+  _require(
+    await _bearerHttpStatus(client, endpoint, unseen.access) == 401 &&
+        await _bearerHttpStatus(client, endpoint, freshAccess!) == 200,
+    'MFA_RECOVERY_ACCOUNT_WIDE_REVOKE',
+  );
+  await _expectHttpAuthDenied(
+    () => port.rotateRefresh(unseen.refresh),
+  );
+
+  // Explicit cleanup; all accounts and credentials are disposable test data.
+  fence.revoke();
+  await port.revoke(refresh: freshRefresh!);
+  await vault.clear();
+  _require(
+    fence.ticket == null &&
+        store.values.isEmpty &&
+        await _bearerHttpStatus(client, endpoint, freshAccess!) == 401,
+    'MFA_RECOVERY_FINAL_LOGOUT_REVOKES',
+  );
+  stdout.writeln('G7_G_MFA_RECOVERY_HTTPS_RESULT=0');
+}
+
 Future<void> main() async {
   final group = Platform.environment['G7_LAB_GROUP'] ?? 'all';
-  if (group != 'all' && group != 'd2' && group != 'e' && group != 'f') {
+  if (group != 'all' && group != 'd2' && group != 'e' && group != 'f' && group != 'g') {
     throw StateError('G7_LAB_GROUP_NOT_ALLOWED');
   }
   if (Platform.environment['G7_D2_ISOLATED_NETWORK_ACK'] != '1') {
@@ -653,6 +776,9 @@ Future<void> main() async {
     }
     if (group == 'all' || group == 'f') {
       await _verifyAmbiguousRefreshRecoveryHttps(endpoint, httpClient);
+    }
+    if (group == 'all' || group == 'g') {
+      await _verifyMfaRecoveryHttps(endpoint, httpClient);
     }
     stdout.writeln('G7_LAB_GROUP_COMPLETE=$group');
   } finally {
