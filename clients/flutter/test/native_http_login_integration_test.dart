@@ -136,7 +136,7 @@ void main() {
         expect(jsonDecode(request.body), {'refresh': _refresh});
         return _reply({'status': 'revoked'});
       }
-      fail('Unexpected native HTTP path');
+      throw StateError('Unexpected native HTTP path');
     });
 
     final fixture = _Fixture(client);
@@ -195,7 +195,7 @@ void main() {
         bearerReads++;
         return _reply({'authenticated': true, 'user_id': 27});
       }
-      fail('Unexpected native HTTP path');
+      throw StateError('Unexpected native HTTP path');
     });
 
     final fixture = _Fixture(client);
@@ -256,7 +256,7 @@ void main() {
             ? _reply({'status': 'revoked'})
             : _reply({'error': 'native_auth_unavailable'}, status: 503);
       }
-      fail('Unexpected native HTTP path');
+      throw StateError('Unexpected native HTTP path');
     });
     final fixture = _Fixture(client);
     await tester.pumpWidget(MaterialApp(
