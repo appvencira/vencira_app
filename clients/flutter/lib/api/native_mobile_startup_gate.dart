@@ -42,6 +42,7 @@ class NativeMobileStartupGate {
   Future<NativeStartupDisposition> inspect() {
     if (!identical(journal.fence, fence)) {
       fence.revoke();
+      journal.fence.revoke();
       _disposition = NativeStartupDisposition.locked;
       throw StateError('Native startup fence mismatch');
     }
