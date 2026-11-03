@@ -180,7 +180,7 @@ void main() {
     ));
     await passwordLogin(tester);
     await tester.tap(find.byKey(const Key('g7-native-logout')));
-    await waitFor(tester, find.byKey(const Key('g7-native-login')));
+    await waitFor(tester, find.byKey(const Key('g7-native-logout-error')));
     expect(fence.ticket, isNull);
     expect(store.data.values, contains(_refresh));
     expect(find.byKey(const Key('g7-native-logout-error')), findsOneWidget);
