@@ -386,3 +386,22 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 **Resultado: G10 = PASS, suite unitaria Flutter agrupada y guardia estática.** La salida no incluye la línea opcional `G10_LOCAL_RESULT=0` de un `echo` posterior, pero el propio runner informa `G10_ISSUANCE_LOGOUT_GATE_RESULT=0`. Se cierra el incidente anterior de 63/64, causado por un matcher inadecuado para una excepción síncrona; no fue un fallo del protocolo de seguridad. El bloqueo por `Native startup fence mismatch` permanece sin modificaciones.
 
 **Alcance:** primera emisión con marcador duradero, acceso cerrado hasta confirmar vault y limpieza de marcador, revocación/cierre fail-closed y regresiones G9/G6 en condiciones de prueba con puertos simulados. **Todavía NO existe evidencia de G10 contra Django por HTTPS ni de este protocolo completo en Android físico.** El siguiente paso razonable es el ensayo HTTPS aislado G11 (o la auditoría correspondiente), sin desplegar ni montar emisores reales. No reejecutar G7/G8/G9 salvo que cambien sus contratos. PR #17 DRAFT, `MB1_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `GLOBAL_FREEZE=NOT_VERIFIED`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## G11 — HTTPS real de primera emisión y logout, 03/11/2026
+
+**G10 PASS confirmado** por el operador tras repetición: `N1_STATIC_GATE_RESULT=OK`, `G10_ISSUANCE_ANALYZE=OK`, `G10_ISSUANCE_LOGOUT_UNIT=OK`, `G10_G9_G6_REGRESSION=OK`, `G10_ISSUANCE_LOGOUT_BATCH=OK`, `G10_ISSUANCE_LOGOUT_GATE_RESULT=0`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. G7 HTTPS completo, G8 Android físico y G9 unitarios también PASS según los recibos precedentes.
+
+**G11 nuevo, estado PENDING:** creado `clients/flutter/tool/g11_https_scenarios.dart`, enlazado como grupo explícito `g11` de `clients/flutter/tool/g7_d2_https_probe.dart` y `scripts/g7_d2_https_flutter_django.sh`; wrapper exclusivo `scripts/g11_https_first_issue_logout.sh`, CI `.github/workflows/g11-https-first-issuance.yml`, guarda N1 `g11_real_https_first_issue_logout_isolated` y contrato `docs/G11_HTTPS_FIRST_ISSUANCE_LOGOUT_2026-11-03.md`. El runner `--group g11` ejecuta **únicamente** G11, no repite grupos anteriores. Reutiliza el fixture Django test-only: red Docker interna sin puertos publicados, FS backend solo lectura, DB SQLite tmpfs, CA temporal pública, SNI/certificado TLS verificado, peer IPv4 privada, cuentas exclusivamente sintéticas.
+
+Escenarios: emisión inicial con marcador protegido antes de password HTTP, acceso bearer 200, logout con revocación Django y antiguo bearer 401; fallo de escritura de marcador que bloquea HTTPS; respuesta perdida tras emisión remota con marcador pendiente y recuperación completa que revoca sesión perdida (bearer anterior 401); fallo de red anterior a revocación y reintento; respuesta de revocación perdida **después** de que Django ya revocó con retry 401 y fence cerrado; y MFA real del fixture con marcador antes de contraseña/TOTP y logout posterior. No se imprimen tokens ni cuerpos de HTTP.
+
+**Comprobación pendiente:**
+```bash
+cd ~/vencira-m3-localcheck
+git fetch origin feature/m3-android-local-notifications
+git merge --ff-only FETCH_HEAD
+bash scripts/g11_https_first_issue_logout.sh
+echo "G11_LOCAL_RESULT=$?"
+```
+
+No marcar G11 PASS hasta obtener `G11_HTTPS_FIRST_ISSUANCE_LOGOUT_RESULT=0`, `G11_HTTPS_GATE_RESULT=0` y `G11_LOCAL_RESULT=0`. No habilitar ni unir rutas de producción, `main.dart` ni migraciones persistentes. PR #17 sigue DRAFT; `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `GLOBAL_FREEZE=NOT_VERIFIED`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
