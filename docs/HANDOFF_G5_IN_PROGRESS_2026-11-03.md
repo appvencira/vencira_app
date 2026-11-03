@@ -93,3 +93,7 @@ Se han publicado correcciones de **tests únicamente**, usando espera acotada po
 ## G7-A segundo test focalizado sigue FAIL; diagnóstico reforzado
 
 `flutter analyze` sin incidencias; la prueba `native_lab_login_shell_test.dart` muestra cuatro fallos `g7-native-logout` ausente después de login sintético y pasa el test de `VenciraApp` inyectable. **Todavía no hay causa confirmada de ausencia del callback**. Añadido test unitario que ejerce directamente el coordinador con token sintético y salida de estado no secreto si no aparece la UI esperada; código actualizado **PENDING**. Prohibido marcar G7 verde por pasar análisis o backend. Véase `docs/G7_NATIVE_LOGIN_INTEGRATION_2026-11-03.md`. No requiere repetir PG17.
+
+## G7-A: nueva hipótesis de zona asíncrona en widget tests
+
+Cuatro tests fallan sin activar fence ni escribir refresh, aun cuando el puerto sintético recibe password/MFA; test directo del coordinador y entrada `VenciraApp` pasan. Hipótesis fundada en `NativeRefreshCredentialVault._previous = Future<void>.value()` construido en `setUp` fuera de `testWidgets`. Se ha movido la construcción al cuerpo de cada test, sin modificar código operativo. **PENDING recheck Flutter dirigido**, no implicar PASS, ver `G7_NATIVE_LOGIN_INTEGRATION_2026-11-03.md`. Bloqueos de release intactos.
