@@ -70,10 +70,33 @@ HttpClient _httpsClient(SecurityContext trust, {String host = _serverAlias}) {
       throw StateError('G7_D2_UNEXPECTED_REMOTE_TARGET');
     }
     stdout.writeln('G7_D2_FACTORY_PRIVATE_TCP=OK');
-    // The peer is the private IPv4 reported by docker inspect for the
-    // server's isolated network. No DNS resolution or public fallback.
-    // TLS still validates the *original URI host* through SNI/SAN.
-    return Socket.startConnect(_privateLabPeer(), _tlsPort);
+    // Setting connectionFactory replaces Dart's automatic HTTPS socket.
+    // We MUST return a TLS-upgraded socket, not a plaintext Socket:
+    // HttpClient will otherwise send an HTTP request to the TLS listener.
+    // TCP goes only to Docker's inspected private IPv4 (no public DNS).
+    // SecureSocket.secure verifies the trusted temporary CA and the
+    // ORIGINAL URI host as the peer identity/SNI; never bypass verification.
+    return Socket.startConnect(_privateLabPeer(), _tlsPort).then((task) {
+      Socket? active;
+      final Future<Socket> verified = task.socket.then((raw) async {
+        active = raw;
+        try {
+          final secure = await SecureSocket.secure(
+            raw, host: uri.host, context: trust,
+          );
+          active = secure;
+          stdout.writeln('G7_D2_FACTORY_VERIFIED_TLS=OK');
+          return secure;
+        } catch (_) {
+          raw.destroy();
+          rethrow;
+        }
+      });
+      return ConnectionTask.fromSocket<Socket>(verified, () {
+        task.cancel();
+        active?.destroy();
+      });
+    });
   };
   return client;
 }
