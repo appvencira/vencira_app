@@ -188,3 +188,7 @@ Logs recientes: handshake independiente `G7_D2_TLS_PREFLIGHT=OK`, pero `HttpClie
 ## G7-D2 validado: HTTPS real Flutter/Dart ↔ Django (03/11/2026)
 
 Recibo local: `G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0`, `All tests passed!`, `G7_D2_GATE_RESULT=0`. Fueron verificadas la CA temporal y el nombre del servidor, login HTTP 200 con refresh protegido sintético, GET Bearer 200, revocación HTTP 200 y rechazo posterior 401, contraseña errónea 401, cookie web 403, CA no confiable y nombre TLS incorrecto rechazados. Confirmación exclusiva de laboratorio Docker interno con SQLite temporal; no equivale a APK Android ni autenticación operativa. Los bloques G7-A/B (11), G7-C (84) y G7-D1 (3) siguen validados. Pendientes MFA HTTPS, rotación/replay y análisis de `Set-Cookie` en respuesta HTTP 403, para determinar si es una cookie de borrado. PR draft, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## G7-D2: comprobación de borrado de cookie PASS (03/11/2026)
+
+El operador confirma `G7_D2_REJECT_COOKIE_SESSION_NAME=true`, `G7_D2_REJECT_COOKIE_DELETION=true`, `G7_D2_WEB_COOKIE_RESPONSE_ONLY_DELETES_SESSION=OK`, junto con `G7_D2_HTTPS_FLUTTER_DJANGO_RESULT=0`, `All tests passed!` y `G7_D2_GATE_RESULT=0`. La cabecera de respuesta en el rechazo HTTP 403 elimina exclusivamente la cookie web previa; no concede autenticación. G7-D2 y su subgate de cookie quedan validados en red Docker privada con SQLite efímera. Siguiente grupo G7-E: MFA TOTP y rotación/replay de refresh contra Django vía cliente Dart/Flutter real. La APK y los gates de despliegue siguen pendientes.
