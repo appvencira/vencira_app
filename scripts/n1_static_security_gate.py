@@ -128,6 +128,7 @@ def verify():
             and "refresh_digest" in candidate_schema
             and "MobileSpentRefresh" in candidate_schema
             and "refresh_digest" in candidate_migration
+            and 'models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")' in candidate_migration
             and 'native_token_digest(refresh, kind="r")' in candidate_store
             and "MobileSpentRefresh.objects.create(" in candidate_store
             and 'rows.select_for_update(of=("self",))' in candidate_store,
