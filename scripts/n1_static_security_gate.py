@@ -288,6 +288,20 @@ def verify():
             and "VENCIRA_MFA_FERNET_KEYS=" not in g7_d2_runner
             and "native_sessions_lab.test_urls" not in config
             and "native_sessions_lab.test_urls" not in routes,
+        "g7_f_disposable_https_uncertain_refresh":
+            "NativeRecoveryLoginGateway(" in dart_d2_probe
+            and "NativeRefreshRecoveryJournal(" in dart_d2_probe
+            and "await journal.arm()" in dart_d2_probe
+            and "await gateway.requiresRecovery()" in dart_d2_probe
+            and "await gateway.verifyPassword(" in dart_d2_probe
+            and "RECOVERY_COLD_START_DENIES_ACCESS" in dart_d2_probe
+            and "RECOVERY_REAUTH_COMMIT_AND_CLEAR_MARKER" in dart_d2_probe
+            and "RECOVERY_ACCOUNT_WIDE_REVOKE" in dart_d2_probe
+            and "G7_F_AMBIGUOUS_REFRESH_RECOVERY_RESULT=0" in dart_d2_probe
+            and "grep -Fq -- 'G7_F_AMBIGUOUS_REFRESH_RECOVERY_RESULT=0'" in g7_d2_runner
+            and "G7_F_HTTPS_RECOVERY=OK" in g7_d2_runner
+            and "native_sessions_lab.test_urls" not in config
+            and "native_sessions_lab.test_urls" not in routes,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
