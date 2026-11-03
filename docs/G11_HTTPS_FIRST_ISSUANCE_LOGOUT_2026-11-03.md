@@ -63,3 +63,11 @@ G11_LOCAL_RESULT=0
 ## Límites y release
 
 El PASS G11 probará únicamente el código cliente y emisor **de laboratorio** Django sobre TLS real, no el uso de Android Keystore para esta secuencia, ni MFA/roles/autorización en producción, ni restauraciones de una base de datos real. No activa `main.dart`, no registra `native_sessions_lab.test_urls` en las URLs normales y no aplica migraciones persistentes. **PR #17 DRAFT; `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `GLOBAL_FREEZE=NOT_VERIFIED`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.**
+
+## G11 — Primera ejecución interrumpida en N1 por ampliación de whitelist (03/11/2026)
+
+El operador ejecutó `bash scripts/g11_https_first_issue_logout.sh` e informó: `N1_STATIC_g7_fast_batch_isolation_and_full_suite_gates=FAIL`, mientras **todas las demás condiciones N1 listadas, incluida `N1_STATIC_g11_real_https_first_issue_logout_isolated=OK`, pasaron**; global `N1_STATIC_GATE_RESULT=FAIL`, `G11_HTTPS_GATE_RESULT=1`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. **El script se detuvo antes de cualquier `flutter analyze` o prueba HTTPS**.
+
+Causa exacta verificada en código: la comprobación `g7_fast_batch_isolation_and_full_suite_gates` en `scripts/n1_static_security_gate.py` todavía requería la cadena literal `d2|e|f|g|h)` del selector del runner de G7. G11 había extendido correctamente el selector a `d2|e|f|g|h|g11)`, haciendo fallar un guard obsoleto. Se actualizó N1 para exigir el selector nuevo y, además, **se añadieron verificaciones explícitas de que todos los marcadores obligatorios de G7 D2/E/F/G/H permanecen en el runner**, con `g11) required+=` independiente. Se revisaron remotamente presencia de las cinco ramas de Dart, marcadores históricos, aislamiento y nueva condición de grupo: todas las comprobaciones literales revisadas OK. **No se alteraron endpoints, claves, lógica de autenticación ni se relajaron garantías de seguridad**.
+
+**G11 continúa PENDING:** solo se corrigió el bloqueo estático; no hay aún PASS de Dart o Django HTTPS. Reejecutar `bash scripts/g11_https_first_issue_logout.sh` tras fast-forward de la rama para obtener los resultados del lote G11. No repetir G7–G10 ni instalar nada en producción. PR #17 DRAFT, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
