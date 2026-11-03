@@ -317,6 +317,9 @@ def verify():
             and 'required=("G7_LAB_GROUP_COMPLETE=$GROUP" "All tests passed!")' in g7_d2_runner
             and 'grep -Fq -- "$marker" "$TMP/flutter-result.log"' in g7_d2_runner
             and 'echo "G7_BATCH_RESULT=0"' in g7_d2_runner
+            and 'echo "G7_BATCH_GATE_RESULT=$status"' in g7_d2_runner
+            and 'if [[ "$GROUP" == all ]]; then' in g7_d2_runner
+            and 'echo "G7_D2_GATE_RESULT=$status"' in g7_d2_runner
             and '--internal "$NETWORK"' in g7_d2_runner
             and 'NO_DEPLOY_NO_LIVE_MIGRATION=1' in g7_d2_runner,
         "lab_issuer_requires_epoch":
