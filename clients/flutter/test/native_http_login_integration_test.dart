@@ -34,10 +34,8 @@ http.Response _grant() => _reply({
   'refresh': _refresh,
 });
 
-/// A deterministic synchronous byte stream is required for widget tests:
-/// MockClient(Response) internally adapts the body to a deferred stream,
-/// which may not complete while the fake-async widget clock is being pumped.
-/// This helper tests the actual streamed-body parser rather than bypassing it.
+/// Serve a one-chunk JSON body to the real NativeHttpAuthPort parser without
+/// using the network. No token is logged or written outside the fake vault.
 http.StreamedResponse _syncStream(http.Response response) {
   final stream = Stream<List<int>>.multi((controller) {
     controller.addSync(response.bodyBytes);
@@ -58,6 +56,8 @@ class _LabHttpClient extends http.BaseClient {
   _LabHttpClient(this._respond);
 
   final http.Response Function(http.Request) _respond;
+  int calls = 0;
+  int? lastResponseStatus;
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) {
@@ -67,7 +67,9 @@ class _LabHttpClient extends http.BaseClient {
       );
     }
     try {
+      calls++;
       final reply = _respond(request);
+      lastResponseStatus = reply.statusCode;
       return Future<http.StreamedResponse>.value(_syncStream(reply));
     } catch (error, stack) {
       return Future<http.StreamedResponse>.error(error, stack);
@@ -96,7 +98,7 @@ class _MemoryProtectedStore implements NativeSecretStore {
 }
 
 class _Fixture {
-  _Fixture(http.Client client)
+  _Fixture(this.client)
       : endpoint = NativeApiEndpoint.parse('https://dev.vencira.es'),
         store = _MemoryProtectedStore(),
         fence = NativeSessionFence() {
@@ -114,6 +116,7 @@ class _Fixture {
     );
   }
 
+  final http.Client client;
   final NativeApiEndpoint endpoint;
   final _MemoryProtectedStore store;
   final NativeSessionFence fence;
@@ -121,13 +124,29 @@ class _Fixture {
   late final NativeApiTransport transport;
 }
 
-Future<void> _waitFor(WidgetTester tester, Finder target) async {
+Future<void> _waitFor(
+  WidgetTester tester,
+  Finder target, {
+  required _Fixture fixture,
+}) async {
   // Waiting for a specific security state avoids pumpAndSettle problems with
   // indefinitely animated progress indicators.
   for (var i = 0; i < 80 && target.evaluate().isEmpty; i++) {
     await tester.pump(const Duration(milliseconds: 50));
   }
-  expect(target, findsOneWidget);
+  if (target.evaluate().length != 1) {
+    // Only report safe state: no username, password, token, or response body.
+    final client = fixture.client;
+    final lab = client is _LabHttpClient ? client : null;
+    fail(
+      'G7-B state mismatch: '
+      'httpCalls=${lab?.calls} status=${lab?.lastResponseStatus} '
+      'fenceActive=${fixture.fence.ticket != null} '
+      'vaultPopulated=${fixture.store.values.isNotEmpty} '
+      'loginError=${find.byKey(const Key('native-login-error')).evaluate().isNotEmpty} '
+      'logoutError=${find.byKey(const Key('g7-native-logout-error')).evaluate().isNotEmpty}',
+    );
+  }
 }
 
 Future<void> _enterPassword(WidgetTester tester) async {
@@ -196,7 +215,7 @@ void main() {
     expect(bearerReads, 0);
 
     await _enterPassword(tester);
-    await _waitFor(tester, find.byKey(const Key('g7-native-logout')));
+    await _waitFor(tester, find.byKey(const Key('g7-native-logout')), fixture: fixture);
     expect(passwordCalls, 1);
     expect(fixture.fence.ticket, isNotNull);
     expect(fixture.store.values.values.single, _refresh);
@@ -206,7 +225,7 @@ void main() {
     expect(bearerReads, 1);
 
     await tester.tap(find.byKey(const Key('g7-native-logout')));
-    await _waitFor(tester, find.byKey(const Key('g7-native-login')));
+    await _waitFor(tester, find.byKey(const Key('g7-native-login')), fixture: fixture);
     expect(revokeCalls, 1);
     expect(fixture.fence.ticket, isNull);
     expect(fixture.store.values, isEmpty);
@@ -247,7 +266,7 @@ void main() {
       home: NativeLabLoginShell(coordinator: fixture.coordinator),
     ));
     await _enterPassword(tester);
-    await _waitFor(tester, find.text('Verificación en dos pasos'));
+    await _waitFor(tester, find.text('Verificación en dos pasos'), fixture: fixture);
     expect(fixture.fence.ticket, isNull);
     expect(fixture.store.values, isEmpty);
     await expectLater(
@@ -260,7 +279,7 @@ void main() {
       find.byKey(const Key('native-login-totp')), '123456',
     );
     await tester.tap(find.byKey(const Key('native-login-submit')));
-    await _waitFor(tester, find.byKey(const Key('g7-native-logout')));
+    await _waitFor(tester, find.byKey(const Key('g7-native-logout')), fixture: fixture);
     expect(mfaCalls, 1);
     expect(fixture.fence.ticket, isNotNull);
     expect(fixture.store.values.values.single, _refresh);
@@ -280,7 +299,7 @@ void main() {
       home: NativeLabLoginShell(coordinator: fixture.coordinator),
     ));
     await _enterPassword(tester);
-    await _waitFor(tester, find.byKey(const Key('native-login-error')));
+    await _waitFor(tester, find.byKey(const Key('native-login-error')), fixture: fixture);
     expect(calls, 1);
     expect(fixture.fence.ticket, isNull);
     expect(fixture.store.values, isEmpty);
@@ -307,9 +326,9 @@ void main() {
       home: NativeLabLoginShell(coordinator: fixture.coordinator),
     ));
     await _enterPassword(tester);
-    await _waitFor(tester, find.byKey(const Key('g7-native-logout')));
+    await _waitFor(tester, find.byKey(const Key('g7-native-logout')), fixture: fixture);
     await tester.tap(find.byKey(const Key('g7-native-logout')));
-    await _waitFor(tester, find.byKey(const Key('g7-native-logout-error')));
+    await _waitFor(tester, find.byKey(const Key('g7-native-logout-error')), fixture: fixture);
     expect(fixture.fence.ticket, isNull);
     expect(fixture.store.values.values.single, _refresh);
     expect(find.byKey(const Key('g7-native-login')), findsNothing);
@@ -317,7 +336,7 @@ void main() {
 
     allowRevoke = true;
     await tester.tap(find.byKey(const Key('g7-native-retry-logout')));
-    await _waitFor(tester, find.byKey(const Key('g7-native-login')));
+    await _waitFor(tester, find.byKey(const Key('g7-native-login')), fixture: fixture);
     expect(revokeCalls, 2);
     expect(fixture.store.values, isEmpty);
     expect(fixture.fence.ticket, isNull);
