@@ -171,7 +171,7 @@ Future<void> verifyG11Https(
       normal.fence.ticket == null &&
       await normal.vault.read() == null &&
       !await normal.journal.requiresReauthentication() &&
-      await bearerStatus(firstAccess) == 401,
+      await bearerStatus(firstAccess!) == 401,
       'REMOTE_REVOKE_AND_LOCAL_CLEANUP');
 
   final cannotWrite = _Case(endpoint, trustedIsolatedClient);
@@ -288,12 +288,12 @@ Future<void> verifyG11Https(
       mfaAccess != null &&
       mfa.fence.ticket != null &&
       !await mfa.journal.requiresReauthentication() &&
-      await bearerStatus(mfaAccess!) == 200,
+      await bearerStatus(mfaAccess) == 200,
       'MFA_REAL_HTTPS_COMMIT');
   await mfa.entry.logout();
   _check(await mfa.vault.read() == null &&
       !await mfa.journal.requiresReauthentication() &&
-      await bearerStatus(mfaAccess) == 401,
+      await bearerStatus(mfaAccess!) == 401,
       'MFA_SERVER_REVOKED_AFTER_LOGOUT');
 
   stdout.writeln('G11_HTTPS_FIRST_ISSUANCE_LOGOUT_RESULT=0');
