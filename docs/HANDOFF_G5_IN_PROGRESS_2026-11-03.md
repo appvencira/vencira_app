@@ -315,3 +315,23 @@ G8_DOCKER_BUILD_RESULT=0
 El operador indica también **GitHub Actions DONE**; no se dispone en este registro del ID concreto de ejecución ni del artefacto verificado por consulta API, así que esta comprobación de Actions se consigna **como confirmación del operador**, no como inspección independiente de logs ni descarga. Con ello G8-PHONE **BUILD PASS** y **ANDROID DEVICE RUNTIME PENDING**. La APK debug conserva application ID `es.vencira.vencira.g8lab`, diferente de `es.vencira.vencira`; el usuario puede transferirla al móvil de pruebas desde el fichero local generado o descargar exclusivamente el artefacto `VENCIRA-G8-PHONE-DEBUG-ONLY` de la ejecución verde de GitHub. Verificar el SHA256 contra el fichero acompañante si se usa el artefacto descargado.
 
 **Procedimiento de teléfono:** instalar APK G8 en dispositivo de pruebas; abrir **VENCIRA G8 Pruebas**, pulsar `Preparar prueba`; ir a Ajustes de Android → Aplicaciones → VENCIRA G8 Pruebas → Forzar detención; reabrir y pulsar `Verificar tras reinicio`. Confirmar `G8_PHONE_PHYSICAL_STORAGE_RESULT=0` y todos los marcadores locales, sin compartir tokens ni archivos de almacenamiento. Tras el ensayo limpiar con botón **Borrar datos de laboratorio** y, si se desea, desinstalar únicamente el paquete G8. La prueba no autoriza despliegue productivo, sesión móvil operativa, atestación de hardware o migración persistente. PR sigue DRAFT; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## G8-PHONE — Validación física PASS confirmada (03/11/2026)
+
+El operador instaló la APK separada **VENCIRA G8 Pruebas** en su teléfono Android de pruebas y comunicó los resultados exactos:
+
+```text
+G8_PHONE_NEW_PROCESS_CONFIRMED=OK
+G8_PHONE_ENCRYPTED_REFRESH_SURVIVED=OK
+G8_PHONE_MARKER_SURVIVED=OK
+G8_PHONE_REAUTH_COMMIT=OK
+G8_PHONE_CORRUPT_MARKER_DENIED=OK
+G8_PHONE_STORAGE_CLEARED=OK
+G8_PHONE_PHYSICAL_STORAGE_RESULT=0
+```
+
+**G8-PHONE = PASS EN DISPOSITIVO FÍSICO** para la prueba implementada de `FlutterNativeSecretStore` sobre `flutter_secure_storage` con namespace exclusivo `vencira_g8_phone_only_v1`, identificador APK separado `es.vencira.vencira.g8lab` y **credenciales exclusivamente sintéticas**. La prueba confirma un PID de proceso Android diferente, persistencia del dato cifrado y marcador después del cambio de proceso, sustitución verificada del refresh de prueba, rechazo fail-closed de un marcador manipulado y eliminación final de los valores. Se había recibido previamente `G8_PHONE_APK_ID_VERIFY=OK`, `G8_PHONE_APK_BUILD=OK` y `G8_DOCKER_BUILD_RESULT=0` del ensayo de compilación local; el operador informó también que GitHub Actions quedó completado. Evidencia de ejecución del móvil provista por el operador; no se ha inspeccionado remotamente el dispositivo.
+
+**Alcance y límites:** NO prueba atestación del hardware criptográfico (TEE/StrongBox), protección frente a root, reinstalaciones, backups/restauraciones, malware, ni uso de cuentas o credenciales reales. El resultado no demuestra autenticación operativa conectada a Django ni autoriza endpoints, permisos, migraciones persistentes o producción. El código G8 es una APK de laboratorio desconectada y el prototipo de autenticación nativa sigue sin enlazarse con `main.dart`.
+
+**Estado de gates:** G7-D2/E/F/G/H = PASS laboratorio HTTPS; G8-PHONE = PASS dispositivo físico en pruebas sintéticas. `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `GLOBAL_FREEZE=NOT_VERIFIED`, PR #17 DRAFT. Siguiente trabajo recomendado: revisión de integración de autenticación y rutas bajo aislamiento; no habilitar producción automáticamente.
