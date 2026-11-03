@@ -223,7 +223,7 @@ void main() {
       ),
     );
     // Deliberate mismatch test; no accidental clean fallback.
-    await expectLater(cold.inspect(), throwsStateError);
+    expect(() => cold.inspect(), throwsStateError);
     final rebootFence = NativeSessionFence();
     final reboot = NativeMobileStartupGate(
       fence: rebootFence,
