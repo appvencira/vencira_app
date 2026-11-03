@@ -40,6 +40,14 @@ case "$MODE" in
       native_sessions_lab.test_verified_https_loopback
     )
     ;;
+  --lab-https)
+    # G7-D1 only: 3 HTTPS/TLS tests on a disposable PG17 test database.
+    # Reuses private Docker network/tmpfs isolation; never exposes port 443.
+    EXTRA_ENV=(-e VENCIRA_NATIVE_SESSION_LAB=1)
+    SUITES=(
+      native_sessions_lab.test_verified_https_loopback
+    )
+    ;;
   --candidate)
     # Isolated G4/G5 persistent-schema proposal, no operational route or DB.
     EXTRA_ENV=(-e VENCIRA_NATIVE_SERVICE_CANDIDATE=1)
@@ -64,7 +72,7 @@ case "$MODE" in
     )
     ;;
   *)
-    echo "Usage: bash scripts/n1_identity_pg17_ephemeral.sh [--lab|--lab-case|--candidate]" >&2
+    echo "Usage: bash scripts/n1_identity_pg17_ephemeral.sh [--lab|--lab-https|--lab-case|--candidate]" >&2
     exit 2
     ;;
 esac
@@ -132,6 +140,8 @@ result=0
 
 if [ "$MODE" = "--lab" ]; then
   echo "N1_PG17_LAB_RESULT=$result"
+elif [ "$MODE" = "--lab-https" ]; then
+  echo "G7_D1_TLS_PG17_RESULT=$result"
 elif [ "$MODE" = "--lab-case" ]; then
   echo "N1_PG17_LAB_CASE_RESULT=$result"
 elif [ "$MODE" = "--candidate" ]; then
