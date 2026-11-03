@@ -97,3 +97,11 @@ Se han publicado correcciones de **tests únicamente**, usando espera acotada po
 ## G7-A: nueva hipótesis de zona asíncrona en widget tests
 
 Cuatro tests fallan sin activar fence ni escribir refresh, aun cuando el puerto sintético recibe password/MFA; test directo del coordinador y entrada `VenciraApp` pasan. Hipótesis fundada en `NativeRefreshCredentialVault._previous = Future<void>.value()` construido en `setUp` fuera de `testWidgets`. Se ha movido la construcción al cuerpo de cada test, sin modificar código operativo. **PENDING recheck Flutter dirigido**, no implicar PASS, ver `G7_NATIVE_LOGIN_INTEGRATION_2026-11-03.md`. Bloqueos de release intactos.
+
+## G7-A PASS local y G7-B HTTP integración candidata
+
+El operador remite resultado `G7_RECHECK_RESULT=0` con seis pruebas `native_lab_login_shell_test.dart` **PASS** tras corregir el fixture asíncrono. Este recibo valida solo G7-A con puertos simulados y **no es login Django operativo**.
+
+Se ha implementado `clients/flutter/test/native_http_login_integration_test.dart` con cuatro pruebas nuevas que integran UI → `NativeHttpAuthPort` HTTP mock (contrato Django) → `NativeSessionCoordinator` → vault sintético → `NativeApiTransport` Bearer → revocación. Incluye MFA, 401 y fallo de revocación con reintento. Agregado a runner M3, CI Flutter y guard estático. **G7_B_HTTP_WIDGETS=PENDING:** ningún resultado local ni GitHub Actions se ha acreditado para estos commits. Consultar [documento G7](G7_NATIVE_LOGIN_INTEGRATION_2026-11-03.md).
+
+Siguiente validación: **Flutter focalizado** con `flutter pub get && flutter analyze && flutter test test/native_lab_login_shell_test.dart test/native_http_login_integration_test.dart --reporter expanded` dentro del contenedor Flutter. Si 0, construir prueba E2E HTTPS real contra un emisor Django temporal y aislado sin rutas operativas ni BD persistente. `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
