@@ -5,6 +5,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api/vencira_api.dart';
+import 'api/native_session_coordinator.dart';
+import 'ui/native_lab_login_shell.dart';
 import 'notifications/device_notice_revocation.dart';
 import 'notifications/device_notice_startup_gate.dart';
 import 'l10n/app_localizations.dart';
@@ -16,10 +18,14 @@ import 'ui/vencira_preferences.dart';
 void main() => runApp(const VenciraApp());
 
 class VenciraApp extends StatefulWidget {
-  const VenciraApp({super.key, this.api});
+  const VenciraApp({super.key, this.api, this.nativeLoginLab});
 
   /// Inyección de datos simulados solo para pruebas automáticas.
   final VenciraApi? api;
+
+  /// G7 test-harness only: no production issuer or lab default is provided.
+  /// Release builds refuse the injected login shell even if constructed.
+  final NativeSessionCoordinator? nativeLoginLab;
 
   @override
   State<VenciraApp> createState() => _VenciraAppState();
@@ -146,10 +152,13 @@ class _VenciraAppState extends State<VenciraApp> {
           enabled: widget.api == null && !kIsWeb &&
               defaultTargetPlatform == TargetPlatform.android,
           cancelPreviousAlarms: _revokeNativeAlarms,
-          child: widget.api == null && !kIsWeb &&
-                  defaultTargetPlatform == TargetPlatform.android
-              ? const AndroidWebAccessScreen()
-              : VenciraDashboardScreen(
+          child: !kReleaseMode && widget.api == null &&
+                  widget.nativeLoginLab != null
+              ? NativeLabLoginShell(coordinator: widget.nativeLoginLab!)
+              : widget.api == null && !kIsWeb &&
+                      defaultTargetPlatform == TargetPlatform.android
+                  ? const AndroidWebAccessScreen()
+                  : VenciraDashboardScreen(
             api: widget.api,
             openTodayOnLoad: widget.api == null,
             // Never schedule on startup; this only cancels. Expired sessions,
