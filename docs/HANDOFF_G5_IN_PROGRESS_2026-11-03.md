@@ -204,3 +204,9 @@ El runner G7-D2 exige además `G7_E_MFA_HTTPS_RESULT=0` y `G7_E_REFRESH_REPLAY_R
 ## G7-E adicionales: vector RFC6238 y rechazo de redirecciones
 
 Antes de la validación local se añadió un vector conocido RFC6238 para HMAC-SHA1: a los 59 segundos con la semilla sintética de prueba, TOTP de 6 cifras `287082`. Esto verifica que el generador Dart del ensayo coincide con RFC6238, sin mostrar TOTP operativo. Las peticiones Bearer de inspección directa bloquean redirecciones HTTP. El gate estático exige ambos controles. G7-E sigue PENDING hasta ejecución local. No hay cambios en autenticación ni rutas de producción.
+
+## G7-E PASS y G7-F1 recuperación de respuesta ambigua candidata (03/11/2026)
+
+G7-E confirmado localmente con `G7_E_MFA_HTTPS_RESULT=0`, `G7_E_REFRESH_REPLAY_RESULT=0`, `G7_D2_GATE_RESULT=0`, `All tests passed!`. MFA TOTP real Django↔Dart, reuse denegado, Bearer/fence/vault/revocación y refresh rotation/replay sobre HTTPS real, sin red ni DB operativas. Siguen validados G7-A/B, G7-C, G7-D1, G7-D2.
+
+Se añade G7-F1 sin validación local: prueba de red HTTPS con `NativeRecoveryLoginGateway` y `NativeRefreshRecoveryJournal`, marcador duradero ANTES del refresh, rotación aplicada en Django pero respuesta perdida para Dart, arranque frío bloqueado, contraseña incorrecta no revoca sesión vieja, reautenticación explícita account-wide sí revoca token anterior, reemplaza refresh en vault y borra marcador antes de activar fence. Revocación final obligatoria. Runner exige `G7_F_AMBIGUOUS_REFRESH_RECOVERY_RESULT=0` y `G7_F_HTTPS_RECOVERY=OK`; gate estático actualizado. Se conserva `NativeSessionCoordinator` sin refresh automático, rutas test-only y PR draft. **G7-F1 PENDING.** Ejecutar tras fast-forward `bash scripts/g7_d2_https_flutter_django.sh` (solo laboratorio desechable). No producción, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
