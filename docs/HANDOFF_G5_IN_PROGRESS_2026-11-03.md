@@ -66,3 +66,9 @@ El operador comunica `M3_HTTP_STATIC=0`, `M3_HTTP_BUILD=0`, `M3_HTTP_PG17_LAB=0`
 ## G5 macrobloque 4 después del segundo PASS local
 
 [Política de claves versionadas](G5_MOBILE_KEY_ROTATION_2026-11-03.md) publicada: `g5_keyring_policy.py` + nueve pruebas, CI/runner y gate estático. Permite separar propósitos, verificar claves previas con fecha fin y rechazar formatos legados. **No está conectada a Django, DB ni autenticación**. Los campos digest existentes tienen 64 caracteres y el formato `k1:<id>:<digest>` requiere un nuevo contrato de esquema; faltan custodia real y rotación integrada. **Tests G5 bloque 4 PENDING**: el segundo PASS del operador es anterior. Todos los bloqueos de release permanecen.
+
+## Tercer PASS integral y macrobloque 5
+
+El operador comunica el tercer lote `m3-http-contract-20261103T125155Z` con los cinco controles `M3_HTTP_STATIC/BUILD/PG17_LAB/G4_PG17/FLUTTER=0`, `M3_HTTP_RESULT=0` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`. El resultado valida la revisión ejecutada antes del bloque 5; **SHA del checkout no comunicado, CI actual no confirmada**.
+
+[Macrobloque 5 — capacidad del digest versionado](G5_MOBILE_DIGEST_CAPACITY_2026-11-03.md): cinco campos candidato ampliados a `max_length=96`, migración `0004` test-only, tres pruebas de capacidad/coexistencia de digests (sin transformar registros), CI y runner actualizados. **PENDIENTE NUEVO PASS**. El nuevo esquema no integra el keyring, no cambia digests existentes y no debe confundirse con rotación de claves operativa. No desplegar ni migrar BD persistente. Los gates MFA/MB1/C-FICHA quedan NO y `GLOBAL_FREEZE=NOT_VERIFIED`.
