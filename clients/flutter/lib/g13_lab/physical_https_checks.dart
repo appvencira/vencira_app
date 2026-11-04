@@ -139,7 +139,7 @@ http.Client _createTlsClient({required bool trustLabCa}) {
           rethrow;
         }
       });
-      return ConnectionTask<Socket>.fromSocket(verified, () {
+      return ConnectionTask.fromSocket<Socket>(verified, () {
         task.cancel();
         verified.then((socket) => socket.destroy(), onError: (_) {});
       });
