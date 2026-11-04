@@ -158,3 +158,8 @@ VPS relay/HTTP 401 está correcto. Chrome llegó al servicio TLS y rechazó su C
 ## G13 — Corrección de llamada estática Dart (04/11/2026)
 
 Análisis Flutter real del candidato anterior: un único error en `physical_https_checks.dart:142`, `ConnectionTask<Socket>.fromSocket` interpretado incorrectamente como constructor. La API oficial especifica un método estático `ConnectionTask.fromSocket<T extends Socket>(Future<T>, void Function())`, no un constructor. Se ha sustituido por `ConnectionTask.fromSocket<Socket>(verified, ...)`, manteniendo TLS estricto y sin cambios de servidor. Commit `6c98a5fb`. **Pendiente de reanálisis Flutter; NO atribuir PASS al nuevo checkout.**
+
+
+## G13 — N1 gate correction after Dart analyze PASS (04/11/2026)
+
+Operator reports `flutter analyze` for both G13 sources: **No issues found**. On repeating G13, N1 failed precisely `g13_android_real_tls_usb_only` and `g13_termux_ssh_local_forward_isolated` before Docker. Root cause in the static guard: stale string assertion for the invalid `ConnectionTask<Socket>.fromSocket` syntax, plus the SSH guard still required raw `return Socket.startConnect(...);` and rejected all `SecureSocket.secure`, contradicting the verified TLS connection factory. Updated both guards to require the current static `ConnectionTask.fromSocket<Socket>`, explicit one-hop TLS with trusted context, and no bypass. Commit `78afef12`. **Static gate re-run pending**; no deploy, live migration, or release authorization.
