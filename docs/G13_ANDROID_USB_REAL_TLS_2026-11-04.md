@@ -137,3 +137,19 @@ Se añadieron **solo a la APK DEBUG G13** clasificadores estáticos de fallos (T
 La primera instrumentación de etapas introdujo tres instrucciones `_at(...)` en medio de expresiones, causando ocho errores de `flutter analyze` en `physical_https_checks.dart` (líneas 223, 339, 397 en la versión defectuosa). El runner salió con `G13_USB_HOST_RUNNER_RESULT=1` y limpió el laboratorio; no es evidencia de un fallo físico TLS. Se corrigieron las tres posiciones y se movieron los marcadores TLS/acciones antes de ejecutar la operación. Último commit de esta corrección: `ca38b584`.
 
 **Pendiente de validación**: ejecutar `flutter analyze` de ambos archivos ANTES del runner Docker. Solo si el análisis devuelve 0 se permite iniciar un nuevo laboratorio y recompilar la APK de la CA efímera actual. G13 físico sigue PENDING. Release y migraciones persistentemente bloqueados.
+
+
+## G13 — Causa identificada del timeout HTTPS en Android (04/11/2026)
+
+Recibo real del dispositivo Android, con nueva APK e instrumentación:
+```
+G13_NETWORK_OR_OPERATION_TIMEOUT
+G13_FAILURE_STAGE=P1_VERIFIED_HTTPS_401
+```
+VPS relay/HTTP 401 está correcto. Chrome llegó al servicio TLS y rechazó su CA temporal no instalada, lo cual es normal; la APK no consiguió recibir los headers de HTTP antes del timeout.
+
+**Corrección de una hipótesis anterior errónea:** se había asumido que `HttpClient` realizaba TLS automáticamente después de recibir un `Socket` sin cifrar desde `connectionFactory`. El código del SDK Dart demuestra que la fábrica personalizada sustituye la creación de socket y `HttpClient` no ejecuta un segundo `SecureSocket.secure` en la ruta directa. Por tanto el socket crudo enviaba HTTP sin cifrar al fixture TLS, generando el timeout. La versión más antigua con `SecureSocket.secure` dentro de la fábrica no suponía doble TLS, contrariamente a la revisión previa.
+
+**Cambio candidato:** la fábrica permite solo HTTPS dev.vencira.es:443 sin proxy, abre TCP a Android 127.0.0.1:18743, realiza `SecureSocket.secure(raw, host: uri.host, context: trust)` exactamente una vez, con `SecurityContext(withTrustedRoots:false)` y la CA pública efímera. Sin `badCertificateCallback`, DNS público ni bypass de verificación. Usa `ConnectionTask.fromSocket` y destruye sockets fallidos/cancelados. El guard estático N1 comprueba el handshake explícito y evita volver a la conexión cruda. Referencias oficiales: https://api.flutter.dev/flutter/dart-io/HttpClient/connectionFactory.html y código SDK https://dart.googlesource.com/sdk.git/+/refs/tags/3.7.0-207.0.dev/sdk/lib/_http/http_impl.dart (sección _ConnectionTarget.connect).
+
+**Estado:** publicado en rama de PR #17, **análisis Flutter, CI y prueba física del nuevo candidato pendientes**. No declarar G13 PASS; correr primero N1 y Flutter analyze, después regenerar laboratorio/CA/APK. Mantener NO_DEPLOY_NO_LIVE_MIGRATION=1 y release gates NO.
