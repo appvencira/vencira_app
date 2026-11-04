@@ -269,6 +269,37 @@ class G13PhoneHttpsCheck {
           await _meStatus(trusted, access) == 401,
           'DJANGO_LOGOUT_NOT_CONFIRMED');
 
+      // In this physical lab, drop the revocation request before it reaches
+      // Django. The retry MUST use the existing protected refresh and server
+      // must deny the old bearer after the confirmed retry.
+      final retry = _Case(store, trusted);
+      _require(await retry.entry.inspect() ==
+          NativeStartupDisposition.cleanLogin,
+          'REVOKE_FAILURE_CLEAN_PREFLIGHT');
+      await retry.entry.verifyPassword(
+          username: _username, password: _password);
+      final priorAccess = await retry.entry.accessToken();
+      retry.observed.failRevokeBeforeSend = true;
+      final firstClose = retry.entry.logout();
+      _require(retry.fence.ticket == null, 'REVOKE_FAULT_FENCE_NOT_CLOSED');
+      var revokeDenied = false;
+      try {
+        await firstClose;
+      } on NativeHttpAuthFailure {
+        revokeDenied = true;
+      }
+      _require(revokeDenied &&
+          await retry.journal.requiresReauthentication() &&
+          await retry.vault.read() != null &&
+          await retry.entry.accessToken() == null,
+          'REVOKE_FAILURE_LOST_DURABLE_MARKER');
+      await retry.entry.logout();
+      _require(retry.observed.revokes == 2 &&
+          await retry.vault.read() == null &&
+          !await retry.journal.requiresReauthentication() &&
+          await _meStatus(trusted, priorAccess) == 401,
+          'REVOKE_RETRY_DJANGO_DENIED');
+
       final mfa = _Case(store, trusted);
       _require(await mfa.entry.inspect() ==
           NativeStartupDisposition.cleanLogin, 'MFA_PREFLIGHT_FAILED');
@@ -313,6 +344,8 @@ class G13PhoneHttpsCheck {
         'G13_ANDROID_UNTRUSTED_CA_DENIED=OK',
         'G13_ANDROID_REAL_FIRST_ISSUE=OK',
         'G13_ANDROID_DJANGO_LOGOUT_REVOKED=OK',
+        'G13_ANDROID_REVOKE_FAULT_FENCED=OK',
+        'G13_ANDROID_REVOKE_RETRY_CONFIRMED=OK',
         'G13_ANDROID_MFA_TLS_COMMITTED=OK',
         'G13_ANDROID_UNKNOWN_ISSUANCE_FENCED=OK',
         'G13_ANDROID_FORCE_STOP_REQUIRED=1',
