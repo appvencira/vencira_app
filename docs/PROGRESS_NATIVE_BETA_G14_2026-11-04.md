@@ -214,3 +214,12 @@ MB1_RELEASE_AUTHORIZED=NO
 C_FICHA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## G14-D2 — Riesgo TOCTOU acreditado en código y pruebas negativas publicadas (04/11/2026)
+
+Se ha identificado **un bloqueo de diseño material**: `g14_locked_verifier.verify_candidate_password_only` devuelve usuario/generación tras liberar la transacción. `issue_verified_candidate_session` revalida generación, estado MFA, recuperación y versión de credencial en el momento de emisión, pero **no exige prueba de que el caller ha verificado la contraseña**. Por ello, una emisión posterior con argumentos fabricados es posible dentro del candidato test-only, aunque la contraseña haya cambiado tras la verificación D1. No es un bypass expuesto públicamente: la app candidata está restringida a `VENCIRA_ENV=test` y no hay rutas de autenticación operativas. Sin embargo, integrar este patrón en una vista real sería inseguro.
+
+**Regresiones nuevas, publicadas y aún pendientes de ejecución:** `backend/native_mobile_service/test_g14_untrusted_evidence.py` (4 casos): denegación por generación de revocación antigua, demostración explícita del hueco entre comprobación de contraseña y emisor de bajo nivel, denegación de una emisión no-MFA tras activar MFA y ausencia de URLConf emisor en `config.urls`. Incorporadas al lote PG17 efímero, SQLite CI y N1 estático. La demostración de la emisión después de cambiar contraseña **no equivale a prueba de seguridad superada**: es precisamente la reproducción del riesgo que debe eliminar un futuro emisor confiable.
+
+**Estado correcto:** `G14_D1_VALIDATION=PASS`, `G14_D2_RISK_REPRODUCER=CODE_PUBLISHED_TEST_PENDING`, `G14_D2_TRUSTED_ISSUER=BLOCKED`. Para cerrar D2, el único componente facultado para llamar a la emisión debe comprobar contraseña/TOTP de forma autoritativa bajo el bloqueo correspondiente y completar emisión+auditoría en la misma transacción, con revocación y MFA; no aceptar metadatos, booleanos G14-B ni `verified_mfa` del caller como credencial. No abrir endpoints ni usar la BD persistente. La custodia externa MFA continúa pendiente.
