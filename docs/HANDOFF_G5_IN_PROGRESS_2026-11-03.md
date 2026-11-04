@@ -633,3 +633,10 @@ Actualizado el cuadro en `docs/PROGRESS_NATIVE_BETA_G14_2026-11-04.md`. Siguient
 Publicado en PR #17 código `native_mobile_service/g14_locked_verifier.py` y 8 tests en `test_g14_locked_verifier.py`; suite N1, PG17 efímero y CI SQLite/PG17 actualizadas. Exige `VENCIRA_ENV=test`, bloqueo `select_for_update`, verificación de contraseña en servidor, usuario activo, rechazo explícito de cuentas con MFA y puerta de identidad para recuperación/cuarentena. **No emite credenciales ni autoriza sesiones: devuelve solo metadatos que dejan de ser fiables al liberarse el lock.** No conectado con G14-A, G14-C ni HTTP, sin custodia MFA. **Tests G14-D1 PENDING.** Ver `docs/PROGRESS_NATIVE_BETA_G14_2026-11-04.md`.
 
 Evidencia previa G14-C PASS no se extiende a este commit. Próximo operador: fast-forward y N1 + M3 batch aislado, devolver resultados compactos. Mantener release NO y sin migraciones.
+
+
+## G14-D1 — Local integrado PASS; G14-D2 siguiente frontera (04/11/2026)
+
+Operador confirmó `G14_D1_N1=0`, `G14_D1_BATCH=0`, `N1_STATIC_g14_locked_verifier_test_only_no_issuer=OK`, `N1_STATIC_GATE_RESULT=OK`, `G5_CANDIDATE_PG17_RESULT=0`, `M3_HTTP_G4_PG17=0`, `M3_HTTP_FLUTTER=0` y `M3_HTTP_RESULT=0`. Se cierra **G14-D1 como test-only PASS**, sin emisor confiable ni endpoints. SHA exacto del checkout no compartido. Marcadores y límites en `docs/PROGRESS_NATIVE_BETA_G14_2026-11-04.md`.
+
+**Riesgo a resolver en G14-D2:** `verify_candidate_password_only` devuelve usuario/generación una vez liberado el lock. Esa pareja es metadato sin autenticación; no puede alimentar un emisor fuera de la misma transacción. `issue_verified_candidate_session` recibe `verified_mfa` del caller y tampoco es un emisor autorizado. Se exige verificar contraseña/MFA y revalidar bajo locks, sin MFA bypass, con consumo de TOTP y auditoría transaccional; no exponer rutas ni producción. Permisos y custodia MFA externa siguen pendientes. No repetir tests ya verdes.
