@@ -598,3 +598,8 @@ La interfaz G13 ahora especifica explícitamente que Termius SSH local-forward e
 Publicado en la misma rama PR #17: `native_mobile_service/g14_admission.py`, `test_g14_admission.py`, integración de tests PG17/SQLite y N1 guard. Solo candidato test-only: dos claves sintéticas obligatorias, throttle cuenta/IP, auditoría idempotente de denegaciones y rollback. **No verifica contraseña/MFA, no emite tokens, no expone HTTP.** Ocho pruebas nuevas propuestas, ejecución local **PENDING**. Fuente actualizada: `docs/PROGRESS_NATIVE_BETA_G14_2026-11-04.md`.
 
 Próximo operador: actualizar fast-forward, N1 y lote M3 desechable una sola vez; recoger resultados compactos y HEAD exacto. No volver a ejecutar G13 ni abrir servicios operativos. Gates release siguen NO.
+
+
+## 04/11/2026 — G14-A PASS local integral
+
+El operador confirma `G14_N1_RESULT=0`, `G14_BATCH_RESULT=0`, `N1_STATIC_g14_admission_test_only=OK`, `N1_STATIC_GATE_RESULT=OK`, `M3_HTTP_STATIC=0`, `M3_HTTP_BUILD=0`, `M3_HTTP_PG17_LAB=0`, `G5_CANDIDATE_PG17_RESULT=0`, `M3_HTTP_G4_PG17=0`, `M3_HTTP_FLUTTER=0` y `M3_HTTP_RESULT=0`. Registro del lote local `m3-http-contract-20261104T211959Z`. G14-A queda validado en laboratorio; no hay evidencia de CI ni SHA exacto en el resultado suministrado. G14-B emisor operativo **no implementado / no validado**. Fuente: `PROGRESS_NATIVE_BETA_G14_2026-11-04.md`. Sin cambios a producción, migraciones ni autorizaciones.
