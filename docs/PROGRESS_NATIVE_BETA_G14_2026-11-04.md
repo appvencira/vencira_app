@@ -180,3 +180,37 @@ G14_D1_LOCKED_VERIFIER=CODE_PUBLISHED_TEST_PENDING
 G14_D_TRUSTED_ISSUER=NOT_IMPLEMENTED
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## G14-D1 — Validación local integral PASS (04/11/2026)
+
+El operador ha comunicado:
+```
+G14_D1_N1=0
+G14_D1_BATCH=0
+N1_STATIC_g14_admission_test_only=OK
+N1_STATIC_g14_issuer_policy_untrusted_evidence_only=OK
+N1_STATIC_g14_atomicity_only_in_disposable_tests=OK
+N1_STATIC_g14_locked_verifier_test_only_no_issuer=OK
+N1_STATIC_GATE_RESULT=OK
+G5_CANDIDATE_PG17_RESULT=0
+M3_HTTP_G4_PG17=0
+M3_HTTP_FLUTTER=0
+M3_HTTP_RESULT=0
+```
+
+**G14_D1_VALIDATION=PASS**, sobre checkout local del operador (SHA exacto no proporcionado en esta salida); pruebas SQLite/PG17/Flutter integradas, según runner. No atribuir CI verde sin recibo. El verificador G14-D1 no crea sesiones y su metadata de salida no puede considerarse evidencia transferible de credenciales verificadas.
+
+**G14-D2 permanece NO IMPLEMENTADO:** verificador MFA autoritativo, custodia autorizada y consumo transaccional de segundo factor, vínculo de emisión y auditoría sin aceptar `verified_mfa` externo, control de carreras/revocación y contrato de recuperación G6. No activar rutas ni migrar producción.
+
+```
+G14_A=PASS
+G14_B=PASS
+G14_C=PASS
+G14_D1=PASS
+G14_D2=NOT_IMPLEMENTED
+MFA_RELEASE_AUTHORIZED=NO
+MB1_RELEASE_AUTHORIZED=NO
+C_FICHA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
