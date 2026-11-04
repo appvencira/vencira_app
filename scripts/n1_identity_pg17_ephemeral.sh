@@ -66,6 +66,7 @@ case "$MODE" in
       native_mobile_service.test_g14_issuance_atomicity
       native_mobile_service.test_g14_locked_verifier
       native_mobile_service.test_g14_untrusted_evidence
+      native_mobile_service.test_g14_d3_candidate_boundary
     )
     ;;
   --lab-case)
