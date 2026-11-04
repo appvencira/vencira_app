@@ -5,6 +5,7 @@ NO HTTP parsing, credential logging, public listener, DNS, or operational URL.
 Host binds 127.0.0.1 ONLY; the backend is a checked RFC1918 Docker address.
 Caller is responsible for Docker --internal and cleanup.
 """
+import errno
 import ipaddress
 import os
 import selectors
@@ -55,7 +56,10 @@ class Forward(socketserver.BaseRequestHandler):
 
 
 class LoopbackServer(socketserver.ThreadingTCPServer):
-    allow_reuse_address = False
+    # A previous short-lived TLS test can leave TIME_WAIT connections.
+    # SO_REUSEADDR allows a NEW localhost listener after TIME_WAIT; it does
+    # not permit taking over an existing active listener (no SO_REUSEPORT).
+    allow_reuse_address = True
     daemon_threads = True
 
 
@@ -63,10 +67,21 @@ def main():
     if len(sys.argv) != 2 or os.getenv("G13_DISPOSABLE_ACK") != "1":
         raise SystemExit("G13_PROXY_REQUIRES_EXPLICIT_DISPOSABLE_LAB")
     peer = _private_docker_peer(sys.argv[1])
-    with LoopbackServer(("127.0.0.1", LAB_PORT), Forward) as server:
-        server.private_peer = peer
-        print("G13_HOST_LOOPBACK_RELAY_READY=OK", flush=True)
-        server.serve_forever(poll_interval=0.1)
+    try:
+        with LoopbackServer(("127.0.0.1", LAB_PORT), Forward) as server:
+            server.private_peer = peer
+            print("G13_HOST_LOOPBACK_RELAY_READY=OK", flush=True)
+            server.serve_forever(poll_interval=0.1)
+    except OSError as exc:
+        # Never dump untrusted exception messages, paths, token-like
+        # material, host addresses or socket content into an operator log.
+        reason = {
+            errno.EADDRINUSE: "LOOPBACK_PORT_OCCUPIED",
+            errno.EADDRNOTAVAIL: "LOOPBACK_UNAVAILABLE",
+            errno.EACCES: "LOOPBACK_BIND_PERMISSION_DENIED",
+        }.get(exc.errno, "LOCAL_SOCKET_ERROR")
+        print(f"G13_HOST_RELAY_STARTUP_ERROR={reason}", flush=True)
+        raise SystemExit(1) from None
 
 
 if __name__ == "__main__":
