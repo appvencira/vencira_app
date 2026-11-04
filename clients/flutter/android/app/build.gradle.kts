@@ -8,10 +8,11 @@ plugins {
 // receives a distinct Android package ID; normal builds are unchanged.
 val g8LabBuild = System.getenv("VENCIRA_G8_LAB_BUILD") == "1"
 val g12LabBuild = System.getenv("VENCIRA_G12_LAB_BUILD") == "1"
-if (g8LabBuild && g12LabBuild) {
-    throw GradleException("G8 and G12 labs are mutually exclusive")
+val g13LabBuild = System.getenv("VENCIRA_G13_LAB_BUILD") == "1"
+if (listOf(g8LabBuild, g12LabBuild, g13LabBuild).count { it } > 1) {
+    throw GradleException("Physical Android labs are mutually exclusive")
 }
-if ((g8LabBuild || g12LabBuild) && gradle.startParameter.taskNames.any {
+if ((g8LabBuild || g12LabBuild || g13LabBuild) && gradle.startParameter.taskNames.any {
     it.contains("Release", ignoreCase = true) || it.contains("Profile", ignoreCase = true)
 }) {
     throw GradleException("Physical Android labs must never build release/profile")
@@ -49,6 +50,10 @@ android {
             if (g12LabBuild) {
                 applicationIdSuffix = ".g12lab"
                 manifestPlaceholders["venciraAppLabel"] = "VENCIRA G12 Pruebas"
+            }
+            if (g13LabBuild) {
+                applicationIdSuffix = ".g13lab"
+                manifestPlaceholders["venciraAppLabel"] = "VENCIRA G13 TLS"
             }
         }
         release {
