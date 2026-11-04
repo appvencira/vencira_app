@@ -120,13 +120,30 @@ http.Client _createTlsClient({required bool trustLabCa}) {
         uri.port != 443 || proxyHost != null || proxyPort != null) {
       throw StateError('G13_NONLAB_DESTINATION_BLOCKED');
     }
-    // Termius SSH local-forward (or USB ADB reverse) maps Android
-    // 127.0.0.1:18743 to the VPS loopback-only TLS relay. Return a RAW
-    // Socket: HttpClient performs TLS exactly once for the HTTPS URI,
-    // checks dev.vencira.es via SNI and certificate hostname validation,
-    // and trusts ONLY the temporary public CA in its SecurityContext.
-    // Calling SecureSocket.secure here would incorrectly layer TLS twice.
-    return Socket.startConnect(InternetAddress.loopbackIPv4, _labPort);
+    // The custom HttpClient.connectionFactory REPLACES socket creation.
+    // Dart does NOT add TLS to a raw Socket returned by this callback.
+    // Establish TCP solely to Android loopback, then negotiate TLS ONCE
+    // with the HTTPS hostname and the per-run public CA. A raw Socket here
+    // would send plaintext HTTP to the TLS fixture and time out.
+    return Socket.startConnect(InternetAddress.loopbackIPv4, _labPort)
+        .then((task) {
+      final Future<Socket> verified = task.socket.then((raw) async {
+        try {
+          return await SecureSocket.secure(
+            raw,
+            host: uri.host,
+            context: trust,
+          );
+        } catch (_) {
+          raw.destroy();
+          rethrow;
+        }
+      });
+      return ConnectionTask<Socket>.fromSocket(verified, () {
+        task.cancel();
+        verified.then((socket) => socket.destroy(), onError: (_) {});
+      });
+    });
   };
   return IOClient(client);
 }
