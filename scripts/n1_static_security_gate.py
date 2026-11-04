@@ -92,6 +92,8 @@ def verify():
     g14_issuance = read("backend/native_mobile_service/g14_issuance_contract.py")
     g14_issuance_test = read("backend/native_mobile_service/test_g14_issuance_contract.py")
     g14_atomicity_test = read("backend/native_mobile_service/test_g14_issuance_atomicity.py")
+    g14_verifier = read("backend/native_mobile_service/g14_locked_verifier.py")
+    g14_verifier_test = read("backend/native_mobile_service/test_g14_locked_verifier.py")
 
     failures = []
     checks = {
@@ -246,6 +248,21 @@ def verify():
             and "g14_issuance_atomicity" not in config
             and "g14_issuance_atomicity" not in routes
             and "g14_issuance_atomicity" not in candidate_urls,
+        "g14_locked_verifier_test_only_no_issuer":
+            'settings.VENCIRA_ENV == "test"' in candidate_store
+            and "select_for_update()" in g14_verifier
+            and "check_password(password)" in g14_verifier
+            and "require_mobile_identity_gate(" in g14_verifier
+            and "UserMfaState.objects.filter(" in g14_verifier
+            and "CandidateVerificationDenied" in g14_verifier
+            and "issue_verified_candidate_session(" not in g14_verifier
+            and "make_native_token(" not in g14_verifier
+            and "authenticate(" not in g14_verifier
+            and "test_enabled_mfa_never_passes_password_only" in g14_verifier_test
+            and "test_password_rotation_invalidates_old_password" in g14_verifier_test
+            and "g14_locked_verifier" not in config
+            and "g14_locked_verifier" not in routes
+            and "g14_locked_verifier" not in candidate_urls,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
@@ -886,6 +903,8 @@ def verify():
         "backend/native_mobile_service/g14_issuance_contract.py",
         "backend/native_mobile_service/test_g14_issuance_contract.py",
         "backend/native_mobile_service/test_g14_issuance_atomicity.py",
+        "backend/native_mobile_service/g14_locked_verifier.py",
+        "backend/native_mobile_service/test_g14_locked_verifier.py",
         "backend/reminders/native_mobile_identity_gate.py",
         "backend/reminders/native_mobile_token_primitives.py",
     ):
