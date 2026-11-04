@@ -4,9 +4,10 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from reminders.models import UserMfaState
 from .g14_d3_candidate_boundary import candidate_non_mfa_flow
+from .g5_audit import MobileAuditDenied
+from .g14_admission import CandidateAdmissionDenied
 from .models import MobileAuthAuditEvent, MobileAuthAttemptBucket, MobileDeviceSession
 from .session_store import validate_candidate_access
-from .session_store import MobileTokenDenied
 
 
 @override_settings(
@@ -64,7 +65,7 @@ class G14D3CandidateBoundaryTests(TestCase):
 
     def test_audit_key_absence_denies_before_any_budget_or_session(self):
         with override_settings(VENCIRA_G5_AUDIT_KEY=None):
-            with self.assertRaises(Exception):
+            with self.assertRaises(CandidateAdmissionDenied):
                 self.attempt()
         self.assertFalse(MobileDeviceSession.objects.exists())
         self.assertFalse(MobileAuthAttemptBucket.objects.exists())
@@ -72,7 +73,7 @@ class G14D3CandidateBoundaryTests(TestCase):
     def test_conflicting_success_audit_rolls_back_new_session(self):
         event = uuid.uuid4()
         self.assertIsNone(self.attempt(password="incorrect", event_id=event))
-        with self.assertRaises(Exception):
+        with self.assertRaises(MobileAuditDenied):
             self.attempt(event_id=event)
         self.assertFalse(MobileDeviceSession.objects.exists())
         self.assertEqual(MobileAuthAuditEvent.objects.count(), 1)
