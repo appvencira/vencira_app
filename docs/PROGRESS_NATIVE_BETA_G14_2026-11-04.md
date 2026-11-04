@@ -113,3 +113,28 @@ Verificar diseño de emisor G14-B antes de permitir emisión: MFA real y custodi
 **Bloqueo material a resolver en G14-C:** construir y probar un verificador real y confiable del lado servidor (contraseña y segundo factor, con custodia MFA autorizada), convertir sus resultados en una transición atómica bajo lock de cuenta y no confiar jamás en booleanos recibidos de un caller no autorizado. Demostrar concurrencia, revocación, rollback y auditoría. El objeto G14-B jamás deberá usarse por sí solo para invocar `issue_verified_candidate_session`.
 
 **Estado:** `G14_A_VALIDATION=PASS`, `G14_B_POLICY_CODE=PUBLISHED`, `G14_B_TESTS=PENDING`, `G14_C_TRUSTED_ISSUER=NOT_IMPLEMENTED`, `NATIVE_RELEASE=NO`. Las 10 pruebas son nuevas desde el último lote del operador; el PASS de G14-A no las cubre.
+
+
+## 04/11/2026 — G14-B PASS y G14-C subbloque transaccional publicado
+
+**Validación local comunicada sobre HEAD exacto `473b4259e`:**
+```
+G14_B_N1=0
+G14_B_BATCH=0
+N1_STATIC_g14_admission_test_only=OK
+N1_STATIC_g14_issuer_policy_untrusted_evidence_only=OK
+N1_STATIC_GATE_RESULT=OK
+G5_CANDIDATE_PG17_RESULT=0
+M3_HTTP_G4_PG17=0
+M3_HTTP_FLUTTER=0
+M3_HTTP_RESULT=0
+```
+G14-A y G14-B **PASS de laboratorio**, no emisores operativos ni pruebas de custodia MFA.
+
+**Nuevo G14-C subbloque: pruebas de atomicidad**, añadidas después de ese PASS:
+- `backend/native_mobile_service/test_g14_issuance_atomicity.py`: cinco casos para comprobar que la emisión candidata y `auth_verified` pueden agruparse en una misma transacción: caso feliz, ausencia de clave de auditoría, UUID reutilizado con contenido incompatible, excepción antes de commit y protección de generación frente a revocación global.
+- Integración en `n1_identity_pg17_ephemeral.sh --candidate`, SQLite/PG17 GitHub Actions y N1 estático.
+- **No se ha creado un emisor nuevo ni se ha expuesto HTTP**. Estas pruebas usan el emisor de laboratorio existente desde un `TestCase`; el hecho de pasar no demuestra que una futura vista HTTP haya verificado contraseñas o TOTP de forma fiable.
+- `G14_C_ATOMICITY_TESTS=PENDING`: código publicado, pendiente lote local posterior al HEAD `473b4259e`.
+
+**Condición crítica antes de otro avance:** no aceptar argumentos `verified_mfa` de fuentes no confiables ni booleanos del evaluador G14-B como prueba criptográfica. El verificador confiable, la custodia autorizada de MFA, carreras reales y revisión de permisos seguirán pendientes incluso si estas cinco pruebas pasan. No liberar, migrar ni habilitar rutas reales.
