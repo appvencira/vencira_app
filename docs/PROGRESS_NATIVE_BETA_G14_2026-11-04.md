@@ -74,3 +74,28 @@ Archivos nuevos:
 ### Lote local único requerido para validar el subbloque
 
 Desde `~/vencira-m3-localcheck`, tras `git fetch` y `git merge --ff-only FETCH_HEAD`, ejecutar `python3 scripts/n1_static_security_gate.py` y `bash scripts/m3_native_http_contract_batch.sh` bajo un subshell, sin `exit` que cierre la consola de Termius. Anotar HEAD preciso, `N1_STATIC_GATE_RESULT`, `M3_HTTP_RESULT`, resultados PG17 y Flutter; no imprimir logs con material secreto.
+
+
+## 04/11/2026 — G14-A local integral PASS
+
+Recibo aportado por el operador:
+```
+G14_N1_RESULT=0
+G14_BATCH_RESULT=0
+N1_STATIC_g14_admission_test_only=OK
+N1_STATIC_GATE_RESULT=OK
+M3_HTTP_STATIC=0
+M3_HTTP_BUILD=0
+M3_HTTP_PG17_LAB=0
+G5_CANDIDATE_PG17_RESULT=0
+M3_HTTP_G4_PG17=0
+M3_HTTP_FLUTTER=0
+M3_HTTP_RESULT=0
+```
+Ruta local: `/home/vencira/vencira-m3-results/m3-http-contract-20261104T211959Z`. No se facilitó el SHA del checkout exacto; el recibo acredita el código ejecutado y que G14-A estaba incluido según N1. No asumir CI PASS ni atribuir nuevos commits a este lote.
+
+**G14_A_VALIDATION=PASS (local integrado); G14_B_ISSUER=NOT_VALIDATED; G14_OPERATIONAL=NO.** G13 físico 100% (18/18); gates de liberación operativos cerrados 1/10, sin variación. No se ha modificado la DB operativa.
+
+### Continuidad inmediata
+
+Verificar diseño de emisor G14-B antes de permitir emisión: MFA real y custodia siguen bloqueados; no integrar vistas HTTP ni reutilizar una aserción booleana de MFA como prueba confiable. Completar revisión de desafíos MFA, carrera contra cambio de contraseña y rollback auditable con PostgreSQL17 desechable, y pruebas de denegación. No liberar hasta cumplir G1/G2/G3/G9. G14-B no cuenta como aprobado por el lote de G14-A.
