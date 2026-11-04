@@ -119,3 +119,14 @@ Durante la revisión del código se identificó una probable causa adicional: la
 La interfaz G13 ahora especifica explícitamente que Termius SSH local-forward es alternativa al USB/ADB reverse y puede clasificar excepciones de red como G13_LOCAL_FORWARD_UNREACHABLE y las de TLS como G13_TLS_CERTIFICATE_OR_HANDSHAKE_FAILED, sin mostrar contenido de excepción, credenciales o tokens.
 
 **Para continuar:** cerrar de forma controlada el LABORATORIO G13 ACTUAL pulsando Intro en el prompt G13 lab teardown de la sesión VPS, sin detener contenedores de producción. Actualizar rama desde GitHub, arrancar un nuevo bash scripts/g13_android_usb_https_lab.sh --ssh-tunnel dentro de tmux, esperar a G13_LAB_SESSION_ACTIVE=1, descargar/instalar la **nueva** APK efímera con la CA pública correspondiente a ese arranque y activar en Termius un forward Local que vincule 127.0.0.1:18743 en Android con 127.0.0.1:18743 del VPS. No reutilizar la APK con CA anterior. Solo después pulsar fase 1. No forzar detención de Termius, no abrir puertos públicos ni establecer ruta alternativa al VPS. Si falla, informar el código nuevo y el estado del port forwarding. Los gates de producción siguen bloqueados, PR #17 DRAFT.
+
+
+## G13 — Diagnóstico por etapa en APK Android (04/11/2026)
+
+Tras confirmar relay Python en 127.0.0.1:18743 (PID 3035380) y respuesta TLS/HTTP `401 Unauthorized` desde el VPS, Android seguía mostrando `G13_LAB_ACTION_FAILED`. El móvil también mostró rechazo de CA en Chrome, compatible con la CA efímera, pero esto NO acredita todavía validación TLS desde Flutter.
+
+Se añadieron **solo a la APK DEBUG G13** clasificadores estáticos de fallos (TLS, socket, timeout, HTTP, Android/almacenamiento, formato y fallo sin clasificar) y marcadores de fase no secretos `G13_FAILURE_STAGE=P1_...` o `P2_...`. Los `StateError` explícitos del laboratorio siguen mostrando únicamente códigos G13 con patrón restringido. Nunca se muestran mensajes arbitrarios de excepción, URL, cabeceras, contraseñas, TOTP ni tokens. No se cambia el protocolo HTTPS ni la autenticación.
+
+**Validación pendiente**: compilar Flutter/Android con el nuevo HEAD y repetir APK física. El código de etapa identifica el punto de fallo pero no prueba por sí solo la causa. Algunas excepciones internas pueden aparecer como `G13_UNCLASSIFIED_ACTION_FAILED` con la etapa correspondiente. No atribuir PASS sin resultado físico completo. No hay deploy, merge ni migración persistente.
+
+**Para reintentar**: cerrar mediante Intro el runner G13 anterior (cleanup controlado), sincronizar rama con `git fetch` / `git merge --ff-only FETCH_HEAD`, ejecutar `bash scripts/g13_android_usb_https_lab.sh --ssh-tunnel` dentro de tmux, descargar e instalar la **APK nueva de esa sesión** y mantener túnel local 127.0.0.1:18743 durante ambas fases. Compartir los códigos G13 visibles. Los controles de producción siguen en NO.
