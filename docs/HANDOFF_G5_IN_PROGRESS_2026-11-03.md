@@ -673,3 +673,20 @@ M3_HTTP_RESULT=0
 **Resultado: G14_D2_NEGATIVE_REGRESSION=PASS.** La prueba deliberadamente evidencia una emisión candidata posible después del cambio de contraseña si se invoca el emisor de bajo nivel sin acreditar posesión reciente: pasar el test **no corrige el defecto TOCTOU** ni concede autorización de emisor operativo. `G14_D2_TRUSTED_ISSUER=NOT_IMPLEMENTED`.
 
 **Siguiente cierre técnico exigible:** diseñar un único boundary transaccional que haga las verificaciones autoritativas dentro del mismo bloqueo que la emisión, con registro de auditoría y consumo TOTP, sin aceptar evidencia booleana ni identidad aportada como prueba. Necesita pruebas de carrera real PG17, acceso por defecto denegado, MFA real en laboratorio, bloqueo por cuarentena y revisión externa de custodia. No integrar HTTP, no desplegar ni migrar producción.
+
+
+## G14-D3 — Prototipo candidato sin MFA, pendiente de ejecución
+
+Se ha publicado `backend/native_mobile_service/g14_d3_candidate_boundary.py`: composición test-only de admisión G14-A, verificación D1 bajo la transacción exterior, emisión G4 candidata y evento de auditoría G5 antes del commit. La anidación de `transaction.atomic()` busca mantener el bloqueo de la fila del usuario desde `check_password` hasta el cierre de emisión+auditoría, evitando la ventana por metadatos transferidos D1. Los intentos denegados preservan el consumo de cuota y registran `auth_denied`.
+
+- `backend/native_mobile_service/test_g14_d3_candidate_boundary.py` añade ocho escenarios sintéticos, incluidos MFA activado, password rotada, cuenta inexistente, rollback ante evento incompatible y claves de auditoría ausentes.
+- Actualizadas suites `n1_identity_pg17_ephemeral.sh --candidate`, GitHub Actions SQLite/PG17 y N1 estático para exigir aislamiento de URLConf y MFA no afirmado.
+- **Sin HTTP, sin migraciones persistentes, sin despliegue, sin custodia MFA operativa.** El módulo solo permite cuentas sin MFA; una cuenta MFA necesita un flujo separado con desafío TOTP consumido en servidor.
+- **Revisión pendiente:** pruebas locales PG17/SQLite; concurrencia real PG17 entre cambios de contraseña, activación de MFA y operación del emisor; intentos concurrentes/denegación de servicio; revisión de orden de locks; defensa frente a información de existencia por tiempos. El emisor de bajo nivel G4 sigue existiendo como herramienta de test y no se ha convertido en API operativa. El éxito del prototipo no sustituirá la autorización MFA/MB1/C-FICHA.
+
+```
+G14_D3_NON_MFA_LAB_CODE=PUBLISHED
+G14_D3_TESTS=PENDING
+G14_D3_MFA_COMPLETE=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
