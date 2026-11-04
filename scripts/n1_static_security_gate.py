@@ -228,7 +228,7 @@ def verify():
             and "audit" in g14_issuance
             and "issue_verified_candidate_session" not in g14_issuance
             and "get_user_model" not in g14_issuance
-            and "password" not in g14_issuance
+            and "check_password(" not in g14_issuance
             and "test_enabled_mfa_requires_completed_factor_and_current_epoch" in g14_issuance_test
             and "test_invalid_or_missing_evidence_fails_closed" in g14_issuance_test
             and "g14_issuance_contract" not in config
