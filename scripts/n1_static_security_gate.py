@@ -562,8 +562,10 @@ def verify():
             and 'G13_NONLAB_DESTINATION_BLOCKED' in g13_phone_flow
             and 'InternetAddress.loopbackIPv4' in g13_phone_flow
             and '_labPort = 18743' in g13_phone_flow
-            and "SecureSocket.secure(" in g13_phone_flow
-            and "host: uri.host, context: trust" in g13_phone_flow
+            and 'HttpClient(context: trust)' in g13_phone_flow
+            and "return Socket.startConnect(InternetAddress.loopbackIPv4, _labPort);" in g13_phone_flow
+            and "SecureSocket.secure(" not in g13_phone_flow
+            and 'SecurityContext(withTrustedRoots: false)' in g13_phone_flow
             and 'SecurityContext(withTrustedRoots: false)' in g13_phone_flow
             and 'G13_ANDROID_UNTRUSTED_CA_DENIED=OK' in g13_phone_flow
             and 'G13_ANDROID_REAL_FIRST_ISSUE=OK' in g13_phone_flow
@@ -636,7 +638,9 @@ def verify():
             and 'adb reverse' not in g13_loopback_relay
             and '("127.0.0.1", LAB_PORT)' in g13_loopback_relay
             and 'Socket.startConnect(InternetAddress.loopbackIPv4, _labPort)' in g13_phone_flow
-            and "SecureSocket.secure(" in g13_phone_flow
+            and 'HttpClient(context: trust)' in g13_phone_flow
+            and "return Socket.startConnect(InternetAddress.loopbackIPv4, _labPort);" in g13_phone_flow
+            and "SecureSocket.secure(" not in g13_phone_flow
             and 'badCertificateCallback' not in g13_phone_flow
             and 'native_sessions_lab.test_urls' not in config
             and 'native_sessions_lab.test_urls' not in routes,
