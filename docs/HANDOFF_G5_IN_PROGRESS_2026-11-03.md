@@ -591,3 +591,10 @@ La interfaz G13 ahora especifica explícitamente que Termius SSH local-forward e
 **Nuevo foco G14:** integración segura de emisor candidato y políticas G5/G6, usando exclusivamente entorno test y PG17 efímero. No abrir rutas de autenticación reales. Código G14 aún no iniciado en esta actualización, pruebas G14 no ejecutadas. Mantener prohibición de despliegues, migraciones persistentes y merge. G1/G2/G3, custodia externa, auditoría completa de recursos y G9 siguen bloqueando beta pública.
 
 **Next:** implementar G14 con pruebas y gates; al terminar solicitar un único batch de PG17 efímero sin repetir el ensayo físico G13 salvo cambio en el cliente/protocolo.
+
+
+## G14 Subbloque A — Preadmisión G5 + auditoría atómica (04/11/2026)
+
+Publicado en la misma rama PR #17: `native_mobile_service/g14_admission.py`, `test_g14_admission.py`, integración de tests PG17/SQLite y N1 guard. Solo candidato test-only: dos claves sintéticas obligatorias, throttle cuenta/IP, auditoría idempotente de denegaciones y rollback. **No verifica contraseña/MFA, no emite tokens, no expone HTTP.** Ocho pruebas nuevas propuestas, ejecución local **PENDING**. Fuente actualizada: `docs/PROGRESS_NATIVE_BETA_G14_2026-11-04.md`.
+
+Próximo operador: actualizar fast-forward, N1 y lote M3 desechable una sola vez; recoger resultados compactos y HEAD exacto. No volver a ejecutar G13 ni abrir servicios operativos. Gates release siguen NO.
