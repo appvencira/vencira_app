@@ -89,3 +89,11 @@ class G14D3CandidateBoundaryTests(TestCase):
             with self.assertRaises(Exception):
                 self.attempt()
         self.assertFalse(MobileDeviceSession.objects.exists())
+
+    def test_replayed_success_audit_uuid_cannot_issue_second_session(self):
+        eid = uuid.uuid4()
+        self.assertIsNotNone(self.attempt(event_id=eid))
+        with self.assertRaises(ValueError):
+            self.attempt(event_id=eid)
+        self.assertEqual(MobileDeviceSession.objects.count(), 1)
+        self.assertEqual(MobileAuthAuditEvent.objects.count(), 1)
