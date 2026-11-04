@@ -5,7 +5,17 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-for cmd in adb python3 base64; do
+MODE="usb"
+case "${1:-}" in
+  "") ;;
+  --ssh-tunnel) MODE="ssh_tunnel" ;;
+  *)
+    echo "G13_USAGE=bash scripts/g13_android_usb_https_lab.sh [--ssh-tunnel]" >&2
+    exit 2
+    ;;
+esac
+
+for cmd in python3 base64; do
   command -v "$cmd" >/dev/null || {
     echo "G13_HOST_DEPENDENCY_MISSING=$cmd" >&2
     exit 2
@@ -22,20 +32,32 @@ ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
 print("G13_HOST_RELAY_PYTHON_SYNTAX=OK")
 PY
 
-# Exactly one USB ADB device in the authorized 'device' state; no ambiguity.
-ADB_IDS="$(adb devices | awk 'NR>1 && $2=="device" {print $1}')"
-if [[ "$(printf '%s\n' "$ADB_IDS" | sed '/^$/d' | wc -l)" != "1" ]]; then
-  echo "G13_ADB_REQUIRES_EXACTLY_ONE_AUTHORIZED_DEVICE" >&2
-  exit 2
-fi
-if [[ "$ADB_IDS" == emulator-* ]] ||
-   [[ "$(adb -s "$ADB_IDS" shell getprop ro.kernel.qemu | tr -d '\r')" == "1" ]]; then
-  echo "G13_PHYSICAL_USB_DEVICE_REQUIRED" >&2
-  exit 2
-fi
-if adb reverse --list | grep -Fq 'tcp:18743'; then
-  echo "G13_ADB_REVERSE_ALREADY_IN_USE" >&2
-  exit 2
+# The original physical USB route remains unchanged. The alternative mode
+# runs the exact same server/CA/APK but uses an SSH -L tunnel from Termux.
+# Neither mode ever binds 0.0.0.0 or publishes a Docker port.
+if [[ "$MODE" == usb ]]; then
+  command -v adb >/dev/null || {
+    echo "G13_HOST_DEPENDENCY_MISSING=adb" >&2
+    exit 2
+  }
+  ADB_IDS="$(adb devices | awk 'NR>1 && $2=="device" {print $1}')"
+  if [[ "$(printf '%s\n' "$ADB_IDS" | sed '/^$/d' | wc -l)" != "1" ]]; then
+    echo "G13_ADB_REQUIRES_EXACTLY_ONE_AUTHORIZED_DEVICE" >&2
+    exit 2
+  fi
+  if [[ "$ADB_IDS" == emulator-* ]] ||
+     [[ "$(adb -s "$ADB_IDS" shell getprop ro.kernel.qemu | tr -d '\r')" == "1" ]]; then
+    echo "G13_PHYSICAL_USB_DEVICE_REQUIRED" >&2
+    exit 2
+  fi
+  if adb reverse --list | grep -Fq 'tcp:18743'; then
+    echo "G13_ADB_REVERSE_ALREADY_IN_USE" >&2
+    exit 2
+  fi
+  echo "G13_MODE=USB_ADB"
+else
+  echo "G13_MODE=TERMUX_SSH_LOCAL_FORWARD"
+  echo "G13_NO_ADB_REQUIRED=1"
 fi
 
 DOCKER=(sudo docker)
@@ -159,13 +181,18 @@ with socket.create_connection(("127.0.0.1",18743),timeout=8) as raw:
 print("G13_HOST_VERIFIED_TLS_AND_UNAUTH_401=OK")
 PY
 
-adb reverse tcp:18743 tcp:18743
-REVERSE_SET=1
-adb reverse --list | grep -Fq 'tcp:18743 tcp:18743' || {
-  echo "G13_ADB_REVERSE_NOT_CONFIRMED" >&2
-  exit 1
-}
-echo "G13_USB_ADB_REVERSE=OK"
+if [[ "$MODE" == usb ]]; then
+  adb reverse tcp:18743 tcp:18743
+  REVERSE_SET=1
+  adb reverse --list | grep -Fq 'tcp:18743 tcp:18743' || {
+    echo "G13_ADB_REVERSE_NOT_CONFIRMED" >&2
+    exit 1
+  }
+  echo "G13_USB_ADB_REVERSE=OK"
+else
+  echo "G13_TERMUX_SSH_FORWARD_REQUIRED=1"
+  echo "G13_SSH_FORWARD_TARGET=127.0.0.1:18743"
+fi
 
 # Public CA is embedded in this DEBUG binary only. The private CA key
 # stays in the isolated Django container's ephemeral filesystem.
@@ -182,15 +209,23 @@ CA64="$(base64 -w0 "$TMP/public-ca.pem")"
 
 APK="clients/flutter/build/g13-phone/VENCIRA-G13-LAB-debug.apk"
 test -s "$APK"
-adb install -r "$APK" >/dev/null
-echo "G13_ANDROID_DEBUG_APK_INSTALLED=OK"
+if [[ "$MODE" == usb ]]; then
+  adb install -r "$APK" >/dev/null
+  echo "G13_ANDROID_DEBUG_APK_INSTALLED=OK"
+  echo "G13_USB_LOOPBACK_ONLY=OK"
+  echo 'Open VENCIRA G13 TLS on the USB phone and run both phases.'
+  echo 'Force-stop/reopen the app between phases. Keep USB and terminal connected.'
+else
+  echo "G13_TERMUX_SSH_APK_READY=OK"
+  echo "G13_TERMUX_SSH_APK_REMOTE_PATH=$PWD/$APK"
+  echo 'From Android Termux: use ssh -L 127.0.0.1:18743:127.0.0.1:18743 to this VPS.'
+  echo 'Copy APK over authenticated SFTP/SCP, install locally, then run both phases.'
+  echo 'Keep Termux tunnel active and VPS tmux session alive until phase 2 ends.'
+fi
 echo "G13_ANDROID_APP=es.vencira.vencira.g13lab"
-echo "G13_USB_LOOPBACK_ONLY=OK"
 echo "G13_LAB_SESSION_ACTIVE=1"
 echo "G13_NO_PRODUCTION_NETWORK_OR_DB=1"
-
-echo 'Open VENCIRA G13 TLS on the USB phone and run both phases.'
-echo 'Force-stop/reopen the app between phases. Keep USB and terminal connected.'
-echo 'Press ENTER ONLY AFTER the second phase finishes; it will tear down all tunnels.'
-read -r -p 'G13 lab teardown after phone verification: ' _
+echo "G13_LAB_MODE=$MODE"
+echo 'Press ENTER ONLY AFTER phone verification or to cancel the lab.'
+read -r -p 'G13 lab teardown: ' _
 echo "G13_LAB_TEARDOWN_REQUESTED=OK"
