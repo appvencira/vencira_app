@@ -95,6 +95,8 @@ def verify():
     g14_verifier = read("backend/native_mobile_service/g14_locked_verifier.py")
     g14_verifier_test = read("backend/native_mobile_service/test_g14_locked_verifier.py")
     g14_evidence_test = read("backend/native_mobile_service/test_g14_untrusted_evidence.py")
+    g14_d3 = read("backend/native_mobile_service/g14_d3_candidate_boundary.py")
+    g14_d3_test = read("backend/native_mobile_service/test_g14_d3_candidate_boundary.py")
 
     failures = []
     checks = {
@@ -272,6 +274,19 @@ def verify():
             and "g14_untrusted_evidence" not in config
             and "g14_untrusted_evidence" not in routes
             and "g14_untrusted_evidence" not in candidate_urls,
+        "g14_d3_only_non_mfa_transaction":
+            "transaction.atomic()" in g14_d3
+            and "verify_candidate_password_only(" in g14_d3
+            and "issue_verified_candidate_session(" in g14_d3
+            and "record_candidate_auth_event(" in g14_d3
+            and "admit_candidate_password_attempt(" in g14_d3
+            and "verified_mfa=False" in g14_d3
+            and "verified_mfa=True" not in g14_d3
+            and "test_enabled_mfa_denies_password_only" in g14_d3_test
+            and "test_conflicting_success_audit_rolls_back_new_session" in g14_d3_test
+            and "g14_d3_candidate_boundary" not in config
+            and "g14_d3_candidate_boundary" not in routes
+            and "g14_d3_candidate_boundary" not in candidate_urls,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
@@ -915,6 +930,8 @@ def verify():
         "backend/native_mobile_service/g14_locked_verifier.py",
         "backend/native_mobile_service/test_g14_locked_verifier.py",
         "backend/native_mobile_service/test_g14_untrusted_evidence.py",
+        "backend/native_mobile_service/g14_d3_candidate_boundary.py",
+        "backend/native_mobile_service/test_g14_d3_candidate_boundary.py",
         "backend/reminders/native_mobile_identity_gate.py",
         "backend/reminders/native_mobile_token_primitives.py",
     ):
