@@ -13,6 +13,14 @@ for cmd in adb python3 base64; do
 done
 python3 scripts/n1_static_security_gate.py
 bash -n scripts/g13_android_usb_https_lab.sh
+bash -n scripts/g13_phone_apk_build.sh
+python3 - <<'PY'
+import ast
+from pathlib import Path
+path = Path("scripts/g13_usb_loopback_relay.py")
+ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+print("G13_HOST_RELAY_PYTHON_SYNTAX=OK")
+PY
 
 # Exactly one USB ADB device in the authorized 'device' state; no ambiguity.
 ADB_IDS="$(adb devices | awk 'NR>1 && $2=="device" {print $1}')"
