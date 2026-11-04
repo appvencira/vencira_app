@@ -284,6 +284,8 @@ def verify():
             and "verified_mfa=True" not in g14_d3
             and "test_enabled_mfa_denies_password_only" in g14_d3_test
             and "test_conflicting_success_audit_rolls_back_new_session" in g14_d3_test
+            and "test_replayed_success_audit_uuid_cannot_issue_second_session" in g14_d3_test
+            and "if not created:" in g14_d3
             and "g14_d3_candidate_boundary" not in config
             and "g14_d3_candidate_boundary" not in routes
             and "g14_d3_candidate_boundary" not in candidate_urls,
