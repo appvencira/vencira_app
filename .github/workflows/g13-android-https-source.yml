@@ -1,0 +1,59 @@
+name: G13 Android USB verified HTTPS source gate (no phone)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'clients/flutter/lib/g13_lab_main.dart'
+      - 'clients/flutter/lib/g13_lab/physical_https_checks.dart'
+      - 'clients/flutter/android/app/build.gradle.kts'
+      - 'scripts/g13_android_usb_https_lab.sh'
+      - 'scripts/g13_usb_loopback_relay.py'
+      - 'scripts/g13_phone_apk_build.sh'
+      - 'scripts/n1_static_security_gate.py'
+      - '.github/workflows/g13-android-https-source.yml'
+  push:
+    branches:
+      - feature/m3-android-local-notifications
+    paths:
+      - 'clients/flutter/lib/g13_lab_main.dart'
+      - 'clients/flutter/lib/g13_lab/physical_https_checks.dart'
+      - 'clients/flutter/android/app/build.gradle.kts'
+      - 'scripts/g13_android_usb_https_lab.sh'
+      - 'scripts/g13_usb_loopback_relay.py'
+      - 'scripts/g13_phone_apk_build.sh'
+      - 'scripts/n1_static_security_gate.py'
+      - '.github/workflows/g13-android-https-source.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  g13-source-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: N1 guards and script syntax
+        run: |
+          python3 scripts/n1_static_security_gate.py
+          python3 -m py_compile scripts/g13_usb_loopback_relay.py
+          bash -n scripts/g13_android_usb_https_lab.sh
+          bash -n scripts/g13_phone_apk_build.sh
+          echo 'G13_SOURCE_STATIC=OK'
+      - name: Analyze the debug-only physical TLS Dart entry
+        run: |
+          docker run --rm \
+            -v "$PWD/clients/flutter:/work" -w /work \
+            ghcr.io/cirruslabs/flutter:stable \
+            sh -c 'flutter pub get && flutter analyze lib/g13_lab_main.dart lib/g13_lab/physical_https_checks.dart'
+          echo 'G13_DART_ANALYZE=OK'
+      - name: Physical Android and release remain unverified
+        if: always()
+        run: |
+          echo 'G13_REAL_PHONE_RESULT=NOT_RUN'
+          echo 'G13_LIVE_DJANGO_RESULT=NOT_RUN'
+          echo 'G13_RELEASE_AUTHORIZED=NO'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
