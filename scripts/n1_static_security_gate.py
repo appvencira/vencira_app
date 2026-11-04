@@ -89,6 +89,8 @@ def verify():
     g5_keyring = read("backend/native_mobile_service/g5_keyring_policy.py")
     g14_admission = read("backend/native_mobile_service/g14_admission.py")
     g14_test = read("backend/native_mobile_service/test_g14_admission.py")
+    g14_issuance = read("backend/native_mobile_service/g14_issuance_contract.py")
+    g14_issuance_test = read("backend/native_mobile_service/test_g14_issuance_contract.py")
 
     failures = []
     checks = {
@@ -216,6 +218,22 @@ def verify():
             and "g14_admission" not in config
             and "g14_admission" not in routes
             and "g14_admission" not in candidate_urls,
+        "g14_issuer_policy_untrusted_evidence_only":
+            "class IssuanceSecurityEvidence" in g14_issuance
+            and "missing_issuance_requirements" in g14_issuance
+            and "mfa_not_verified" in g14_issuance
+            and "mfa_epoch" in g14_issuance
+            and "recovery_quarantine" in g14_issuance
+            and "generation" in g14_issuance
+            and "audit" in g14_issuance
+            and "issue_verified_candidate_session" not in g14_issuance
+            and "get_user_model" not in g14_issuance
+            and "password" not in g14_issuance
+            and "test_enabled_mfa_requires_completed_factor_and_current_epoch" in g14_issuance_test
+            and "test_invalid_or_missing_evidence_fails_closed" in g14_issuance_test
+            and "g14_issuance_contract" not in config
+            and "g14_issuance_contract" not in routes
+            and "g14_issuance_contract" not in candidate_urls,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
@@ -853,6 +871,8 @@ def verify():
         "backend/native_mobile_service/test_g5_digest_capacity.py",
         "backend/native_mobile_service/g14_admission.py",
         "backend/native_mobile_service/test_g14_admission.py",
+        "backend/native_mobile_service/g14_issuance_contract.py",
+        "backend/native_mobile_service/test_g14_issuance_contract.py",
         "backend/reminders/native_mobile_identity_gate.py",
         "backend/reminders/native_mobile_token_primitives.py",
     ):
