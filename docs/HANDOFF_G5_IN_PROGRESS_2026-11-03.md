@@ -690,3 +690,8 @@ G14_D3_TESTS=PENDING
 G14_D3_MFA_COMPLETE=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## G14-D3 — Ensayo candidato de transacción no-MFA (04/11/2026)
+
+Publicado `native_mobile_service/g14_d3_candidate_boundary.py` y `test_g14_d3_candidate_boundary.py` (nueve pruebas). El flujo candidato opt-in test-only ejecuta preadmisión, verificación bajo bloqueo de cuenta, emisión con MFA=False, y auditoría antes de finalizar la transacción; contraseñas erróneas y MFA activo se deniegan y registran. Se bloqueó la reutilización de UUID de auditoría para impedir una segunda emisión con mismo evento. N1 y lotes CI/PG17 candidatos actualizados. **CÓDIGO PUBLICADO / PRUEBAS LOCALES PENDIENTES**. No se han habilitado URLConf, ni custodia MFA, ni release. Falta carrera real PG17 contra escritores de MFA, revisión de bloqueo cross-process y el segundo factor confiable. Véase `docs/PROGRESS_NATIVE_BETA_G14_2026-11-04.md`.
