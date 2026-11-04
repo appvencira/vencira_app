@@ -612,6 +612,34 @@ def verify():
             and 'native_sessions_lab.test_urls' not in routes
             and 'flutter analyze' in g13_ci
             and 'G13_REAL_PHONE_RESULT=NOT_RUN' in g13_ci,
+        "g13_termux_ssh_local_forward_isolated":
+            'MODE="usb"' in g13_host_lab
+            and '--ssh-tunnel)' in g13_host_lab
+            and 'MODE="ssh_tunnel"' in g13_host_lab
+            and 'G13_MODE=TERMUX_SSH_LOCAL_FORWARD' in g13_host_lab
+            and 'G13_NO_ADB_REQUIRED=1' in g13_host_lab
+            and 'G13_TERMUX_SSH_APK_READY=OK' in g13_host_lab
+            and 'G13_TERMUX_SSH_APK_REMOTE_PATH=' in g13_host_lab
+            and 'G13_SSH_FORWARD_TARGET=127.0.0.1:18743' in g13_host_lab
+            and 'if [[ "$MODE" == usb ]]; then' in g13_host_lab
+            and 'adb reverse tcp:18743 tcp:18743' in g13_host_lab
+            and 'adb install -r "$APK"' in g13_host_lab
+            and 'if [[ "$REVERSE_SET" = 1 ]]; then' in g13_host_lab
+            and 'adb reverse --remove tcp:18743' in g13_host_lab
+            and 'G13_LAB_SESSION_ACTIVE=1' in g13_host_lab
+            and 'G13_NO_PRODUCTION_NETWORK_OR_DB=1' in g13_host_lab
+            and 'network create --internal "$NET"' in g13_host_lab
+            and '--read-only' in g13_host_lab
+            and '--tmpfs /tmp:' in g13_host_lab
+            and '--cap-drop ALL' in g13_host_lab
+            and 'G13_HOST_RELAY_BOUND_LOOPBACK=OK' in g13_host_lab
+            and 'adb reverse' not in g13_loopback_relay
+            and '("127.0.0.1", LAB_PORT)' in g13_loopback_relay
+            and 'Socket.startConnect(InternetAddress.loopbackIPv4, _labPort)' in g13_phone_flow
+            and "SecureSocket.secure(" in g13_phone_flow
+            and 'badCertificateCallback' not in g13_phone_flow
+            and 'native_sessions_lab.test_urls' not in config
+            and 'native_sessions_lab.test_urls' not in routes,
         "g9_native_startup_recovers_orphan_fail_closed":
             "enum NativeStartupDisposition" in g9_boot
             and "locked, cleanLogin, fullReauthentication" in g9_boot
