@@ -626,3 +626,10 @@ Posteriormente se publicaron cinco pruebas G14-C de atomicidad entre emisión ca
 El operador comunica `G14_C_N1=0`, `G14_C_BATCH=0`, los tres controles N1 G14=OK, `N1_STATIC_GATE_RESULT=OK`, `G5_CANDIDATE_PG17_RESULT=0`, `M3_HTTP_G4_PG17=0` y `M3_HTTP_FLUTTER=0`. La salida `M3_HT,TP_RESULT=0` contiene una etiqueta errónea; no presentarla como `M3_HTTP_RESULT` observado, aunque el batch devuelve 0. El SHA de checkout exacto no fue facilitado. **G14-C tests de atomicidad PASS local.** G14-A/B/C candidatos aprobados, G14-D emisor confiable **pendiente**.
 
 Actualizado el cuadro en `docs/PROGRESS_NATIVE_BETA_G14_2026-11-04.md`. Siguiente trabajo: G14-D, verificadores autoritativos del lado servidor con relectura bajo locks, rechazo de MFA incompleta, pruebas de carrera y fallos cerrados; no transformar los booleanos G14-B en prueba de autenticación. Sin rutas operativas ni release.
+
+
+## G14-D1 — Locked password-only verifier candidato (04/11/2026)
+
+Publicado en PR #17 código `native_mobile_service/g14_locked_verifier.py` y 8 tests en `test_g14_locked_verifier.py`; suite N1, PG17 efímero y CI SQLite/PG17 actualizadas. Exige `VENCIRA_ENV=test`, bloqueo `select_for_update`, verificación de contraseña en servidor, usuario activo, rechazo explícito de cuentas con MFA y puerta de identidad para recuperación/cuarentena. **No emite credenciales ni autoriza sesiones: devuelve solo metadatos que dejan de ser fiables al liberarse el lock.** No conectado con G14-A, G14-C ni HTTP, sin custodia MFA. **Tests G14-D1 PENDING.** Ver `docs/PROGRESS_NATIVE_BETA_G14_2026-11-04.md`.
+
+Evidencia previa G14-C PASS no se extiende a este commit. Próximo operador: fast-forward y N1 + M3 batch aislado, devolver resultados compactos. Mantener release NO y sin migraciones.
