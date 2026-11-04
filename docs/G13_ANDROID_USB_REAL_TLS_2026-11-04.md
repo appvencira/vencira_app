@@ -130,3 +130,10 @@ Se añadieron **solo a la APK DEBUG G13** clasificadores estáticos de fallos (T
 **Validación pendiente**: compilar Flutter/Android con el nuevo HEAD y repetir APK física. El código de etapa identifica el punto de fallo pero no prueba por sí solo la causa. Algunas excepciones internas pueden aparecer como `G13_UNCLASSIFIED_ACTION_FAILED` con la etapa correspondiente. No atribuir PASS sin resultado físico completo. No hay deploy, merge ni migración persistente.
 
 **Para reintentar**: cerrar mediante Intro el runner G13 anterior (cleanup controlado), sincronizar rama con `git fetch` / `git merge --ff-only FETCH_HEAD`, ejecutar `bash scripts/g13_android_usb_https_lab.sh --ssh-tunnel` dentro de tmux, descargar e instalar la **APK nueva de esa sesión** y mantener túnel local 127.0.0.1:18743 durante ambas fases. Compartir los códigos G13 visibles. Los controles de producción siguen en NO.
+
+
+## G13 — Corrección de errores de análisis Dart (04/11/2026)
+
+La primera instrumentación de etapas introdujo tres instrucciones `_at(...)` en medio de expresiones, causando ocho errores de `flutter analyze` en `physical_https_checks.dart` (líneas 223, 339, 397 en la versión defectuosa). El runner salió con `G13_USB_HOST_RUNNER_RESULT=1` y limpió el laboratorio; no es evidencia de un fallo físico TLS. Se corrigieron las tres posiciones y se movieron los marcadores TLS/acciones antes de ejecutar la operación. Último commit de esta corrección: `ca38b584`.
+
+**Pendiente de validación**: ejecutar `flutter analyze` de ambos archivos ANTES del runner Docker. Solo si el análisis devuelve 0 se permite iniciar un nuevo laboratorio y recompilar la APK de la CA efímera actual. G13 físico sigue PENDING. Release y migraciones persistentemente bloqueados.
