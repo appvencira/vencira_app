@@ -94,3 +94,17 @@ Secuencia recomendada:
 **Limitaciones:** el túnel exige que sshd del VPS permita LocalForward/AllowTcpForwarding y que la conexión SSH del móvil pueda mantenerse viva. Algunas aplicaciones de consola SSH Android no permiten crear un listener 127.0.0.1:18743; Termux con OpenSSH sí. Si un cortafuegos/sshd bloquea el forwarding, G13 no podrá probarse así hasta resolver esa política sin abrir públicamente el fixture. Las pruebas G7–G12 anteriores no necesitan repetirse.
 
 **Estado:** implementación de modo SSH en GitHub, pendiente de ejecutar N1/Flutter/build sobre VPS y de validación física completa. No atribuir G13 PASS antes del recibo del teléfono. PR DRAFT, GLOBAL_FREEZE=NOT_VERIFIED, MB1_RELEASE_AUTHORIZED=NO, MFA_RELEASE_AUTHORIZED=NO, C_FICHA_RELEASE_AUTHORIZED=NO, NO_DEPLOY_NO_LIVE_MIGRATION=1.
+
+
+## G13 — Primer intento Termius/SSH: el relay local no arrancó (04/11/2026)
+
+Recibo confirmado: N1 completo PASS (incluidos controles G13 USB y SSH), G13_HOST_RELAY_PYTHON_SYNTAX=OK, G13_MODE=TERMUX_SSH_LOCAL_FORWARD, Docker build completo, G13_DJANGO_TMPFS_READY=OK, G13_DOCKER_PRIVATE_PEER=OK y G13_PUBLIC_EPHEMERAL_CA=OK. Se interrumpió en G13_HOST_RELAY_NOT_READY; el cleanup devolvió G13_USB_LAB_CLEANUP=OK, G13_USB_HOST_RUNNER_RESULT=1 y NO_DEPLOY_NO_LIVE_MIGRATION=1. No hubo compilación Flutter G13 ni prueba HTTPS en teléfono todavía.
+
+La causa EXACTA no quedó registrada porque el log temporal del relay se eliminaba durante la limpieza. Posibles causas: puerto local 18743 ocupado, estado TIME_WAIT posterior a listener cerrado o error del propio proceso. **No atribuir causa concreta hasta ver el nuevo código de diagnóstico.**
+
+Correcciones implementadas:
+- scripts/g13_usb_loopback_relay.py: allow_reuse_address=True permite el rebinding tras TIME_WAIT, pero no desplaza un listener activo; los errores de bind se clasifican mediante códigos G13_HOST_RELAY_STARTUP_ERROR sin imprimir excepciones, credenciales ni cuerpos.
+- scripts/g13_android_usb_https_lab.sh: sondeo inicial del puerto **solo** 127.0.0.1:18743 antes de levantar Docker (G13_HOST_PORT_PREFLIGHT=OK o G13_HOST_PORT_PREFLIGHT_ERROR=LOOPBACK_PORT_OCCUPIED); si el relay no llega a READY, imprime un código de fallo saneado antes de eliminar el log. No termina procesos ajenos.
+- scripts/test_g13_usb_loopback_relay.py: tres pruebas stdlib con puertos efímeros para verificar peer privado, rechazo de apropiación de un listener activo, y paso de bytes sintéticos entre dos sockets de loopback. Se añade antes de Docker en el runner y en CI; marcador objetivo G13_HOST_RELAY_SMOKE=OK.
+
+**G13 sigue PENDING**; ejecutar de nuevo bash scripts/g13_android_usb_https_lab.sh --ssh-tunnel después de actualizar la rama. Si se confirma puerto ocupado, diagnosticar dueño con ss -ltnp '( sport = :18743 )' y evitar detener servicios ajenos o abrir firewall. En caso de error nuevo, compartir los códigos G13_HOST_PORT_PREFLIGHT / G13_HOST_RELAY_STARTUP_ERROR, no archivos de secretos. PR #17 DRAFT; GLOBAL_FREEZE=NOT_VERIFIED, MB1_RELEASE_AUTHORIZED=NO, MFA_RELEASE_AUTHORIZED=NO, C_FICHA_RELEASE_AUTHORIZED=NO, NO_DEPLOY_NO_LIVE_MIGRATION=1.
