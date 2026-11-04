@@ -32,6 +32,26 @@ ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
 print("G13_HOST_RELAY_PYTHON_SYNTAX=OK")
 PY
 
+# Fail early, before a Docker build, if another service owns G13's
+# localhost-only port. Reuse of TIME_WAIT is allowed, but never override an
+# existing listener or bind an externally reachable network interface.
+python3 - <<'PY'
+import errno
+import socket
+import sys
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+try:
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.bind(("127.0.0.1", 18743))
+except OSError as exc:
+    code = "LOOPBACK_PORT_OCCUPIED" if exc.errno == errno.EADDRINUSE else "LOCAL_SOCKET_ERROR"
+    print(f"G13_HOST_PORT_PREFLIGHT_ERROR={code}")
+    sys.exit(1)
+finally:
+    sock.close()
+print("G13_HOST_PORT_PREFLIGHT=OK")
+PY
+
 # The original physical USB route remains unchanged. The alternative mode
 # runs the exact same server/CA/APK but uses an SSH -L tunnel from Termux.
 # Neither mode ever binds 0.0.0.0 or publishes a Docker port.
@@ -162,10 +182,20 @@ for _ in $(seq 1 20); do
   if ! kill -0 "$RELAY_PID" 2>/dev/null; then break; fi
   sleep 0.2
 done
-test "$relay_ready" = 1 || {
+if [[ "$relay_ready" != 1 ]]; then
+  # Errors from the relay are deliberately single-line sanitized G13 codes.
+  # The TMP log is removed by the cleanup trap; report the classification now
+  # rather than losing all evidence on failure.
+  if grep -Eq '^G13_HOST_RELAY_STARTUP_ERROR=' "$TMP/relay.log"; then
+    grep -E '^G13_HOST_RELAY_STARTUP_ERROR=' "$TMP/relay.log" >&2 || true
+  elif kill -0 "$RELAY_PID" 2>/dev/null; then
+    echo "G13_HOST_RELAY_STARTUP_ERROR=NO_READY_SIGNAL" >&2
+  else
+    echo "G13_HOST_RELAY_STARTUP_ERROR=PROCESS_EXITED_BEFORE_READY" >&2
+  fi
   echo "G13_HOST_RELAY_NOT_READY" >&2
   exit 1
-}
+fi
 echo "G13_HOST_RELAY_BOUND_LOOPBACK=OK"
 
 # Require verified ephemeral TLS *before* installing anything on the device.
