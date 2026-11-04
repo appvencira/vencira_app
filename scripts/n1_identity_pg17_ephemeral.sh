@@ -63,6 +63,7 @@ case "$MODE" in
       native_mobile_service.test_g5_digest_capacity
       native_mobile_service.test_g14_admission
       native_mobile_service.test_g14_issuance_contract
+      native_mobile_service.test_g14_issuance_atomicity
     )
     ;;
   --lab-case)
