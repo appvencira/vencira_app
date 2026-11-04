@@ -186,6 +186,10 @@ class _Case {
 }
 
 class G13PhoneHttpsCheck {
+  // Only fixed, non-secret stage labels. Never include exception messages.
+  static String diagnosticStage = 'IDLE';
+  static void _at(String stage) { diagnosticStage = stage; }
+
   static const _namespace = 'vencira_g13_phone_tls_v1';
 
   static NativeSecretStore _newStore() => FlutterNativeSecretStore(
@@ -202,18 +206,24 @@ class G13PhoneHttpsCheck {
       (await SharedPreferences.getInstance()).containsKey(_pidKey);
 
   static Future<List<String>> prepare() async {
+    _at('P1_START');
     _require(Platform.isAndroid, 'ANDROID_ONLY');
     final prefs = await SharedPreferences.getInstance();
+    _at('P1_PREFERENCES');
     _require(!prefs.containsKey(_pidKey), 'RESTART_ALREADY_PENDING');
     final store = _newStore();
+    _at('P1_SECURE_STORAGE');
     _require(await store.read(_markerKey) == null &&
         await store.read(_refreshKey) == null, 'LAB_STORE_NOT_CLEAN');
 
     final trusted = _createTlsClient(trustLabCa: true);
+    _at('P1_TLS_CLIENT');
     try {
       _require(await _meStatus(trusted, null) == 401,
+    _at('P1_VERIFIED_HTTPS_401');
           'VERIFIED_TLS_PREFLIGHT_FAILED');
       final untrusted = _createTlsClient(trustLabCa: false);
+    _at('P1_UNTRUSTED_CA');
       try {
         var rejected = false;
         try {
@@ -229,6 +239,7 @@ class G13PhoneHttpsCheck {
       }
 
       final standard = _Case(store, trusted);
+    _at('P1_FIRST_ISSUE');
       _require(await standard.entry.inspect() ==
           NativeStartupDisposition.cleanLogin, 'CLEAN_LOGIN_REQUIRED');
       _require(await standard.entry.verifyPassword(
@@ -243,6 +254,7 @@ class G13PhoneHttpsCheck {
       _require(access != null && await _meStatus(trusted, access) == 200,
           'SERVER_BEARER_DENIED_AFTER_ISSUE');
       final closing = standard.entry.logout();
+    _at('P1_LOGOUT');
       _require(standard.fence.ticket == null,
           'LOGOUT_FENCE_NOT_SYNCHRONOUS');
       await closing;
@@ -256,6 +268,7 @@ class G13PhoneHttpsCheck {
       // Django. The retry MUST use the existing protected refresh and server
       // must deny the old bearer after the confirmed retry.
       final retry = _Case(store, trusted);
+    _at('P1_REVOKE_RETRY');
       _require(await retry.entry.inspect() ==
           NativeStartupDisposition.cleanLogin,
           'REVOKE_FAILURE_CLEAN_PREFLIGHT');
@@ -284,6 +297,7 @@ class G13PhoneHttpsCheck {
           'REVOKE_RETRY_DJANGO_DENIED');
 
       final mfa = _Case(store, trusted);
+    _at('P1_MFA');
       _require(await mfa.entry.inspect() ==
           NativeStartupDisposition.cleanLogin, 'MFA_PREFLIGHT_FAILED');
       _require(await mfa.entry.verifyPassword(
@@ -304,6 +318,7 @@ class G13PhoneHttpsCheck {
           'MFA_REVOKE_FAILED');
 
       final uncertain = _Case(store, trusted);
+    _at('P1_UNKNOWN_ISSUANCE');
       _require(await uncertain.entry.inspect() ==
           NativeStartupDisposition.cleanLogin, 'UNCERTAIN_PREFLIGHT_FAILED');
       uncertain.observed.loseIssueResponse = true;
@@ -321,6 +336,7 @@ class G13PhoneHttpsCheck {
           'UNKNOWN_ISSUANCE_DID_NOT_FENCE');
 
       _require(await prefs.setInt(_pidKey, pid),
+    _at('P1_RESTART_CHECKPOINT');
           'RESTART_PID_NOT_DURABLY_SAVED');
       return const [
         'G13_ANDROID_TLS_CERT_VERIFIED=OK',
@@ -339,13 +355,16 @@ class G13PhoneHttpsCheck {
   }
 
   static Future<List<String>> verifyAfterRestart() async {
+    _at('P2_START');
     _require(Platform.isAndroid, 'ANDROID_ONLY');
     final prefs = await SharedPreferences.getInstance();
     final previous = prefs.getInt(_pidKey);
+    _at('P2_PID_CHECK');
     _require(previous != null && previous != pid,
         'REAL_ANDROID_PROCESS_RESTART_REQUIRED');
     final store = _newStore();
     final fence = NativeSessionFence();
+    _at('P2_SECURE_MARKER');
     final vault = NativeRefreshCredentialVault(
         endpoint: _endpoint, store: store);
     final journal = NativeRefreshRecoveryJournal(
@@ -354,11 +373,14 @@ class G13PhoneHttpsCheck {
         await vault.read() == null && fence.ticket == null,
         'DURABLE_MARKER_MISSING_AFTER_RESTART');
 
+    _at('P2_TLS_CLIENT');
     final trusted = _createTlsClient(trustLabCa: true);
     try {
+      _at('P2_VERIFIED_HTTPS_401');
       _require(await _meStatus(trusted, null) == 401,
           'RESTART_TLS_CONNECTION_UNAVAILABLE');
       final observed = _G13Client(trusted, store, fence);
+    _at('P2_RECOVERY_GATE');
       final port = NativeHttpAuthPort(endpoint: _endpoint, client: observed);
       final recovery = NativeMobileRecoveryEntry(
         startup: NativeMobileStartupGate(
@@ -372,6 +394,7 @@ class G13PhoneHttpsCheck {
           NativeStartupDisposition.fullReauthentication,
           'RECOVERY_GATE_DID_NOT_ROUTE');
       _require(await recovery.verifyPassword(
+    _at('P2_RECOVERY_LOGIN');
           username: _username, password: _password,
         ) == NativePasswordDecision.authenticated &&
         observed.recovery == 1 &&
@@ -385,6 +408,7 @@ class G13PhoneHttpsCheck {
       // G6 recovery gateway has no dedicated safe logout API. Test the G10
       // journal/vault logout primitives explicitly, with real server revoke.
       await journal.arm();
+    _at('P2_REVOKE');
       await port.revoke(refresh: (await vault.read())!);
       await vault.clear();
       await journal.confirmLogoutCompleted(vault: vault);
@@ -395,6 +419,7 @@ class G13PhoneHttpsCheck {
           'RECOVERY_SERVER_LOGOUT_FAILED');
 
       await store.write(_markerKey, 'g13-test-invalid-marker');
+    _at('P2_CORRUPT_MARKER');
       var blocked = false;
       try {
         await journal.requiresReauthentication();
@@ -422,6 +447,7 @@ class G13PhoneHttpsCheck {
   }
 
   static Future<void> cleanup() async {
+    _at('CLEANUP');
     final store = _newStore();
     await store.delete(_markerKey);
     await store.delete(_refreshKey);
