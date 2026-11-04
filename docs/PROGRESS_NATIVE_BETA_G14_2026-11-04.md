@@ -138,3 +138,24 @@ G14-A y G14-B **PASS de laboratorio**, no emisores operativos ni pruebas de cust
 - `G14_C_ATOMICITY_TESTS=PENDING`: código publicado, pendiente lote local posterior al HEAD `473b4259e`.
 
 **Condición crítica antes de otro avance:** no aceptar argumentos `verified_mfa` de fuentes no confiables ni booleanos del evaluador G14-B como prueba criptográfica. El verificador confiable, la custodia autorizada de MFA, carreras reales y revisión de permisos seguirán pendientes incluso si estas cinco pruebas pasan. No liberar, migrar ni habilitar rutas reales.
+
+
+## 04/11/2026 — G14-C PASS local y siguiente frontera G14-D
+
+Resultado comunicado por operador al ejecutar lote integral tras la incorporación de los cinco tests de atomicidad:
+```
+G14_C_N1=0
+G14_C_BATCH=0
+N1_STATIC_g14_admission_test_only=OK
+N1_STATIC_g14_issuer_policy_untrusted_evidence_only=OK
+N1_STATIC_g14_atomicity_only_in_disposable_tests=OK
+N1_STATIC_GATE_RESULT=OK
+G5_CANDIDATE_PG17_RESULT=0
+M3_HTTP_G4_PG17=0
+M3_HTTP_FLUTTER=0
+```
+El último renglón suministrado fue `M3_HT,TP_RESULT=0`, que **no es una etiqueta válida**; no atribuir `M3_HTTP_RESULT=0` textual a esta salida. El código de salida del batch `G14_C_BATCH=0` confirma finalización correcta. SHA exacto de este checkout no incluido.
+
+**G14_A_VALIDATION=PASS; G14_B_POLICY=PASS; G14_C_ATOMICITY=PASS (laboratorio); G14_D_TRUSTED_ISSUER=PENDING; PRODUCTION_RELEASE=NO.**
+
+El siguiente trabajo debe distinguir *evidencia declarativa* de verificación autoritativa real: la estructura `IssuanceSecurityEvidence` de G14-B no acredita contraseña/MFA. Para G14-D preparar un verificador aislado del lado servidor, con revalidación bajo lock y ensayos negativos (contraseña inválida, MFA habilitado no completado, generación obsoleta, carrera con cambio de contraseña/revocación, auditoría rollback, aislamiento en `VENCIRA_ENV=test`). No exponer vistas, no modificar `config.urls` o autenticación DRF operativa, no migrar la DB persistente. MFA con custodia real sigue bloqueado hasta autorización.
