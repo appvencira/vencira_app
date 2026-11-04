@@ -580,3 +580,14 @@ Durante la revisión del código se identificó una probable causa adicional: la
 La interfaz G13 ahora especifica explícitamente que Termius SSH local-forward es alternativa al USB/ADB reverse y puede clasificar excepciones de red como G13_LOCAL_FORWARD_UNREACHABLE y las de TLS como G13_TLS_CERTIFICATE_OR_HANDSHAKE_FAILED, sin mostrar contenido de excepción, credenciales o tokens.
 
 **Para continuar:** cerrar de forma controlada el LABORATORIO G13 ACTUAL pulsando Intro en el prompt G13 lab teardown de la sesión VPS, sin detener contenedores de producción. Actualizar rama desde GitHub, arrancar un nuevo bash scripts/g13_android_usb_https_lab.sh --ssh-tunnel dentro de tmux, esperar a G13_LAB_SESSION_ACTIVE=1, descargar/instalar la **nueva** APK efímera con la CA pública correspondiente a ese arranque y activar en Termius un forward Local que vincule 127.0.0.1:18743 en Android con 127.0.0.1:18743 del VPS. No reutilizar la APK con CA anterior. Solo después pulsar fase 1. No forzar detención de Termius, no abrir puertos públicos ni establecer ruta alternativa al VPS. Si falla, informar el código nuevo y el estado del port forwarding. Los gates de producción siguen bloqueados, PR #17 DRAFT.
+
+
+## ACTUALIZACIÓN 04/11/2026 — G13 Android físico cerrado, continuidad G14
+
+**Fuente de progreso vigente:** [PROGRESS_NATIVE_BETA_G14_2026-11-04.md](PROGRESS_NATIVE_BETA_G14_2026-11-04.md). El 04/11 operador reportó los nueve marcadores PASS de G13 fase 1 y los nueve de fase 2, terminando con `G13_ANDROID_REAL_HTTPS_RESULT=0`. Queda cerrado G13 como **laboratorio físico Android**, no como release de autenticación operativa. Tras force-stop se perdió temporalmente el túnel local SSH, se restableció y se completó fase 2 sin repetir fase 1. Evidencia detallada en `G13_ANDROID_USB_REAL_TLS_2026-11-04.md`.
+
+**Indicadores controlados:** G13 18/18 = 100 %; gates operativos G0–G9 plenamente cerrados 1/10 = 10 % del número de gates, NO del producto. No asignar un porcentaje global ficticio.
+
+**Nuevo foco G14:** integración segura de emisor candidato y políticas G5/G6, usando exclusivamente entorno test y PG17 efímero. No abrir rutas de autenticación reales. Código G14 aún no iniciado en esta actualización, pruebas G14 no ejecutadas. Mantener prohibición de despliegues, migraciones persistentes y merge. G1/G2/G3, custodia externa, auditoría completa de recursos y G9 siguen bloqueando beta pública.
+
+**Next:** implementar G14 con pruebas y gates; al terminar solicitar un único batch de PG17 efímero sin repetir el ensayo físico G13 salvo cambio en el cliente/protocolo.
