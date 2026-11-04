@@ -159,3 +159,24 @@ El último renglón suministrado fue `M3_HT,TP_RESULT=0`, que **no es una etique
 **G14_A_VALIDATION=PASS; G14_B_POLICY=PASS; G14_C_ATOMICITY=PASS (laboratorio); G14_D_TRUSTED_ISSUER=PENDING; PRODUCTION_RELEASE=NO.**
 
 El siguiente trabajo debe distinguir *evidencia declarativa* de verificación autoritativa real: la estructura `IssuanceSecurityEvidence` de G14-B no acredita contraseña/MFA. Para G14-D preparar un verificador aislado del lado servidor, con revalidación bajo lock y ensayos negativos (contraseña inválida, MFA habilitado no completado, generación obsoleta, carrera con cambio de contraseña/revocación, auditoría rollback, aislamiento en `VENCIRA_ENV=test`). No exponer vistas, no modificar `config.urls` o autenticación DRF operativa, no migrar la DB persistente. MFA con custodia real sigue bloqueado hasta autorización.
+
+
+## 04/11/2026 — G14-D1 verificador candidato con lock (PUBLICADO, PENDING TEST)
+
+Nuevo `backend/native_mobile_service/g14_locked_verifier.py`:
+- `verify_candidate_password_only` opera solo si el gate del servicio candidato `VENCIRA_ENV=test` está abierto.
+- Usa `select_for_update` sobre el usuario activo, `check_password` en servidor, lectura de `UserMfaState` y `require_mobile_identity_gate` para cuarentena y credencial actual.
+- **Rechaza siempre** cuentas con MFA activo. No comprueba TOTP, no invoca `issue_verified_candidate_session`, no emite bearer/refresh ni añade rutas.
+- Devuelve identificador de usuario y generación de revocación solo como **metadatos no transferibles** para el laboratorio; no son un comprobante firmado ni autorizan la emisión posterior, especialmente tras soltar el lock.
+- Pruebas: `test_g14_locked_verifier.py` con ocho casos positivos/negativos para contraseña errónea, cuenta inexistente, cambio de contraseña, MFA activado, revocación, cuenta inactiva, gate cerrado y entradas inválidas. Integradas en el runner PG17 efímero, CI SQLite/PG17 y N1.
+
+**No confundir con G14-D completo**: sigue faltando emparejar admisión G14-A, autenticación+MFA autoritativa y emisor en una única transición revisada, con lock hasta commit y custodia MFA real. Ninguna vista operativa ni endpoint ha sido habilitado, ni hay mutaciones en BD persistente.
+
+```
+G14_A_VALIDATION=PASS
+G14_B_POLICY=PASS
+G14_C_ATOMICITY=PASS
+G14_D1_LOCKED_VERIFIER=CODE_PUBLISHED_TEST_PENDING
+G14_D_TRUSTED_ISSUER=NOT_IMPLEMENTED
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
