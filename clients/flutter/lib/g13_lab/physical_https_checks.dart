@@ -110,10 +110,10 @@ http.Client _createTlsClient({required bool trustLabCa}) {
         'INVALID_PUBLIC_CA');
     trust.setTrustedCertificatesBytes(utf8.encode(pem));
   }
-  final client = HttpClient(context: trust)
-    ..findProxy = (_) => 'DIRECT'
-    ..connectionTimeout = const Duration(seconds: 5)
-    ..idleTimeout = const Duration(seconds: 3);
+  final client = HttpClient(context: trust);
+  client.findProxy = (_) => 'DIRECT';
+  client.connectionTimeout = const Duration(seconds: 5);
+  client.idleTimeout = const Duration(seconds: 3);
 
   client.connectionFactory = (uri, proxyHost, proxyPort) {
     if (uri.scheme != 'https' || uri.host != 'dev.vencira.es' ||
