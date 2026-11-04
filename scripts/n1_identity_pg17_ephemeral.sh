@@ -61,6 +61,7 @@ case "$MODE" in
       native_mobile_service.test_g5_audit_pg17_races
       native_mobile_service.test_g5_keyring_policy
       native_mobile_service.test_g5_digest_capacity
+      native_mobile_service.test_g14_admission
     )
     ;;
   --lab-case)
