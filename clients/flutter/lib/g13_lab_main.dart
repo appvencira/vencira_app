@@ -2,6 +2,8 @@
 // Strict DEBUG-only, ephemeral CA embedded at build time, synthetic credentials.
 // Never imported by operational main.dart; cannot contact public DNS.
 import 'dart:io';
+import 'dart:async';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -86,15 +88,28 @@ class _HomeState extends State<_Home> {
       // Only explicit lab error codes are displayed. No URI, secrets, token,
       // plaintext, stack trace, or platform exception body is ever shown.
       final reason = e is StateError ? e.message : null;
-      final category = e is SocketException
-          ? 'G13_LOCAL_FORWARD_UNREACHABLE'
-          : e is TlsException
-              ? 'G13_TLS_CERTIFICATE_OR_HANDSHAKE_FAILED'
-              : 'G13_LAB_ACTION_FAILED';
+      // Only fixed codes and fixed stage names may leave this DEBUG screen.
+      final category = e is TlsException
+          ? 'G13_TLS_CERTIFICATE_OR_HANDSHAKE_FAILED'
+          : e is SocketException
+              ? 'G13_LOCAL_FORWARD_OR_SOCKET_FAILED'
+              : e is TimeoutException
+                  ? 'G13_NETWORK_OR_OPERATION_TIMEOUT'
+                  : e is HttpException
+                      ? 'G13_HTTP_CLIENT_EXCEPTION'
+                      : e is PlatformException || e is MissingPluginException
+                          ? 'G13_ANDROID_PLATFORM_OR_SECURE_STORE_FAILED'
+                          : e is FormatException
+                              ? 'G13_RESPONSE_OR_DATA_FORMAT_FAILED'
+                              : 'G13_UNCLASSIFIED_ACTION_FAILED';
+      final safeReason = reason is String &&
+              RegExp(r'^G13_[A-Z0-9_]{1,90}$').hasMatch(reason)
+          ? reason : category;
+      final stage = G13PhoneHttpsCheck.diagnosticStage;
+      final safeStage = RegExp(r'^[A-Z0-9_]{1,60}$').hasMatch(stage)
+          ? stage : 'UNKNOWN';
       setState(() {
-        _error = reason is String && reason.startsWith('G13_')
-            ? reason
-            : category;
+        _error = '$safeReason\nG13_FAILURE_STAGE=$safeStage';
       });
     } finally {
       if (mounted) setState(() => _busy = false);
