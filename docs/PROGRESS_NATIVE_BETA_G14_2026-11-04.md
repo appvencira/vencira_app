@@ -46,7 +46,7 @@ Hubo desconexión local de Termius tras cierre forzado; se recuperó el túnel y
 
 ### Resultado de esta revisión
 
-**G14_SPEC_READY=YES; G14_IMPLEMENTATION=NOT_STARTED; G14_TESTS=NOT_RUN.** El plan no incrementa por sí solo el contador de gates operativos.
+**G14_SPEC_READY=YES; G14_ADMISSION_CANDIDATE=CODE_PUBLISHED; G14_ISSUER=NOT_IMPLEMENTED; G14_TESTS=NOT_RUN.** El plan no incrementa por sí solo el contador de gates operativos.
 
 ## Próxima aceptación necesaria
 
@@ -59,3 +59,18 @@ MB1_RELEASE_AUTHORIZED=NO
 C_FICHA_RELEASE_AUTHORIZED=NO
 GLOBAL_FREEZE=NOT_VERIFIED
 ```
+
+
+## G14 — Subbloque A publicado (candidato de preadmisión, NO emisor)
+
+Archivos nuevos:
+- `backend/native_mobile_service/g14_admission.py`: **solo test-only**; exige claves de auditoría y cuota, consume límites por cuenta/IP y registra la denegación mínima dentro de una única transacción. La admisión permite únicamente proseguir a una verificación FUTURA, nunca emite token ni demuestra MFA.
+- `backend/native_mobile_service/test_g14_admission.py`: ocho pruebas sintéticas de cuota, auditoría saneada, claves ausentes, UUID contradictorio/rollback, proxy multihop rechazado, aislamiento de entorno.
+- `scripts/n1_identity_pg17_ephemeral.sh --candidate` y `.github/workflows/m3-product-contracts.yml`: incluyen las nuevas pruebas en PG17/SQLite desechables.
+- `scripts/n1_static_security_gate.py`: exige que G14 no importe el emisor ni esté expuesto desde URLs operativas.
+
+**Código publicado, pero el gate integral G14 todavía NO se ha ejecutado.** El cierre de gates G0–G9 permanece 1/10. Próximo paso: N1 estático y lote PG17 efímero antes de cualquier trabajo de emisor confiable. No reutilizar estas pruebas como autorización de autenticación operativa.
+
+### Lote local único requerido para validar el subbloque
+
+Desde `~/vencira-m3-localcheck`, tras `git fetch` y `git merge --ff-only FETCH_HEAD`, ejecutar `python3 scripts/n1_static_security_gate.py` y `bash scripts/m3_native_http_contract_batch.sh` bajo un subshell, sin `exit` que cierre la consola de Termius. Anotar HEAD preciso, `N1_STATIC_GATE_RESULT`, `M3_HTTP_RESULT`, resultados PG17 y Flutter; no imprimir logs con material secreto.
