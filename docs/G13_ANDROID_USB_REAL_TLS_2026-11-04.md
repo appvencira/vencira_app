@@ -163,3 +163,22 @@ Análisis Flutter real del candidato anterior: un único error en `physical_http
 ## G13 — N1 gate correction after Dart analyze PASS (04/11/2026)
 
 Operator reports `flutter analyze` for both G13 sources: **No issues found**. On repeating G13, N1 failed precisely `g13_android_real_tls_usb_only` and `g13_termux_ssh_local_forward_isolated` before Docker. Root cause in the static guard: stale string assertion for the invalid `ConnectionTask<Socket>.fromSocket` syntax, plus the SSH guard still required raw `return Socket.startConnect(...);` and rejected all `SecureSocket.secure`, contradicting the verified TLS connection factory. Updated both guards to require the current static `ConnectionTask.fromSocket<Socket>`, explicit one-hop TLS with trusted context, and no bypass. Commit `78afef12`. **Static gate re-run pending**; no deploy, live migration, or release authorization.
+
+
+## G13 — Evidencia física: fase 1 aprobada (04/11/2026)
+
+Operador informa desde la APK Android G13, con el túnel SSH y el Django HTTPS aislado:
+
+```
+G13_ANDROID_TLS_CERT_VERIFIED=OK
+G13_ANDROID_UNTRUSTED_CA_DENIED=OK
+G13_ANDROID_REAL_FIRST_ISSUE=OK
+G13_ANDROID_DJANGO_LOGOUT_REVOKED=OK
+G13_ANDROID_REVOKE_FAULT_FENCED=OK
+G13_ANDROID_REVOKE_RETRY_CONFIRMED=OK
+G13_ANDROID_MFA_TLS_COMMITTED=OK
+G13_ANDROID_UNKNOWN_ISSUANCE_FENCED=OK
+G13_ANDROID_FORCE_STOP_REQUIRED=1
+```
+
+**Aceptación de fase 1: PASS reportado en dispositivo físico.** La fase 2 sigue PENDING; no se confirma `G13_ANDROID_REAL_HTTPS_RESULT=0` aún. Para fase 2: mantener VPS y túnel, forzar detención de la APK Android (sin cerrar el túnel), abrir otra vez y pulsar Verificar fase 2. No limpiar claves ni generar otro certificado entre fases. PR #17 DRAFT; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
