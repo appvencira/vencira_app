@@ -610,3 +610,12 @@ El operador confirma `G14_N1_RESULT=0`, `G14_BATCH_RESULT=0`, `N1_STATIC_g14_adm
 After G14-A full integrated local PASS, published `g14_issuance_contract.py`, `test_g14_issuance_contract.py` and N1/PG17/SQLite candidate suite wiring. Ten synthetic test cases define failure criteria for password-version, account generation, MFA-required plus current epoch, quarantine, abuse budget, audit and inactive account. **This is NOT an issuer.** It takes caller-supplied evidence booleans and must NEVER be used as proof of authentication or authorization to call the issuer. Tests have NOT been run on operator's new checkout. See `PROGRESS_NATIVE_BETA_G14_2026-11-04.md`.
 
 Next action: one isolated N1 + M3 contract batch. If green, design G14-C verification source and atomic issuer transaction with trusted MFA custody, without opening native URLs. G1/G2/G3/G9 production gates still NO.
+
+
+## G14-B local PASS y G14-C rollback candidato (04/11/2026)
+
+Operador confirmó HEAD exacto `473b4259e` para `G14_B_N1=0`, `G14_B_BATCH=0`, ambos controles estáticos G14=OK, `G5_CANDIDATE_PG17_RESULT=0`, `M3_HTTP_G4_PG17=0`, `M3_HTTP_FLUTTER=0` y `M3_HTTP_RESULT=0`. **G14-B PASS en laboratorio.**
+
+Posteriormente se publicaron cinco pruebas G14-C de atomicidad entre emisión candidata y registro de auditoría, con rollback por error de auditoría, evento contradictorio y fallo antes de commit; el runner candidato y CI SQLite/PG17 las incluyen, y N1 exige su aislamiento. **G14-C código publicado; ejecución pendiente; emisor/verificador de credenciales reales NO implementado, URLs operativas NO habilitadas.** Véase `PROGRESS_NATIVE_BETA_G14_2026-11-04.md`.
+
+**Próxima comprobación local:** actualizar fast-forward y ejecutar una única pasada N1 + M3 en PG17 efímero; informar HEAD, N1, G5_CANDIDATE_PG17_RESULT, M3_HTTP_RESULT. Sin repetir G13 y sin tocar DB real. MFA/MB1/C-FICHA release siguen NO.
