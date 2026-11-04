@@ -640,3 +640,12 @@ Evidencia previa G14-C PASS no se extiende a este commit. Próximo operador: fas
 Operador confirmó `G14_D1_N1=0`, `G14_D1_BATCH=0`, `N1_STATIC_g14_locked_verifier_test_only_no_issuer=OK`, `N1_STATIC_GATE_RESULT=OK`, `G5_CANDIDATE_PG17_RESULT=0`, `M3_HTTP_G4_PG17=0`, `M3_HTTP_FLUTTER=0` y `M3_HTTP_RESULT=0`. Se cierra **G14-D1 como test-only PASS**, sin emisor confiable ni endpoints. SHA exacto del checkout no compartido. Marcadores y límites en `docs/PROGRESS_NATIVE_BETA_G14_2026-11-04.md`.
 
 **Riesgo a resolver en G14-D2:** `verify_candidate_password_only` devuelve usuario/generación una vez liberado el lock. Esa pareja es metadato sin autenticación; no puede alimentar un emisor fuera de la misma transacción. `issue_verified_candidate_session` recibe `verified_mfa` del caller y tampoco es un emisor autorizado. Se exige verificar contraseña/MFA y revalidar bajo locks, sin MFA bypass, con consumo de TOTP y auditoría transaccional; no exponer rutas ni producción. Permisos y custodia MFA externa siguen pendientes. No repetir tests ya verdes.
+
+
+## G14-D2 — TOCTOU entre verificación y emisión; regresión negativa PENDING (04/11/2026)
+
+Se ha confirmado por lectura de fuentes que el verificador D1 devuelve metadatos una vez liberado el lock, mientras que `issue_verified_candidate_session` acepta `user_id/verified_mfa/mfa_epoch/expected_generation` sin una prueba autoritativa de contraseña reciente. La revalidación del emisor comprueba credencial actual y MFA, **pero no comprueba que se posea la contraseña**. Por tanto es un bloqueo para conectar un emisor HTTP real.
+
+Añadido `native_mobile_service/test_g14_untrusted_evidence.py` con cuatro pruebas ilustrativas (incluida una que demuestra la emisión de bajo nivel tras rotación de contraseña, y debe tratarse como riesgo, no garantía), suites SQLite/PG17 y estático N1. Código publicado, **no ejecutado aún**. Documento `PROGRESS_NATIVE_BETA_G14_2026-11-04.md` actualizado. G14-D2 completo y release permanecen **NO**.
+
+Next: fast-forward y una ejecución N1 + M3 PG17 temporal; después resolver diseño de emisor único de confianza bajo lock completo y custodia MFA, sin rutas operativas ni DB persistente.
