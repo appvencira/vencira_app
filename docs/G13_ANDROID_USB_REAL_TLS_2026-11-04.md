@@ -153,3 +153,8 @@ VPS relay/HTTP 401 está correcto. Chrome llegó al servicio TLS y rechazó su C
 **Cambio candidato:** la fábrica permite solo HTTPS dev.vencira.es:443 sin proxy, abre TCP a Android 127.0.0.1:18743, realiza `SecureSocket.secure(raw, host: uri.host, context: trust)` exactamente una vez, con `SecurityContext(withTrustedRoots:false)` y la CA pública efímera. Sin `badCertificateCallback`, DNS público ni bypass de verificación. Usa `ConnectionTask.fromSocket` y destruye sockets fallidos/cancelados. El guard estático N1 comprueba el handshake explícito y evita volver a la conexión cruda. Referencias oficiales: https://api.flutter.dev/flutter/dart-io/HttpClient/connectionFactory.html y código SDK https://dart.googlesource.com/sdk.git/+/refs/tags/3.7.0-207.0.dev/sdk/lib/_http/http_impl.dart (sección _ConnectionTarget.connect).
 
 **Estado:** publicado en rama de PR #17, **análisis Flutter, CI y prueba física del nuevo candidato pendientes**. No declarar G13 PASS; correr primero N1 y Flutter analyze, después regenerar laboratorio/CA/APK. Mantener NO_DEPLOY_NO_LIVE_MIGRATION=1 y release gates NO.
+
+
+## G13 — Corrección de llamada estática Dart (04/11/2026)
+
+Análisis Flutter real del candidato anterior: un único error en `physical_https_checks.dart:142`, `ConnectionTask<Socket>.fromSocket` interpretado incorrectamente como constructor. La API oficial especifica un método estático `ConnectionTask.fromSocket<T extends Socket>(Future<T>, void Function())`, no un constructor. Se ha sustituido por `ConnectionTask.fromSocket<Socket>(verified, ...)`, manteniendo TLS estricto y sin cambios de servidor. Commit `6c98a5fb`. **Pendiente de reanálisis Flutter; NO atribuir PASS al nuevo checkout.**
