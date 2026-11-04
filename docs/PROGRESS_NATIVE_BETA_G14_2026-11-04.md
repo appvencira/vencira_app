@@ -247,3 +247,8 @@ M3_HTTP_RESULT=0
 **Resultado: G14_D2_NEGATIVE_REGRESSION=PASS.** La prueba deliberadamente evidencia una emisión candidata posible después del cambio de contraseña si se invoca el emisor de bajo nivel sin acreditar posesión reciente: pasar el test **no corrige el defecto TOCTOU** ni concede autorización de emisor operativo. `G14_D2_TRUSTED_ISSUER=NOT_IMPLEMENTED`.
 
 **Siguiente cierre técnico exigible:** diseñar un único boundary transaccional que haga las verificaciones autoritativas dentro del mismo bloqueo que la emisión, con registro de auditoría y consumo TOTP, sin aceptar evidencia booleana ni identidad aportada como prueba. Necesita pruebas de carrera real PG17, acceso por defecto denegado, MFA real en laboratorio, bloqueo por cuarentena y revisión externa de custodia. No integrar HTTP, no desplegar ni migrar producción.
+
+
+## G14-D3 — revisión del cierre transaccional
+
+La emisión operativa continúa sin autorización. El siguiente control exige verificación de credenciales y estado MFA dentro del mismo límite de transacción que emisión y auditoría, con pruebas negativas de carreras de cuenta y revocación en PostgreSQL efímero. No se aceptarán como credenciales los metadatos devueltos por G14-D1. Sin rutas operativas, migración persistente o despliegue.
