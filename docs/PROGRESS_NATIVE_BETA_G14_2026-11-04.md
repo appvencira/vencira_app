@@ -269,3 +269,8 @@ G14_D3_TESTS=PENDING
 G14_D3_MFA_COMPLETE=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+### G14-D3 — Revisión de idempotencia
+
+Antes del ensayo local se corrigió el reuso de UUID de auditoría exitosa: una segunda emisión candidata con el mismo identificador debe revertirse íntegramente. Se añadió una prueba negativa y su gate N1. Continúa pendiente la ejecución del lote aislado, la carrera PG17 con cambios MFA y la revisión de todos los escritores de estado MFA. No implica autorización de producción.
