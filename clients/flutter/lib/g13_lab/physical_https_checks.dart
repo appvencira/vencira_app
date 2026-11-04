@@ -219,8 +219,8 @@ class G13PhoneHttpsCheck {
     final trusted = _createTlsClient(trustLabCa: true);
     _at('P1_TLS_CLIENT');
     try {
+      _at('P1_VERIFIED_HTTPS_401');
       _require(await _meStatus(trusted, null) == 401,
-    _at('P1_VERIFIED_HTTPS_401');
           'VERIFIED_TLS_PREFLIGHT_FAILED');
       final untrusted = _createTlsClient(trustLabCa: false);
     _at('P1_UNTRUSTED_CA');
@@ -335,8 +335,8 @@ class G13PhoneHttpsCheck {
           await uncertain.journal.requiresReauthentication(),
           'UNKNOWN_ISSUANCE_DID_NOT_FENCE');
 
+      _at('P1_RESTART_CHECKPOINT');
       _require(await prefs.setInt(_pidKey, pid),
-    _at('P1_RESTART_CHECKPOINT');
           'RESTART_PID_NOT_DURABLY_SAVED');
       return const [
         'G13_ANDROID_TLS_CERT_VERIFIED=OK',
@@ -393,8 +393,8 @@ class G13PhoneHttpsCheck {
       _require(await recovery.inspect() ==
           NativeStartupDisposition.fullReauthentication,
           'RECOVERY_GATE_DID_NOT_ROUTE');
+      _at('P2_RECOVERY_LOGIN');
       _require(await recovery.verifyPassword(
-    _at('P2_RECOVERY_LOGIN');
           username: _username, password: _password,
         ) == NativePasswordDecision.authenticated &&
         observed.recovery == 1 &&
