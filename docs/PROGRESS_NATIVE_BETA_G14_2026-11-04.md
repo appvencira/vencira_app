@@ -99,3 +99,17 @@ Ruta local: `/home/vencira/vencira-m3-results/m3-http-contract-20261104T211959Z`
 ### Continuidad inmediata
 
 Verificar diseño de emisor G14-B antes de permitir emisión: MFA real y custodia siguen bloqueados; no integrar vistas HTTP ni reutilizar una aserción booleana de MFA como prueba confiable. Completar revisión de desafíos MFA, carrera contra cambio de contraseña y rollback auditable con PostgreSQL17 desechable, y pruebas de denegación. No liberar hasta cumplir G1/G2/G3/G9. G14-B no cuenta como aprobado por el lote de G14-A.
+
+
+## G14-B — Contrato de requisitos del emisor publicado (04/11/2026)
+
+**Código disponible en PR #17, sin tests ejecutados todavía:**
+
+- `backend/native_mobile_service/g14_issuance_contract.py`: objeto inmutable `IssuanceSecurityEvidence` y `missing_issuance_requirements()`, que marca como requisitos pendientes usuario activo, versión de credenciales, generación de revocación, cuarentena, presupuesto G5, auditoría, y MFA/época cuando corresponda. Es **solo un evaluador de requisitos**. Un caller podría falsificar sus booleanos: NO supone evidencia criptográfica, ni autorización de emisión, ni autenticación.
+- `backend/native_mobile_service/test_g14_issuance_contract.py`: diez casos de evaluación y fallo cerrado de requisitos.
+- `scripts/n1_identity_pg17_ephemeral.sh --candidate` y `.github/workflows/m3-product-contracts.yml`: incluyen las pruebas G14-B, manteniendo PG17 y SQLite desechables.
+- `scripts/n1_static_security_gate.py`: prohíbe que el evaluador invoque al emisor o al verificador de contraseñas, y que se importe desde URLConfs operativos.
+
+**Bloqueo material a resolver en G14-C:** construir y probar un verificador real y confiable del lado servidor (contraseña y segundo factor, con custodia MFA autorizada), convertir sus resultados en una transición atómica bajo lock de cuenta y no confiar jamás en booleanos recibidos de un caller no autorizado. Demostrar concurrencia, revocación, rollback y auditoría. El objeto G14-B jamás deberá usarse por sí solo para invocar `issue_verified_candidate_session`.
+
+**Estado:** `G14_A_VALIDATION=PASS`, `G14_B_POLICY_CODE=PUBLISHED`, `G14_B_TESTS=PENDING`, `G14_C_TRUSTED_ISSUER=NOT_IMPLEMENTED`, `NATIVE_RELEASE=NO`. Las 10 pruebas son nuevas desde el último lote del operador; el PASS de G14-A no las cubre.
