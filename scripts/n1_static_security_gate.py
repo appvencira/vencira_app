@@ -91,6 +91,7 @@ def verify():
     g14_test = read("backend/native_mobile_service/test_g14_admission.py")
     g14_issuance = read("backend/native_mobile_service/g14_issuance_contract.py")
     g14_issuance_test = read("backend/native_mobile_service/test_g14_issuance_contract.py")
+    g14_atomicity_test = read("backend/native_mobile_service/test_g14_issuance_atomicity.py")
 
     failures = []
     checks = {
@@ -234,6 +235,17 @@ def verify():
             and "g14_issuance_contract" not in config
             and "g14_issuance_contract" not in routes
             and "g14_issuance_contract" not in candidate_urls,
+        "g14_atomicity_only_in_disposable_tests":
+            "test_audit_unavailable_rolls_back_session" in g14_atomicity_test
+            and "test_conflicting_audit_event_rolls_back_new_session" in g14_atomicity_test
+            and "test_transaction_abort_rolls_back_session_and_audit" in g14_atomicity_test
+            and "test_revocation_generation_denies_stale_issuance" in g14_atomicity_test
+            and "transaction.atomic()" in g14_atomicity_test
+            and "issue_verified_candidate_session(" in g14_atomicity_test
+            and "record_candidate_auth_event(" in g14_atomicity_test
+            and "g14_issuance_atomicity" not in config
+            and "g14_issuance_atomicity" not in routes
+            and "g14_issuance_atomicity" not in candidate_urls,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
@@ -873,6 +885,7 @@ def verify():
         "backend/native_mobile_service/test_g14_admission.py",
         "backend/native_mobile_service/g14_issuance_contract.py",
         "backend/native_mobile_service/test_g14_issuance_contract.py",
+        "backend/native_mobile_service/test_g14_issuance_atomicity.py",
         "backend/reminders/native_mobile_identity_gate.py",
         "backend/reminders/native_mobile_token_primitives.py",
     ):
