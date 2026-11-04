@@ -31,6 +31,8 @@ path = Path("scripts/g13_usb_loopback_relay.py")
 ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
 print("G13_HOST_RELAY_PYTHON_SYNTAX=OK")
 PY
+python3 scripts/test_g13_usb_loopback_relay.py
+echo "G13_HOST_RELAY_SMOKE=OK"
 
 # Fail early, before a Docker build, if another service owns G13's
 # localhost-only port. Reuse of TIME_WAIT is allowed, but never override an
