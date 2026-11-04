@@ -223,3 +223,27 @@ Se ha identificado **un bloqueo de diseño material**: `g14_locked_verifier.veri
 **Regresiones nuevas, publicadas y aún pendientes de ejecución:** `backend/native_mobile_service/test_g14_untrusted_evidence.py` (4 casos): denegación por generación de revocación antigua, demostración explícita del hueco entre comprobación de contraseña y emisor de bajo nivel, denegación de una emisión no-MFA tras activar MFA y ausencia de URLConf emisor en `config.urls`. Incorporadas al lote PG17 efímero, SQLite CI y N1 estático. La demostración de la emisión después de cambiar contraseña **no equivale a prueba de seguridad superada**: es precisamente la reproducción del riesgo que debe eliminar un futuro emisor confiable.
 
 **Estado correcto:** `G14_D1_VALIDATION=PASS`, `G14_D2_RISK_REPRODUCER=CODE_PUBLISHED_TEST_PENDING`, `G14_D2_TRUSTED_ISSUER=BLOCKED`. Para cerrar D2, el único componente facultado para llamar a la emisión debe comprobar contraseña/TOTP de forma autoritativa bajo el bloqueo correspondiente y completar emisión+auditoría en la misma transacción, con revocación y MFA; no aceptar metadatos, booleanos G14-B ni `verified_mfa` del caller como credencial. No abrir endpoints ni usar la BD persistente. La custodia externa MFA continúa pendiente.
+
+
+## 04/11/2026 — G14-D2 regresión negativa PASS (HEAD confirmado)
+
+Operador informa HEAD `6f1117ee` y:
+
+```
+G14_D2_N1=0
+G14_D2_BATCH=0
+N1_STATIC_g14_admission_test_only=OK
+N1_STATIC_g14_issuer_policy_untrusted_evidence_only=OK
+N1_STATIC_g14_atomicity_only_in_disposable_tests=OK
+N1_STATIC_g14_locked_verifier_test_only_no_issuer=OK
+N1_STATIC_g14_d2_untrusted_evidence_negative_contract=OK
+N1_STATIC_GATE_RESULT=OK
+G5_CANDIDATE_PG17_RESULT=0
+M3_HTTP_G4_PG17=0
+M3_HTTP_FLUTTER=0
+M3_HTTP_RESULT=0
+```
+
+**Resultado: G14_D2_NEGATIVE_REGRESSION=PASS.** La prueba deliberadamente evidencia una emisión candidata posible después del cambio de contraseña si se invoca el emisor de bajo nivel sin acreditar posesión reciente: pasar el test **no corrige el defecto TOCTOU** ni concede autorización de emisor operativo. `G14_D2_TRUSTED_ISSUER=NOT_IMPLEMENTED`.
+
+**Siguiente cierre técnico exigible:** diseñar un único boundary transaccional que haga las verificaciones autoritativas dentro del mismo bloqueo que la emisión, con registro de auditoría y consumo TOTP, sin aceptar evidencia booleana ni identidad aportada como prueba. Necesita pruebas de carrera real PG17, acceso por defecto denegado, MFA real en laboratorio, bloqueo por cuarentena y revisión externa de custodia. No integrar HTTP, no desplegar ni migrar producción.
