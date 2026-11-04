@@ -563,8 +563,12 @@ def verify():
             and 'InternetAddress.loopbackIPv4' in g13_phone_flow
             and '_labPort = 18743' in g13_phone_flow
             and 'HttpClient(context: trust)' in g13_phone_flow
-            and "return Socket.startConnect(InternetAddress.loopbackIPv4, _labPort);" in g13_phone_flow
-            and "SecureSocket.secure(" not in g13_phone_flow
+            and 'SecureSocket.secure(' in g13_phone_flow
+            and 'host: uri.host' in g13_phone_flow
+            and 'context: trust' in g13_phone_flow
+            and 'ConnectionTask<Socket>.fromSocket(verified' in g13_phone_flow
+            and 'raw.destroy()' in g13_phone_flow
+            and 'task.cancel()' in g13_phone_flow
             and 'SecurityContext(withTrustedRoots: false)' in g13_phone_flow
             and 'SecurityContext(withTrustedRoots: false)' in g13_phone_flow
             and 'G13_ANDROID_UNTRUSTED_CA_DENIED=OK' in g13_phone_flow
@@ -579,6 +583,7 @@ def verify():
             and "before != pid" not in g13_phone_flow
             and "previous != pid" in g13_phone_flow
             and 'Socket.startConnect(InternetAddress.loopbackIPv4, _labPort)' in g13_phone_flow
+            and 'SecurityContext(withTrustedRoots: false)' in g13_phone_flow
             and 'badCertificateCallback' not in g13_phone_flow
             and 'es.vencira.vencira.g13lab' in g13_phone_runner
             and '--target=lib/g13_lab_main.dart' in g13_phone_runner
