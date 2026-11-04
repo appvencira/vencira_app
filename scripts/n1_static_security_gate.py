@@ -46,6 +46,12 @@ def verify():
     g12_phone_flow = read("clients/flutter/lib/g12_lab/physical_auth_checks.dart")
     g12_phone_runner = read("scripts/g12_phone_apk_build.sh")
     g12_phone_ci = read(".github/workflows/g12-phone-auth-apk.yml")
+    g13_phone_main = read("clients/flutter/lib/g13_lab_main.dart")
+    g13_phone_flow = read("clients/flutter/lib/g13_lab/physical_https_checks.dart")
+    g13_phone_runner = read("scripts/g13_phone_apk_build.sh")
+    g13_host_lab = read("scripts/g13_android_usb_https_lab.sh")
+    g13_loopback_relay = read("scripts/g13_usb_loopback_relay.py")
+    g13_ci = read(".github/workflows/g13-android-https-source.yml")
     g9_boot = read("clients/flutter/lib/api/native_mobile_startup_gate.dart")
     g9_entry = read("clients/flutter/lib/api/native_mobile_recovery_entry.dart")
     g9_boot_test = read("clients/flutter/test/native_mobile_startup_gate_test.dart")
@@ -468,8 +474,8 @@ def verify():
             and 'native_sessions_lab.test_urls' not in routes,
         "g12_physical_android_offline_auth_isolated":
             'VENCIRA_G12_LAB_BUILD' in g8_gradle
-            and 'g8LabBuild && g12LabBuild' in g8_gradle
-            and '(g8LabBuild || g12LabBuild)' in g8_gradle
+            and 'listOf(g8LabBuild, g12LabBuild, g13LabBuild).count { it } > 1' in g8_gradle
+            and '(g8LabBuild || g12LabBuild || g13LabBuild)' in g8_gradle
             and 'applicationIdSuffix = ".g12lab"' in g8_gradle
             and 'VENCIRA G12 Pruebas' in g8_gradle
             and 'applicationIdSuffix = ".g8lab"' in g8_gradle
@@ -522,6 +528,90 @@ def verify():
             and 'NO_DEPLOY_NO_LIVE_MIGRATION=1' in g12_phone_ci
             and 'native_sessions_lab.test_urls' not in config
             and 'native_sessions_lab.test_urls' not in routes,
+        "g13_android_real_tls_usb_only":
+            'VENCIRA_G13_LAB_BUILD' in g8_gradle
+            and 'applicationIdSuffix = ".g13lab"' in g8_gradle
+            and 'VENCIRA G13 TLS' in g8_gradle
+            and 'applicationIdSuffix = ".g12lab"' in g8_gradle
+            and 'applicationIdSuffix = ".g8lab"' in g8_gradle
+            and 'listOf(g8LabBuild, g12LabBuild, g13LabBuild).count { it } > 1' in g8_gradle
+            and '(g8LabBuild || g12LabBuild || g13LabBuild)' in g8_gradle
+            and "bool.fromEnvironment('VENCIRA_G13_LAB_BUILD')" in g13_phone_main
+            and "String.fromEnvironment('G13_LAB_PUBLIC_CA_BASE64')" in g13_phone_main
+            and 'G13_DEBUG_ANDROID_TEMPORARY_CA_ONLY' in g13_phone_main
+            and 'kReleaseMode' in g13_phone_main
+            and 'Platform.isAndroid' in g13_phone_main
+            and 'G13PhoneHttpsCheck.prepare' in g13_phone_main
+            and 'G13PhoneHttpsCheck.verifyAfterRestart' in g13_phone_main
+            and 'G13PhoneHttpsCheck.cleanup' in g13_phone_main
+            and 'vencira_g13_phone_tls_v1' in g13_phone_flow
+            and 'FlutterNativeSecretStore(' in g13_phone_flow
+            and 'resetOnError: false' in g13_phone_flow
+            and 'migrateOnAlgorithmChange: false' in g13_phone_flow
+            and 'NativeFirstIssuanceEntry(' in g13_phone_flow
+            and 'NativeMobileRecoveryEntry(' in g13_phone_flow
+            and 'NativeHttpAuthPort(' in g13_phone_flow
+            and 'NativeMobileStartupGate(' in g13_phone_flow
+            and 'NativeSessionCoordinator(' in g13_phone_flow
+            and 'NativeRefreshRecoveryJournal(' in g13_phone_flow
+            and 'NativeRefreshCredentialVault(' in g13_phone_flow
+            and 'firstIssuanceJournal: journal' in g13_phone_flow
+            and "G13_ANDROID_REAL_HTTPS_RESULT=0" in g13_phone_flow
+            and "G13_POST_COMMIT_ISSUANCE_RESPONSE_LOST" in g13_phone_flow
+            and 'G13_REQUEST_WITHOUT_DURABLE_CHECKPOINT' in g13_phone_flow
+            and 'G13_NONLAB_DESTINATION_BLOCKED' in g13_phone_flow
+            and 'InternetAddress.loopbackIPv4' in g13_phone_flow
+            and '_labPort = 18743' in g13_phone_flow
+            and "SecureSocket.secure(" in g13_phone_flow
+            and "host: uri.host, context: trust" in g13_phone_flow
+            and 'SecurityContext(withTrustedRoots: false)' in g13_phone_flow
+            and 'G13_ANDROID_UNTRUSTED_CA_DENIED=OK' in g13_phone_flow
+            and 'G13_ANDROID_REAL_FIRST_ISSUE=OK' in g13_phone_flow
+            and 'G13_ANDROID_DJANGO_LOGOUT_REVOKED=OK' in g13_phone_flow
+            and 'G13_ANDROID_MFA_TLS_COMMITTED=OK' in g13_phone_flow
+            and 'G13_ANDROID_NEW_PROCESS=OK' in g13_phone_flow
+            and 'G13_ANDROID_SERVER_RECOVERY_COMMITTED=OK' in g13_phone_flow
+            and "await journal.confirmLogoutCompleted(vault: vault)" in g13_phone_flow
+            and "await store.delete(_markerKey)" in g13_phone_flow
+            and "await store.delete(_refreshKey)" in g13_phone_flow
+            and "before != pid" not in g13_phone_flow
+            and "previous != pid" in g13_phone_flow
+            and 'Socket.startConnect(InternetAddress.loopbackIPv4, _labPort)' in g13_phone_flow
+            and 'badCertificateCallback' not in g13_phone_flow
+            and 'es.vencira.vencira.g13lab' in g13_phone_runner
+            and '--target=lib/g13_lab_main.dart' in g13_phone_runner
+            and '--dart-define=VENCIRA_G13_LAB_BUILD=true' in g13_phone_runner
+            and '--dart-define=G13_LAB_PUBLIC_CA_BASE64=' in g13_phone_runner
+            and 'G13_ANDROID_APK_BUILD=OK' in g13_phone_runner
+            and 'G13_ANDROID_RELEASE_AUTHORIZED=NO' in g13_phone_runner
+            and 'NO_DEPLOY_NO_LIVE_MIGRATION=1' in g13_phone_runner
+            and 'G13_DISPOSABLE_ACK' in g13_loopback_relay
+            and '("127.0.0.1", LAB_PORT)' in g13_loopback_relay
+            and 'SERVER_PORT = 8443' in g13_loopback_relay
+            and 'G13_HOST_LOOPBACK_RELAY_READY=OK' in g13_loopback_relay
+            and 'G13_ADB_REVERSE_ALREADY_IN_USE' in g13_host_lab
+            and 'adb reverse tcp:18743 tcp:18743' in g13_host_lab
+            and 'adb reverse --remove tcp:18743' in g13_host_lab
+            and 'network create --internal "$NET"' in g13_host_lab
+            and '--read-only' in g13_host_lab
+            and '--tmpfs /tmp:' in g13_host_lab
+            and '--cap-drop ALL' in g13_host_lab
+            and '--security-opt no-new-privileges' in g13_host_lab
+            and 'G7_D2_ISOLATED_NETWORK_ACK=1' in g13_host_lab
+            and 'VENCIRA_NATIVE_SESSION_LAB=1' in g13_host_lab
+            and 'VENCIRA_ENV=test' in g13_host_lab
+            and 'G13_HOST_VERIFIED_TLS_AND_UNAUTH_401=OK' in g13_host_lab
+            and 'G13_USB_LOOPBACK_ONLY=OK' in g13_host_lab
+            and 'G13_LAB_PUBLIC_CA_BASE64=' in g13_host_lab
+            and 'NO_DEPLOY_NO_LIVE_MIGRATION=1' in g13_host_lab
+            and 'bash scripts/g13_android_usb_https_lab.sh' not in flutter_main
+            and 'G13PhoneHttpsCheck' not in flutter_main
+            and 'g13_lab_main.dart' not in flutter_main
+            and 'badCertificateCallback' not in g13_phone_main
+            and 'native_sessions_lab.test_urls' not in config
+            and 'native_sessions_lab.test_urls' not in routes
+            and 'flutter analyze' in g13_ci
+            and 'G13_REAL_PHONE_RESULT=NOT_RUN' in g13_ci,
         "g9_native_startup_recovers_orphan_fail_closed":
             "enum NativeStartupDisposition" in g9_boot
             and "locked, cleanLogin, fullReauthentication" in g9_boot
