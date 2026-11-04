@@ -497,3 +497,23 @@ G12_ANDROID_PHYSICAL_AUTH_RESULT=0
 Estado acumulado: G7-D2/E/F/G/H PASS (Django HTTPS temporal); G8-PHONE PASS (almacén protegido Android físico); G9-A/B PASS (arranque/recovery unitario); G10 PASS (emisión/logout y fallos unitarios); G11 PASS (HTTPS Django temporal); **G12-PHONE PASS** (flujo Android offline en dispositivo físico).
 
 La PR #17 continúa DRAFT: `GLOBAL_FREEZE=NOT_VERIFIED`, `MB1_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## G13 — Android físico / USB TLS verificado / Django temporal (04/11/2026)
+
+**Bloque implementado en GitHub; pendiente de revisión Flutter/ejecución física.** G7 HTTPS, G8 physical secure store, G9 startup, G10 issuance/logout, G11 Django HTTPS y G12 Android offline tienen PASS anteriores; G13 integra Android y Django a través de una sesión real de red, sin abrir rutas de producción.
+
+Arquitectura: APK debug independiente **es.vencira.vencira.g13lab**, namespace cifrado **vencira_g13_phone_tls_v1**, Flutter entrada **clients/flutter/lib/g13_lab_main.dart** y escenarios **clients/flutter/lib/g13_lab/physical_https_checks.dart**. Servidor Django G7-D2 test-only en contenedor Docker **--internal** / **--read-only** / DB SQLite en **tmpfs** y sin puertos publicados. CA TLS efímera: solo parte PÚBLICA se incrusta al compilar la APK temporal. El proxy **scripts/g13_usb_loopback_relay.py** escucha 127.0.0.1:18743 PC y reenvía ciphertext a la IP privada del Docker; **ADB reverse tcp:18743 tcp:18743** hace llegar TCP desde Android loopback. Flutter exige SNI/hostname dev.vencira.es + TLS validado contra esa CA, sin fallback a raíces generales ni badCertificateCallback. Rechaza destino y socket distintos al laboratorio; no resuelve ni conecta el dominio público. Script **scripts/g13_android_usb_https_lab.sh** prepara servidor, CA, proxy, ADB, compila e instala APK G13 (aapt verifica paquete) y hace cleanup al terminar. APK no puede compilarse release/profile y flags G8/G12/G13 se excluyen mutuamente.
+
+Prueba fase 1 Android: TLS/CA válida y CA desconocida rechazada; G10 primera emisión y bearer Django 200; logout con bearer antiguo 401; fallo previo a revocación y reintento; MFA sintético por HTTPS; respuesta de emisión perdida postcommit que deja marcador cifrado, refresh desconocido y acceso bloqueado. Fase 2: Android forzado a detenerse, PID nuevo, G9 exige recovery, G6 recupera cuenta sintética por HTTPS, almacén real confirma refresh, Django acepta nuevo bearer, revocación segura por primitivas de diario/vault y bearer 401, marcador corrupto rechazado, limpieza. **No hay implementación de logout del gateway recovery como API pública**, ni prueba G13 de recuperación MFA con segundo factor tras reinicio; conservar ambas limitaciones.
+
+CI **.github/workflows/g13-android-https-source.yml** solo ejecuta N1/py_compile/bash -n/flutter analyze, **NO valida móvil físico**. Gate N1 **g13_android_real_tls_usb_only** incluye ruta USB, CA temporal, paquete aislado y release bloqueado. Documento completo **docs/G13_ANDROID_USB_REAL_TLS_2026-11-04.md**. Única validación de campo pendiente:
+
+cd ~/vencira-m3-localcheck
+git fetch origin feature/m3-android-local-notifications
+git merge --ff-only FETCH_HEAD
+bash scripts/g13_android_usb_https_lab.sh
+
+Requiere Android físico por USB con ADB autorizado. El script instala APK, deja el laboratorio activo hasta que el operador complete ambas fases, y elimina túnel y Docker al pulsar Intro. **Hasta recibir G13_ANDROID_REAL_HTTPS_RESULT=0 no atribuir PASS.**
+
+El código G13 no se instala desde main.dart ni cambia config.urls, reminders.urls, permisos operativos o migraciones PostgreSQL. **GLOBAL_FREEZE=NOT_VERIFIED, MB1_RELEASE_AUTHORIZED=NO, MFA_RELEASE_AUTHORIZED=NO, C_FICHA_RELEASE_AUTHORIZED=NO, NO_DEPLOY_NO_LIVE_MIGRATION=1, PR #17 DRAFT.**
