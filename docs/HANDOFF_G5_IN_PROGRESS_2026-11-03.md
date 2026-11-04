@@ -649,3 +649,27 @@ Se ha confirmado por lectura de fuentes que el verificador D1 devuelve metadatos
 Añadido `native_mobile_service/test_g14_untrusted_evidence.py` con cuatro pruebas ilustrativas (incluida una que demuestra la emisión de bajo nivel tras rotación de contraseña, y debe tratarse como riesgo, no garantía), suites SQLite/PG17 y estático N1. Código publicado, **no ejecutado aún**. Documento `PROGRESS_NATIVE_BETA_G14_2026-11-04.md` actualizado. G14-D2 completo y release permanecen **NO**.
 
 Next: fast-forward y una ejecución N1 + M3 PG17 temporal; después resolver diseño de emisor único de confianza bajo lock completo y custodia MFA, sin rutas operativas ni DB persistente.
+
+
+## 04/11/2026 — G14-D2 regresión negativa PASS (HEAD confirmado)
+
+Operador informa HEAD `6f1117ee` y:
+
+```
+G14_D2_N1=0
+G14_D2_BATCH=0
+N1_STATIC_g14_admission_test_only=OK
+N1_STATIC_g14_issuer_policy_untrusted_evidence_only=OK
+N1_STATIC_g14_atomicity_only_in_disposable_tests=OK
+N1_STATIC_g14_locked_verifier_test_only_no_issuer=OK
+N1_STATIC_g14_d2_untrusted_evidence_negative_contract=OK
+N1_STATIC_GATE_RESULT=OK
+G5_CANDIDATE_PG17_RESULT=0
+M3_HTTP_G4_PG17=0
+M3_HTTP_FLUTTER=0
+M3_HTTP_RESULT=0
+```
+
+**Resultado: G14_D2_NEGATIVE_REGRESSION=PASS.** La prueba deliberadamente evidencia una emisión candidata posible después del cambio de contraseña si se invoca el emisor de bajo nivel sin acreditar posesión reciente: pasar el test **no corrige el defecto TOCTOU** ni concede autorización de emisor operativo. `G14_D2_TRUSTED_ISSUER=NOT_IMPLEMENTED`.
+
+**Siguiente cierre técnico exigible:** diseñar un único boundary transaccional que haga las verificaciones autoritativas dentro del mismo bloqueo que la emisión, con registro de auditoría y consumo TOTP, sin aceptar evidencia booleana ni identidad aportada como prueba. Necesita pruebas de carrera real PG17, acceso por defecto denegado, MFA real en laboratorio, bloqueo por cuarentena y revisión externa de custodia. No integrar HTTP, no desplegar ni migrar producción.
