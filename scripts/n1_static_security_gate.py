@@ -94,6 +94,7 @@ def verify():
     g14_atomicity_test = read("backend/native_mobile_service/test_g14_issuance_atomicity.py")
     g14_verifier = read("backend/native_mobile_service/g14_locked_verifier.py")
     g14_verifier_test = read("backend/native_mobile_service/test_g14_locked_verifier.py")
+    g14_evidence_test = read("backend/native_mobile_service/test_g14_untrusted_evidence.py")
 
     failures = []
     checks = {
@@ -263,6 +264,14 @@ def verify():
             and "g14_locked_verifier" not in config
             and "g14_locked_verifier" not in routes
             and "g14_locked_verifier" not in candidate_urls,
+        "g14_d2_untrusted_evidence_negative_contract":
+            "test_verified_metadata_becomes_stale_after_revocation" in g14_evidence_test
+            and "test_verified_metadata_does_not_survive_password_rotation" in g14_evidence_test
+            and "test_mfa_enabled_after_password_check_denies_non_mfa_issuer" in g14_evidence_test
+            and "test_no_native_issuer_routes_in_operational_urls" in g14_evidence_test
+            and "g14_untrusted_evidence" not in config
+            and "g14_untrusted_evidence" not in routes
+            and "g14_untrusted_evidence" not in candidate_urls,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
@@ -905,6 +914,7 @@ def verify():
         "backend/native_mobile_service/test_g14_issuance_atomicity.py",
         "backend/native_mobile_service/g14_locked_verifier.py",
         "backend/native_mobile_service/test_g14_locked_verifier.py",
+        "backend/native_mobile_service/test_g14_untrusted_evidence.py",
         "backend/reminders/native_mobile_identity_gate.py",
         "backend/reminders/native_mobile_token_primitives.py",
     ):
