@@ -56,3 +56,41 @@ Marcadores de preparación esperados: G13_DJANGO_TMPFS_READY=OK, G13_DOCKER_PRIV
 G13 tampoco prueba el login móvil operativo, MFA real con datos privados, recuperación MFA tras el segundo arranque (usa identidad sintética sin MFA en esa fase), logout integrado en recovery UI, hardware StrongBox/TEE, resistencia a root, backup/restore o varios procesos concurrentes.
 
 **PR #17 permanece DRAFT. GLOBAL_FREEZE=NOT_VERIFIED, MB1_RELEASE_AUTHORIZED=NO, MFA_RELEASE_AUTHORIZED=NO, C_FICHA_RELEASE_AUTHORIZED=NO, NO_DEPLOY_NO_LIVE_MIGRATION=1.**
+
+
+## G13 desde un único móvil Android y acceso remoto al VPS — modo Termux SSH (04/11/2026)
+
+**Es posible ejecutar G13 sin PC y sin cable USB.** El móvil no necesita depuración USB, ADB ni conexión física al VPS. El mismo Android sirve para gestionar el VPS (sesión de consola), descargar la APK (SCP/SFTP) y ejecutar G13 usando un túnel SSH local de Termux. No se abre ninguna interfaz pública del fixture.
+
+**Modo incorporado en el ejecutor existente:** bash scripts/g13_android_usb_https_lab.sh --ssh-tunnel. Se reutilizan los mismos Docker --internal, SQLite tmpfs, CA pública efímera y proxy TCP ligado exclusivamente a 127.0.0.1:18743 en el VPS. El modo remoto omite ADB e instalación por USB; guarda la APK en el directorio de trabajo del VPS, anuncia G13_TERMUX_SSH_APK_REMOTE_PATH y conserva el laboratorio activo hasta que se confirme el cierre. El modo sin argumentos sigue siendo el G13 USB original.
+
+Secuencia recomendada:
+
+1. **En el VPS por consola móvil**, descargar la rama y entrar en una sesión tmux interactiva persistente, para que al cambiar de app Android no se apague el laboratorio:
+   - cd ~/vencira-m3-localcheck
+   - git fetch origin feature/m3-android-local-notifications
+   - git merge --ff-only FETCH_HEAD
+   - tmux new -s vencira-g13
+   - Dentro de tmux: bash scripts/g13_android_usb_https_lab.sh --ssh-tunnel
+   - Mantener tmux activo hasta G13_LAB_SESSION_ACTIVE=1; no pulsar Intro en el prompt final. Si hace falta abandonar la vista tmux, separar con Ctrl+B seguido de D; una reconexión puede usar tmux attach -t vencira-g13. Si tmux no está instalado, instalarlo mediante los procedimientos autorizados del VPS, no cerrar la sesión que mantiene el runner.
+
+2. **En el mismo teléfono, Termux** (instalación oficial desde F-Droid/GitHub, sin mezclar fuentes), preparar cliente SSH y carpeta de descargas:
+   - pkg update
+   - pkg install openssh
+   - termux-setup-storage (conceder permiso Android)
+   - Abrir una sesión Termux para descargar por SCP, sustituyendo VPS_HOST por la misma IP/DNS y usuario usados en tu conexión SSH habitual:
+     scp vencira@VPS_HOST:/home/vencira/vencira-m3-localcheck/clients/flutter/build/g13-phone/VENCIRA-G13-LAB-debug.apk ~/storage/downloads/
+   - Instalar la APK desde el administrador de archivos / Descargas en Android, permitiendo la instalación desde esa aplicación cuando Android lo solicite. **No compartir esta APK**, que lleva solo una CA pública de laboratorio y es válida únicamente para el fixture actual.
+
+3. **En Termux, abrir otra sesión, iniciar el túnel:**
+   ssh -o ExitOnForwardFailure=yes -o ServerAliveInterval=20 -o ServerAliveCountMax=3 -N -L 127.0.0.1:18743:127.0.0.1:18743 vencira@VPS_HOST
+   - La autenticación SSH debe ser la normal, con verificación de la clave de host previamente conocida. **Nunca usar StrictHostKeyChecking=no, GatewayPorts ni 0.0.0.0**.
+   - El comando permanece abierto sin imprimir salida mientras el túnel esté activo. Permite un wake lock de Termux si Android suspende sesiones en segundo plano; desactivar restricciones de batería para Termux durante el ensayo. Cambiar a la APK G13 sin detener Termux. En caso de desconexión se puede reconectar, pero no reconstruir Django o regenerar certificados.
+   - El puerto **escucha únicamente en el bucle local del teléfono**. La sesión SSH cifra el tráfico hasta 127.0.0.1 del VPS; ese proxy reenvía el TLS original a Django interno.
+
+4. **En VENCIRA G13 TLS** ejecutar fase 1, forzar detención únicamente de la APK G13, reabrir y ejecutar fase 2. No forzar detención de Termux. Mantener el mismo servidor temporal y el mismo túnel durante ambas fases. Compartir solo los marcadores de G13 (G13_ANDROID_REAL_HTTPS_RESULT=0 esperado, no demostrado).
+5. **Cerrar:** tras completar fase 2, volver a VPS/tmux y pulsar Intro en el runner para ejecutar cleanup del proxy, contenedor y red Docker; después interrumpir la sesión SSH de Termux con Ctrl+C. No configurar puertos entrantes ni reglas del firewall. Una nueva ejecución genera CA nueva y exige reinstalar la nueva APK.
+
+**Limitaciones:** el túnel exige que sshd del VPS permita LocalForward/AllowTcpForwarding y que la conexión SSH del móvil pueda mantenerse viva. Algunas aplicaciones de consola SSH Android no permiten crear un listener 127.0.0.1:18743; Termux con OpenSSH sí. Si un cortafuegos/sshd bloquea el forwarding, G13 no podrá probarse así hasta resolver esa política sin abrir públicamente el fixture. Las pruebas G7–G12 anteriores no necesitan repetirse.
+
+**Estado:** implementación de modo SSH en GitHub, pendiente de ejecutar N1/Flutter/build sobre VPS y de validación física completa. No atribuir G13 PASS antes del recibo del teléfono. PR DRAFT, GLOBAL_FREEZE=NOT_VERIFIED, MB1_RELEASE_AUTHORIZED=NO, MFA_RELEASE_AUTHORIZED=NO, C_FICHA_RELEASE_AUTHORIZED=NO, NO_DEPLOY_NO_LIVE_MIGRATION=1.
