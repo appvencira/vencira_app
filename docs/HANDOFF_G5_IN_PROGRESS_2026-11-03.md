@@ -603,3 +603,10 @@ Próximo operador: actualizar fast-forward, N1 y lote M3 desechable una sola vez
 ## 04/11/2026 — G14-A PASS local integral
 
 El operador confirma `G14_N1_RESULT=0`, `G14_BATCH_RESULT=0`, `N1_STATIC_g14_admission_test_only=OK`, `N1_STATIC_GATE_RESULT=OK`, `M3_HTTP_STATIC=0`, `M3_HTTP_BUILD=0`, `M3_HTTP_PG17_LAB=0`, `G5_CANDIDATE_PG17_RESULT=0`, `M3_HTTP_G4_PG17=0`, `M3_HTTP_FLUTTER=0` y `M3_HTTP_RESULT=0`. Registro del lote local `m3-http-contract-20261104T211959Z`. G14-A queda validado en laboratorio; no hay evidencia de CI ni SHA exacto en el resultado suministrado. G14-B emisor operativo **no implementado / no validado**. Fuente: `PROGRESS_NATIVE_BETA_G14_2026-11-04.md`. Sin cambios a producción, migraciones ni autorizaciones.
+
+
+## G14-B — Preconditions contract staged, not a trusted issuer (04/11/2026)
+
+After G14-A full integrated local PASS, published `g14_issuance_contract.py`, `test_g14_issuance_contract.py` and N1/PG17/SQLite candidate suite wiring. Ten synthetic test cases define failure criteria for password-version, account generation, MFA-required plus current epoch, quarantine, abuse budget, audit and inactive account. **This is NOT an issuer.** It takes caller-supplied evidence booleans and must NEVER be used as proof of authentication or authorization to call the issuer. Tests have NOT been run on operator's new checkout. See `PROGRESS_NATIVE_BETA_G14_2026-11-04.md`.
+
+Next action: one isolated N1 + M3 contract batch. If green, design G14-C verification source and atomic issuer transaction with trusted MFA custody, without opening native URLs. G1/G2/G3/G9 production gates still NO.
