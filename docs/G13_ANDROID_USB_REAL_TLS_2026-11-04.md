@@ -182,3 +182,26 @@ G13_ANDROID_FORCE_STOP_REQUIRED=1
 ```
 
 **Aceptación de fase 1: PASS reportado en dispositivo físico.** La fase 2 sigue PENDING; no se confirma `G13_ANDROID_REAL_HTTPS_RESULT=0` aún. Para fase 2: mantener VPS y túnel, forzar detención de la APK Android (sin cerrar el túnel), abrir otra vez y pulsar Verificar fase 2. No limpiar claves ni generar otro certificado entre fases. PR #17 DRAFT; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## G13 — Aceptación física completa, ambas fases (04/11/2026)
+
+**Evidencia comunicada por el operador desde Android real** tras restaurar el forward local de Termius, sin regenerar certificado ni reiniciar Django. El sondeo TCP en Android devolvió `G13_ANDROID_FORWARD=0`. La fase 1 ya había entregado sus nueve marcadores positivos. La fase 2 entregó:
+
+```
+G13_ANDROID_NEW_PROCESS=OK
+G13_ANDROID_TLS_CONNECTION_AFTER_RESTART=OK
+G13_ANDROID_DURABLE_MARKER_SURVIVED=OK
+G13_ANDROID_G9_RECOVERY_REQUIRED=OK
+G13_ANDROID_SERVER_RECOVERY_COMMITTED=OK
+G13_ANDROID_RECOVERED_SESSION_REVOKED=OK
+G13_ANDROID_CORRUPT_MARKER_BLOCKED=OK
+G13_ANDROID_STORAGE_CLEANED=OK
+G13_ANDROID_REAL_HTTPS_RESULT=0
+```
+
+**G13_PHYSICAL_ANDROID_LAB=PASS (según salida del dispositivo aportada por el operador).** Se ha verificado la conexión HTTPS con CA temporal y rechazo de CA ajena, emisión y revocación sintéticas, MFA de laboratorio, checkpoint de emisión incierta y recuperación tras fuerza de detención real del proceso Android, seguida de revocación y limpieza. Hubo fallo transitorio `G13_LOCAL_FORWARD_OR_SOCKET_FAILED` en `P2_VERIFIED_HTTPS_401` después de forzar detención; al recuperar el forward local se completó fase 2 sin repetir fase 1. Esto no valida persistencia del túnel en segundo plano, sino recuperación manual del enlace.
+
+**Cierre operativo**: tras guardar la evidencia, pulsar Intro en `G13 lab teardown:` para retirar relay/fixture/red efímeros y cerrar el túnel SSH local. No detener procesos de producción.
+
+**NO equivale a release**: no prueba login operativo real, MFA con custodia externa, continuidad de conectividad en segundo plano, comportamiento iOS, revocación multiinstancia, el freeze global MB1 ni C-FICHA. PR #17 sigue DRAFT; `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `GLOBAL_FREEZE=NOT_VERIFIED`.
