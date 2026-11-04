@@ -120,30 +120,13 @@ http.Client _createTlsClient({required bool trustLabCa}) {
         uri.port != 443 || proxyHost != null || proxyPort != null) {
       throw StateError('G13_NONLAB_DESTINATION_BLOCKED');
     }
-    // ADB reverse maps Android 127.0.0.1:18743 to host 127.0.0.1:18743.
-    // The host proxy forwards raw TLS to the isolated Docker fixture.
-    // Hostname and SNI remain dev.vencira.es, certificate validation enabled.
-    return Socket.startConnect(InternetAddress.loopbackIPv4, _labPort)
-        .then((task) {
-      Socket? active;
-      final Future<Socket> verified = task.socket.then((raw) async {
-        active = raw;
-        try {
-          final secure = await SecureSocket.secure(
-            raw, host: uri.host, context: trust,
-          );
-          active = secure;
-          return secure;
-        } catch (_) {
-          raw.destroy();
-          rethrow;
-        }
-      });
-      return ConnectionTask.fromSocket<Socket>(verified, () {
-        task.cancel();
-        active?.destroy();
-      });
-    });
+    // Termius SSH local-forward (or USB ADB reverse) maps Android
+    // 127.0.0.1:18743 to the VPS loopback-only TLS relay. Return a RAW
+    // Socket: HttpClient performs TLS exactly once for the HTTPS URI,
+    // checks dev.vencira.es via SNI and certificate hostname validation,
+    // and trusts ONLY the temporary public CA in its SecurityContext.
+    // Calling SecureSocket.secure here would incorrectly layer TLS twice.
+    return Socket.startConnect(InternetAddress.loopbackIPv4, _labPort);
   };
   return IOClient(client);
 }
