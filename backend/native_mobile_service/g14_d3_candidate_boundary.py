@@ -28,9 +28,11 @@ def candidate_non_mfa_flow(*, username, password, request_meta, event_id):
                 user_id=identity, verified_mfa=False, mfa_epoch=None,
                 expected_generation=generation,
             )
-            record_candidate_auth_event(
+            _, created = record_candidate_auth_event(
                 event_id=event_id, event_type="auth_verified", actor=username,
             )
+            if not created:
+                raise ValueError("Duplicate candidate attempt identifier")
             return pair
     except CandidateVerificationDenied:
         # The abuse budget is retained; denial audit commits separately.
