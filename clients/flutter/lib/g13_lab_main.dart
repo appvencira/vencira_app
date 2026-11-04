@@ -1,4 +1,4 @@
-// G13 Android -> ADB reverse -> host localhost -> private Docker TLS fixture.
+// G13 Android -> Termius SSH local-forward or ADB reverse -> private Django TLS lab.
 // Strict DEBUG-only, ephemeral CA embedded at build time, synthetic credentials.
 // Never imported by operational main.dart; cannot contact public DNS.
 import 'dart:io';
@@ -86,10 +86,15 @@ class _HomeState extends State<_Home> {
       // Only explicit lab error codes are displayed. No URI, secrets, token,
       // plaintext, stack trace, or platform exception body is ever shown.
       final reason = e is StateError ? e.message : null;
+      final category = e is SocketException
+          ? 'G13_LOCAL_FORWARD_UNREACHABLE'
+          : e is TlsException
+              ? 'G13_TLS_CERTIFICATE_OR_HANDSHAKE_FAILED'
+              : 'G13_LAB_ACTION_FAILED';
       setState(() {
         _error = reason is String && reason.startsWith('G13_')
             ? reason
-            : 'G13_LAB_ACTION_FAILED';
+            : category;
       });
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -122,7 +127,7 @@ class _HomeState extends State<_Home> {
                         style: TextStyle(
                             fontSize: 20, fontWeight: FontWeight.w700)),
                     SizedBox(height: 10),
-                    Text('USB conectado con ADB reverse activo. Servidor '
+                    Text('Conexión local mediante Termius SSH o ADB reverse. Servidor '
                         'Docker aislado en el PC. Certificado temporal '
                         'verificado. Solo cuentas y claves sintéticas '
                         'del laboratorio; sin tráfico a producción.'),
@@ -166,7 +171,7 @@ class _HomeState extends State<_Home> {
                         style: TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 8),
-                    const Text('Mantén conectado el USB y la terminal '
+                    const Text('Mantén activo el túnel Termius/SSH (o USB) y la terminal '
                         'del laboratorio. En Ajustes > Aplicaciones > '
                         'VENCIRA G13 TLS > Forzar detención, luego '
                         'reabre esta APK y pulsa verificar.'),
