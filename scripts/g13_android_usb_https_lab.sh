@@ -20,6 +20,11 @@ if [[ "$(printf '%s\n' "$ADB_IDS" | sed '/^$/d' | wc -l)" != "1" ]]; then
   echo "G13_ADB_REQUIRES_EXACTLY_ONE_AUTHORIZED_DEVICE" >&2
   exit 2
 fi
+if [[ "$ADB_IDS" == emulator-* ]] ||
+   [[ "$(adb -s "$ADB_IDS" shell getprop ro.kernel.qemu | tr -d '\r')" == "1" ]]; then
+  echo "G13_PHYSICAL_USB_DEVICE_REQUIRED" >&2
+  exit 2
+fi
 if adb reverse --list | grep -Fq 'tcp:18743'; then
   echo "G13_ADB_REVERSE_ALREADY_IN_USE" >&2
   exit 2
