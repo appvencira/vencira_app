@@ -87,6 +87,8 @@ def verify():
     g5_schema = read("backend/native_mobile_service/migrations/0002_mobileauthattemptbucket.py")
     g5_audit = read("backend/native_mobile_service/g5_audit.py")
     g5_keyring = read("backend/native_mobile_service/g5_keyring_policy.py")
+    g14_admission = read("backend/native_mobile_service/g14_admission.py")
+    g14_test = read("backend/native_mobile_service/test_g14_admission.py")
 
     failures = []
     checks = {
@@ -201,6 +203,19 @@ def verify():
             and "VENCIRA_G5_AUDIT_KEY" in g5_audit
             and "MobileAuthAuditEvent" in g5_audit
             and "native_mobile_service" not in config,
+        "g14_admission_test_only":
+            "transaction.atomic()" in g14_admission
+            and "consume_candidate_auth_attempt(" in g14_admission
+            and "record_candidate_auth_event(" in g14_admission
+            and "require_audit_key()" in g14_admission
+            and "auth_denied" in g14_admission
+            and "issue_verified_candidate_session" not in g14_admission
+            and "authenticate(" not in g14_admission
+            and "test_missing_audit_key_denies_before_consuming_budget" in g14_test
+            and "test_reused_denial_uuid_with_conflicting_actor_rolls_back" in g14_test
+            and "g14_admission" not in config
+            and "g14_admission" not in routes
+            and "g14_admission" not in candidate_urls,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
@@ -836,6 +851,8 @@ def verify():
         "backend/native_mobile_service/test_g5_keyring_policy.py",
         "backend/native_mobile_service/migrations/0004_digest_envelope_capacity.py",
         "backend/native_mobile_service/test_g5_digest_capacity.py",
+        "backend/native_mobile_service/g14_admission.py",
+        "backend/native_mobile_service/test_g14_admission.py",
         "backend/reminders/native_mobile_identity_gate.py",
         "backend/reminders/native_mobile_token_primitives.py",
     ):
