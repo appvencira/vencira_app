@@ -619,3 +619,10 @@ Operador confirmó HEAD exacto `473b4259e` para `G14_B_N1=0`, `G14_B_BATCH=0`, a
 Posteriormente se publicaron cinco pruebas G14-C de atomicidad entre emisión candidata y registro de auditoría, con rollback por error de auditoría, evento contradictorio y fallo antes de commit; el runner candidato y CI SQLite/PG17 las incluyen, y N1 exige su aislamiento. **G14-C código publicado; ejecución pendiente; emisor/verificador de credenciales reales NO implementado, URLs operativas NO habilitadas.** Véase `PROGRESS_NATIVE_BETA_G14_2026-11-04.md`.
 
 **Próxima comprobación local:** actualizar fast-forward y ejecutar una única pasada N1 + M3 en PG17 efímero; informar HEAD, N1, G5_CANDIDATE_PG17_RESULT, M3_HTTP_RESULT. Sin repetir G13 y sin tocar DB real. MFA/MB1/C-FICHA release siguen NO.
+
+
+## 04/11/2026 — G14-C local PASS; G14-D next
+
+El operador comunica `G14_C_N1=0`, `G14_C_BATCH=0`, los tres controles N1 G14=OK, `N1_STATIC_GATE_RESULT=OK`, `G5_CANDIDATE_PG17_RESULT=0`, `M3_HTTP_G4_PG17=0` y `M3_HTTP_FLUTTER=0`. La salida `M3_HT,TP_RESULT=0` contiene una etiqueta errónea; no presentarla como `M3_HTTP_RESULT` observado, aunque el batch devuelve 0. El SHA de checkout exacto no fue facilitado. **G14-C tests de atomicidad PASS local.** G14-A/B/C candidatos aprobados, G14-D emisor confiable **pendiente**.
+
+Actualizado el cuadro en `docs/PROGRESS_NATIVE_BETA_G14_2026-11-04.md`. Siguiente trabajo: G14-D, verificadores autoritativos del lado servidor con relectura bajo locks, rechazo de MFA incompleta, pruebas de carrera y fallos cerrados; no transformar los booleanos G14-B en prueba de autenticación. Sin rutas operativas ni release.
