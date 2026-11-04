@@ -216,14 +216,14 @@ class G13PhoneHttpsCheck {
     _require(await store.read(_markerKey) == null &&
         await store.read(_refreshKey) == null, 'LAB_STORE_NOT_CLEAN');
 
-    final trusted = _createTlsClient(trustLabCa: true);
     _at('P1_TLS_CLIENT');
+    final trusted = _createTlsClient(trustLabCa: true);
     try {
       _at('P1_VERIFIED_HTTPS_401');
       _require(await _meStatus(trusted, null) == 401,
           'VERIFIED_TLS_PREFLIGHT_FAILED');
+      _at('P1_UNTRUSTED_CA');
       final untrusted = _createTlsClient(trustLabCa: false);
-    _at('P1_UNTRUSTED_CA');
       try {
         var rejected = false;
         try {
@@ -253,8 +253,8 @@ class G13PhoneHttpsCheck {
       final access = await standard.entry.accessToken();
       _require(access != null && await _meStatus(trusted, access) == 200,
           'SERVER_BEARER_DENIED_AFTER_ISSUE');
+      _at('P1_LOGOUT');
       final closing = standard.entry.logout();
-    _at('P1_LOGOUT');
       _require(standard.fence.ticket == null,
           'LOGOUT_FENCE_NOT_SYNCHRONOUS');
       await closing;
@@ -407,8 +407,8 @@ class G13PhoneHttpsCheck {
 
       // G6 recovery gateway has no dedicated safe logout API. Test the G10
       // journal/vault logout primitives explicitly, with real server revoke.
+      _at('P2_REVOKE');
       await journal.arm();
-    _at('P2_REVOKE');
       await port.revoke(refresh: (await vault.read())!);
       await vault.clear();
       await journal.confirmLogoutCompleted(vault: vault);
