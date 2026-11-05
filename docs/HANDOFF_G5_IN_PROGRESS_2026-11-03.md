@@ -716,3 +716,10 @@ M3_HTTP_FLUTTER=0
 M3_HTTP_RESULT=0
 ```
 **G14_D3_LAB=PASS**, sobre checkout sincronizado por operador (SHA no adjunto). No afirmar que CI remota esté verde. El emisor candidato solo admite cuentas sin MFA y sigue sujeto al aislamiento `VENCIRA_ENV=test`. **G14_D3_PG17_RACE_MATRIX=PENDING** (cambio de password, revocación, activación de MFA); **G14_MFA_TRUSTED_ISSUER=NOT_IMPLEMENTED**. Ningún gate de producción se ha abierto.
+
+
+## 05/11/2026 — G14-D3 PG17 race subblock staged, pending operator validation
+
+Created `backend/native_mobile_service/test_g14_d3_pg17_races.py` (two disposable `TransactionTestCase` concurrency tests). The tests hold the outer transaction after password verification, then race account-wide revocation or password rotation against candidate issuance using independent PostgreSQL connections and row locks. Outcomes required: no active device after revocation; already-issued access rejected after password rotation. They are integrated into `scripts/n1_identity_pg17_ephemeral.sh --candidate`, candidate workflow SQLite/PG17 jobs (SQLite skips PostgreSQL-only cases), and N1 static gates.
+
+**G14_D3_PG17_RACES=CODE_PUBLISHED_TEST_PENDING**, not a claim of successful concurrent verification. Cross-process MFA enable/disable races and authoritative TOTP custody remain unverified and block operational native authentication. The new tests should be run once with N1 + M3 disposable batch; G13 Android physical lab need not repeat. No deployment or live migration.
