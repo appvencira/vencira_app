@@ -10,7 +10,7 @@ from g14_mfa_writer_inventory import find_candidates
 class WriterInventoryTests(unittest.TestCase):
     def scan(self, source):
         with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "mfa_fixture.py"
+            path = Path(directory) / "fixture.py"
             path.write_text(source, encoding="utf-8")
             return find_candidates(path)
 
