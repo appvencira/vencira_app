@@ -66,7 +66,7 @@ jobs:
           VENCIRA_NATIVE_SERVICE_CANDIDATE: '1'
         run: |
           python manage.py makemigrations native_mobile_service --check --dry-run
-          python manage.py test native_mobile_service.test_contract native_mobile_service.test_g5_network_identity native_mobile_service.test_g5_throttle native_mobile_service.test_g5_audit native_mobile_service.test_g5_keyring_policy native_mobile_service.test_g5_digest_capacity native_mobile_service.test_g14_admission native_mobile_service.test_g14_issuance_contract native_mobile_service.test_g14_issuance_atomicity native_mobile_service.test_g14_locked_verifier native_mobile_service.test_g14_untrusted_evidence native_mobile_service.test_g14_d3_candidate_boundary
+          python manage.py test native_mobile_service.test_contract native_mobile_service.test_g5_network_identity native_mobile_service.test_g5_throttle native_mobile_service.test_g5_audit native_mobile_service.test_g5_keyring_policy native_mobile_service.test_g5_digest_capacity native_mobile_service.test_g14_admission native_mobile_service.test_g14_issuance_contract native_mobile_service.test_g14_issuance_atomicity native_mobile_service.test_g14_locked_verifier native_mobile_service.test_g14_untrusted_evidence native_mobile_service.test_g14_d3_candidate_boundary native_mobile_service.test_g14_d3_pg17_races
       - name: No operational release
         run: |
           echo 'M3_02_DELIVERY=NOT_IMPLEMENTED'
@@ -130,7 +130,7 @@ jobs:
           VENCIRA_NATIVE_SERVICE_CANDIDATE: '1'
         run: |
           python manage.py makemigrations native_mobile_service --check --dry-run
-          python manage.py test native_mobile_service.test_contract native_mobile_service.test_pg17_races native_mobile_service.test_g5_network_identity native_mobile_service.test_g5_throttle native_mobile_service.test_g5_pg17_races native_mobile_service.test_g5_audit native_mobile_service.test_g5_audit_pg17_races native_mobile_service.test_g5_keyring_policy native_mobile_service.test_g5_digest_capacity native_mobile_service.test_g14_admission native_mobile_service.test_g14_issuance_contract native_mobile_service.test_g14_issuance_atomicity native_mobile_service.test_g14_locked_verifier native_mobile_service.test_g14_untrusted_evidence native_mobile_service.test_g14_d3_candidate_boundary
+          python manage.py test native_mobile_service.test_contract native_mobile_service.test_pg17_races native_mobile_service.test_g5_network_identity native_mobile_service.test_g5_throttle native_mobile_service.test_g5_pg17_races native_mobile_service.test_g5_audit native_mobile_service.test_g5_audit_pg17_races native_mobile_service.test_g5_keyring_policy native_mobile_service.test_g5_digest_capacity native_mobile_service.test_g14_admission native_mobile_service.test_g14_issuance_contract native_mobile_service.test_g14_issuance_atomicity native_mobile_service.test_g14_locked_verifier native_mobile_service.test_g14_untrusted_evidence native_mobile_service.test_g14_d3_candidate_boundary native_mobile_service.test_g14_d3_pg17_races
       - name: Keep release blocked
         run: |
           echo 'M3_02_PG17_EPHEMERAL_ONLY=1'
