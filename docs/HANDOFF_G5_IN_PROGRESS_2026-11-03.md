@@ -742,3 +742,8 @@ M3_HTTP_RESULT=0
 También marcó OK el resto de controles N1 G14-A/B/C/D1/D2. El checkout SHA no aparece en el recibo. **G14_D3_PG17_RACES=PASS_LOCAL**, dos ensayos publicados: bloqueo frente a revocación global y cambio de contraseña. Esto no cubre todavía carreras con escritores de `UserMfaState` ni un emisor con segundo factor.
 
 **Pendientes:** inventario y auditoría de todos los escritores MFA y recuperación; comprobar su orden de locks frente a emisión D3, carreras PG17 con activación/revocación de MFA, y verificar segundo factor fiable con custodia externa. Sin endpoint operativo, migración persistente o release; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## 05/11/2026 — MFA writer lock-order issue identified (G14 post-race)
+
+Read `reminders/mfa_enrollment.py`, `mfa_store.py`, `mfa_challenge.py`: `finalize_mfa` locks `UserMfaState` before setting `enabled=True`, but no shared user-row lock appears in that path, while G14-D3 locks user during password verification and token issuance. Accordingly the green G14-D3 race tests for revocation and password rotation do NOT establish atomicity against concurrent MFA enablement. **Possible cross-writer race remains unverified**; prioritize consistent user→MFA lock ordering across the MFA lifecycle and PG17 race tests, and inventory other state writers before any operational issuer. Recorded in `docs/PROGRESS_NATIVE_BETA_G14_2026-11-04.md`. No deploy or production migration.
