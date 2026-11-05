@@ -100,6 +100,8 @@ def verify():
     g14_d3_races = read("backend/native_mobile_service/test_g14_d3_pg17_races.py")
     g14_d5_races = read("backend/native_mobile_service/test_g14_d5_mfa_writer_pg17_races.py")
     mfa_enrollment_lock = read("backend/reminders/mfa_enrollment.py")
+    g14_inventory = read("scripts/g14_mfa_writer_inventory.py")
+    g14_inventory_tests = read("scripts/test_g14_mfa_writer_inventory.py")
 
     failures = []
     checks = {
@@ -311,6 +313,13 @@ def verify():
             and "test_epoch_revocation_invalidates_mfa_candidate_access" in g14_d5_races
             and "TransactionTestCase" in g14_d5_races
             and "g14_d5_mfa_writer_pg17_races" not in config,
+        "g14_mfa_inventory_readonly":
+            "def find_candidates(" in g14_inventory
+            and "ast.parse(" in g14_inventory
+            and "ROOT.rglob(" in g14_inventory
+            and "G14_MFA_WRITER_INVENTORY=REPORT_ONLY_NOT_A_SECURITY_GATE" in g14_inventory
+            and "test_mfa_model_update_is_detected" in g14_inventory_tests
+            and "test_inventory_does_not_execute_source" in g14_inventory_tests,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
@@ -958,6 +967,8 @@ def verify():
         "backend/native_mobile_service/test_g14_d3_candidate_boundary.py",
         "backend/native_mobile_service/test_g14_d3_pg17_races.py",
         "backend/native_mobile_service/test_g14_d5_mfa_writer_pg17_races.py",
+        "scripts/g14_mfa_writer_inventory.py",
+        "scripts/test_g14_mfa_writer_inventory.py",
         "backend/reminders/native_mobile_identity_gate.py",
         "backend/reminders/native_mobile_token_primitives.py",
     ):
