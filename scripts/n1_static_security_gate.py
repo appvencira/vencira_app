@@ -103,6 +103,8 @@ def verify():
     mfa_enrollment_lock = read("backend/reminders/mfa_enrollment.py")
     g14_inventory = read("scripts/g14_mfa_writer_inventory.py")
     g14_inventory_tests = read("scripts/test_g14_mfa_writer_inventory.py")
+    g14_lock_report = read("scripts/g14_mfa_lock_order_report.py")
+    g14_lock_report_tests = read("scripts/test_g14_mfa_lock_order_report.py")
 
     failures = []
     checks = {
@@ -329,6 +331,12 @@ def verify():
             and "MobileTokenDenied" in g14_d8_races
             and "g14_d8_admin_rotation_pg17" not in config
             and "g14_d8_admin_rotation_pg17" not in routes,
+        "g14_d9_lock_report_readonly":
+            "def lock_calls(" in g14_lock_report
+            and "ast.parse(" in g14_lock_report
+            and "READ_ONLY_REVIEW_REQUIRED" in g14_lock_report
+            and "test_two_locks_are_sorted_by_source_line" in g14_lock_report_tests
+            and "test_nonexecuted_syntax" in g14_lock_report_tests,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
@@ -979,6 +987,8 @@ def verify():
         "backend/native_mobile_service/test_g14_d8_admin_rotation_pg17.py",
         "scripts/g14_mfa_writer_inventory.py",
         "scripts/test_g14_mfa_writer_inventory.py",
+        "scripts/g14_mfa_lock_order_report.py",
+        "scripts/test_g14_mfa_lock_order_report.py",
         "backend/reminders/native_mobile_identity_gate.py",
         "backend/reminders/native_mobile_token_primitives.py",
     ):
