@@ -328,3 +328,13 @@ También marcó OK el resto de controles N1 G14-A/B/C/D1/D2. El checkout SHA no 
 Revisión de fuentes `backend/reminders/mfa_enrollment.py`, `mfa_store.py` y `mfa_challenge.py`: `prepare_mfa`, `confirm_mfa`, `finalize_mfa` y `consume_totp` bloquean o actualizan `UserMfaState`, pero no se observa adquisición previa del lock de fila de usuario utilizado por el emisor candidato G14-D3. En particular, `finalize_mfa` marca `enabled=True` bajo lock de `UserMfaState`, sin serializar explícitamente con la fila de usuario bloqueada por D3. **Riesgo de carrera**: activación MFA después de la lectura de estado del emisor y antes de su commit. Esta revisión está limitada a los módulos leídos; otros escritores administrativos siguen sin inventariar.
 
 **No afirmar seguridad de carreras MFA por los dos tests de contraseña/revocación.** El criterio de aceptación exige protocolo global de orden de locks y prueba PostgreSQL de activación MFA concurrente. La corrección deberá abarcar todos los escritores legítimos MFA y las rutas de recuperación; no basta con añadir otro check dentro de D3 sin resolver la sincronización entre procesos. Liberación operativa bloqueada.
+
+
+## 05/11/2026 — G14-D4: bloqueo cuenta→MFA al finalizar alta, PG17 race pendiente
+
+**Código publicado (sin ejecutar todavía en checkout operador):**
+- `backend/reminders/mfa_enrollment.py`: `finalize_mfa` toma bloqueo de la cuenta activa `select_for_update` **antes** de bloquear `UserMfaState`, dentro de la transacción existente, y mantiene el bloqueo hasta `enabled=True`. Objetivo: serialización con emisor de candidato no-MFA que bloquea usuario durante contraseña+emisión+auditoría. Se trata de código existente modificado **solo en rama PR DRAFT**, no desplegado.
+- `backend/native_mobile_service/test_g14_d3_pg17_races.py`: ensayo PG17 de activación `finalize_mfa` concurrente con emisión (se usan recovery hashes sintéticos y verificador simulado, nunca secretos reales). Exige que, tras activarse MFA, cualquier token no-MFA anterior sea rechazado.
+- `scripts/n1_static_security_gate.py`: añade control `N1_STATIC_g14_mfa_finalize_user_lock_before_state`.
+
+**Riesgo y límites:** cambiar `finalize_mfa` puede afectar procesos que bloqueen primero `UserMfaState` y luego usuario; antes de cerrar fase se debe inventariar esos escritores y su orden de locks, además de ensayar con PG17 y pruebas internas de enrolamiento. Otros flujos de recuperación/rotación no están aprobados por este ensayo. **G14_D4_MFA_FINALIZE_LOCK=CODE_PUBLISHED_TEST_PENDING**. Mantener `NO_DEPLOY_NO_LIVE_MIGRATION=1`, MFA/MB1/C-FICHA release NO y PR DRAFT.
