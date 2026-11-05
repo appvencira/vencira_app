@@ -757,3 +757,21 @@ Read `reminders/mfa_enrollment.py`, `mfa_store.py`, `mfa_challenge.py`: `finaliz
 - `scripts/n1_static_security_gate.py`: añade control `N1_STATIC_g14_mfa_finalize_user_lock_before_state`.
 
 **Riesgo y límites:** cambiar `finalize_mfa` puede afectar procesos que bloqueen primero `UserMfaState` y luego usuario; antes de cerrar fase se debe inventariar esos escritores y su orden de locks, además de ensayar con PG17 y pruebas internas de enrolamiento. Otros flujos de recuperación/rotación no están aprobados por este ensayo. **G14_D4_MFA_FINALIZE_LOCK=CODE_PUBLISHED_TEST_PENDING**. Mantener `NO_DEPLOY_NO_LIVE_MIGRATION=1`, MFA/MB1/C-FICHA release NO y PR DRAFT.
+
+
+## 05/11/2026 — G14-D4 local integrado PASS
+
+El operador comunica:
+```
+G14_D4_N1=0
+G14_D4_BATCH=0
+N1_STATIC_g14_mfa_finalize_user_lock_before_state=OK
+N1_STATIC_GATE_RESULT=OK
+G5_CANDIDATE_PG17_RESULT=0
+M3_HTTP_G4_PG17=0
+M3_HTTP_FLUTTER=0
+M3_HTTP_RESULT=0
+```
+También reporta los siete controles estáticos anteriores G14=OK. **G14_D4_FINALIZE_MFA_PG17_RACE=PASS_LOCAL**. No se suministró SHA del checkout en esta respuesta y no se ha confirmado GitHub Actions por separado. El resultado valida la prueba de carrera para `finalize_mfa` y el emisor candidato bajo las condiciones ensayadas, no todos los escritores MFA.
+
+**Siguiente trabajo:** inventariar y revisar escritores de `UserMfaState`, rotación, revocación de época y recuperación administrativa; sus ordenaciones de bloqueos y garantías frente a G14-D3. No exponer rutas de login ni habilitar emisor operativo. `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
