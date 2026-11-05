@@ -806,3 +806,8 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 ## 05/11/2026 — G14-D6 inventario PASS
 
 Operador confirmó HEAD `0f5af40d`, `G14_D6_TESTS=0`, `G14_D6_N1=0`, `G14_D6_INVENTORY=0`, marcadores estáticos OK, `G14_MFA_WRITER_FILES=12`, `G14_MFA_WRITER_CANDIDATES=104`. Solo números agregados visibles; sin nombres de archivo/línea ni evaluación aún de hallazgos. El detector es heurístico AST (no gate de exhaustividad). Próximo paso: reportar 12 rutas y conteos de clase desde `/tmp/vencira-d6-inventory.log`, luego revisar código y preparar pruebas focalizadas. Sin emisión MFA operativa ni despliegue.
+
+
+## 05/11/2026 — G14-D7 clasificación de 104 candidatos MFA
+
+Recibida distribución de 104 coincidencias en 12 archivos. Tres focos: `mfa_admin_recovery_service.py` (34), `mfa_enrollment.py` (22), `mfa_factor_rotation.py` (19), y `mfa_store.py` (14). Se revisaron los tres primeros en GitHub y se documentó el grafo parcial de locks. Resultado y plan de pruebas en `docs/G14_D7_MFA_WRITER_REVIEW_2026-11-05.md`. No se acredita deadlock concreto ni se aprueba emisor MFA: faltan carreras entre rotación y revocación y entre apertura de caso administrativo y emisión, además de revisión de llamadas externas y cobertura dinámica. Se mantiene `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
