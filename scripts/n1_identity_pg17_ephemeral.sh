@@ -68,6 +68,7 @@ case "$MODE" in
       native_mobile_service.test_g14_untrusted_evidence
       native_mobile_service.test_g14_d3_candidate_boundary
       native_mobile_service.test_g14_d3_pg17_races
+      native_mobile_service.test_g14_d5_mfa_writer_pg17_races
     )
     ;;
   --lab-case)
