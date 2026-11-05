@@ -99,6 +99,7 @@ def verify():
     g14_d3_test = read("backend/native_mobile_service/test_g14_d3_candidate_boundary.py")
     g14_d3_races = read("backend/native_mobile_service/test_g14_d3_pg17_races.py")
     g14_d5_races = read("backend/native_mobile_service/test_g14_d5_mfa_writer_pg17_races.py")
+    g14_d8_races = read("backend/native_mobile_service/test_g14_d8_admin_rotation_pg17.py")
     mfa_enrollment_lock = read("backend/reminders/mfa_enrollment.py")
     g14_inventory = read("scripts/g14_mfa_writer_inventory.py")
     g14_inventory_tests = read("scripts/test_g14_mfa_writer_inventory.py")
@@ -320,6 +321,14 @@ def verify():
             and "G14_MFA_WRITER_INVENTORY=REPORT_ONLY_NOT_A_SECURITY_GATE" in g14_inventory
             and "test_mfa_model_update_is_detected" in g14_inventory_tests
             and "test_inventory_does_not_execute_source" in g14_inventory_tests,
+        "g14_d8_pg17_admin_rotation_isolated":
+            "TransactionTestCase" in g14_d8_races
+            and 'connection.vendor != "postgresql"' in g14_d8_races
+            and "test_final_rotation_vs_epoch_revocation_invalidates_old_access" in g14_d8_races
+            and "test_open_admin_recovery_vs_candidate_issuance_never_leaves_valid_access" in g14_d8_races
+            and "MobileTokenDenied" in g14_d8_races
+            and "g14_d8_admin_rotation_pg17" not in config
+            and "g14_d8_admin_rotation_pg17" not in routes,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
@@ -967,6 +976,7 @@ def verify():
         "backend/native_mobile_service/test_g14_d3_candidate_boundary.py",
         "backend/native_mobile_service/test_g14_d3_pg17_races.py",
         "backend/native_mobile_service/test_g14_d5_mfa_writer_pg17_races.py",
+        "backend/native_mobile_service/test_g14_d8_admin_rotation_pg17.py",
         "scripts/g14_mfa_writer_inventory.py",
         "scripts/test_g14_mfa_writer_inventory.py",
         "backend/reminders/native_mobile_identity_gate.py",
