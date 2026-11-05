@@ -723,3 +723,22 @@ M3_HTTP_RESULT=0
 Created `backend/native_mobile_service/test_g14_d3_pg17_races.py` (two disposable `TransactionTestCase` concurrency tests). The tests hold the outer transaction after password verification, then race account-wide revocation or password rotation against candidate issuance using independent PostgreSQL connections and row locks. Outcomes required: no active device after revocation; already-issued access rejected after password rotation. They are integrated into `scripts/n1_identity_pg17_ephemeral.sh --candidate`, candidate workflow SQLite/PG17 jobs (SQLite skips PostgreSQL-only cases), and N1 static gates.
 
 **G14_D3_PG17_RACES=CODE_PUBLISHED_TEST_PENDING**, not a claim of successful concurrent verification. Cross-process MFA enable/disable races and authoritative TOTP custody remain unverified and block operational native authentication. The new tests should be run once with N1 + M3 disposable batch; G13 Android physical lab need not repeat. No deployment or live migration.
+
+
+## 05/11/2026 — G14-D3 pruebas de concurrencia PASS local
+
+El operador ejecutó el lote después de incorporar `test_g14_d3_pg17_races.py` y comunicó:
+```
+G14_RACE_N1=0
+G14_RACE_BATCH=0
+N1_STATIC_g14_d3_only_non_mfa_transaction=OK
+N1_STATIC_g14_d3_pg17_race_isolated=OK
+N1_STATIC_GATE_RESULT=OK
+G5_CANDIDATE_PG17_RESULT=0
+M3_HTTP_G4_PG17=0
+M3_HTTP_FLUTTER=0
+M3_HTTP_RESULT=0
+```
+También marcó OK el resto de controles N1 G14-A/B/C/D1/D2. El checkout SHA no aparece en el recibo. **G14_D3_PG17_RACES=PASS_LOCAL**, dos ensayos publicados: bloqueo frente a revocación global y cambio de contraseña. Esto no cubre todavía carreras con escritores de `UserMfaState` ni un emisor con segundo factor.
+
+**Pendientes:** inventario y auditoría de todos los escritores MFA y recuperación; comprobar su orden de locks frente a emisión D3, carreras PG17 con activación/revocación de MFA, y verificar segundo factor fiable con custodia externa. Sin endpoint operativo, migración persistente o release; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
