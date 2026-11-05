@@ -775,3 +775,8 @@ M3_HTTP_RESULT=0
 También reporta los siete controles estáticos anteriores G14=OK. **G14_D4_FINALIZE_MFA_PG17_RACE=PASS_LOCAL**. No se suministró SHA del checkout en esta respuesta y no se ha confirmado GitHub Actions por separado. El resultado valida la prueba de carrera para `finalize_mfa` y el emisor candidato bajo las condiciones ensayadas, no todos los escritores MFA.
 
 **Siguiente trabajo:** inventariar y revisar escritores de `UserMfaState`, rotación, revocación de época y recuperación administrativa; sus ordenaciones de bloqueos y garantías frente a G14-D3. No exponer rutas de login ni habilitar emisor operativo. `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## 05/11/2026 — G14-D5 pendiente prueba local
+
+Nuevos tests PG17 desechable: consumo TOTP único ante dos intentos simultáneos, código de recuperación de un solo uso y revocaciones concurrentes de época MFA con invalidación de sesión anterior. Archivo `native_mobile_service/test_g14_d5_mfa_writer_pg17_races.py`, enlazado a runner `--candidate`, workflow CI y N1. **Publicado, no ejecutado aún**. Sin cambios a lógica de MFA, despliegue ni migración persistente. Véase `docs/PROGRESS_NATIVE_BETA_G14_2026-11-04.md`.
