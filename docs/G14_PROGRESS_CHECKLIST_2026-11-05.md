@@ -19,7 +19,7 @@ Estado basado en pruebas locales comunicadas. La aprobación de laboratorio no e
 - [~] Producto Web/Backend: desarrollo y validaciones previas en DEV; aceptación integral de funcionalidades no acreditada.
 
 ## Pendiente
-- [~] G14-D8: **código de dos pruebas PG17 publicado, pendiente de ejecución local**. Rotación normal vs revocación de época y apertura de recuperación administrativa vs emisión test-only; sin evidencia externa real.
+- [x] G14-D8: **PASS local** de dos pruebas PostgreSQL 17, rotación vs revocación y apertura de recuperación administrativa vs emisión candidata; evidencia sintética exclusivamente.
 - [ ] G14-D9 (propuesto): completar revisión del grafo de bloqueos MFA y procedimientos administrativos.
 - [ ] Emisor confiable con contraseña y MFA verificadas en servidor, sin aceptar evidencia afirmada por un llamante.
 - [ ] Custodia de secretos y procedimiento de recuperación administrativa operativo y autorizado.
@@ -48,3 +48,10 @@ Actualizar casillas únicamente al recibir una prueba verificable. Sin porcentaj
 - Incluidos en `scripts/n1_identity_pg17_ephemeral.sh --candidate`, GitHub Actions y `N1_STATIC_g14_d8_pg17_admin_rotation_isolated`.
 - Se reutilizan las funciones MFA existentes, sin cambios en su lógica ni el modelo de datos; los tests no conceden permiso de recuperación administrativa real.
 - **Estado:** `G14_D8_CODE=PUBLISHED`, `G14_D8_PG17_RESULT=NOT_RUN`. Quedan G14-D9, verificador MFA confiable, custodia, gates de release, UAT y despliegue controlado.
+
+
+## 05/11/2026 — G14-D8 validado
+
+El operador confirmó `G14_D8_N1=0`, `G14_D8_BUILD=0`, `G14_D8_PG17=0`, `N1_STATIC_g14_d8_pg17_admin_rotation_isolated=OK`, `N1_STATIC_GATE_RESULT=OK` y `Ran 110 tests in 15.865s`. La línea `G5_CANDIDATE_PG17_RESULT` llegó sin valor legible; no se adjudica un marcador específico a G5, aunque el comando PG17 terminó con código cero. **G14-D8 PASS local**. No implica autorización MFA operativa ni revisión completa del grafo de escritores.
+
+Próximo bloque: G14-D9, revisión integral de locks, recuperación y gates de autorización. Mantener `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
