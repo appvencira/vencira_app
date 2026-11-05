@@ -695,3 +695,24 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 ## G14-D3 — Ensayo candidato de transacción no-MFA (04/11/2026)
 
 Publicado `native_mobile_service/g14_d3_candidate_boundary.py` y `test_g14_d3_candidate_boundary.py` (nueve pruebas). El flujo candidato opt-in test-only ejecuta preadmisión, verificación bajo bloqueo de cuenta, emisión con MFA=False, y auditoría antes de finalizar la transacción; contraseñas erróneas y MFA activo se deniegan y registran. Se bloqueó la reutilización de UUID de auditoría para impedir una segunda emisión con mismo evento. N1 y lotes CI/PG17 candidatos actualizados. **CÓDIGO PUBLICADO / PRUEBAS LOCALES PENDIENTES**. No se han habilitado URLConf, ni custodia MFA, ni release. Falta carrera real PG17 contra escritores de MFA, revisión de bloqueo cross-process y el segundo factor confiable. Véase `docs/PROGRESS_NATIVE_BETA_G14_2026-11-04.md`.
+
+
+## 05/11/2026 — G14-D3 validación local integrada PASS
+
+El operador proporcionó resultados sin HEAD explícito:
+```
+G14_D3_N1=0
+G14_D3_BATCH=0
+N1_STATIC_g14_admission_test_only=OK
+N1_STATIC_g14_issuer_policy_untrusted_evidence_only=OK
+N1_STATIC_g14_atomicity_only_in_disposable_tests=OK
+N1_STATIC_g14_locked_verifier_test_only_no_issuer=OK
+N1_STATIC_g14_d2_untrusted_evidence_negative_contract=OK
+N1_STATIC_g14_d3_only_non_mfa_transaction=OK
+N1_STATIC_GATE_RESULT=OK
+G5_CANDIDATE_PG17_RESULT=0
+M3_HTTP_G4_PG17=0
+M3_HTTP_FLUTTER=0
+M3_HTTP_RESULT=0
+```
+**G14_D3_LAB=PASS**, sobre checkout sincronizado por operador (SHA no adjunto). No afirmar que CI remota esté verde. El emisor candidato solo admite cuentas sin MFA y sigue sujeto al aislamiento `VENCIRA_ENV=test`. **G14_D3_PG17_RACE_MATRIX=PENDING** (cambio de password, revocación, activación de MFA); **G14_MFA_TRUSTED_ISSUER=NOT_IMPLEMENTED**. Ningún gate de producción se ha abierto.
