@@ -19,7 +19,7 @@ Estado basado en pruebas locales comunicadas. La aprobación de laboratorio no e
 - [~] Producto Web/Backend: desarrollo y validaciones previas en DEV; aceptación integral de funcionalidades no acreditada.
 
 ## Pendiente
-- [ ] G14-D8 (propuesto): ensayos PostgreSQL de rotación frente a revocación y apertura administrativa frente a emisión.
+- [~] G14-D8: **código de dos pruebas PG17 publicado, pendiente de ejecución local**. Rotación normal vs revocación de época y apertura de recuperación administrativa vs emisión test-only; sin evidencia externa real.
 - [ ] G14-D9 (propuesto): completar revisión del grafo de bloqueos MFA y procedimientos administrativos.
 - [ ] Emisor confiable con contraseña y MFA verificadas en servidor, sin aceptar evidencia afirmada por un llamante.
 - [ ] Custodia de secretos y procedimiento de recuperación administrativa operativo y autorizado.
@@ -40,3 +40,11 @@ GLOBAL_FREEZE=NOT_VERIFIED
 - G14-D7: docs/G14_D7_MFA_WRITER_REVIEW_2026-11-05.md
 
 Actualizar casillas únicamente al recibir una prueba verificable. Sin porcentaje global hasta reconciliar aceptación funcional y seguridad.
+
+
+## 05/11/2026 — Hito G14-D8 preparado
+
+- Archivo: `backend/native_mobile_service/test_g14_d8_admin_rotation_pg17.py` (2 tests PostgreSQL exclusivos, datos sintéticos).
+- Incluidos en `scripts/n1_identity_pg17_ephemeral.sh --candidate`, GitHub Actions y `N1_STATIC_g14_d8_pg17_admin_rotation_isolated`.
+- Se reutilizan las funciones MFA existentes, sin cambios en su lógica ni el modelo de datos; los tests no conceden permiso de recuperación administrativa real.
+- **Estado:** `G14_D8_CODE=PUBLISHED`, `G14_D8_PG17_RESULT=NOT_RUN`. Quedan G14-D9, verificador MFA confiable, custodia, gates de release, UAT y despliegue controlado.
