@@ -321,3 +321,10 @@ M3_HTTP_RESULT=0
 También marcó OK el resto de controles N1 G14-A/B/C/D1/D2. El checkout SHA no aparece en el recibo. **G14_D3_PG17_RACES=PASS_LOCAL**, dos ensayos publicados: bloqueo frente a revocación global y cambio de contraseña. Esto no cubre todavía carreras con escritores de `UserMfaState` ni un emisor con segundo factor.
 
 **Pendientes:** inventario y auditoría de todos los escritores MFA y recuperación; comprobar su orden de locks frente a emisión D3, carreras PG17 con activación/revocación de MFA, y verificar segundo factor fiable con custodia externa. Sin endpoint operativo, migración persistente o release; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+### Auditoría preliminar de escritores MFA — hallazgo para siguiente lote
+
+Revisión de fuentes `backend/reminders/mfa_enrollment.py`, `mfa_store.py` y `mfa_challenge.py`: `prepare_mfa`, `confirm_mfa`, `finalize_mfa` y `consume_totp` bloquean o actualizan `UserMfaState`, pero no se observa adquisición previa del lock de fila de usuario utilizado por el emisor candidato G14-D3. En particular, `finalize_mfa` marca `enabled=True` bajo lock de `UserMfaState`, sin serializar explícitamente con la fila de usuario bloqueada por D3. **Riesgo de carrera**: activación MFA después de la lectura de estado del emisor y antes de su commit. Esta revisión está limitada a los módulos leídos; otros escritores administrativos siguen sin inventariar.
+
+**No afirmar seguridad de carreras MFA por los dos tests de contraseña/revocación.** El criterio de aceptación exige protocolo global de orden de locks y prueba PostgreSQL de activación MFA concurrente. La corrección deberá abarcar todos los escritores legítimos MFA y las rutas de recuperación; no basta con añadir otro check dentro de D3 sin resolver la sincronización entre procesos. Liberación operativa bloqueada.
