@@ -822,3 +822,8 @@ Added `backend/native_mobile_service/test_g14_d8_admin_rotation_pg17.py` with tw
 - **No production state mutated:** source and CI tests only; no migrations, routes, client modifications or deployment.
 
 `G14_D8_CODE=PUBLISHED`, `G14_D8_PG17_RESULT=PENDING`, `G14_D9_COMPREHENSIVE_LOCK_AUDIT=PENDING`. Do not claim D8 PASS before operator receipt. Full operational MFA issuer and external custody/authorization remain blocked. Run only N1+isolated PG17 candidate after rebuilding test image to include these changes.
+
+
+## 05/11/2026 — G14-D8 PASS local (110 PG17 tests)
+
+Recibo operador: `G14_D8_N1=0`, `G14_D8_BUILD=0`, `G14_D8_PG17=0`, `N1_STATIC_g14_d8_pg17_admin_rotation_isolated=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 110 tests in 15.865s`. Línea `G5_CANDIDATE_PG17_RESULT` copiada sin valor, no afirmar ese marcador específico. D8 PASS solo para pruebas PG17 sintéticas de rotación vs revocación y apertura administrativa vs emisión candidata; no acredita segundo factor operativo ni custodia externa. Checklist `docs/G14_PROGRESS_CHECKLIST_2026-11-05.md` actualizado. Próxima prioridad: G14-D9 auditoría integral y autorización fail-closed, sin deploy.
