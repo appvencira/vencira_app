@@ -97,6 +97,7 @@ def verify():
     g14_evidence_test = read("backend/native_mobile_service/test_g14_untrusted_evidence.py")
     g14_d3 = read("backend/native_mobile_service/g14_d3_candidate_boundary.py")
     g14_d3_test = read("backend/native_mobile_service/test_g14_d3_candidate_boundary.py")
+    g14_d3_races = read("backend/native_mobile_service/test_g14_d3_pg17_races.py")
 
     failures = []
     checks = {
@@ -289,6 +290,14 @@ def verify():
             and "g14_d3_candidate_boundary" not in config
             and "g14_d3_candidate_boundary" not in routes
             and "g14_d3_candidate_boundary" not in candidate_urls,
+        "g14_d3_pg17_race_isolated":
+            "TransactionTestCase" in g14_d3_races
+            and 'connection.vendor != "postgresql"' in g14_d3_races
+            and "test_revoke_waits_for_locked_issuance_and_no_session_survives" in g14_d3_races
+            and "test_password_rotation_after_issuance_invalidates_access" in g14_d3_races
+            and "select_for_update()" in g14_d3_races
+            and "g14_d3_pg17_races" not in config
+            and "g14_d3_pg17_races" not in routes,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
@@ -934,6 +943,7 @@ def verify():
         "backend/native_mobile_service/test_g14_untrusted_evidence.py",
         "backend/native_mobile_service/g14_d3_candidate_boundary.py",
         "backend/native_mobile_service/test_g14_d3_candidate_boundary.py",
+        "backend/native_mobile_service/test_g14_d3_pg17_races.py",
         "backend/reminders/native_mobile_identity_gate.py",
         "backend/reminders/native_mobile_token_primitives.py",
     ):
