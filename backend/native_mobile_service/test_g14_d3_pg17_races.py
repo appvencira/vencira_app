@@ -7,6 +7,10 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.db import connection, connections, transaction
 from django.test import TransactionTestCase, override_settings
+from django.utils import timezone
+
+from reminders.mfa_enrollment import finalize_mfa
+from reminders.models import UserMfaState, UserMfaRecoveryCode
 
 from . import g14_d3_candidate_boundary as boundary
 from .models import MobileDeviceSession
@@ -98,6 +102,46 @@ class G14D3CandidatePG17RaceTests(TransactionTestCase):
             pair = issuance.result(timeout=40)
             rotation.result(timeout=40)
 
+        self.assertIsNotNone(pair)
+        with self.assertRaises(MobileTokenDenied):
+            validate_candidate_access(pair[0])
+
+    def test_mfa_finalization_after_locked_issuance_invalidates_access(self):
+        # Synthetic recovery hashes and mocked verifier: no live MFA keys.
+        state = UserMfaState.objects.create(
+            user=self.user, enabled=False,
+            encrypted_totp_secret="synthetic-not-used",
+            prepared_at=timezone.now(),
+        )
+        UserMfaRecoveryCode.objects.bulk_create([
+            UserMfaRecoveryCode(state=state, code_hash=f"synthetic-{i}")
+            for i in range(10)
+        ])
+        verified, release = Event(), Event()
+
+        def activate_mfa():
+            connections.close_all()
+            try:
+                with patch(
+                    "reminders.mfa_secrets.verify_recovery_code",
+                    return_value=True,
+                ):
+                    return finalize_mfa(
+                        self.user.pk, "s" * 32,
+                        issued_at=int(timezone.now().timestamp()),
+                    )
+            finally:
+                connections.close_all()
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            issuance = pool.submit(self._issue_held_until, verified, release)
+            self.assertTrue(verified.wait(timeout=15))
+            activation = pool.submit(activate_mfa)
+            release.set()
+            pair = issuance.result(timeout=40)
+            self.assertTrue(activation.result(timeout=40))
+
+        self.assertTrue(UserMfaState.objects.get(user=self.user).enabled)
         self.assertIsNotNone(pair)
         with self.assertRaises(MobileTokenDenied):
             validate_candidate_access(pair[0])
