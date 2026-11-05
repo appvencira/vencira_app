@@ -20,7 +20,7 @@ Estado basado en pruebas locales comunicadas. La aprobación de laboratorio no e
 - [~] Producto Web/Backend: desarrollo y validaciones previas en DEV; aceptación integral de funcionalidades no acreditada.
 
 ## Pendiente
-- [~] G14-D9: análisis parcial; informe estático de puntos de bloqueo y 3 pruebas del analizador publicados, pendientes de validación local y revisión humana de los resultados. Persisten pruebas administrativas y emisor confiable pendientes.
+- [~] G14-D9: **analizador PASS local** (commit af493c6c; 21 sitios de bloqueo en 5 módulos). Revisión de orden de locks y pruebas administrativas cruzadas aún pendientes; no es un PASS de seguridad integral.
 - [ ] Emisor confiable con contraseña y MFA verificadas en servidor, sin aceptar evidencia afirmada por un llamante.
 - [ ] Custodia de secretos y procedimiento de recuperación administrativa operativo y autorizado.
 - [ ] Reconciliación de gates de beta G0–G9, revisión integral de funcionalidades y aceptación visual.
@@ -60,3 +60,8 @@ Próximo bloque: G14-D9, revisión integral de locks, recuperación y gates de a
 ## 05/11/2026 — D9 informe de bloqueos preparado
 
 Nuevo informe de solo lectura `scripts/g14_mfa_lock_order_report.py`, pruebas `scripts/test_g14_mfa_lock_order_report.py` y marcador N1 `g14_d9_lock_report_readonly`. **Sin validación local aún.** El informe lista puntos `select_for_update` por función y orden de línea, pero no infiere orden dinámico entre transacciones ni certifica ausencia de interbloqueos. Los controles de recuperación administrativa y su evidencia externa siguen pendientes de validación completa. No hay modificación de lógica MFA ni despliegue.
+
+
+## 05/11/2026 — G14-D9 informe validado (parcial)
+
+El operador aportó `G14_D9_HEAD=af493c6c`, `G14_D9_TESTS=0`, `G14_D9_N1=0`, `G14_D9_REPORT=0`, `N1_STATIC_g14_d9_lock_report_readonly=OK`, `N1_STATIC_GATE_RESULT=OK` y `G14_D9_LOCK_SITES=21`. El informe es de solo lectura, no certifica seguridad transaccional. Próxima prioridad: contrastar conflictos entre el orden usuario→MFA de apertura administrativa, expediente→MFA de sustitución y MFA exclusivo de rotación; conservar controles fail-closed y ensayar PG17 efímero. Emisor MFA confiable y release siguen pendientes.
