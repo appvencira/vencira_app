@@ -361,3 +361,23 @@ También reporta los siete controles estáticos anteriores G14=OK. **G14_D4_FINA
 ### 05/11/2026 — Inventario MFA parcial posterior a D4
 
 Revisado `reminders/mfa_store.py`: `consume_totp()` y `consume_recovery_code()` adquieren bloqueo de `UserMfaState` sin bloquear previamente la fila de usuario. `reminders/mfa_session_revocation.py`: `revoke_mfa_sessions()` también bloquea solo `UserMfaState` antes de aumentar `session_epoch`. Esto no demuestra por sí solo un deadlock actual, porque estos métodos no toman después la fila usuario; pero el emisor MFA completo deberá establecer un orden global de locks y probar carreras de consumo TOTP, revocación de época y activación. No modificar estos métodos sin comprobar semántica de contadores de intentos, anti-replay y requisitos de sesión web. La auditoría de todos los escritores MFA aún no es exhaustiva. **G14_MFA_WRITER_AUDIT=IN_PROGRESS**.
+
+
+## 05/11/2026 — G14-D5: escritores MFA concurrentes, lote único preparado
+
+Publicado `backend/native_mobile_service/test_g14_d5_mfa_writer_pg17_races.py` con tres ensayos PostgreSQL 17 transaccionales y claves/códigos puramente sintéticos:
+
+1. Dos intentos simultáneos de consumir el **mismo TOTP**: uno aceptado, el otro rechazado; un solo contador persistido.
+2. Dos consumos simultáneos del **mismo código de recuperación**: uno aceptado, uno rechazado; fila eliminada.
+3. Dos revocaciones concurrentes de `session_epoch` sobre una cuenta MFA habilitada: ambas incrementan la versión, el bearer candidato anterior queda invalidado.
+
+La suite está conectada a `n1_identity_pg17_ephemeral.sh --candidate`, a las dos tareas CI SQLite/PG17 (salta pruebas específicas de PG en SQLite) y a `n1_static_security_gate.py`. Se mantienen los ensayos anteriores D3/D4 y los cierres A/B/C/D1.
+
+**Código publicado, pruebas D5 NO EJECUTADAS localmente todavía.** El resultado de D4 PASS no cubre estas tres regresiones. No se han modificado los escritores MFA ni se ha habilitado autenticación HTTP. El flujo **MFA verificado + emisión confiable + recuperación G6** todavía no existe en el candidato operativo, y `G14_MFA_RELEASE=NO`. El orden global de locks, recuperación administrativa, rotación de factores, auditoría en producción y autorización G1/G2/G3/G8/G9 siguen pendientes.
+
+```
+G14_D4=PASS_LOCAL
+G14_D5_PG17_MFA_WRITERS=PUBLISHED_TEST_PENDING
+G14_MFA_OPERATIONAL_ISSUER=NOT_IMPLEMENTED
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
