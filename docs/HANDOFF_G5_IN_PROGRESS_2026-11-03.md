@@ -811,3 +811,14 @@ Operador confirmó HEAD `0f5af40d`, `G14_D6_TESTS=0`, `G14_D6_N1=0`, `G14_D6_INV
 ## 05/11/2026 — G14-D7 clasificación de 104 candidatos MFA
 
 Recibida distribución de 104 coincidencias en 12 archivos. Tres focos: `mfa_admin_recovery_service.py` (34), `mfa_enrollment.py` (22), `mfa_factor_rotation.py` (19), y `mfa_store.py` (14). Se revisaron los tres primeros en GitHub y se documentó el grafo parcial de locks. Resultado y plan de pruebas en `docs/G14_D7_MFA_WRITER_REVIEW_2026-11-05.md`. No se acredita deadlock concreto ni se aprueba emisor MFA: faltan carreras entre rotación y revocación y entre apertura de caso administrativo y emisión, además de revisión de llamadas externas y cobertura dinámica. Se mantiene `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## 05/11/2026 — G14-D8 PG17 acceptance code published
+
+Added `backend/native_mobile_service/test_g14_d8_admin_rotation_pg17.py` with two PostgreSQL-only tests, runner `--candidate`, SQLite/PG17 CI entry (SQLite skip) and static invariant `N1_STATIC_g14_d8_pg17_admin_rotation_isolated`.
+
+- **Rotation vs revocation:** finalize a previously prepared synthetic factor while another worker increments the MFA session epoch. Require both successful operations to increase the epoch and invalidate the preexisting candidate token.
+- **Administrative recovery vs issuance:** two workers simultaneously open an administrative recovery case (synthetic verifier override, no actual external verification) and invoke the low-level test-only candidate issuer; after the case opens and increments epoch, no previously minted candidate token may validate. Explicitly NOT a trusted issuer test.
+- **No production state mutated:** source and CI tests only; no migrations, routes, client modifications or deployment.
+
+`G14_D8_CODE=PUBLISHED`, `G14_D8_PG17_RESULT=PENDING`, `G14_D9_COMPREHENSIVE_LOCK_AUDIT=PENDING`. Do not claim D8 PASS before operator receipt. Full operational MFA issuer and external custody/authorization remain blocked. Run only N1+isolated PG17 candidate after rebuilding test image to include these changes.
