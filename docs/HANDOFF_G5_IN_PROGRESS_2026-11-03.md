@@ -747,3 +747,13 @@ También marcó OK el resto de controles N1 G14-A/B/C/D1/D2. El checkout SHA no 
 ## 05/11/2026 — MFA writer lock-order issue identified (G14 post-race)
 
 Read `reminders/mfa_enrollment.py`, `mfa_store.py`, `mfa_challenge.py`: `finalize_mfa` locks `UserMfaState` before setting `enabled=True`, but no shared user-row lock appears in that path, while G14-D3 locks user during password verification and token issuance. Accordingly the green G14-D3 race tests for revocation and password rotation do NOT establish atomicity against concurrent MFA enablement. **Possible cross-writer race remains unverified**; prioritize consistent user→MFA lock ordering across the MFA lifecycle and PG17 race tests, and inventory other state writers before any operational issuer. Recorded in `docs/PROGRESS_NATIVE_BETA_G14_2026-11-04.md`. No deploy or production migration.
+
+
+## 05/11/2026 — G14-D4: bloqueo cuenta→MFA al finalizar alta, PG17 race pendiente
+
+**Código publicado (sin ejecutar todavía en checkout operador):**
+- `backend/reminders/mfa_enrollment.py`: `finalize_mfa` toma bloqueo de la cuenta activa `select_for_update` **antes** de bloquear `UserMfaState`, dentro de la transacción existente, y mantiene el bloqueo hasta `enabled=True`. Objetivo: serialización con emisor de candidato no-MFA que bloquea usuario durante contraseña+emisión+auditoría. Se trata de código existente modificado **solo en rama PR DRAFT**, no desplegado.
+- `backend/native_mobile_service/test_g14_d3_pg17_races.py`: ensayo PG17 de activación `finalize_mfa` concurrente con emisión (se usan recovery hashes sintéticos y verificador simulado, nunca secretos reales). Exige que, tras activarse MFA, cualquier token no-MFA anterior sea rechazado.
+- `scripts/n1_static_security_gate.py`: añade control `N1_STATIC_g14_mfa_finalize_user_lock_before_state`.
+
+**Riesgo y límites:** cambiar `finalize_mfa` puede afectar procesos que bloqueen primero `UserMfaState` y luego usuario; antes de cerrar fase se debe inventariar esos escritores y su orden de locks, además de ensayar con PG17 y pruebas internas de enrolamiento. Otros flujos de recuperación/rotación no están aprobados por este ensayo. **G14_D4_MFA_FINALIZE_LOCK=CODE_PUBLISHED_TEST_PENDING**. Mantener `NO_DEPLOY_NO_LIVE_MIGRATION=1`, MFA/MB1/C-FICHA release NO y PR DRAFT.
