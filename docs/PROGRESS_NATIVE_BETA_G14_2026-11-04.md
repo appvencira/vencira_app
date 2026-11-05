@@ -356,3 +356,8 @@ M3_HTTP_RESULT=0
 También reporta los siete controles estáticos anteriores G14=OK. **G14_D4_FINALIZE_MFA_PG17_RACE=PASS_LOCAL**. No se suministró SHA del checkout en esta respuesta y no se ha confirmado GitHub Actions por separado. El resultado valida la prueba de carrera para `finalize_mfa` y el emisor candidato bajo las condiciones ensayadas, no todos los escritores MFA.
 
 **Siguiente trabajo:** inventariar y revisar escritores de `UserMfaState`, rotación, revocación de época y recuperación administrativa; sus ordenaciones de bloqueos y garantías frente a G14-D3. No exponer rutas de login ni habilitar emisor operativo. `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+### 05/11/2026 — Inventario MFA parcial posterior a D4
+
+Revisado `reminders/mfa_store.py`: `consume_totp()` y `consume_recovery_code()` adquieren bloqueo de `UserMfaState` sin bloquear previamente la fila de usuario. `reminders/mfa_session_revocation.py`: `revoke_mfa_sessions()` también bloquea solo `UserMfaState` antes de aumentar `session_epoch`. Esto no demuestra por sí solo un deadlock actual, porque estos métodos no toman después la fila usuario; pero el emisor MFA completo deberá establecer un orden global de locks y probar carreras de consumo TOTP, revocación de época y activación. No modificar estos métodos sin comprobar semántica de contadores de intentos, anti-replay y requisitos de sesión web. La auditoría de todos los escritores MFA aún no es exhaustiva. **G14_MFA_WRITER_AUDIT=IN_PROGRESS**.
