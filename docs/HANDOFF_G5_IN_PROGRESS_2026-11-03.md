@@ -785,3 +785,19 @@ Nuevos tests PG17 desechable: consumo TOTP único ante dos intentos simultáneos
 ## 05/11/2026 — G14-D5 PG17 PASS local (108 pruebas)
 
 Operador comunica `G14_D5_N1=0`, `G14_D5_BUILD=0`, `G14_D5_PG17=0`, `N1_STATIC_g14_d5_pg17_mfa_writer_tests_present=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 108 tests in 15.405s` y `G5_CANDIDATE_PG17_RESULT=0`, todos los controles G14 estáticos anteriores OK. No se facilitó HEAD SHA. D5 cubre carreras de TOTP, recovery codes y revocación de `session_epoch`; **PASS solo laboratorio**. Seguimiento: `docs/PROGRESS_NATIVE_BETA_G14_2026-11-04.md`. Próximo paso: auditar exhaustivamente escritores MFA/recuperación y el orden de locks antes de introducir emisor autoritativo. No reejecutar Flutter ni Android sin cambios de cliente/protocolo. Producción y migraciones persistentes prohibidas.
+
+
+## 05/11/2026 — G14-D6: inventario automático read-only de escritores MFA
+
+Publicados `scripts/g14_mfa_writer_inventory.py` y `scripts/test_g14_mfa_writer_inventory.py`, más marcador estático `N1_STATIC_g14_mfa_inventory_readonly`. El inventario hace `ast.parse` del árbol `backend/**/*.py` excluyendo migraciones y tests, y comunica únicamente ruta, línea y categoría de posibles mutaciones de estado MFA. **No importa Django, no ejecuta el código examinado, no conecta a BD y no imprime secretos.** Se han añadido cuatro pruebas sintéticas del propio inventario.
+
+**Propósito:** obtener el inventario real en la rama de trabajo —la búsqueda remota no cubre fiablemente ese contenido— para clasificar rutas de enrolamiento, rotación de secretos/códigos, sesión MFA, recuperación administrativa y escrituras ORM/dinámicas. El scanner es de **cobertura parcial**: no garantiza descubrir alias, SQL dinámico ni escrituras indirectas. El marcador N1 comprueba presencia y aislamiento, no declara que el inventario sea exhaustivo.
+
+**Próxima aceptación:** ejecutar una sola vez tests del scanner y el inventario desde checkout actualizado; devolver líneas `G14_MFA_WRITER_*` y resultado de N1. Después endurecer los escritores concretos encontrados y ensayar PG17 efímero solo para cambios de backend. No tocar producción ni introducir un login real.
+
+```
+G14_D5_PG17_MFA_WRITERS=PASS_LOCAL
+G14_D6_SOURCE_INVENTORY=CODE_PUBLISHED_NOT_RUN
+G14_MFA_TRUSTED_ISSUER=NOT_IMPLEMENTED
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
