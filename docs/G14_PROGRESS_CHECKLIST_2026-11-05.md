@@ -15,12 +15,12 @@ Estado basado en pruebas locales comunicadas. La aprobación de laboratorio no e
 
 ## Parcial
 - [~] G14-D7: clasificación de 104 candidatos. Revisión de recuperación administrativa, enrolamiento y rotación realizada, sin auditoría completa.
+- [x] G14-D8: PASS local de 110 pruebas PostgreSQL 17; rotación contra revocación y apertura administrativa contra emisión sintética.
 - [~] Beta Android: ensayos físicos G13 positivos en su alcance. No representan aprobación del conjunto de gates.
 - [~] Producto Web/Backend: desarrollo y validaciones previas en DEV; aceptación integral de funcionalidades no acreditada.
 
 ## Pendiente
-- [x] G14-D8: **PASS local** de dos pruebas PostgreSQL 17, rotación vs revocación y apertura de recuperación administrativa vs emisión candidata; evidencia sintética exclusivamente.
-- [ ] G14-D9 (propuesto): completar revisión del grafo de bloqueos MFA y procedimientos administrativos.
+- [~] G14-D9: análisis parcial; informe estático de puntos de bloqueo y 3 pruebas del analizador publicados, pendientes de validación local y revisión humana de los resultados. Persisten pruebas administrativas y emisor confiable pendientes.
 - [ ] Emisor confiable con contraseña y MFA verificadas en servidor, sin aceptar evidencia afirmada por un llamante.
 - [ ] Custodia de secretos y procedimiento de recuperación administrativa operativo y autorizado.
 - [ ] Reconciliación de gates de beta G0–G9, revisión integral de funcionalidades y aceptación visual.
@@ -55,3 +55,8 @@ Actualizar casillas únicamente al recibir una prueba verificable. Sin porcentaj
 El operador confirmó `G14_D8_N1=0`, `G14_D8_BUILD=0`, `G14_D8_PG17=0`, `N1_STATIC_g14_d8_pg17_admin_rotation_isolated=OK`, `N1_STATIC_GATE_RESULT=OK` y `Ran 110 tests in 15.865s`. La línea `G5_CANDIDATE_PG17_RESULT` llegó sin valor legible; no se adjudica un marcador específico a G5, aunque el comando PG17 terminó con código cero. **G14-D8 PASS local**. No implica autorización MFA operativa ni revisión completa del grafo de escritores.
 
 Próximo bloque: G14-D9, revisión integral de locks, recuperación y gates de autorización. Mantener `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## 05/11/2026 — D9 informe de bloqueos preparado
+
+Nuevo informe de solo lectura `scripts/g14_mfa_lock_order_report.py`, pruebas `scripts/test_g14_mfa_lock_order_report.py` y marcador N1 `g14_d9_lock_report_readonly`. **Sin validación local aún.** El informe lista puntos `select_for_update` por función y orden de línea, pero no infiere orden dinámico entre transacciones ni certifica ausencia de interbloqueos. Los controles de recuperación administrativa y su evidencia externa siguen pendientes de validación completa. No hay modificación de lógica MFA ni despliegue.
