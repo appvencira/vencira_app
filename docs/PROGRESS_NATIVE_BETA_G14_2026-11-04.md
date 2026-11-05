@@ -423,3 +423,14 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 Operador reporta `G14_D6_HEAD=0f5af40d`, `G14_D6_TESTS=0`, `G14_D6_N1=0`, `G14_D6_INVENTORY=0`, `N1_STATIC_g14_mfa_inventory_readonly=OK`, `N1_STATIC_GATE_RESULT=OK`, `G14_MFA_WRITER_FILES=12`, `G14_MFA_WRITER_CANDIDATES=104`. **G14_D6_INVENTORY=PASS_LOCAL**. Las 104 coincidencias son candidatas AST, NO defectos demostrados. La salida facilitada no incluye rutas/líneas concretas, por lo que aún no puede certificarse revisión exhaustiva de escritores ni resolverse el orden global de bloqueo.
 
 Siguiente acción: generar resumen compacto por archivo y tipo de hallazgo a partir del inventario, separar `select_for_update` de mutaciones, revisar flujos de recuperación/rotación y registrar clasificación y pruebas dirigidas. No introducir emisor MFA operativo ni modificar BD persistente.
+
+
+## 05/11/2026 — G14-D8 PG17 acceptance code published
+
+Added `backend/native_mobile_service/test_g14_d8_admin_rotation_pg17.py` with two PostgreSQL-only tests, runner `--candidate`, SQLite/PG17 CI entry (SQLite skip) and static invariant `N1_STATIC_g14_d8_pg17_admin_rotation_isolated`.
+
+- **Rotation vs revocation:** finalize a previously prepared synthetic factor while another worker increments the MFA session epoch. Require both successful operations to increase the epoch and invalidate the preexisting candidate token.
+- **Administrative recovery vs issuance:** two workers simultaneously open an administrative recovery case (synthetic verifier override, no actual external verification) and invoke the low-level test-only candidate issuer; after the case opens and increments epoch, no previously minted candidate token may validate. Explicitly NOT a trusted issuer test.
+- **No production state mutated:** source and CI tests only; no migrations, routes, client modifications or deployment.
+
+`G14_D8_CODE=PUBLISHED`, `G14_D8_PG17_RESULT=PENDING`, `G14_D9_COMPREHENSIVE_LOCK_AUDIT=PENDING`. Do not claim D8 PASS before operator receipt. Full operational MFA issuer and external custody/authorization remain blocked. Run only N1+isolated PG17 candidate after rebuilding test image to include these changes.
