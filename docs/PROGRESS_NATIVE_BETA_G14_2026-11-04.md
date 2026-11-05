@@ -274,3 +274,24 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 ### G14-D3 — Revisión de idempotencia
 
 Antes del ensayo local se corrigió el reuso de UUID de auditoría exitosa: una segunda emisión candidata con el mismo identificador debe revertirse íntegramente. Se añadió una prueba negativa y su gate N1. Continúa pendiente la ejecución del lote aislado, la carrera PG17 con cambios MFA y la revisión de todos los escritores de estado MFA. No implica autorización de producción.
+
+
+## 05/11/2026 — G14-D3 validación local integrada PASS
+
+El operador proporcionó resultados sin HEAD explícito:
+```
+G14_D3_N1=0
+G14_D3_BATCH=0
+N1_STATIC_g14_admission_test_only=OK
+N1_STATIC_g14_issuer_policy_untrusted_evidence_only=OK
+N1_STATIC_g14_atomicity_only_in_disposable_tests=OK
+N1_STATIC_g14_locked_verifier_test_only_no_issuer=OK
+N1_STATIC_g14_d2_untrusted_evidence_negative_contract=OK
+N1_STATIC_g14_d3_only_non_mfa_transaction=OK
+N1_STATIC_GATE_RESULT=OK
+G5_CANDIDATE_PG17_RESULT=0
+M3_HTTP_G4_PG17=0
+M3_HTTP_FLUTTER=0
+M3_HTTP_RESULT=0
+```
+**G14_D3_LAB=PASS**, sobre checkout sincronizado por operador (SHA no adjunto). No afirmar que CI remota esté verde. El emisor candidato solo admite cuentas sin MFA y sigue sujeto al aislamiento `VENCIRA_ENV=test`. **G14_D3_PG17_RACE_MATRIX=PENDING** (cambio de password, revocación, activación de MFA); **G14_MFA_TRUSTED_ISSUER=NOT_IMPLEMENTED**. Ningún gate de producción se ha abierto.
