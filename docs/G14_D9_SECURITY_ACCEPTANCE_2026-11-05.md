@@ -37,3 +37,10 @@ No se observó inversión de locks concluyente en los recorridos examinados, per
 **Decisión D9 actual:** `SECURITY_REVIEW=PARTIAL`, `TRUSTED_MFA_ISSUER=NOT_IMPLEMENTED`, `RELEASE_AUTHORIZED=NO`. No desplegar, migrar DB persistente ni fusionar PR.
 
 Referencias internas: `docs/G14_D7_MFA_WRITER_REVIEW_2026-11-05.md`, `docs/G14_PROGRESS_CHECKLIST_2026-11-05.md`, `docs/PROGRESS_NATIVE_BETA_G14_2026-11-04.md`.
+
+
+## 05/11/2026 — D9 lock-site report staged
+
+Added a read-only AST report `scripts/g14_mfa_lock_order_report.py` covering five existing MFA modules (enrollment, store, session revocation, factor rotation, administrative recovery). The report lists `select_for_update` call lines per function; **source-line order is not a dynamic lock-order proof**. Three synthetic parser tests and static N1 presence check are included. All pending local execution; no MFA business logic or production database touched.
+
+To accept: run tests, N1, and report, then classify the resulting lock-site lines. This remains a tool supporting review, not completion of G14-D9 or permission to expose mobile identity endpoints. Real administrative-execution evidence and operational issuer remain unverified.
