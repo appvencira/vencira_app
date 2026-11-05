@@ -416,3 +416,10 @@ G14_D6_SOURCE_INVENTORY=CODE_PUBLISHED_NOT_RUN
 G14_MFA_TRUSTED_ISSUER=NOT_IMPLEMENTED
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## 05/11/2026 — G14-D6 inventario AST validado
+
+Operador reporta `G14_D6_HEAD=0f5af40d`, `G14_D6_TESTS=0`, `G14_D6_N1=0`, `G14_D6_INVENTORY=0`, `N1_STATIC_g14_mfa_inventory_readonly=OK`, `N1_STATIC_GATE_RESULT=OK`, `G14_MFA_WRITER_FILES=12`, `G14_MFA_WRITER_CANDIDATES=104`. **G14_D6_INVENTORY=PASS_LOCAL**. Las 104 coincidencias son candidatas AST, NO defectos demostrados. La salida facilitada no incluye rutas/líneas concretas, por lo que aún no puede certificarse revisión exhaustiva de escritores ni resolverse el orden global de bloqueo.
+
+Siguiente acción: generar resumen compacto por archivo y tipo de hallazgo a partir del inventario, separar `select_for_update` de mutaciones, revisar flujos de recuperación/rotación y registrar clasificación y pruebas dirigidas. No introducir emisor MFA operativo ni modificar BD persistente.
