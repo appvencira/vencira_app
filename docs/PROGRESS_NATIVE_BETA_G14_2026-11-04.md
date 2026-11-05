@@ -400,3 +400,19 @@ También declara OK todos los ocho marcadores N1 G14 anteriores (A/B/C/D1/D2/D3/
 Cobertura de D5: exclusión concurrente de TOTP reutilizado, código de recuperación de un solo uso y revocación de época con invalidación de token MFA anterior. No es un emisor login MFA autoritativo. Quedan pendientes escritura administrativa/rotación de MFA, custodia externa y coherencia de locks entre todos los escritores, más auditoría de recursos G8, gates G1/G2/G3/G9 y recuperación G6. `NO_DEPLOY_NO_LIVE_MIGRATION=1`, autorizaciones release NO.
 
 **Siguiente prioridad:** auditoría exhaustiva del grafo de escritores MFA y acciones de recuperación antes de abrir un emisor con segundo factor. Conservar prueba de contraseña+MFA+emisión transaccional test-only hasta que el gate de custodia y el orden global de locks estén demostrados.
+
+
+## 05/11/2026 — G14-D6: inventario automático read-only de escritores MFA
+
+Publicados `scripts/g14_mfa_writer_inventory.py` y `scripts/test_g14_mfa_writer_inventory.py`, más marcador estático `N1_STATIC_g14_mfa_inventory_readonly`. El inventario hace `ast.parse` del árbol `backend/**/*.py` excluyendo migraciones y tests, y comunica únicamente ruta, línea y categoría de posibles mutaciones de estado MFA. **No importa Django, no ejecuta el código examinado, no conecta a BD y no imprime secretos.** Se han añadido cuatro pruebas sintéticas del propio inventario.
+
+**Propósito:** obtener el inventario real en la rama de trabajo —la búsqueda remota no cubre fiablemente ese contenido— para clasificar rutas de enrolamiento, rotación de secretos/códigos, sesión MFA, recuperación administrativa y escrituras ORM/dinámicas. El scanner es de **cobertura parcial**: no garantiza descubrir alias, SQL dinámico ni escrituras indirectas. El marcador N1 comprueba presencia y aislamiento, no declara que el inventario sea exhaustivo.
+
+**Próxima aceptación:** ejecutar una sola vez tests del scanner y el inventario desde checkout actualizado; devolver líneas `G14_MFA_WRITER_*` y resultado de N1. Después endurecer los escritores concretos encontrados y ensayar PG17 efímero solo para cambios de backend. No tocar producción ni introducir un login real.
+
+```
+G14_D5_PG17_MFA_WRITERS=PASS_LOCAL
+G14_D6_SOURCE_INVENTORY=CODE_PUBLISHED_NOT_RUN
+G14_MFA_TRUSTED_ISSUER=NOT_IMPLEMENTED
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
