@@ -98,6 +98,7 @@ def verify():
     g14_d3 = read("backend/native_mobile_service/g14_d3_candidate_boundary.py")
     g14_d3_test = read("backend/native_mobile_service/test_g14_d3_candidate_boundary.py")
     g14_d3_races = read("backend/native_mobile_service/test_g14_d3_pg17_races.py")
+    g14_d5_races = read("backend/native_mobile_service/test_g14_d5_mfa_writer_pg17_races.py")
     mfa_enrollment_lock = read("backend/reminders/mfa_enrollment.py")
 
     failures = []
@@ -304,6 +305,12 @@ def verify():
             and "get_user_model().objects.select_for_update().filter(" in mfa_enrollment_lock
             and "test_mfa_finalization_after_locked_issuance_invalidates_access" in g14_d3_races
             and 'reminders.mfa_secrets.verify_recovery_code' in g14_d3_races,
+        "g14_d5_pg17_mfa_writer_tests_present":
+            "test_parallel_same_totp_has_exactly_one_acceptance" in g14_d5_races
+            and "test_parallel_same_recovery_code_has_exactly_one_acceptance" in g14_d5_races
+            and "test_epoch_revocation_invalidates_mfa_candidate_access" in g14_d5_races
+            and "TransactionTestCase" in g14_d5_races
+            and "g14_d5_mfa_writer_pg17_races" not in config,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
@@ -950,6 +957,7 @@ def verify():
         "backend/native_mobile_service/g14_d3_candidate_boundary.py",
         "backend/native_mobile_service/test_g14_d3_candidate_boundary.py",
         "backend/native_mobile_service/test_g14_d3_pg17_races.py",
+        "backend/native_mobile_service/test_g14_d5_mfa_writer_pg17_races.py",
         "backend/reminders/native_mobile_identity_gate.py",
         "backend/reminders/native_mobile_token_primitives.py",
     ):
