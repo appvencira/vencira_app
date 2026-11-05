@@ -780,3 +780,8 @@ También reporta los siete controles estáticos anteriores G14=OK. **G14_D4_FINA
 ## 05/11/2026 — G14-D5 pendiente prueba local
 
 Nuevos tests PG17 desechable: consumo TOTP único ante dos intentos simultáneos, código de recuperación de un solo uso y revocaciones concurrentes de época MFA con invalidación de sesión anterior. Archivo `native_mobile_service/test_g14_d5_mfa_writer_pg17_races.py`, enlazado a runner `--candidate`, workflow CI y N1. **Publicado, no ejecutado aún**. Sin cambios a lógica de MFA, despliegue ni migración persistente. Véase `docs/PROGRESS_NATIVE_BETA_G14_2026-11-04.md`.
+
+
+## 05/11/2026 — G14-D5 PG17 PASS local (108 pruebas)
+
+Operador comunica `G14_D5_N1=0`, `G14_D5_BUILD=0`, `G14_D5_PG17=0`, `N1_STATIC_g14_d5_pg17_mfa_writer_tests_present=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 108 tests in 15.405s` y `G5_CANDIDATE_PG17_RESULT=0`, todos los controles G14 estáticos anteriores OK. No se facilitó HEAD SHA. D5 cubre carreras de TOTP, recovery codes y revocación de `session_epoch`; **PASS solo laboratorio**. Seguimiento: `docs/PROGRESS_NATIVE_BETA_G14_2026-11-04.md`. Próximo paso: auditar exhaustivamente escritores MFA/recuperación y el orden de locks antes de introducir emisor autoritativo. No reejecutar Flutter ni Android sin cambios de cliente/protocolo. Producción y migraciones persistentes prohibidas.
