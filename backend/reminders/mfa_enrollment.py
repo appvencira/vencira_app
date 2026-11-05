@@ -6,6 +6,8 @@ La clave de cifrado debe venir de un almacén externo, nunca de SECRET_KEY.
 """
 from datetime import timedelta
 
+from django.contrib.auth import get_user_model
+
 from django.db import transaction
 from django.utils import timezone
 
@@ -94,6 +96,12 @@ def finalize_mfa(user_id: int, proof_code: str, *, issued_at: int) -> bool:
     """
     from .mfa_secrets import verify_recovery_code
     from .mfa_store import _blocked, _failed
+    # User -> MFA row lock order aligns with native issuance and account
+    # revocation. Keep the user lock until enabled=True commits.
+    if not get_user_model().objects.select_for_update().filter(
+        pk=user_id, is_active=True,
+    ).exists():
+        return False
     state = UserMfaState.objects.select_for_update().filter(
         user_id=user_id, enabled=False,
     ).first()
