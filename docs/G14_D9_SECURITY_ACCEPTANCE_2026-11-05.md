@@ -44,3 +44,17 @@ Referencias internas: `docs/G14_D7_MFA_WRITER_REVIEW_2026-11-05.md`, `docs/G14_P
 Added a read-only AST report `scripts/g14_mfa_lock_order_report.py` covering five existing MFA modules (enrollment, store, session revocation, factor rotation, administrative recovery). The report lists `select_for_update` call lines per function; **source-line order is not a dynamic lock-order proof**. Three synthetic parser tests and static N1 presence check are included. All pending local execution; no MFA business logic or production database touched.
 
 To accept: run tests, N1, and report, then classify the resulting lock-site lines. This remains a tool supporting review, not completion of G14-D9 or permission to expose mobile identity endpoints. Real administrative-execution evidence and operational issuer remain unverified.
+
+
+## 05/11/2026 — Informe de 21 puntos de bloqueo validado localmente
+
+El operador comunica HEAD `af493c6c`, `G14_D9_TESTS=0`, `G14_D9_N1=0`, `G14_D9_REPORT=0`, gate N1 OK y `G14_D9_LOCK_SITES=21`, sin fallos de ejecución. Los 21 corresponden a cinco módulos, no 21 defectos.
+
+**Distribución contrastada con líneas del informe:**
+- `mfa_enrollment.py`: 4 puntos; `prepare_mfa` (31), `confirm_mfa` (55), `finalize_mfa` (101 y 105, cuenta→estado).
+- `mfa_store.py`: 2 puntos de estado (TOTP 46, recovery 68).
+- `mfa_session_revocation.py`: 1 punto de estado (19).
+- `mfa_factor_rotation.py`: 3 puntos de estado (32, 68 y 103).
+- `mfa_admin_recovery_service.py`: 11 puntos; revisión/cancelación/expiración de expediente, apertura usuario→MFA y preparación/confirmación/finalización expediente→MFA.
+
+**Dictamen:** inventario y pruebas del analizador `PASS_LOCAL`, **auditoría transaccional integral D9 todavía abierta**. No afirmar ausencia de deadlocks, carreras o seguridad del emisor. Prioridad técnica: comprobar el grafo de transacciones que mezclan cuenta, expediente y MFA, especialmente la apertura administrativa contra cualquier cierre de factor o modificación de expediente. Distinguir órdenes sintácticos de locks efectivos (FK, ORM y callbacks externos). Mantener release bloqueado.
