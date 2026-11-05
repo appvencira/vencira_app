@@ -381,3 +381,22 @@ G14_D5_PG17_MFA_WRITERS=PUBLISHED_TEST_PENDING
 G14_MFA_OPERATIONAL_ISSUER=NOT_IMPLEMENTED
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## 05/11/2026 — G14-D5 validación local PASS (108 pruebas PG17)
+
+El operador aporta el siguiente recibo:
+```
+G14_D5_N1=0
+G14_D5_BUILD=0
+G14_D5_PG17=0
+N1_STATIC_g14_d5_pg17_mfa_writer_tests_present=OK
+N1_STATIC_GATE_RESULT=OK
+Ran 108 tests in 15.405s
+G5_CANDIDATE_PG17_RESULT=0
+```
+También declara OK todos los ocho marcadores N1 G14 anteriores (A/B/C/D1/D2/D3/D4). **G14_D5_MFA_WRITER_PG17=PASS_LOCAL**, en contenedor candidato aislado. El recibo no muestra commit HEAD; no se adjudica un SHA exacto al checkout, ni se infiere un CI remoto PASS. No se ejecutaron Flutter ni G13 en este lote reducido y no hay razón para atribuirles un resultado nuevo.
+
+Cobertura de D5: exclusión concurrente de TOTP reutilizado, código de recuperación de un solo uso y revocación de época con invalidación de token MFA anterior. No es un emisor login MFA autoritativo. Quedan pendientes escritura administrativa/rotación de MFA, custodia externa y coherencia de locks entre todos los escritores, más auditoría de recursos G8, gates G1/G2/G3/G9 y recuperación G6. `NO_DEPLOY_NO_LIVE_MIGRATION=1`, autorizaciones release NO.
+
+**Siguiente prioridad:** auditoría exhaustiva del grafo de escritores MFA y acciones de recuperación antes de abrir un emisor con segundo factor. Conservar prueba de contraseña+MFA+emisión transaccional test-only hasta que el gate de custodia y el orden global de locks estén demostrados.
