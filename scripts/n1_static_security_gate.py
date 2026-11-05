@@ -98,6 +98,7 @@ def verify():
     g14_d3 = read("backend/native_mobile_service/g14_d3_candidate_boundary.py")
     g14_d3_test = read("backend/native_mobile_service/test_g14_d3_candidate_boundary.py")
     g14_d3_races = read("backend/native_mobile_service/test_g14_d3_pg17_races.py")
+    mfa_enrollment_lock = read("backend/reminders/mfa_enrollment.py")
 
     failures = []
     checks = {
@@ -298,6 +299,11 @@ def verify():
             and "select_for_update()" in g14_d3_races
             and "g14_d3_pg17_races" not in config
             and "g14_d3_pg17_races" not in routes,
+        "g14_mfa_finalize_user_lock_before_state":
+            "def finalize_mfa(" in mfa_enrollment_lock
+            and "get_user_model().objects.select_for_update().filter(" in mfa_enrollment_lock
+            and "test_mfa_finalization_after_locked_issuance_invalidates_access" in g14_d3_races
+            and 'reminders.mfa_secrets.verify_recovery_code' in g14_d3_races,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
