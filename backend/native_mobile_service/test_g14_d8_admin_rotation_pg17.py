@@ -3,6 +3,7 @@
 Disposable database and synthetic fixtures only. These tests are about
 revocation invariants, not proof of a trusted MFA authentication issuer.
 """
+from datetime import timedelta
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 from unittest.mock import patch
@@ -71,7 +72,7 @@ class G14D8AdminRotationPG17(TransactionTestCase):
         self.state.pending_rotation_secret = encrypt_totp_secret(
             generate_secret(), user_id=self.user.pk, keys=self.keys,
         )
-        self.state.pending_rotation_expires_at = timezone.now() + timezone.timedelta(minutes=10)
+        self.state.pending_rotation_expires_at = timezone.now() + timedelta(minutes=10)
         self.state.save(update_fields=[
             "pending_rotation_secret", "pending_rotation_expires_at",
         ])
