@@ -1,5 +1,11 @@
 
 
+> **B2-D manifiesto G13 inspeccionado (06/11/2026):** package G13 verificado, `POST_NOTIFICATIONS=DECLARED`, permisos/receivers de reinicio o programación no declarados, auditoría `PASS_READONLY`. No constan los 4 tests unitarios ni autorización Android OS. B2-D integral pendiente de una APK de laboratorio específica de avisos y verificación física; no confundir con G13 HTTPS ni con beta operativa.
+
+---
+
+
+
 > **B2-D inspección G13 publicada, pendiente de ensayo (06/11/2026):** `scripts/b2d_apk_manifest_audit.py` + cuatro tests del parser. Solo lectura sobre APK debug existente, package G13 obligatorio. Faltan log de inspección del manifiesto fusionado y campaña de Android físico; ningún despliegue ni permiso concedido. Ver [ANDROID_BETA_CRITICAL_PATH_2026-11-06.md](ANDROID_BETA_CRITICAL_PATH_2026-11-06.md).
 
 ---
