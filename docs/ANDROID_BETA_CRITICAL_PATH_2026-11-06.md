@@ -134,3 +134,20 @@ Salida del operador: `Ran 2 tests in 0.000s`, `OK`, `B2_C_AUDIT_TESTS=0`, `B2_C_
 Recibo textual del operador: `B2_D_PACKAGE=es.vencira.vencira.g13lab`, `B2_D_PERMISSION_POST_NOTIFICATIONS=DECLARED`, `B2_D_PERMISSION_RECEIVE_BOOT_COMPLETED=NOT_DECLARED`, `B2_D_PERMISSION_SCHEDULE_EXACT_ALARM=NOT_DECLARED`, `B2_D_PERMISSION_USE_EXACT_ALARM=NOT_DECLARED`, `B2_D_BOOT_RECEIVER=NOT_DECLARED`, `B2_D_SCHEDULED_RECEIVER=NOT_DECLARED`, `B2_D_MANIFEST_AUDIT=PASS_READONLY`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. `OS_PERMISSION_GRANTED=NOT_VERIFIED`, `REBOOT_RESCHEDULE_ON_PHONE=NOT_VERIFIED`. El permiso `POST_NOTIFICATIONS` aparece en el **manifiesto fusionado del APK debug G13**, pese a no declararse en el manifiesto fuente de la aplicación. Ausencia de receptores no representa regresión de G13 porque este APK prueba HTTPS, no programación nativa de avisos.
 
 **Evidencia cerrada:** `B2_D_COMPILED_MANIFEST_G13=PASS_READONLY`. **No evidenciado en este recibo:** salida de las cuatro pruebas unitarias del inspector, HEAD del checkout, código final de salida del comando, permiso del sistema concedido ni reinicio y reprogramación real. **B2_D_INTEGRAL=PENDING**: la siguiente campaña necesita una APK *específica* de notificaciones sintéticas, aislada y sin acceso real, con permisos explícitos y receivers auditados; no reutilizar G13 como prueba de entrega de avisos y no activar producción.
+
+
+## 06/11/2026 — B2-E: laboratorio físico G15 agrupado (publicado, no ejecutado)
+
+Se publica una **APK debug aislada** de notificaciones sintéticas, distinta de G8/G12/G13 y de la app operativa. El paquete Android es `es.vencira.vencira.g15lab`, activado solo con `VENCIRA_G15_LAB_BUILD=1` y `--dart-define=VENCIRA_G15_LAB_BUILD=true`, excluido de compilaciones `release/profile`. `main.dart` no importa el módulo G15.
+
+Cambios agrupados:
+- `clients/flutter/lib/g15_lab_main.dart`: interfaz manual para solicitar permiso, revisar permiso actual, programar aviso sintético a +15 minutos, consultar cola y cancelar. Denegación/retirada exige volver a solicitar permiso desde la propia interfaz. Sin usuario, red, token ni contenido de clientes; el sistema operativo puede retrasar la entrega por optimización de batería.
+- `clients/flutter/lib/g15_lab/physical_notice_checks.dart`: plugin real Android, guardas de plataforma/debug, opt-in expreso, comprobación del permiso de sistema antes de programar, zona Europe/Madrid, ID fijo, aviso inexacto y operación de cancelación disponible incluso tras revocación.
+- `clients/flutter/android/app/src/g15lab/AndroidManifest.xml`: overlay **exclusivo de G15** con `POST_NOTIFICATIONS`, `RECEIVE_BOOT_COMPLETED`, `ScheduledNotificationReceiver` y `ScheduledNotificationBootReceiver`; sin solicitar privilegios de alarmas exactas. `build.gradle.kts` selecciona el overlay solo durante esta compilación debug aislada.
+- `scripts/test_g15_lab_boundary.py`: 4 pruebas fuente/parser; `scripts/g15_apk_manifest_gate.py`: comprueba el manifiesto fusionado y rechaza paquetes ajenos, receptores ausentes o permisos exact-alarm; `scripts/g15_phone_apk_build.sh`: N1 + pruebas + analyzer Flutter + build debug + `aapt` + SHA256.
+- `.github/workflows/g15-android-notifications-lab.yml`: CI aislado, sube únicamente APK debug y SHA256 para ensayos en Android físico; no despliega servidor.
+- N1: `g15_notification_lab_debug_only`, para exigir el aislamiento.
+
+**Estado inicial: `G15_BUILD=NOT_VERIFIED`; `G15_PHYSICAL=NOT_VERIFIED`.** No afirmar compilación ni entrega del aviso sin logs. El ensayo tras reinicio requiere un teléfono real y verificación del permiso del sistema y del aviso recibido, no solo `pendingNotificationRequests()`. Reiniciar el teléfono puede retrasar la notificación; el ensayo no garantiza puntualidad. Se debe cancelar el aviso sintético al finalizar y no usar datos reales.
+
+Aun con G15 PASS, B2 integral y beta privada siguen bloqueados por contrato de sesión/identidad G14-E2 y restantes gates. `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
