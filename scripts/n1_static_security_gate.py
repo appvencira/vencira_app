@@ -101,6 +101,7 @@ def verify():
     g14_d5_races = read("backend/native_mobile_service/test_g14_d5_mfa_writer_pg17_races.py")
     g14_d8_races = read("backend/native_mobile_service/test_g14_d8_admin_rotation_pg17.py")
     g14_d9_guards = read("backend/native_mobile_service/test_g14_d9_recovery_guards_pg17.py")
+    g14_d9c_races = read("backend/native_mobile_service/test_g14_d9c_admin_finalization_pg17.py")
     mfa_enrollment_lock = read("backend/reminders/mfa_enrollment.py")
     g14_inventory = read("scripts/g14_mfa_writer_inventory.py")
     g14_inventory_tests = read("scripts/test_g14_mfa_writer_inventory.py")
@@ -347,6 +348,14 @@ def verify():
             and "assert_unchanged" in g14_d9_guards
             and "g14_d9_recovery_guards_pg17" not in config
             and "g14_d9_recovery_guards_pg17" not in routes,
+        "g14_d9c_admin_factor_finalization_pg17":
+            "TransactionTestCase" in g14_d9c_races
+            and "test_cancel_vs_finalization_cannot_both_succeed" in g14_d9c_races
+            and "test_missing_execution_evidence_preserves_factor" in g14_d9c_races
+            and "cancel_recovery_case(" in g14_d9c_races
+            and "finalize_administrative_factor(" in g14_d9c_races
+            and "g14_d9c_admin_finalization_pg17" not in config
+            and "g14_d9c_admin_finalization_pg17" not in routes,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
@@ -996,6 +1005,7 @@ def verify():
         "backend/native_mobile_service/test_g14_d5_mfa_writer_pg17_races.py",
         "backend/native_mobile_service/test_g14_d8_admin_rotation_pg17.py",
         "backend/native_mobile_service/test_g14_d9_recovery_guards_pg17.py",
+        "backend/native_mobile_service/test_g14_d9c_admin_finalization_pg17.py",
         "scripts/g14_mfa_writer_inventory.py",
         "scripts/test_g14_mfa_writer_inventory.py",
         "scripts/g14_mfa_lock_order_report.py",
