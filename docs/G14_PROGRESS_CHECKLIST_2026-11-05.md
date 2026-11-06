@@ -159,3 +159,12 @@ Mantener la base previa de E1 (123 tests PASS local), sin atribuirle emisión se
 ## 06/11/2026 — G14-E1B validado con log PG17 adjunto
 
 El operador entregó `vencira-e1b-pg17.log`: `N1_PG17=isolated (private internal network, tmpfs, no published ports)`, `N1_PG17_POSTGRES_READY=OK`, `Found 127 test(s).`, `System check identified no issues (0 silenced).`, `Ran 127 tests in 26.610s`, `OK`, `G4_CANDIDATE_PG17_RESULT=0`, `G5_CANDIDATE_PG17_RESULT=0`. N1 y Docker se habían informado OK en el lote previo. **G14-E1B=PASS_LOCAL_PG17_127_TESTS**. La ejecución está registrada en log de usuario, sin un SHA HEAD nuevo acreditado en ese log. Concurrencia MFA, bloqueo y presupuesto probados únicamente con datos sintéticos. G14-E2 emisor confiable aún no implementado; sin despliegue ni migración persistente.
+
+
+## 06/11/2026 — G14-E1C rollback de verificación MFA (publicado, sin PASS)
+
+- [~] E1C: se añaden tres pruebas PG17 test-only en `native_mobile_service.test_g14_e1c_transaction_rollback_pg17`: consumo TOTP con rollback exterior, contador de intentos fallidos con rollback exterior y rollback de savepoint interno seguido de prueba válida.
+- Integradas en runner `--candidate`, workflow GitHub y N1 `g14_e1c_pg17_outer_savepoint_rollback`.
+- **Evidencia local pendiente**. Base validada hasta E1B: 127 pruebas PG17 PASS; el nuevo lote debería contar 130 si no cambian otras suites.
+- Estas pruebas usan directamente el verificador sin emitir sesiones; demuestran semántica de transacciones sobre el MFA sintético y no el compromiso atómico real token+auditoría. E2 continua sin emisor implementado.
+- No cambian MFA operativo, rutas, migraciones ni despliegue.
