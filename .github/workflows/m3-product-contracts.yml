@@ -30,6 +30,8 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Check native authentication release boundary
         run: python ../scripts/n1_static_security_gate.py
+      - name: Check Android beta signing boundary
+        run: python ../scripts/test_android_release_signing_boundary.py
       - name: Reject experimental session lab under production environment
         run: |
           if VENCIRA_ENV=production DJANGO_DEBUG=0 VENCIRA_NATIVE_SESSION_LAB=1 python manage.py check > /tmp/n1-prod-lab-denied.log 2>&1; then
@@ -115,6 +117,8 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Check native authentication release boundary
         run: python ../scripts/n1_static_security_gate.py
+      - name: Check Android beta signing boundary
+        run: python ../scripts/test_android_release_signing_boundary.py
       - name: Check Django with PG17 configuration
         run: python manage.py check
       - name: Run O9b and operational inbox regressions on isolated PG17
