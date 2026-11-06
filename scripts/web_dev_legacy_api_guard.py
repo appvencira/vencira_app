@@ -43,7 +43,7 @@ def main() -> int:
     # The Android-only coordinator must remain outside the transitive import
     # graph of lib/main.dart, the web entrypoint. An allowlisted Dart callsite
     # alone would not establish that its endpoint is unreachable on web.
-    import_pattern = re.compile(r"^\\s*import\\s+['\\\"]([^'\\\"]+)['\\\"]", re.MULTILINE)
+    import_pattern = re.compile(r"^\s*import\s+['\"]([^'\"]+)['\"]", re.MULTILINE)
 
     def import_graph(entry: Path) -> set[Path]:
         visited: set[Path] = set()
