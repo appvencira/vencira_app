@@ -7,6 +7,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 echo "WEB_CANDIDATE_MODE=ISOLATED_BUILD_ONLY"
+if [[ "$(id -u)" -ne 0 ]]; then
+  sudo -v || { echo "WEB_CANDIDATE_SUDO_DENIED"; exit 2; }
+  DOCKER=(sudo docker)
+else
+  DOCKER=(docker)
+fi
+
 for bin in git docker; do
   command -v "$bin" >/dev/null || { echo "WEB_CANDIDATE_REQUIRED_TOOL_MISSING=$bin"; exit 2; }
 done
@@ -26,34 +33,34 @@ if test -n "$(git ls-files --others --exclude-standard -- clients/flutter/lib cl
   exit 3
 fi
 for name in vencira_localcheck-api-1 vencira_localcheck-db-1 vencira_localcheck-web_preview-1; do
-  state="$(docker inspect -f '{{.State.Status}}' "$name")"
-  health="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$name")"
-  project="$(docker inspect -f '{{index .Config.Labels "com.docker.compose.project"}}' "$name")"
+  state="$("${DOCKER[@]}" inspect -f '{{.State.Status}}' "$name")"
+  health="$("${DOCKER[@]}" inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$name")"
+  project="$("${DOCKER[@]}" inspect -f '{{index .Config.Labels "com.docker.compose.project"}}' "$name")"
   if [[ "$state" != running || "$health" != healthy || "$project" != vencira_localcheck ]]; then
     echo "WEB_CANDIDATE_LIVE_SERVICE_CHECK=DENIED:$name"
     exit 4
   fi
 done
-OLD_WEB="$(docker inspect -f '{{.Image}}' vencira_localcheck-web_preview-1)"
-OLD_API="$(docker inspect -f '{{.Image}}' vencira_localcheck-api-1)"
-OLD_DB="$(docker inspect -f '{{.Image}}' vencira_localcheck-db-1)"
-docker image inspect "$OLD_WEB" >/dev/null
+OLD_WEB="$("${DOCKER[@]}" inspect -f '{{.Image}}' vencira_localcheck-web_preview-1)"
+OLD_API="$("${DOCKER[@]}" inspect -f '{{.Image}}' vencira_localcheck-api-1)"
+OLD_DB="$("${DOCKER[@]}" inspect -f '{{.Image}}' vencira_localcheck-db-1)"
+"${DOCKER[@]}" image inspect "$OLD_WEB" >/dev/null
 echo "WEB_CANDIDATE_OLD_WEB_RECOVERABLE=YES"
 # Fixed tag scoped to exact source commit. Never tag/overwrite the live image.
 TAG="vencira-web-candidate:$SHORT"
 echo "WEB_CANDIDATE_TAG=$TAG"
-docker build --pull=false \
+"${DOCKER[@]}" build --pull=false \
   --label "es.vencira.candidate.source=$HEAD_SHA" \
   -f deploy/preview/Dockerfile.web \
   -t "$TAG" . 
 # Inspect static build artifacts without starting nginx or joining live network.
-docker run --rm --network none --entrypoint /bin/sh "$TAG" -ec '
+"${DOCKER[@]}" run --rm --network none --entrypoint /bin/sh "$TAG" -ec '
   test -s /usr/share/nginx/html/index.html
   test -s /usr/share/nginx/html/main.dart.js
   test -s /etc/nginx/conf.d/default.conf
 '
 echo "WEB_CANDIDATE_STATIC_ASSETS=OK"
-ACTUAL_LABEL="$(docker image inspect -f '{{index .Config.Labels "es.vencira.candidate.source"}}' "$TAG")"
+ACTUAL_LABEL="$("${DOCKER[@]}" image inspect -f '{{index .Config.Labels "es.vencira.candidate.source"}}' "$TAG")"
 test "$ACTUAL_LABEL" = "$HEAD_SHA"
 for entry in \
   "vencira_localcheck-web_preview-1:$OLD_WEB" \
@@ -61,7 +68,7 @@ for entry in \
   "vencira_localcheck-db-1:$OLD_DB"; do
   name="${entry%%:*}"
   expected="${entry#*:}"
-  actual="$(docker inspect -f '{{.Image}}' "$name")"
+  actual="$("${DOCKER[@]}" inspect -f '{{.Image}}' "$name")"
   if [ "$actual" != "$expected" ]; then
     echo "WEB_CANDIDATE_LIVE_IMAGE_CHANGED=DENIED:$name"
     exit 5
