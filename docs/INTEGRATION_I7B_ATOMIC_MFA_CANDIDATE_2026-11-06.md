@@ -28,3 +28,9 @@ Una prueba PG17 verde demuestra propiedades limitadas de atomicidad y bloqueo, n
 `MB1_RELEASE_AUTHORIZED=NO`
 `C_FICHA_RELEASE_AUTHORIZED=NO`
 `NO_DEPLOY_NO_LIVE_MIGRATION=1`
+
+## Resultado confirmado — 06/11/2026
+
+PR #31 fusionada por squash a `main` (`d29c2bfdbb94254d5ed208739388f29c5c7095d3`). En el HEAD validado `19ae61bb29aa33077d181372c8602b1257a45afd` los **7 workflows** resultaron `success`: I7B PostgreSQL17, I7A, I2E, I2B2, I3, I4 e I5 (incluida APK debug). El primer test incorrecto asumía que una clave Fernet inválida provocaría una excepción; se corrigió para exigir **denegación uniforme, sin sesión ni consumo de MFA**, que es la salida real del verificador. La nueva ejecución fue correcta.
+
+Esto autoriza **integrar el código de laboratorio**, no publicar, migrar bases persistentes ni conceder sesiones reales. `I7B_PRODUCTION_ISSUER=NO`.
