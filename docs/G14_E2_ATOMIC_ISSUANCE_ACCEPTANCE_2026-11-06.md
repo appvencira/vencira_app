@@ -72,3 +72,8 @@ Tres nuevas pruebas con `TransactionTestCase` para PostgreSQL 17: rollback del T
 Se añaden cuatro regresiones PG17 aisladas para verificar que una clave ausente/extraña y los estados de cuenta inactiva o recuperación pendiente no consumen TOTP, no cambian época y no generan sesiones. N1 `g14_e1d_pg17_key_custody_failclosed` y runner `--candidate` integrados. **E1D pendiente de validación local.**
 
 **Riesgo señalado:** la llave de descifrado incorrecta desencadena `ValueError` en el verificador E1, lo que no constituye una respuesta uniforme de autenticación. En ausencia de endpoint público, no existe filtración HTTP operativa de este flujo; la futura integración debe capturar la excepción y distinguir internamente indisponibilidad de custodia de una contraseña incorrecta, sin exposición de detalles al cliente.
+
+
+## 06/11/2026 — G14-E1D2, cierre del error de clave antes de E2
+
+La verificación de contraseña/TOTP bajo locks ahora convierte errores de descifrado de clave en `CandidateMfaDenied` sin encadenamiento explícito. Casos de clave incorrecta y clave malformada integrados en E1D. **No acreditado por pruebas locales aún**; se esperan 135 tests PG17 y gate N1 `g14_e1d_uniform_custody_denial`. Ello no implementa la emisión MFA ni la auditoría atómica requeridas para E2.
