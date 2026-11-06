@@ -113,4 +113,98 @@ void main() {
     await tester.pumpAndSettle();
     expect(attempts, 2);
   });
+  testWidgets('Late failure from replaced cleanup cannot relock a successful gate',
+      (tester) async {
+    final oldWork = Completer<void>();
+    Future<void> oldCleanup() => oldWork.future;
+    var replacementCalls = 0;
+    Future<void> newCleanup() async { replacementCalls++; }
+
+    await tester.pumpWidget(app(oldCleanup));
+    await tester.pump();
+    await tester.pumpWidget(app(newCleanup));
+    await tester.pumpAndSettle();
+    expect(replacementCalls, 1);
+    expect(find.text('Authorized customer dashboard'), findsOneWidget);
+
+    oldWork.completeError(StateError('Old account cleanup failed'));
+    await tester.pumpAndSettle();
+    expect(find.text('Authorized customer dashboard'), findsOneWidget);
+    expect(find.byKey(const ValueKey('retry-native-alarm-recovery')),
+        findsNothing);
+  });
+
+  testWidgets('Late success from replaced cleanup cannot bypass new failure',
+      (tester) async {
+    final oldWork = Completer<void>();
+    Future<void> oldCleanup() => oldWork.future;
+    Future<void> newCleanup() async {
+      throw StateError('New account protected storage unavailable');
+    }
+
+    await tester.pumpWidget(app(oldCleanup));
+    await tester.pump();
+    await tester.pumpWidget(app(newCleanup));
+    await tester.pumpAndSettle();
+    expect(find.text('Authorized customer dashboard'), findsNothing);
+    expect(find.byKey(const ValueKey('retry-native-alarm-recovery')),
+        findsOneWidget);
+
+    oldWork.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('Authorized customer dashboard'), findsNothing);
+    expect(find.byKey(const ValueKey('retry-native-alarm-recovery')),
+        findsOneWidget);
+  });
+
+  testWidgets('Repeated recovery taps never start overlapping cleanups',
+      (tester) async {
+    final retryWork = Completer<void>();
+    var attempts = 0;
+    await tester.pumpWidget(app(() async {
+      attempts++;
+      if (attempts == 1) throw StateError('Initial protected read failed');
+      await retryWork.future;
+    }));
+    await tester.pumpAndSettle();
+    expect(attempts, 1);
+
+    final retry = find.byKey(const ValueKey('retry-native-alarm-recovery'));
+    await tester.tap(retry);
+    await tester.pump();
+    expect(attempts, 2);
+    expect(find.text('Authorized customer dashboard'), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(retry, findsNothing);
+
+    retryWork.complete();
+    await tester.pumpAndSettle();
+    expect(attempts, 2);
+    expect(find.text('Authorized customer dashboard'), findsOneWidget);
+  });
+
+  testWidgets('Disabled-to-enabled transition requires new cleanup even after failure',
+      (tester) async {
+    var attempts = 0;
+    Future<void> cleanup() async {
+      attempts++;
+      if (attempts == 1) throw StateError('Unverified alarm ledger');
+    }
+
+    await tester.pumpWidget(app(cleanup));
+    await tester.pumpAndSettle();
+    expect(find.text('Authorized customer dashboard'), findsNothing);
+    expect(find.byKey(const ValueKey('retry-native-alarm-recovery')),
+        findsOneWidget);
+
+    await tester.pumpWidget(app(cleanup, enabled: false));
+    await tester.pump();
+    expect(find.text('Authorized customer dashboard'), findsOneWidget);
+
+    await tester.pumpWidget(app(cleanup));
+    await tester.pumpAndSettle();
+    expect(attempts, 2);
+    expect(find.text('Authorized customer dashboard'), findsOneWidget);
+  });
+
 }
