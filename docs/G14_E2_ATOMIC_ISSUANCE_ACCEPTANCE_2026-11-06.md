@@ -44,3 +44,8 @@ G14_E2_PG17=NOT_RUN
 TRUSTED_MFA_ISSUER=NOT_IMPLEMENTED
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## 06/11/2026 — G14-E1C pruebas de rollback previas a emisión
+
+Tres nuevas pruebas con `TransactionTestCase` para PostgreSQL 17: rollback del TOTP consumido tras excepción exterior, rollback de contador de fallos en excepción exterior y recuperación de un savepoint interno sin consumir TOTP. Integración N1 y runner candidato preparada. **No hay pruebas locales E1C todavía**; estas regresiones no acreditan persistencia ni rollback de tokens y auditoría. E2 continúa sin publicación de emisor.
