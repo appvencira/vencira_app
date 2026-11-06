@@ -151,3 +151,6 @@ Cambios agrupados:
 **Estado inicial: `G15_BUILD=NOT_VERIFIED`; `G15_PHYSICAL=NOT_VERIFIED`.** No afirmar compilación ni entrega del aviso sin logs. El ensayo tras reinicio requiere un teléfono real y verificación del permiso del sistema y del aviso recibido, no solo `pendingNotificationRequests()`. Reiniciar el teléfono puede retrasar la notificación; el ensayo no garantiza puntualidad. Se debe cancelar el aviso sintético al finalizar y no usar datos reales.
 
 Aun con G15 PASS, B2 integral y beta privada siguen bloqueados por contrato de sesión/identidad G14-E2 y restantes gates. `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+**Refuerzo de aislamiento G15:** overlay Android `tools:node="remove"` elimina el permiso heredado `INTERNET`; el gate del APK fusionado exige `G15_INTERNET_PERMISSION=ABSENT`. Esta condición está publicada, **pendiente de compilar y verificar**: no afirmar que el permiso se eliminó realmente hasta `G15_MANIFEST_GATE=PASS`. Si Gradle/Flutter no permite la eliminación, el build debe FALLAR sin distribuir APK. Corrección del parser de permiso INTERNET: commit `b42aa3df`.
