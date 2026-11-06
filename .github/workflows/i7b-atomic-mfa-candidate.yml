@@ -1,0 +1,83 @@
+name: I7B atomic MFA issuance candidate (test-only PG17)
+on:
+  pull_request:
+    paths:
+      - 'backend/native_mobile_service/**'
+      - '.github/workflows/i7b-atomic-mfa-candidate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pg17-atomic-mfa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: vencira_i7b_ci
+          POSTGRES_USER: vencira_i7b_ci
+          POSTGRES_PASSWORD: test-only-i7b
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vencira_i7b_ci -d vencira_i7b_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 15
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      VENCIRA_ENV: test
+      VENCIRA_DB_ENGINE: postgresql
+      POSTGRES_DB: vencira_i7b_ci
+      POSTGRES_USER: vencira_i7b_ci
+      POSTGRES_PASSWORD: test-only-i7b
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: '5432'
+      DJANGO_SECRET_KEY: i7b-test-only-postgres17-secret-not-for-production
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      VENCIRA_NATIVE_SERVICE_CANDIDATE: '1'
+      VENCIRA_NATIVE_SESSION_LAB: '0'
+      VENCIRA_ATTACHMENT_SPLIT_REHEARSAL: '0'
+      VENCIRA_MFA_ENROLLMENT_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install isolated backend dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Check Django and no model drift
+        run: |
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+      - name: Atomic MFA verification+issuer and regressions on disposable PostgreSQL
+        run: >-
+          python manage.py test
+          native_mobile_service.test_i7b_atomic_mfa_candidate
+          native_mobile_service.test_i7_native_issuer_absence
+          native_mobile_service.test_g14_e1_locked_mfa_verifier
+          native_mobile_service.test_g14_e1c_transaction_rollback_pg17
+          native_mobile_service.test_g14_e1d_key_custody_pg17
+          native_mobile_service.test_g14_issuance_atomicity
+          native_mobile_service.test_g14_d3_candidate_boundary
+          --verbosity 1
+      - name: Reject test-only native app in non-test installation
+        run: |
+          if VENCIRA_ENV=production python manage.py check >/tmp/i7b-rejected.log 2>&1; then
+            echo 'I7B_NONTEST_DENIAL=FAIL'
+            exit 1
+          fi
+          grep -q 'Native mobile service candidate only allowed in isolated tests' /tmp/i7b-rejected.log
+          echo 'I7B_NONTEST_DENIAL=OK'
+      - name: Authorization fences
+        run: |
+          echo 'I7B_ISSUER_PRODUCTION_AUTHORIZED=NO'
+          echo 'MFA_RELEASE_AUTHORIZED=NO'
+          echo 'MB1_RELEASE_AUTHORIZED=NO'
+          echo 'C_FICHA_RELEASE_AUTHORIZED=NO'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
