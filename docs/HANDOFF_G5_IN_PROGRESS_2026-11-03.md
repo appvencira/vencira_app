@@ -862,3 +862,8 @@ Publicados dos tests nuevos en la suite PG17 existente de G14-D9C: expiración d
 ## 06/11/2026 — G14-E0 emisor MFA: revisión de límite de confianza
 
 Se publicó escáner `scripts/g14_trusted_issuer_boundary.py`, seis tests stdlib y N1 `g14_trusted_issuer_direct_call_boundary`. Enforce sintáctico de llamadas directas a `issue_verified_candidate_session` fuera de la única composición no-MFA ya revisada. Documento de diseño `docs/G14_TRUSTED_MFA_ISSUER_DESIGN_2026-11-06.md` identifica la necesidad de contraseña+TOTP bajo locks y auditoría transaccional; **no hay emisor MFA confiable implementado**. Ejecutar solo pruebas estáticas, no requiere Docker ni repetir 118 PG17. Estado: CODE=PUBLISHED, LOCAL=NOT_RUN, RELEASE=NO.
+
+
+## 06/11/2026 — G14-E0 escaneo y N1 local PASS
+
+Recibo operador: `G14_E0_N1=0`, `G14_TRUSTED_BOUNDARY_DIRECT_CALLS=1`, `G14_TRUSTED_BOUNDARY_UNREVIEWED_CALLS=0`, `G14_TRUSTED_ISSUER_IMPLEMENTED=NO`, `G14_TRUSTED_BOUNDARY_SCAN=PASS`, `N1_STATIC_g14_trusted_issuer_direct_call_boundary=OK`, `N1_STATIC_GATE_RESULT=OK`. No se recibieron salidas `G14_E0_TESTS` o `G14_E0_AUDIT` como códigos de proceso; pruebas unitarias E0 no confirmadas individualmente. G14-E1 siguiente prioridad: compuesto servidor de contraseña/MFA test-only, no conectar rutas ni producción. Estado actualizado en `docs/G14_PROGRESS_CHECKLIST_2026-11-05.md`.
