@@ -1,5 +1,5 @@
 // G15: explicit, synthetic, OFFLINE Android notification experiment.
-// No VenciraApi, session, network, customer data or production scheduling.
+// No backend calls, sessions, customer data or production scheduling.
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
