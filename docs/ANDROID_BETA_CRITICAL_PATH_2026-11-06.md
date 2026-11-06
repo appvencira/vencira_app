@@ -154,3 +154,8 @@ Aun con G15 PASS, B2 integral y beta privada siguen bloqueados por contrato de s
 
 
 **Refuerzo de aislamiento G15:** overlay Android `tools:node="remove"` elimina el permiso heredado `INTERNET`; el gate del APK fusionado exige `G15_INTERNET_PERMISSION=ABSENT`. Esta condición está publicada, **pendiente de compilar y verificar**: no afirmar que el permiso se eliminó realmente hasta `G15_MANIFEST_GATE=PASS`. Si Gradle/Flutter no permite la eliminación, el build debe FALLAR sin distribuir APK. Corrección del parser de permiso INTERNET: commit `b42aa3df`.
+
+
+## 06/11/2026 — G15 primer ensayo bloqueado por N1 heredado; corrección publicada
+
+El operador ejecutó G15 en `HEAD=b30bc8678`: `G15_BUILD_RESULT=1`, `N1_STATIC_GATE_RESULT=FAIL`; solo dos controles fallaron: `N1_STATIC_g12_physical_android_offline_auth_isolated=FAIL` y `N1_STATIC_g13_android_real_tls_usb_only=FAIL`. Ambos comparaban literalmente la lista antigua de tres flags (`g8/g12/g13`) en Gradle. La variante G15 extendió la exclusión mutua a cuatro flags (`g8/g12/g13/g15`), por lo que **el guard N1 quedó obsoleto** aunque la exclusión mutua siguió activa. Corrección publicada en `180a7932`: los dos controles N1 exigen ahora explícitamente la nueva lista con cuatro laboratorios; no se elimina ninguna prueba, aislamiento, protección de release ni condición de fallo. **Nueva ejecución N1/build/manifest pendiente.** No interpretar el primer fallo como compilación Gradle fallida, porque el runner terminó antes de Flutter. El mensaje intermedio de `sudo` sobre una contraseña errónea es independiente del fallo N1, pues Docker llegó a ejecutar el gate.
