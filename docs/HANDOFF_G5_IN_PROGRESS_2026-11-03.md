@@ -907,3 +907,8 @@ Contrato actualizado: `docs/G14_E2_ATOMIC_ISSUANCE_ACCEPTANCE_2026-11-06.md`, co
 ## 06/11/2026 — E1D pruebas PG17 de fallos de custodia publicadas
 
 Cuatro tests en `native_mobile_service.test_g14_e1d_key_custody_pg17`, N1 y runner `--candidate`, CI actualizados. Pendiente PG17 (134 pruebas esperadas). Señal técnica: error de llave incorrecta actualmente se propaga como `ValueError` al llamante interno; exigir normalización antes de interfaz operativa. E2 token+auditoría no implementado. Sin despliegue, migración persistente ni cambio de autenticación.
+
+
+## 06/11/2026 — E1D: evidencia completa recibida
+
+`HEAD=263767dac`; N1=0 (control E1D y gate OK), Docker build=0, PG17=0; 134 tests en 33.065 segundos y `G5_CANDIDATE_PG17_RESULT=0`. E1D cerrado PASS local. No confundir esta validación con un emisor MFA operativo: integración E2 pendiente y normalización de fallos de custodia todavía sin resolver. Ningún despliegue o migración persistente autorizado.
