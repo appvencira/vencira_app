@@ -105,3 +105,12 @@ G14_E3_REFRESH_PG17_RESULT=0
 ```
 
 **E3-R1/R2=PASS_LOCAL_PG17**, solo refresh frente a revocación global y cambio de contraseña en el almacén candidato test-only. No se aportó el eco externo `G14_E3_REFRESH_LOCAL_RESULT`; no inferirlo. No se acreditan todos los interleavings ni la emisión de TOTP, ni el emisor MFA E2. Base de pruebas destruida; sin despliegue ni migración persistente. `G14_E2_ISSUER=NOT_IMPLEMENTED`, `G14_E3_INTEGRAL=PENDING`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## 06/11/2026 — E3-R3/R4: refresh vs estado MFA (publicado, pendiente de PG17)
+
+- Código `b486a0aa26c164c67bfa6259a1d0b7df4555004a`: se añaden dos pruebas en `native_mobile_service.test_g14_d8_admin_rotation_pg17`, ya incluida en el runner y CI. Ambas usan **sesión MFA sintética de laboratorio** y dos conexiones independientes.
+- R3: `test_e3_refresh_vs_mfa_epoch_revocation_invalidates_both_tokens`, refresh frente a `revoke_mfa_sessions`, verifica que los tokens existentes y cualquier par devuelto quedan inválidos por `session_epoch`.
+- R4: `test_e3_refresh_vs_admin_recovery_does_not_keep_valid_tokens`, refresh frente a `open_recovery_case` con verificador sintético; comprueba expediente pendiente y revocación efectiva de tokens por cambio de época.
+- Runner `9fa684932ddf5360ec4b7262e0a6c729435a1d13`: `bash scripts/n1_identity_pg17_ephemeral.sh --e3-mfa-refresh`, **dos pruebas dirigidas**, sin puertos Docker ni datos de producción, sin repetir G13/G15 ni toda la batería E1.
+- **ESTADO: R3/R4 CODE_PUBLISHED, PG17_NOT_RUN**. Estas pruebas no prueban el emisor MFA E2, la cadena de custodia real ni una ruta HTTP autorizada. Mantener `G14_E2_ISSUER=NOT_IMPLEMENTED`, `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
