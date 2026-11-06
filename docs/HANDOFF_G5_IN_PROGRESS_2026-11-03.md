@@ -827,3 +827,8 @@ Added `backend/native_mobile_service/test_g14_d8_admin_rotation_pg17.py` with tw
 ## 05/11/2026 — G14-D8 PASS local (110 PG17 tests)
 
 Recibo operador: `G14_D8_N1=0`, `G14_D8_BUILD=0`, `G14_D8_PG17=0`, `N1_STATIC_g14_d8_pg17_admin_rotation_isolated=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 110 tests in 15.865s`. Línea `G5_CANDIDATE_PG17_RESULT` copiada sin valor, no afirmar ese marcador específico. D8 PASS solo para pruebas PG17 sintéticas de rotación vs revocación y apertura administrativa vs emisión candidata; no acredita segundo factor operativo ni custodia externa. Checklist `docs/G14_PROGRESS_CHECKLIST_2026-11-05.md` actualizado. Próxima prioridad: G14-D9 auditoría integral y autorización fail-closed, sin deploy.
+
+
+## 06/11/2026 — D9-B verificador externo negativo (pendiente PG17)
+
+Cuatro pruebas sintéticas de recuperación sin verificador válido, con aserciones de ausencia de expediente y de modificación de época. Archivo `native_mobile_service/test_g14_d9_recovery_guards_pg17.py`; suite PG17 candidata, CI y N1 actualizados. No ejecutadas todavía. Ver `docs/G14_PROGRESS_CHECKLIST_2026-11-05.md`. No hay cambio de lógica operativa ni autorización de release.
