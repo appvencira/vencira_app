@@ -48,3 +48,27 @@ class G14D9RecoveryGuards(TransactionTestCase):
         self.assertIsNone(case)
         self.assertEqual(reason, "INDEPENDENT_IDENTITY_NOT_VERIFIED")
         self.assert_unchanged()
+
+    @override_settings(
+        VENCIRA_MFA_RECOVERY_IDENTITY_VERIFIER=lambda **kwargs: 1,
+    )
+    def test_truthy_non_boolean_verifier_fails_closed(self):
+        case, reason = open_recovery_case(
+            subject_id=self.user.pk, requester=self.user,
+        )
+        self.assertIsNone(case)
+        self.assertEqual(reason, "INDEPENDENT_IDENTITY_NOT_VERIFIED")
+        self.assert_unchanged()
+
+    @override_settings(
+        VENCIRA_MFA_RECOVERY_IDENTITY_VERIFIER=lambda **kwargs: (_ for _ in ()).throw(
+            RuntimeError("synthetic unavailable")
+        ),
+    )
+    def test_verifier_exception_fails_closed(self):
+        case, reason = open_recovery_case(
+            subject_id=self.user.pk, requester=self.user,
+        )
+        self.assertIsNone(case)
+        self.assertEqual(reason, "INDEPENDENT_IDENTITY_VERIFICATION_UNAVAILABLE")
+        self.assert_unchanged()
