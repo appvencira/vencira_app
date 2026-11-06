@@ -70,3 +70,8 @@ Recibo del operador: `B2_A_HEAD=b4065dd8d`, `B2_A_TESTS=0`, `B2_A_N1=0`, `B2_A_D
 - Se agregan cuatro tests widget al módulo Flutter existente `test/device_notice_startup_gate_test.dart`: fallo tardío de una limpieza sustituida tras éxito nuevo, éxito tardío que no debe saltarse un fallo nuevo, reintento sin dos limpiezas simultáneas, y transición deshabilitado→habilitado con nueva limpieza.
 - Control estático N1 `android_beta_b2b_startup_recovery_regressions` para impedir eliminar los casos del lote. El workflow de Flutter ya ejecuta ese archivo. **Estado: código/test publicados, pendiente de ejecutar Flutter dirigido y N1 en VPS.**
 - No se modificó lógica de runtime, permisos del manifiesto, backend, claves, flujos nativos ni notificaciones operativas. Estas pruebas no acreditan permisos del sistema en Android físico, ausencia de red, recuperación HTTP real ni una UX nativa completa. Son gates posteriores de B2.
+
+
+## 06/11/2026 — B2-B Flutter dirigido PASS, N1 sin recibo
+
+Operador aporta `vencira-b2b-flutter.log`: `flutter pub get` completo; `flutter test test/device_notice_startup_gate_test.dart` ejecutó los **10 tests y terminó `All tests passed!`**. Las cuatro pruebas de carreras/reintento de B2-B están incluidas. Se muestran avisos no bloqueantes de 23 paquetes desactualizados respecto de restricciones actuales; no son fallos. **No se ha recibido resultado N1 ni SHA local**, así que declarar `B2_B_FLUTTER=PASS`, `B2_B_N1=NOT_EVIDENCED`, `B2_B_INTEGRAL=PENDING`. Sin alteraciones operativas, APK nueva ni despliegue.
