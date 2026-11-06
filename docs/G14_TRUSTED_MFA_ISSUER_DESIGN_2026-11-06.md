@@ -43,3 +43,8 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 ## 06/11/2026 — E1: verificación aislada sin emisión
 
 Se incorpora `g14_e1_locked_mfa_verifier.py`: `verify_candidate_password_and_totp` recibe contraseña y código, no datos de autorización. El usuario se bloquea antes de MFA; dentro de la transacción se consume TOTP utilizando `reminders.mfa_store.consume_totp`. El resultado es booleano de prueba, nunca una capacidad que permita llamar de forma segura a `issue_verified_candidate_session`. Rechazo del caso administrativo pendiente, sin rutas HTTP. Cinco pruebas PG17 de regresión, N1 y workflow añadidos; **pendiente de evidencia local**. No asociar esta operación a la producción ni considerar completada emisión MFA.
+
+
+## 06/11/2026 — E1 aceptado en laboratorio
+
+`G14_E1_HEAD=60c3bbfae`; `G14_E1_N1=0`, `G14_E1_BUILD=0`, `G14_E1_PG17=0`, `Ran 123 tests in 23.421s`. Comprobación de contraseña y TOTP en transacción sin emisión de sesión PASS. Mantener rechazo de reutilización de factor y de recuperación pendiente. No equivale a trusted issuer. E2 debe unir verificación, consumo de factor, auditoría y emisión, con rollback y tests de carreras bajo PostgreSQL 17 efímero; no abrir endpoints.
