@@ -81,3 +81,12 @@ No se modificaron servicios MFA ni endpoints, no deploy, no migración persisten
 ## 06/11/2026 — D9-B validación local confirmada
 
 El operador informa: `G14_D9B_N1=0`, `G14_D9B_BUILD=0`, `G14_D9B_PG17=0`, `N1_STATIC_g14_d9_lock_report_readonly=OK`, `N1_STATIC_g14_d9_recovery_verifier_failclosed_tests=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 114 tests in 19.592s`, `G5_CANDIDATE_PG17_RESULT=0`. **D9-B PASS local**. No se adjuntó SHA del checkout para el lote; no inferir CI remoto. Alcance: cuatro casos negativos de verificador administrativo sin expediente ni cambio de época. **D9 integral permanece parcial** hasta validar sustitución administrativa, carreras de caso y custodia/verificación operativa. Sin despliegue ni migración persistente.
+
+
+## 06/11/2026 — D9-C carrera cancelación vs sustitución MFA: código listo
+
+- [~] **G14-D9C**: pruebas PG17 publicadas, pendientes de aceptación local. `backend/native_mobile_service/test_g14_d9c_admin_finalization_pg17.py`.
+- Carrera real en base temporal: `cancel_recovery_case` contra `finalize_administrative_factor` con expediente y dos aprobaciones sintéticas; no pueden terminar ambas con éxito. Si el factor se sustituye, expediente cerrado y epoch incrementado; si se cancela, factor y epoch originales intactos.
+- Segundo ensayo: falta del verificador externo de ejecución => rechazo, sin sustitución, sin cierre de expediente y sin revocación.
+- Integrado en runner `--candidate`, GitHub Actions (skip SQLite) y N1 `g14_d9c_admin_factor_finalization_pg17`. **No se ha ejecutado todavía**. La evidencia externa positiva del test es un callback sintético, no un sistema de custodia real.
+- Pendientes posteriores: pruebas de expiración simultánea, rechazo administrativo concurrente, callbacks externos transaccionales, emisor confiable MFA, custodia de claves, gates G0–G9 y UAT de beta.
