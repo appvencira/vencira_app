@@ -709,8 +709,8 @@ def verify():
             and 'native_sessions_lab.test_urls' not in routes,
         "g12_physical_android_offline_auth_isolated":
             'VENCIRA_G12_LAB_BUILD' in g8_gradle
-            and 'listOf(g8LabBuild, g12LabBuild, g13LabBuild).count { it } > 1' in g8_gradle
-            and '(g8LabBuild || g12LabBuild || g13LabBuild)' in g8_gradle
+            and 'listOf(g8LabBuild, g12LabBuild, g13LabBuild, g15LabBuild).count { it } > 1' in g8_gradle
+            and '(g8LabBuild || g12LabBuild || g13LabBuild || g15LabBuild)' in g8_gradle
             and 'applicationIdSuffix = ".g12lab"' in g8_gradle
             and 'VENCIRA G12 Pruebas' in g8_gradle
             and 'applicationIdSuffix = ".g8lab"' in g8_gradle
@@ -769,8 +769,8 @@ def verify():
             and 'VENCIRA G13 TLS' in g8_gradle
             and 'applicationIdSuffix = ".g12lab"' in g8_gradle
             and 'applicationIdSuffix = ".g8lab"' in g8_gradle
-            and 'listOf(g8LabBuild, g12LabBuild, g13LabBuild).count { it } > 1' in g8_gradle
-            and '(g8LabBuild || g12LabBuild || g13LabBuild)' in g8_gradle
+            and 'listOf(g8LabBuild, g12LabBuild, g13LabBuild, g15LabBuild).count { it } > 1' in g8_gradle
+            and '(g8LabBuild || g12LabBuild || g13LabBuild || g15LabBuild)' in g8_gradle
             and "bool.fromEnvironment('VENCIRA_G13_LAB_BUILD')" in g13_phone_main
             and "String.fromEnvironment('G13_LAB_PUBLIC_CA_BASE64')" in g13_phone_main
             and 'G13_DEBUG_ANDROID_TEMPORARY_CA_ONLY' in g13_phone_main
