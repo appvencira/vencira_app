@@ -77,3 +77,16 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 Evidence from operator: `G14_D9B_N1=0`, `G14_D9B_BUILD=0`, `G14_D9B_PG17=0`, `N1_STATIC_g14_d9_lock_report_readonly=OK`, `N1_STATIC_g14_d9_recovery_verifier_failclosed_tests=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 114 tests in 19.592s`, `G5_CANDIDATE_PG17_RESULT=0`. **D9-B PASS local**. The result validates only these synthetic negative-verifier cases in temporary PG17, not end-to-end administrative authorization. Checkout HEAD not included; remote Actions status not established.
 
 Remaining: cross-transaction races involving case cancellation/expiry/finalization, complete independent authorization and delivery/custody evidence, trusted MFA issuer and release gates. `G14_D9_SECURITY_ACCEPTANCE=PARTIAL`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## 06/11/2026 — D9-C pruebas transaccionales administrativas preparadas
+
+Se incorporan dos pruebas PG17 a la rama de laboratorio: cancelación de expediente frente a finalización de reemplazo del factor (exclusión mutua de éxito y ausencia de estado mixto) y ausencia de verificador externo de ejecución (reemplazo denegado). Suite: `native_mobile_service.test_g14_d9c_admin_finalization_pg17`. Integradas en N1 y CI, resultado local pendiente. El ensayo usa aprobaciones y verificadores sintéticos, no habilita recuperación real ni demuestra ausencia de deadlocks en interleavings no cubiertos.
+
+```
+G14_D9B=PASS_LOCAL_114_TESTS
+G14_D9C_CODE=PUBLISHED
+G14_D9C_PG17_RESULT=NOT_RUN
+G14_D9_SECURITY_ACCEPTANCE=PARTIAL
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
