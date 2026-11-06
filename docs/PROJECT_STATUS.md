@@ -1,3 +1,7 @@
+> **CORTE BACKEND DEV — INICIADO 07/11/2026:** despliegue web V2 ya aceptado manualmente, próximo objetivo actualizar funciones backend independientes de MFA. Se ha publicado `scripts/backend_dev_schema_inventory_readonly.py` para comparar migraciones `reminders` fuente vs aplicadas sin modificarlas; **ejecución local pendiente**. En backend fuente hay 7 rutas ausentes del API actual (MFA 4, adjuntos 2, preview avisos 1); no desplegar backend Android completo. También se corrigió un error latente en rama rollback del script web-only (`b899d1f6`), sin alterar servidor. Detalle en [WEB_DEV_VISUAL_DEPLOY_READINESS_2026-11-06.md](WEB_DEV_VISUAL_DEPLOY_READINESS_2026-11-06.md). `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+---
+
 > **WEB DEV — revisión navegador completada, 06/11/2026:** tras despliegue `WEB_RELEASE_MODE_RESULT=PASS:deploy` para la imagen `vencira-web-candidate:308c69da24aa`, el operador respondió «Done» a la revisión manual de DEV. **`WEB_DEV_BROWSER_REVIEW=OPERATOR_DONE`**, sin informe separado por pantalla ni UAT exhaustiva demostrada; API/DB no modificadas. Estado y límites en [WEB_DEV_VISUAL_DEPLOY_READINESS_2026-11-06.md](WEB_DEV_VISUAL_DEPLOY_READINESS_2026-11-06.md). Próximo corte: nuevas funciones web/API compatibles con backend actualizado y gate propio; no habilitar MFA G14-E2 ni ejecutar migraciones no aprobadas.
 
 ---
