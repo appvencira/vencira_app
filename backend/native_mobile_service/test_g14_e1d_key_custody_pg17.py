@@ -89,3 +89,38 @@ class G14E1DKeyCustodyPG17(TransactionTestCase):
         with self.assertRaises(CandidateMfaDenied):
             self.verify()
         self.assert_untouched()
+
+    def test_disabled_mfa_denied_without_factor_consumption(self):
+        self.state.enabled = False
+        self.state.save(update_fields=["enabled"])
+        with self.assertRaises(CandidateMfaDenied):
+            self.verify()
+        self.assert_untouched()
+
+    def test_password_rotation_denies_stale_password_without_consumption(self):
+        self.user.set_password("e1d-rotated-synthetic-password")
+        self.user.save(update_fields=["password"])
+        with self.assertRaises(CandidateMfaDenied):
+            self.verify()
+        self.assert_untouched()
+
+    def test_tampered_ciphertext_denied_without_consumption(self):
+        self.state.encrypted_totp_secret = "v1:tampered-ciphertext"
+        self.state.save(update_fields=["encrypted_totp_secret"])
+        with self.assertRaises(CandidateMfaDenied) as denied:
+            self.verify()
+        self.assertIsNone(denied.exception.__cause__)
+        self.assert_untouched()
+
+    def test_secret_from_another_account_denied_without_consumption(self):
+        other = get_user_model().objects.create_user(
+            username="e1d-other-synthetic", password="unrelated-test-password",
+        )
+        self.state.encrypted_totp_secret = encrypt_totp_secret(
+            self.secret, user_id=other.pk, keys=self.keys,
+        )
+        self.state.save(update_fields=["encrypted_totp_secret"])
+        with self.assertRaises(CandidateMfaDenied) as denied:
+            self.verify()
+        self.assertIsNone(denied.exception.__cause__)
+        self.assert_untouched()
