@@ -857,3 +857,8 @@ Publicados dos tests nuevos en la suite PG17 existente de G14-D9C: expiración d
 ## 06/11/2026 — D9-D 118 pruebas PASS
 
 `G14_D9D_N1=0`, `G14_D9D_BUILD=0`, `G14_D9D_PG17=0`, `N1_STATIC_g14_d9d_terminal_case_races_pg17=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 118 tests in 19.205s`, `G5_CANDIDATE_PG17_RESULT=0`. D9-D PASS local sintético; la aprobación de seguridad integral no está concedida. Mantener bloqueo de despliegue y `docs/G14_PROGRESS_CHECKLIST_2026-11-05.md` actualizado.
+
+
+## 06/11/2026 — G14-E0 emisor MFA: revisión de límite de confianza
+
+Se publicó escáner `scripts/g14_trusted_issuer_boundary.py`, seis tests stdlib y N1 `g14_trusted_issuer_direct_call_boundary`. Enforce sintáctico de llamadas directas a `issue_verified_candidate_session` fuera de la única composición no-MFA ya revisada. Documento de diseño `docs/G14_TRUSTED_MFA_ISSUER_DESIGN_2026-11-06.md` identifica la necesidad de contraseña+TOTP bajo locks y auditoría transaccional; **no hay emisor MFA confiable implementado**. Ejecutar solo pruebas estáticas, no requiere Docker ni repetir 118 PG17. Estado: CODE=PUBLISHED, LOCAL=NOT_RUN, RELEASE=NO.
