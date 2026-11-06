@@ -1,3 +1,7 @@
+> **B2-E/G15 publicado 06/11/2026 (sin compilación comprobada):** nueva APK debug independiente `es.vencira.vencira.g15lab` para permiso Android, programación de aviso sintético +15 minutos, consulta, cancelación, reinicio físico. Cambios: `lib/g15_lab_main.dart`, `lib/g15_lab/physical_notice_checks.dart`, manifiesto `src/g15lab`, Gradle lab condicional, `scripts/g15_phone_apk_build.sh`, `scripts/g15_apk_manifest_gate.py`, `scripts/test_g15_lab_boundary.py`, CI `g15-android-notifications-lab.yml`, N1. Solo laboratorio sin Django ni credenciales. **Pendiente** gate de fuente/analyze/build/manifest real; permisos y entrega en teléfono físico NO probados. No desplegar ni conectar app operativa. Ver `docs/ANDROID_BETA_CRITICAL_PATH_2026-11-06.md`.
+
+---
+
 
 
 > **B2-D manifiesto G13 inspeccionado (06/11/2026):** package G13 verificado, `POST_NOTIFICATIONS=DECLARED`, permisos/receivers de reinicio o programación no declarados, auditoría `PASS_READONLY`. No constan los 4 tests unitarios ni autorización Android OS. B2-D integral pendiente de una APK de laboratorio específica de avisos y verificación física; no confundir con G13 HTTPS ni con beta operativa.
