@@ -114,3 +114,11 @@ G14_E3_REFRESH_PG17_RESULT=0
 - Runner `9fa684932ddf5360ec4b7262e0a6c729435a1d13`: `bash scripts/n1_identity_pg17_ephemeral.sh --e3-mfa-refresh`, **dos pruebas dirigidas**, sin puertos Docker ni datos de producción, sin repetir G13/G15 ni toda la batería E1.
 - **ESTADO: R3/R4 CODE_PUBLISHED, PG17_NOT_RUN**. Estas pruebas no prueban el emisor MFA E2, la cadena de custodia real ni una ruta HTTP autorizada. Mantener `G14_E2_ISSUER=NOT_IMPLEMENTED`, `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
 
+
+## 06/11/2026 — E3-R3/R4 PASS local en PostgreSQL 17
+
+El operador ha comunicado el resultado del runner dirigido `--e3-mfa-refresh`: `N1_PG17_POSTGRES_READY=OK`, `No changes detected in app 'native_mobile_service'`, `Found 2 test(s)`, `Ran 2 tests in 1.266s`, `OK`, `Destroying test database for alias 'default'...` y `G14_E3_MFA_REFRESH_PG17_RESULT=0`.
+
+**E3-R3/R4=PASS_LOCAL_PG17** para las carreras de refresh frente a incremento de epoch MFA y apertura de recuperación administrativa sintética. No se recibió la línea externa `G14_E3_MFA_LOCAL_RESULT`; no se infiere. No consta SHA del checkout de esa ejecución en el mensaje; los métodos corresponden al lote registrado anteriormente y deben correlacionarse con HEAD ante cualquier auditoría formal.
+
+Con R1/R2 ya aprobados, **E3-R1..R4 están cerrados dentro de su alcance de pruebas**. No se ha ejecutado ni aprobado el emisor atómico MFA E2 ni carreras de login TOTP/recovery. `G14_E3_INTEGRAL=PENDING`; `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. No repetir estas suites por rutina.
