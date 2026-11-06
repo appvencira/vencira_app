@@ -1,3 +1,7 @@
+> **G15 evidencia física (06/11/2026):** ocho capturas muestran permisos concedidos/retirados, `G15_SYNTHETIC_INEXACT_SCHEDULE=OK`, `G15_PENDING_SYNTHETIC=YES`, notificación real Android `VENCIRA · prueba G15`, y `G15_SCHEDULE_GATE=LOCKED` tras retirada. **PASS_VISUAL permisos y entrega**. Cancelación comprobada y reprogramación tras reinicio **NO VERIFICADAS** en capturas. No declarar G15 integral PASS ni beta operativa. Consultar plan Android.
+
+---
+
 
 
 > **G15 PASS build y APK fusionado (06/11/2026):** 4/4 Python, N1 OK, `G15_BUILD_RESULT=0`, paquete `.g15lab`, permisos POST_NOTIFICATIONS y BOOT, ambos receivers, sin INTERNET ni alarmas exactas, `G15_MANIFEST_GATE=PASS`. Falta comprobar permisos/avisos/reinicio en Android físico. Recurso local: `clients/flutter/build/g15-phone/VENCIRA-G15-LAB-debug.apk` + SHA256.
