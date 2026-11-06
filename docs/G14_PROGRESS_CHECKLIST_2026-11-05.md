@@ -113,7 +113,7 @@ El operador confirma `G14_D9D_N1=0`, `G14_D9D_BUILD=0`, `G14_D9D_PG17=0`, `N1_ST
 
 ## 06/11/2026 — G14-E0: inventario de llamadas al emisor de laboratorio (pendiente local)
 
-- [~] **G14-E0**: script `scripts/g14_trusted_issuer_boundary.py` publicado; seis regresiones sintéticas `scripts/test_g14_trusted_issuer_boundary.py`, gate N1 `g14_trusted_issuer_direct_call_boundary`. Rechaza llamadas directas al emisor de bajo nivel en módulos no-test fuera del límite `g14_d3_candidate_boundary.py`. **Sin ejecución local todavía; no afirmar PASS.**
+- [x] **G14-E0**: script `scripts/g14_trusted_issuer_boundary.py` publicado; seis regresiones sintéticas `scripts/test_g14_trusted_issuer_boundary.py`, gate N1 `g14_trusted_issuer_direct_call_boundary`. Rechaza llamadas directas al emisor de bajo nivel en módulos no-test fuera del límite `g14_d3_candidate_boundary.py`. **Sin ejecución local todavía; no afirmar PASS.**
 - [x] **G14-D9D**: 118 pruebas PG17 PASS local, evidencia recibida y documentada.
 - [ ] **Emisor MFA confiable**: contrato de aceptación, riesgos y orden de bloqueos documentados en `docs/G14_TRUSTED_MFA_ISSUER_DESIGN_2026-11-06.md`; implementación y pruebas de emisión MFA real pendientes.
 - [ ] Aprobación de recuperación administrativa con evidencias externas reales, custodia de claves, auditoría integral de escritores y gates G0–G9.
@@ -124,3 +124,8 @@ La comprobación AST no detecta toda llamada indirecta, no verifica contraseña/
 ## 06/11/2026 — G14-E0: escaneo y N1 validados; tests unitarios sin recibo
 
 Recibo aportado: `G14_E0_N1=0`; `G14_TRUSTED_BOUNDARY_DIRECT_CALLS=1`, `G14_TRUSTED_BOUNDARY_UNREVIEWED_CALLS=0`, `G14_TRUSTED_ISSUER_IMPLEMENTED=NO`, `G14_TRUSTED_BOUNDARY_SCAN=PASS`; `N1_STATIC_g14_trusted_issuer_direct_call_boundary=OK`, `N1_STATIC_GATE_RESULT=OK`. **E0 escaneo y N1: PASS local**. No se aportaron los indicadores `G14_E0_TESTS` y `G14_E0_AUDIT` ni el contenido de su log de tests: **no marcar pruebas unitarias E0 como PASS separado**. La salida del informe acredita su propio veredicto PASS, no el código de salida recibido. El emisor MFA confiable sigue sin implementar, y los hallazgos AST son sintácticos, no demostración completa de ausencia de llamadas indirectas. Siguiente bloque E1: prueba segura transaccional de contraseña y factor, sin endpoints ni autorización operativa.
+
+
+## 06/11/2026 — G14-E0 cerrado con recibo completo
+
+Recibo complementario del operador: `G14_E0_TESTS=0`, `G14_E0_AUDIT=0`. Junto con los marcadores anteriores `G14_E0_N1=0`, `G14_TRUSTED_BOUNDARY_UNREVIEWED_CALLS=0`, `G14_TRUSTED_BOUNDARY_SCAN=PASS`, `N1_STATIC_g14_trusted_issuer_direct_call_boundary=OK`, queda **G14-E0=PASS_LOCAL** para tests unitarios, escaneo AST y N1. La herramienta es una protección sintáctica parcial; `G14_TRUSTED_ISSUER_IMPLEMENTED=NO`. Próxima fase G14-E1 en laboratorio, sin habilitar rutas ni migrar la base persistente.
