@@ -233,3 +233,8 @@ Recibo textual del operador: `G14_E1D3_HEAD=07fa7818b`, `G14_E1D3_N1=0`, `G14_E1
 - [~] Tres nuevos tests unitarios: invocación por `getattr`, captura de referencia sin invocación y control de `getattr` no relacionado. Gate N1 obliga a conservar los nuevos casos.
 - [ ] **F0 validation PENDING**: ejecutar `python3 -m unittest discover -s scripts -p test_g14_trusted_issuer_boundary.py`, escáner AST y N1 en un único paso. No repetir PG17 ni build por tratarse de un control estático sin cambios de backend/CI.
 - [ ] **Limitaciones persistentes:** acceso dinámico, reflexión de nombres no literales, aliases por reasignación, llamadas indirectas y entradas en otros lenguajes no quedan descartados por este análisis. E2 sigue no implementado y sin autorización.
+
+
+## 06/11/2026 — G14-F0 PASS local: AST de emisor reflejado
+
+Recibo del operador: `G14_F0_HEAD=5291785bd`, `G14_F0_TESTS=0`, `G14_F0_SCAN=0`, `G14_F0_N1=0`, `Ran 9 tests in 0.003s`, `OK`, `G14_TRUSTED_BOUNDARY_DIRECT_CALLS=1`, `G14_TRUSTED_BOUNDARY_UNREVIEWED_CALLS=0`, `G14_TRUSTED_ISSUER_IMPLEMENTED=NO`, `G14_TRUSTED_BOUNDARY_SCAN=PASS`, `N1_STATIC_g14_trusted_issuer_direct_call_boundary=OK`, `N1_STATIC_GATE_RESULT=OK`. **G14-F0=PASS_LOCAL** del scanner estático y regresiones. Detección adicional de `getattr` literal, pero llamadas indirectas/dinámicas no quedan excluidas exhaustivamente. Emisor MFA confiable E2 todavía no implementado, sin despliegue ni migración persistente.
