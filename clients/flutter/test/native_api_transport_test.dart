@@ -223,4 +223,41 @@ void main() {
     expect(networkCalls, 0);
     client.close();
   });
+  test('Offline transport fails without redirect or speculative credential refresh',
+      () async {
+    var calls = 0;
+    var reads = 0;
+    final client = MockClient((request) async {
+      calls++;
+      throw StateError('Synthetic offline network');
+    });
+    final transport = NativeApiTransport(
+      endpoint: endpoint, client: client, sessionFence: fence,
+      accessToken: () async { reads++; return testToken; },
+    );
+    await expectLater(transport.getJson('/api/v1/me/'),
+        throwsA(isA<NativeApiTransportFailure>()));
+    expect(calls, 1);
+    expect(reads, 1);
+    expect(fence.ticket, isNotNull);
+    client.close();
+  });
+
+  test('Offline failure after logout cannot reactivate an old session',
+      () async {
+    final pending = Completer<http.Response>();
+    final client = MockClient((request) => pending.future);
+    final transport = NativeApiTransport(
+      endpoint: endpoint, client: client, sessionFence: fence,
+      accessToken: () async => testToken,
+    );
+    final request = transport.getJson('/api/v1/me/');
+    await Future<void>.delayed(Duration.zero);
+    fence.revoke();
+    pending.completeError(StateError('Synthetic transport disconnected'));
+    await expectLater(request, throwsA(isA<NativeApiTransportFailure>()));
+    expect(fence.ticket, isNull);
+    client.close();
+  });
+
 }
