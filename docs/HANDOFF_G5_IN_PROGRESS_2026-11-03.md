@@ -867,3 +867,8 @@ Se publicó escáner `scripts/g14_trusted_issuer_boundary.py`, seis tests stdlib
 ## 06/11/2026 — G14-E0 escaneo y N1 local PASS
 
 Recibo operador: `G14_E0_N1=0`, `G14_TRUSTED_BOUNDARY_DIRECT_CALLS=1`, `G14_TRUSTED_BOUNDARY_UNREVIEWED_CALLS=0`, `G14_TRUSTED_ISSUER_IMPLEMENTED=NO`, `G14_TRUSTED_BOUNDARY_SCAN=PASS`, `N1_STATIC_g14_trusted_issuer_direct_call_boundary=OK`, `N1_STATIC_GATE_RESULT=OK`. No se recibieron salidas `G14_E0_TESTS` o `G14_E0_AUDIT` como códigos de proceso; pruebas unitarias E0 no confirmadas individualmente. G14-E1 siguiente prioridad: compuesto servidor de contraseña/MFA test-only, no conectar rutas ni producción. Estado actualizado en `docs/G14_PROGRESS_CHECKLIST_2026-11-05.md`.
+
+
+## 06/11/2026 — G14-E1 publicado, pendiente PG17
+
+Verificador candidato de contraseña+TOTP bajo bloqueo PG17 (usuario→MFA), sin tokens, sin user ID y sin API. Cinco pruebas, N1 y runner aislado publicados. Falta ejecución de N1/build/PG17. El emisor real sigue bloqueado; conservar custodia y auditoría como obligaciones pendientes.
