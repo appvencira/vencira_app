@@ -90,3 +90,8 @@ G14_D9C_PG17_RESULT=NOT_RUN
 G14_D9_SECURITY_ACCEPTANCE=PARTIAL
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## 06/11/2026 — Validación G14-D9C
+
+Operador confirma `N1=0`, build=0 y PG17=0, con **116 tests** y marcador `N1_STATIC_g14_d9c_admin_factor_finalization_pg17=OK`. G14-D9C PASS local bajo fixture de evidencia administrativa sintética. Alcance: cancelación vs finalización y denegación cuando no hay verificador de ejecución. No implica ausencia de todos los interbloqueos ni sustitución autorizada en producción. Pendientes: caducidad y rechazo concurrentes, custodia/evidencia independiente real y trusted MFA issuer.
