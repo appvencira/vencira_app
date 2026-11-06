@@ -1,0 +1,110 @@
+name: I4 HTTPS same-origin Flutter Django PG17 (isolated)
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/i4_*.py'
+      - '.github/workflows/i4-https-lab.yml'
+      - 'backend/**'
+      - 'clients/flutter/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  https-pg17-flutter:
+    name: HTTPS real requests through Flutter static proxy to disposable PG17
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: vencira_i4_ci
+          POSTGRES_USER: vencira_i4_ci
+          POSTGRES_PASSWORD: i4-disposable-database-pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vencira_i4_ci -d vencira_i4_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      VENCIRA_ENV: test
+      VENCIRA_DB_ENGINE: postgresql
+      POSTGRES_DB: vencira_i4_ci
+      POSTGRES_USER: vencira_i4_ci
+      POSTGRES_PASSWORD: i4-disposable-database-pass
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: '5432'
+      DJANGO_SECRET_KEY: i4-ci-only-ephemeral-secret-never-for-production-2026
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      DJANGO_HTTPS_BEHIND_PROXY: '1'
+      DJANGO_DEBUG: '0'
+      VENCIRA_NATIVE_SESSION_LAB: '0'
+      VENCIRA_NATIVE_SERVICE_CANDIDATE: '0'
+      VENCIRA_ATTACHMENT_SPLIT_REHEARSAL: '0'
+      VENCIRA_MFA_ENROLLMENT_ENABLED: '0'
+      I4_DISPOSABLE_DATABASE: 'YES'
+      I4_OWNER_PASSWORD: 'I4-only-synthetic-CI-password-2026!'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Install Django in runner environment
+        run: python -m pip install -r backend/requirements.txt
+      - name: Build real Flutter Web bundle without publishing
+        working-directory: clients/flutter
+        run: |
+          flutter pub get
+          flutter build web --release --pwa-strategy=none
+      - name: Verify the lab is the isolated CI database
+        run: |
+          test "$VENCIRA_ENV" = test
+          test "$VENCIRA_DB_ENGINE" = postgresql
+          test "$POSTGRES_DB" = vencira_i4_ci
+          test "$POSTGRES_HOST" = 127.0.0.1
+          test "$I4_DISPOSABLE_DATABASE" = YES
+          test "$VENCIRA_NATIVE_SERVICE_CANDIDATE" = 0
+          test "$VENCIRA_NATIVE_SESSION_LAB" = 0
+          test "$VENCIRA_ATTACHMENT_SPLIT_REHEARSAL" = 0
+          python backend/manage.py check
+      - name: Migrate disposable PG17, seed fictional data and run same-origin HTTPS smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$POSTGRES_DB" = vencira_i4_ci
+          python backend/manage.py migrate --noinput
+          python scripts/i4_lab_seed.py
+          mkdir -p /tmp/vencira-i4-tls
+          openssl req -x509 -newkey rsa:2048 -nodes \
+            -keyout /tmp/vencira-i4-tls/key.pem \
+            -out /tmp/vencira-i4-tls/cert.pem \
+            -days 1 -subj '/CN=localhost' \
+            -addext 'subjectAltName=DNS:localhost' \
+            >/tmp/vencira-i4-openssl.log 2>&1
+          python backend/manage.py runserver 127.0.0.1:18731 --noreload \
+            >/tmp/vencira-i4-django.log 2>&1 &
+          DJANGO_PID=$!
+          python scripts/i4_https_proxy.py \
+            --web clients/flutter/build/web \
+            --cert /tmp/vencira-i4-tls/cert.pem \
+            --key /tmp/vencira-i4-tls/key.pem \
+            >/tmp/vencira-i4-proxy.log 2>&1 &
+          PROXY_PID=$!
+          trap 'kill "$PROXY_PID" "$DJANGO_PID" 2>/dev/null || true' EXIT
+          python scripts/i4_https_smoke.py --ca /tmp/vencira-i4-tls/cert.pem
+          echo 'I4_NO_DEPLOY=1'
+          echo 'I4_NO_LIVE_MIGRATION=1'
+          echo 'MFA_RELEASE_AUTHORIZED=NO'
+          echo 'C_FICHA_RELEASE_AUTHORIZED=NO'
+          echo 'MB1_RELEASE_AUTHORIZED=NO'
