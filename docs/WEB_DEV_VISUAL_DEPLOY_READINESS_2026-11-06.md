@@ -123,3 +123,14 @@ Tras recibir la lista de comprobación manual de `https://dev.vencira.es` (inici
 **`WEB_DEV_BROWSER_REVIEW=OPERATOR_DONE`**, **`WEB_DEV_WEB_ONLY_DEPLOY=PASS_OPERATOR_VERIFIED`**, **`WEB_DEV_FULL_UAT=NOT_EVIDENCED`**. La imagen web puesta en DEV continúa siendo la candidata `vencira-web-candidate:308c69da24aa` y API/DB anteriores sin cambios según la evidencia del despliegue. Se conserva vía de rollback web anterior; no reejecutar por rutina. Cualquier fallo posterior exige diagnóstico de su ruta afectada.
 
 El próximo trabajo debe priorizar el siguiente corte funcional sincronizado web/API (con su propia compatibilidad y migraciones O4 si las requiere), manteniendo G14-E2 y MFA sin autorización y evitando fusionar la rama Android entera. Separar aceptación de interfaz de validación de backend y seguridad.
+
+
+## 07/11/2026 — Inicio corte backend independiente
+
+Tras completar el despliegue web y la revisión manual del operador, se inicia la planificación del siguiente corte de backend **sin activar MFA ni tocar el esquema persistente**. El backend fuente de la rama Android declara 39 rutas frente a las 32 declaradas en la API DEV, con siete ausentes: 4 MFA, 2 adjuntos y 1 previsualización de avisos de dispositivo. No es seguro sustituir API por la imagen compilada desde la rama completa, ya que puede introducir rutas candidatas y cambios de esquema sin autorización.
+
+Se añadió `scripts/backend_dev_schema_inventory_readonly.py` (commit `6c62686d`) que lee únicamente nombres de migraciones `reminders` en `django_migrations` de la API live, verifica identidad de proyecto/health y compara con los ficheros de migración de GitHub, sin publicar secretos ni tocar datos de usuario. Este gate **todavía no está ejecutado en VPS**; determina si el segundo corte necesita protocolo O4 de migración y si hay divergencia de historial. No equivale a una prueba de migración segura.
+
+En la revisión se detectó además un error latente en la rama `rollback` del anterior script web-only (expansión accidentalmente escapada del array Docker). Corregido en GitHub commit `b899d1f6`, **sin cambiar el contenedor publicado**. El rollback no se ha ensayado en el VPS; no debe darse por verificado basándose únicamente en su disponibilidad. Antes de futuros releases conviene realizar ensayo aislado de rollback.
+
+Decisión: **NO-GO todavía para backend completo**, pero **GO para inventario read-only dirigido**. El siguiente desarrollo agrupará el backend sin MFA y sus pruebas en PG17 efímero, seleccionando rutas/funciones que puedan utilizarse en DEV. No ejecutar despliegue de la rama Android entera ni activar emisor de laboratorio G14-E2.
