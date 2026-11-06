@@ -65,3 +65,10 @@ Tres nuevas pruebas con `TransactionTestCase` para PostgreSQL 17: rollback del T
 **Condiciones de salida de una única macrovalidación futura:** trazabilidad del servidor desde contraseña y TOTP hasta sesión y auditoría; misma transacción y bloqueos hasta commit; una sola emisión ante carrera; cero sesiones válidas ante excepción o fallo de auditoría; denegaciones con cuota y evidencia; cambio de contraseña, revocación MFA y recuperación pendientes fail-closed; reintento ante respuesta ambigua; ausencias verificadas de rutas operativas; ejecutables N1, CI y PG17 aislado.
 
 `G14_E2_STATUS=BLOCKED_NOT_IMPLEMENTED`. Mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`. No sustituir estas condiciones por pruebas sintéticas de una primitiva aislada.
+
+
+## 06/11/2026 — Lote E1D sobre fallos de custodia (sin sesión)
+
+Se añaden cuatro regresiones PG17 aisladas para verificar que una clave ausente/extraña y los estados de cuenta inactiva o recuperación pendiente no consumen TOTP, no cambian época y no generan sesiones. N1 `g14_e1d_pg17_key_custody_failclosed` y runner `--candidate` integrados. **E1D pendiente de validación local.**
+
+**Riesgo señalado:** la llave de descifrado incorrecta desencadena `ValueError` en el verificador E1, lo que no constituye una respuesta uniforme de autenticación. En ausencia de endpoint público, no existe filtración HTTP operativa de este flujo; la futura integración debe capturar la excepción y distinguir internamente indisponibilidad de custodia de una contraseña incorrecta, sin exposición de detalles al cliente.
