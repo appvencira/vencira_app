@@ -119,3 +119,8 @@ El operador confirma `G14_D9D_N1=0`, `G14_D9D_BUILD=0`, `G14_D9D_PG17=0`, `N1_ST
 - [ ] Aprobación de recuperación administrativa con evidencias externas reales, custodia de claves, auditoría integral de escritores y gates G0–G9.
 
 La comprobación AST no detecta toda llamada indirecta, no verifica contraseña/TOTP y no autoriza login nativo. Sin cambios operativos, sin despliegue y sin migraciones.
+
+
+## 06/11/2026 — G14-E0: escaneo y N1 validados; tests unitarios sin recibo
+
+Recibo aportado: `G14_E0_N1=0`; `G14_TRUSTED_BOUNDARY_DIRECT_CALLS=1`, `G14_TRUSTED_BOUNDARY_UNREVIEWED_CALLS=0`, `G14_TRUSTED_ISSUER_IMPLEMENTED=NO`, `G14_TRUSTED_BOUNDARY_SCAN=PASS`; `N1_STATIC_g14_trusted_issuer_direct_call_boundary=OK`, `N1_STATIC_GATE_RESULT=OK`. **E0 escaneo y N1: PASS local**. No se aportaron los indicadores `G14_E0_TESTS` y `G14_E0_AUDIT` ni el contenido de su log de tests: **no marcar pruebas unitarias E0 como PASS separado**. La salida del informe acredita su propio veredicto PASS, no el código de salida recibido. El emisor MFA confiable sigue sin implementar, y los hallazgos AST son sintácticos, no demostración completa de ausencia de llamadas indirectas. Siguiente bloque E1: prueba segura transaccional de contraseña y factor, sin endpoints ni autorización operativa.
