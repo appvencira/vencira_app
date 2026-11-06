@@ -1,5 +1,11 @@
 
 
+> **B2-C auditoría PASS local (06/11/2026):** dos pruebas Python correctas, `B2_C_AUDIT_RESULT=0`, controles de permiso/consentimiento presentes en módulos aislados, pero ni autorización Android OS, ni manifiesto fusionado, ni reprogramación tras reinicio han sido verificados. `B2_C_INTEGRAL=PENDING`. Requiere inspección de APK fusionado y campaña Android física aislada; no activar rutas ni rollout.
+
+---
+
+
+
 > **06/11/2026 — B2-C permiso Android auditado (publicado sin ejecución):** script read-only `scripts/android_beta_notification_readiness.py` + dos tests. El manifiesto fuente no declara explícitamente POST_NOTIFICATIONS o soporte de reboot, pero es necesario inspeccionar el manifiesto fusionado por el plugin antes de afirmar que falta el permiso en APK. La app normal no monta el scheduler y la función nativa permanece sin activar. B2-C integral no está cerrado; falta evidencia OS en Android físico. Ver [ANDROID_BETA_CRITICAL_PATH_2026-11-06.md](ANDROID_BETA_CRITICAL_PATH_2026-11-06.md).
 
 ---
