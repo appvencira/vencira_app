@@ -192,3 +192,10 @@ No hay cambios operativos ni nuevas pruebas a ejecutar en esta revisión documen
 - [~] Gate N1 `g14_e1d_pg17_key_custody_failclosed` publicado; pruebas sin ejecutar todavía. Si todo pasa y el total previo era 130, la suite deberá tener 134.
 - [ ] **Deuda concreta de errores de custodia:** con llave incorrecta `decrypt_totp_secret` propaga `ValueError` desde el verificador E1. Los tests verifican ausencia de efectos, pero el futuro interfaz deberá normalizar errores sin exponer detalles y definir auditabilidad de averías de custodia. No declarar cumplimiento hasta prueba adicional.
 - [ ] **G14-E2** emisión MFA confiable sigue no implementada; **no hay rutas públicas ni autorización de beta**. Mantener `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## 06/11/2026 — G14-E1D PASS local: 134 pruebas PostgreSQL 17
+
+Recibo textual aportado por operador: `G14_E1D_HEAD=263767dac`, `G14_E1D_N1=0`, `G14_E1D_BUILD=0`, `G14_E1D_PG17=0`, `N1_STATIC_g14_e1d_pg17_key_custody_failclosed=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 134 tests in 33.065s`, `G5_CANDIDATE_PG17_RESULT=0`. Primer intento sudo fallido, seguido de build/test con resultado cero. **G14-E1D=PASS_LOCAL** para cuatro pruebas de llaves ausentes/extrañas, usuario inactivo y recuperación pendiente, sin sesiones. El hallazgo conocido de excepción `ValueError` en custodia incorrecta continúa sin corregirse: las pruebas esperan esa excepción, no comprueban su normalización.
+
+**G14-E2 y E3 siguen pendientes**. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
