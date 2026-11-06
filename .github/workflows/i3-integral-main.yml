@@ -1,0 +1,201 @@
+name: I3 integral main (isolated, no deploy)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  django-sqlite:
+    name: Django product / isolated SQLite
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      VENCIRA_ENV: test
+      VENCIRA_DB_ENGINE: sqlite
+      DJANGO_SECRET_KEY: i3-ci-disposable-not-for-live-credentials-only-2026
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      DJANGO_DEBUG: '0'
+      VENCIRA_NATIVE_SESSION_LAB: '0'
+      VENCIRA_NATIVE_SERVICE_CANDIDATE: '0'
+      VENCIRA_ATTACHMENT_SPLIT_REHEARSAL: '0'
+      VENCIRA_MFA_ENROLLMENT_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install backend dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Static Django and migration source checks
+        run: |
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+      - name: Main and source contracts
+        run: |
+          python ../scripts/i2_main_foundation_gate.py
+          python ../scripts/i2b_django_bootstrap_source_gate.py
+      - name: Django business, permission, MFA and attachment regression
+        run: >-
+          python manage.py test
+          reminders.test_legal_deadlines
+          reminders.test_default_reminders
+          reminders.test_reminder_planning
+          reminders.test_reminder_preview
+          reminders.test_api
+          reminders.test_control_assessment
+          reminders.test_control_intent
+          reminders.test_control_responses
+          reminders.test_control_response_api
+          reminders.test_operational_transitions
+          reminders.test_operational_inbox
+          reminders.test_operational_api
+          reminders.test_results
+          reminders.test_agenda
+          reminders.test_session_security
+          reminders.test_mfa_auth_surface
+          reminders.test_attachment_api
+          reminders.test_attachment_gate
+          reminders.test_attachment_release_boundaries
+          --verbosity 1
+      - name: Normal mode never loads experimental Django apps
+        run: |
+          python - <<'PY'
+          import os
+          os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+          import django
+          django.setup()
+          from django.apps import apps
+          from django.conf import settings
+          for name in ("renewal_attachments", "native_sessions_lab", "native_mobile_service"):
+              assert not apps.is_installed(name), name
+          assert settings.VENCIRA_NATIVE_BEARER_ENABLED is False
+          print("I3_NORMAL_RUNTIME_ISOLATION=OK")
+          PY
+
+  django-postgres17:
+    name: Django / disposable PostgreSQL 17
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: vencira_i3_ci
+          POSTGRES_USER: vencira_i3_ci
+          POSTGRES_PASSWORD: test-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vencira_i3_ci -d vencira_i3_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 15
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      VENCIRA_ENV: test
+      VENCIRA_DB_ENGINE: postgresql
+      DJANGO_SECRET_KEY: i3-pg17-disposable-ci-no-operational-secret-2026
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      DJANGO_DEBUG: '0'
+      POSTGRES_DB: vencira_i3_ci
+      POSTGRES_USER: vencira_i3_ci
+      POSTGRES_PASSWORD: test-only-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: '5432'
+      VENCIRA_NATIVE_SESSION_LAB: '0'
+      VENCIRA_NATIVE_SERVICE_CANDIDATE: '0'
+      VENCIRA_ATTACHMENT_SPLIT_REHEARSAL: '0'
+      VENCIRA_MFA_ENROLLMENT_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install backend dependencies
+        run: python -m pip install -r requirements.txt
+      - name: PostgreSQL 17 Django and schema sanity
+        run: |
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+      - name: Product, tenant isolation, permissions and attachment denial
+        run: >-
+          python manage.py test
+          reminders.test_api
+          reminders.test_operational_api
+          reminders.test_operational_inbox
+          reminders.test_control_response_api
+          reminders.test_attachment_api
+          reminders.test_attachment_gate
+          reminders.test_attachment_release_boundaries
+          reminders.test_mfa_auth_surface
+          reminders.test_native_mobile_auth_boundary
+          --verbosity 1
+
+  flutter-web:
+    name: Flutter UI, contracts and Web release build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: clients/flutter
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Flutter dependencies
+        run: flutter pub get
+      - name: Flutter static analysis
+        run: flutter analyze
+      - name: UI and authentication boundaries
+        run: >-
+          flutter test
+          test/widget_test.dart
+          test/control_assessment_test.dart
+          test/vencira_api_test.dart
+          test/android_web_access_screen_test.dart
+          test/design_v3_test.dart
+          test/renewal_editor_test.dart
+          test/renewal_attachments_card_test.dart
+          test/device_notice_startup_gate_test.dart
+          test/session_denial_classifier_test.dart
+          test/operational_inbox_test.dart
+          test/operational_inbox_widget_test.dart
+          test/operational_action_http_test.dart
+          test/native_mobile_startup_gate_test.dart
+          --reporter expanded
+      - name: Compile Web without publishing
+        run: flutter build web --release --pwa-strategy=none
+
+  release-fence:
+    name: No release, deployment or live migration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Explicit release decision (not deployment)
+        run: |
+          echo 'I3_MAIN_RELEASE_AUTHORIZED=NO'
+          echo 'MFA_RELEASE_AUTHORIZED=NO'
+          echo 'C_FICHA_RELEASE_AUTHORIZED=NO'
+          echo 'MB1_RELEASE_AUTHORIZED=NO'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
