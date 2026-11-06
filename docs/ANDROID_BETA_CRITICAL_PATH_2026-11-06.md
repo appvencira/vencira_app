@@ -80,3 +80,11 @@ Operador aporta `vencira-b2b-flutter.log`: `flutter pub get` completo; `flutter 
 ## 06/11/2026 — B2-B PASS de suites aportadas
 
 Evidencia del operador: log Flutter `vencira-b2b-flutter.log` / `vencira-b2b-flutter(1).log` con `All tests passed!`, 10/10 tests de barrera de arranque incluyendo las 4 regresiones B2-B. Log N1 `vencira-b2b-n1.log` con `N1_STATIC_android_beta_b2b_startup_recovery_regressions=OK`, `N1_STATIC_android_beta_release_signing_external_only=OK` y `N1_STATIC_GATE_RESULT=OK`. **B2_B=PASS_LOCAL_EN_SUITES_APORTADAS**. No consta HEAD exacto del lote ni código de salida N1 en el archivo, pero sí marcador final del propio gate. No se han ejecutado permisos Android físicos, modo sin conexión o recovery nativo operativo; no confundir con beta. No requiere repetir Flutter ni N1 salvo cambios pertinentes.
+
+
+## 06/11/2026 — B2-C avance parcial: errores de red en transporte candidato
+
+- Publicadas dos pruebas Flutter adicionales en `clients/flutter/test/native_api_transport_test.dart` (commit `d70638a1`): error de red sin renovación especulativa de credenciales y fallo de transporte después de revocación local sin reabrir el fence.
+- **Pendiente ejecución local** de esas pruebas. No hay prueba física Android ni permiso del sistema verificado en este lote.
+- El intento de publicar dos nuevas pruebas de recuperación offline de avisos en `test/device_notice_transaction_test.dart` fue bloqueado por controles de seguridad del conector: no están publicadas ni ensayadas, y no se intentará eludir el bloqueo.
+- El diseño actual de permisos continúa sin activación operacional. B2-C no está terminado. `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
