@@ -62,3 +62,11 @@ Rama: `feature/m3-android-local-notifications`. Documento de planificación, no 
 ## 06/11/2026 — B2-A PASS local (pruebas estáticas, no Gradle real)
 
 Recibo del operador: `B2_A_HEAD=b4065dd8d`, `B2_A_TESTS=0`, `B2_A_N1=0`, `B2_A_DIFF=0`; `Ran 4 tests in 0.001s`, `OK`, `N1_STATIC_android_beta_release_signing_external_only=OK`, `N1_STATIC_GATE_RESULT=OK`. Se cierra B2-A **solo en alcance de fuentes/tests estáticos**. Se requiere todavía ensayo de configuración Gradle sin parámetros de firmado (rechazo), y build release con keystore custodiado fuera de GitHub (en entorno aislado, únicamente tras autorización de pruebas de firma). No se ha firmado ni distribuido APK beta. B2-B queda pendiente.
+
+
+## 06/11/2026 — B2-B: regresiones de la barrera de arranque Android
+
+- Ya existen `DeviceNoticeStartupGate`, `NativeMobileStartupGate`, `NativeMobileRecoveryEntry`, `DeviceNoticeConsentPort` y una pantalla de acceso web externo. El cliente Android operativo **no** usa aún inicio de sesión nativo. El arranque de Android cancela avisos anteriores antes de mostrar acceso al navegador.
+- Se agregan cuatro tests widget al módulo Flutter existente `test/device_notice_startup_gate_test.dart`: fallo tardío de una limpieza sustituida tras éxito nuevo, éxito tardío que no debe saltarse un fallo nuevo, reintento sin dos limpiezas simultáneas, y transición deshabilitado→habilitado con nueva limpieza.
+- Control estático N1 `android_beta_b2b_startup_recovery_regressions` para impedir eliminar los casos del lote. El workflow de Flutter ya ejecuta ese archivo. **Estado: código/test publicados, pendiente de ejecutar Flutter dirigido y N1 en VPS.**
+- No se modificó lógica de runtime, permisos del manifiesto, backend, claves, flujos nativos ni notificaciones operativas. Estas pruebas no acreditan permisos del sistema en Android físico, ausencia de red, recuperación HTTP real ni una UX nativa completa. Son gates posteriores de B2.
