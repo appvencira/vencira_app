@@ -414,6 +414,11 @@ def verify():
             and "MobileDeviceSession.objects.exists()" in g14_e1d_tests
             and "g14_e1d_key_custody_pg17" not in config
             and "g14_e1d_key_custody_pg17" not in routes,
+        "g14_e1d_uniform_custody_denial":
+            "except (MobileTokenDenied, ValueError):" in g14_e1_verifier
+            and "raise CandidateMfaDenied() from None" in g14_e1_verifier
+            and "test_malformed_key_denied_without_details_or_consumption" in g14_e1d_tests
+            and "self.assertIsNone(denied.exception.__cause__)" in g14_e1d_tests,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
