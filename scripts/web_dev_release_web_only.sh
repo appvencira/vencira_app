@@ -57,7 +57,7 @@ if [[ "$MODE" = rollback ]]; then
   "${DOCKER[@]}" image inspect "$old" >/dev/null
   old_tag="$(sed -n 's/^OLD_WEB_TAG=//p' "$RECEIPT" | head -n 1)"
   [[ "$old_tag" =~ ^vencira-web-rollback:[a-f0-9]{12}$ ]] || exit 6
-  test "$("\${DOCKER[@]}" image inspect -f '{{.Id}}' "$old_tag")" = "$old" || exit 6
+  test "$("${DOCKER[@]}" image inspect -f '{{.Id}}' "$old_tag")" = "$old" || exit 6
   target="$old_tag"
 else
   test "$web_before" = "$EXPECTED_OLD_WEB" || {
