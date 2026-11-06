@@ -71,6 +71,10 @@ def verify():
     b2b_alarm_tests = read("clients/flutter/test/device_notice_startup_gate_test.dart")
     b2c_android_audit = read("scripts/b2c_android_notification_boundary.py")
     b2c_android_tests = read("scripts/test_b2c_android_notification_boundary.py")
+    g15_main = read("clients/flutter/lib/g15_lab_main.dart")
+    g15_checks = read("clients/flutter/lib/g15_lab/physical_notice_checks.dart")
+    g15_manifest = read("clients/flutter/android/app/src/g15lab/AndroidManifest.xml")
+    g15_build = read("scripts/g15_phone_apk_build.sh")
     g8_gradle = read("clients/flutter/android/app/build.gradle.kts")
     beta_signing_tests = read("scripts/test_android_release_signing_boundary.py")
     flutter_pubspec = read("clients/flutter/pubspec.yaml")
@@ -1029,6 +1033,19 @@ def verify():
             and "Late success from replaced cleanup cannot bypass" in b2b_alarm_tests
             and "Repeated recovery taps never start overlapping" in b2b_alarm_tests
             and "Disabled-to-enabled transition requires new cleanup" in b2b_alarm_tests,
+        "g15_notification_lab_debug_only":
+            "VENCIRA_G15_LAB_BUILD" in g8_gradle
+            and 'applicationIdSuffix = ".g15lab"' in g8_gradle
+            and "Physical Android labs must never build release/profile" in g8_gradle
+            and "g15_lab" not in flutter_main
+            and "g15LabEnabled" in g15_main
+            and "kReleaseMode" in g15_main
+            and "requestNotificationsPermission()" in g15_checks
+            and "AndroidScheduleMode.inexactAllowWhileIdle" in g15_checks
+            and "RECEIVE_BOOT_COMPLETED" in g15_manifest
+            and "ScheduledNotificationBootReceiver" in g15_manifest
+            and "flutter build apk --debug" in g15_build
+            and "G15_RELEASE_AUTHORIZED=NO" in g15_build,
         "android_beta_release_signing_external_only":
             'signingConfig = signingConfigs.getByName("debug")' not in g8_gradle
             and 'signingConfig = signingConfigs.getByName("venciraRelease")' in g8_gradle
