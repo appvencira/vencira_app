@@ -88,3 +88,8 @@ Evidencia del operador: log Flutter `vencira-b2b-flutter.log` / `vencira-b2b-flu
 - **Pendiente ejecución local** de esas pruebas. No hay prueba física Android ni permiso del sistema verificado en este lote.
 - El intento de publicar dos nuevas pruebas de recuperación offline de avisos en `test/device_notice_transaction_test.dart` fue bloqueado por controles de seguridad del conector: no están publicadas ni ensayadas, y no se intentará eludir el bloqueo.
 - El diseño actual de permisos continúa sin activación operacional. B2-C no está terminado. `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## 06/11/2026 — B2-C transporte Flutter PASS local (alcance parcial)
+
+Resultado textual aportado por operador: `B2_C_FLUTTER=0`, `All tests passed!`, **13/13 pruebas** de `test/native_api_transport_test.dart`. Incluye las dos nuevas: `Offline transport fails without redirect or speculative credential refresh` y `Offline failure after logout cannot reactivate an old session`. Confirmadas las regresiones de rechazo de redirects, validación de tokens, respuesta tras logout, límites de respuesta y timeouts. No se adjuntó `B2_C_HEAD` ni se ejecutaron N1/Gradle/Android físico en este recibo. **B2_C_TRANSPORT=PASS_LOCAL**, **B2_C_INTEGRAL=PENDING**: faltan permisos OS, recuperación de avisos locales y UAT físico. No repetir esta suite salvo modificación relevante. Autenticación nativa operativa no habilitada.
