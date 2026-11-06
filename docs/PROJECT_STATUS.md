@@ -1,3 +1,9 @@
+
+
+> **B2-A — Firma Android sin debug (06/11/2026):** publicado cambio en `clients/flutter/android/app/build.gradle.kts` para impedir firma `release` con claves debug y exigir cuatro parámetros de entorno externos. Cuatro pruebas estáticas y N1/CI integrados, pero **sin ejecución local todavía**. No existe APK beta firmada ni autorización. Ver [ANDROID_BETA_CRITICAL_PATH_2026-11-06.md](ANDROID_BETA_CRITICAL_PATH_2026-11-06.md).
+
+---
+
 > **RUTA CRÍTICA BETA ANDROID — 06/11/2026:** plan de tres macrofases B1 (emisor MFA confiable E2/E3 con auditoría transaccional), B2 (integración Android real, permisos, notificaciones, APK firmada y UAT) y B3 (custodia, MB1/C-FICHA, privacidad, recuperación, operaciones y aprobación). Ver [ANDROID_BETA_CRITICAL_PATH_2026-11-06.md](ANDROID_BETA_CRITICAL_PATH_2026-11-06.md). G13 18/18 PASS en laboratorio y E1D3 139 PG17 PASS no autorizan beta operativa. `clients/flutter/android/app/build.gradle.kts` utiliza configuración de firma debug incluso en release: pendiente corregir antes de distribuir beta formal. No desbloquear E2 con pruebas sintéticas, no merge/despliegue/migración persistente.
 
 ---
