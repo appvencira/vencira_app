@@ -1,5 +1,11 @@
 
 
+> **B2-B publicado, validación pendiente (06/11/2026):** cuatro regresiones Flutter de arranque de avisos y cambio de ámbito, control N1 `android_beta_b2b_startup_recovery_regressions`. Ejecutar **una única vez** el test widget dirigido y N1 sobre nuevo HEAD; no repetir PG17, G13 ni build Android. No se ha habilitado autenticación nativa ni datos reales.
+
+---
+
+
+
 > **B2-A — Firma Android sin debug (06/11/2026):** publicado cambio en `clients/flutter/android/app/build.gradle.kts` para impedir firma `release` con claves debug y exigir cuatro parámetros de entorno externos. Cuatro pruebas estáticas y N1/CI integrados, pero **sin ejecución local todavía**. No existe APK beta firmada ni autorización. Ver [ANDROID_BETA_CRITICAL_PATH_2026-11-06.md](ANDROID_BETA_CRITICAL_PATH_2026-11-06.md).
 
 ---
