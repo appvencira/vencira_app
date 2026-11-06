@@ -1,0 +1,96 @@
+name: I6 Android emulator boot and safe access screen (no deploy)
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/i6_android_emulator_smoke.py'
+      - '.github/workflows/i6-android-emulator.yml'
+      - 'clients/flutter/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-emulator:
+    name: Install debug APK into disposable Android emulator
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      I6_ANDROID_EMULATOR_CI: 'YES'
+      MFA_RELEASE_AUTHORIZED: 'NO'
+      MB1_RELEASE_AUTHORIZED: 'NO'
+      C_FICHA_RELEASE_AUTHORIZED: 'NO'
+      NO_DEPLOY_NO_LIVE_MIGRATION: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Enable Linux KVM for Android emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-i6-kvm.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Build normal debug APK (no native login or release signing)
+        working-directory: clients/flutter
+        run: |
+          test "${VENCIRA_G8_LAB_BUILD:-0}" = 0
+          test "${VENCIRA_G12_LAB_BUILD:-0}" = 0
+          test "${VENCIRA_G13_LAB_BUILD:-0}" = 0
+          test "${VENCIRA_G15_LAB_BUILD:-0}" = 0
+          test -z "${VENCIRA_ANDROID_KEYSTORE_PATH:-}"
+          flutter pub get
+          flutter test test/android_web_access_screen_test.dart test/device_notice_startup_gate_test.dart
+          flutter build apk --debug
+          test -s build/app/outputs/flutter-apk/app-debug.apk
+      - name: Install, launch and inspect UI on disposable Android 35 emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          cores: 2
+          ram-size: 2048M
+          heap-size: 512M
+          disk-size: 4096M
+          disable-animations: true
+          emulator-options: -no-window -no-snapshot -noaudio -no-boot-anim -gpu swiftshader_indirect
+          script: |
+            adb wait-for-device
+            adb shell settings put global animator_duration_scale 0
+            adb shell settings put global transition_animation_scale 0
+            adb shell settings put global window_animation_scale 0
+            adb install -r clients/flutter/build/app/outputs/flutter-apk/app-debug.apk
+            python3 scripts/i6_android_emulator_smoke.py
+      - name: Archive synthetic emulator screen for UI review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: i6-android-emulator-access-screen
+          path: /tmp/vencira-i6-emulator/
+          if-no-files-found: ignore
+          retention-days: 3
+      - name: Archive DEBUG APK for optional user installation
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VENCIRA-I6-DEBUG-NO-NATIVE-AUTH
+          path: clients/flutter/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+      - name: Release gates remain NO
+        run: |
+          echo 'I6_APK_EMULATOR_ONLY=OK'
+          echo 'MFA_RELEASE_AUTHORIZED=NO'
+          echo 'C_FICHA_RELEASE_AUTHORIZED=NO'
+          echo 'MB1_RELEASE_AUTHORIZED=NO'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
