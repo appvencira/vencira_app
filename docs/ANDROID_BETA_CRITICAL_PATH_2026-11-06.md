@@ -1,0 +1,49 @@
+# VENCIRA — Ruta crítica a beta Android, 06/11/2026
+
+Rama: `feature/m3-android-local-notifications`. Documento de planificación, no autorización de publicación. Estado de referencia: G14-E1D3 PASS local con 139 tests PostgreSQL17 y N1/build/PG17=0; G14-F0 PASS local con 9 tests estáticos, scan/N1=0; G13 Android físico 18/18 PASS únicamente sobre HTTPS de laboratorio, CA temporal, túnel y datos sintéticos.
+
+## Dos destinos y criterios independientes
+
+**BETA LAB (solo titular / QA con datos sintéticos).** No se conecta a API de usuarios reales, no se utilizan claves productivas, no se expone login nativo candidato, no se requiere migración de PostgreSQL persistente. Se admite APK debug firmada exclusivamente para pruebas aisladas. Objetivo: revisión de UX Android, instalaciones, permisos de notificación, almacenamiento seguro, error de red, recuperación, logout, segundo arranque y autonomía del proceso. G13 ya acredita 18/18 pruebas de una APK de laboratorio; no acredita una experiencia completa del producto.
+
+**BETA PRIVADA FUNCIONAL (usuarios autorizados, persistencia real).** Requiere emisor de identidad confiable, custodia/recuperación MFA, autorización workspace, revocaciones y auditoría, TLS desde el móvil a la API real con dominio oficial y certificación, control de fallos, datos personales y release/rollback. Sin esos requisitos, NO-GO.
+
+## Macrofase B1 — cerrar identidad del servidor (bloqueante principal)
+
+- [ ] G14-E2: disponer de composición autorizada `contraseña + TOTP/recuperación + sesión + auditoría` en una única transacción con bloqueos consistentes. La prueba E1 devuelve booleano sin identidad transferible; el emisor de laboratorio recibe afirmaciones del llamante. **No unirlos directamente**.
+- [ ] G14-E3: competencia por TOTP/código recovery, cambio de contraseña, cambio de factor, recuperación pendiente, revocación, fallo de escritura, fallo auditoría y respuesta ambigua. Cuotas y denegaciones persistentes controladas fuera del rollback de éxito.
+- [ ] Incorporar las políticas G4/G5 sin fallback a sesión web. Claves externas, rotación, proxy de confianza y permisos explícitos. PR con revisión independiente. Los intentos de publicar integración MFA+auditoría fueron bloqueados por controles del conector; no eludir el bloqueo.
+- **Gate:** CI + PG17 efímero + N1, fuentes y HEAD reproducibles; ningún endpoint abierto antes de autorización. B1 no puede marcarse PASS por pruebas de E1D3/F0.
+
+## Macrofase B2 — cerrar integración Android y capacidad de recuperación
+
+- [ ] Integrar UI de autenticación y APIs nativas reales con HTTPS normal (sin CA de laboratorio ni túnel SSH), identidad del servidor, almacenamiento en Keystore, logout, expiración, cambios de cuenta y recuperación G6. Sin mezclar sesiones web, cookies y bearer.
+- [ ] Verificar workspace, permisos de lectura/escritura, errores uniformes, datos mínimos de cada endpoint y bloqueo contra acceso cruzado.
+- [ ] Probar notificaciones Android reales y sus permisos/canales, scheduler, reinicios y denegación/retirada de consentimiento; no asumir que G13 HTTPS validó el comportamiento operativo de notificaciones.
+- [ ] APK/AAB firmada con clave de distribución guardada fuera del repositorio, identidad/versiones y actualización firmada. La configuración actual `clients/flutter/android/app/build.gradle.kts` usa **signingConfigs.debug** en `release`: cambiar y verificar antes de distribuir una beta formal; no compartir el keystore.
+- [ ] UAT móvil del producto: login, agenda, vencimientos, estados, historial, borradores, cambios de workspace, errores, logout y localización ES/CA; accesibilidad/permisos y comportamiento offline definidos.
+- **Gate:** pruebas en Android físico de punta a punta con backend beta, sin datos personales innecesarios, logs sanitizados y métricas/fallo/reintento.
+
+## Macrofase B3 — operación y autorización de beta
+
+- [ ] G1: custodia y recuperación administrativa real supervisada; MFA bajo autorización explícita.
+- [ ] G2: cerrar alcance MB1, grafo de escritores, `GLOBAL_FREEZE`, restauración/backups y rollback sin pérdida; no asumir que pruebas sintéticas autorizan migración real.
+- [ ] G3: aislar explícitamente adjuntos fuera de alcance o aprobar C-FICHA y sus puertas de acceso, custodia, ClamAV y retención. Excluir adjuntos de una beta no autoriza rutas ocultas si aún están registradas.
+- [ ] G8: revisión de todos los endpoints nativos con permisos por workspace, auditoría y pruebas de abuso/PII.
+- [ ] G9: entorno beta segregado, TLS, CSRF cuando aplique, observabilidad, backups/restore, gestión de incidentes, rollback de aplicación y DB, protección de datos/condiciones, revisión independiente y autorización expresa.
+- [ ] PR #17 revisada: decidir merge/despliegue únicamente tras gates y recibos; no publicar credenciales, tokens ni claves en GitHub.
+- **Gate:** GO/NO-GO por responsable con recibo y SHA de la versión, plan de reversión y pruebas posteriores. `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` hasta autorización.
+
+## Orden de trabajo acelerado
+
+1. **Mientras E2 esté bloqueado:** terminar inventario de alcance beta y revisión Android/UX/firmado en cambios aislados, sin exponer el servidor. El siguiente esfuerzo técnico clave es la autorización de E2, no aumentar sin fin las pruebas de TOTP.
+2. **Tras disponer de E2 revisado:** agrupar E2+E3+G4/G5 y ejecutar un único gate PG17/N1/CI.
+3. **Después:** agrupar Android real+permisos+notificaciones+UAT y una sola campaña física.
+4. **Por último:** consolidar G1/G2/G3/G8/G9 y autorizar beta privada con rollback.
+
+## Estado y porcentaje
+
+- G13 físico 18/18: 100 % de **ese ensayo**, no del producto.
+- Gates G0–G9 según último registro revisado: 1/10 formalmente cerrados. **No es porcentaje ponderado del software o días restantes**.
+- No se dispone de inventario ponderado de funcionalidades aceptadas; no asignar porcentaje global ni fecha de beta sin cerrar B1, B2 y B3.
+- Android beta aislada de laboratorio ya existe como APK G13 debug, pero **no es beta comercial ni beta operativa con usuarios reales**.
