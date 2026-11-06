@@ -1,0 +1,61 @@
+name: I2D C-FICHA isolated attachment schema
+on:
+  pull_request:
+    paths:
+      - 'backend/renewal_attachments/**'
+      - '.github/workflows/i2d-c-ficha-isolated.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-attachments:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      VENCIRA_ENV: test
+      VENCIRA_DB_ENGINE: sqlite
+      DJANGO_DEBUG: '0'
+      DJANGO_SECRET_KEY: ci-only-disposable-c-ficha-attachment-tests-2026
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      VENCIRA_ATTACHMENT_SPLIT_REHEARSAL: '1'
+      VENCIRA_NATIVE_SESSION_LAB: '0'
+      VENCIRA_NATIVE_SERVICE_CANDIDATE: '0'
+      VENCIRA_MFA_ENROLLMENT_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install isolated backend dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Django check with split test app
+        run: python manage.py check
+      - name: Detect model/migration drift without migrating persistent DB
+        run: python manage.py makemigrations --check --dry-run
+      - name: Isolated attachment API, security and schema tests
+        run: >-
+          python manage.py test
+          renewal_attachments.test_independent_api
+          renewal_attachments.test_transition_object_contract
+          reminders.test_attachment_release_boundaries
+          reminders.test_attachment_gate
+          reminders.test_attachment_api
+          --verbosity 1
+      - name: Ensure split registration denied in non-test configuration
+        run: |
+          if VENCIRA_ENV=development python manage.py check > /tmp/i2d-split-denied.log 2>&1; then
+            echo 'I2D_PRODUCTION_SPLIT_DENIAL=FAIL'
+            exit 1
+          fi
+          grep -q 'Attachment split rehearsal only allowed in test' /tmp/i2d-split-denied.log
+          echo 'I2D_NONTEST_SPLIT_DENIAL=OK'
+      - name: Release remains blocked
+        run: |
+          echo 'C_FICHA_RELEASE_AUTHORIZED=NO'
+          echo 'MB1_RELEASE_AUTHORIZED=NO'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
