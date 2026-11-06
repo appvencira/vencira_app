@@ -87,3 +87,21 @@ Commit de código: `e269963d003b3c82ac5eb2a73c518d0a92320635`. Se añadieron **d
 No hay cambios en emisor, backend operativo, migrations, URL, secretos o CI: el runner `--candidate` y el workflow PG17 ya incluyen esta suite. **Estas son carreras del almacén de sesiones candidato SIN MFA**, y no prueban E2 ni las carreras de emisión con TOTP.
 
 **Estado: `E3_REFRESH_CODE=PUBLISHED`, `E3_REFRESH_PG17=NOT_RUN`.** Una vez sincronizado el HEAD, ejecutar una validación agrupada PG17 efímera para ambos casos y, si procede, el runner general una sola vez; no repetir G13/G15. Un posible fallo de estas regresiones debe conservarse como evidencia y bloquear la aceptación: no debilitar aserciones para lograr verde.
+
+## 06/11/2026 — E3-R1/R2 PASS local PG17 (evidencia del operador)
+
+El checkout de pruebas se sincronizó en `d67698012`. La primera ejecución falló por imagen de test desactualizada (`AttributeError` de los métodos nuevos). Tras reconstruir `vencira-m3-backend-test`, la comprobación inicial de Django falló dos veces por configuración de entorno incompleta, no por las carreras. Corregida la prevalidación con Django y SQLite, el operador aportó:
+
+```
+G14_E3_IMAGE_SYNC=OK
+N1_PG17=isolated (private internal network, tmpfs, no published ports)
+N1_PG17_POSTGRES_READY=OK
+No changes detected in app 'native_mobile_service'
+Found 2 test(s).
+Ran 2 tests in 1.306s
+OK
+Destroying test database for alias 'default'...
+G14_E3_REFRESH_PG17_RESULT=0
+```
+
+**E3-R1/R2=PASS_LOCAL_PG17**, solo refresh frente a revocación global y cambio de contraseña en el almacén candidato test-only. No se aportó el eco externo `G14_E3_REFRESH_LOCAL_RESULT`; no inferirlo. No se acreditan todos los interleavings ni la emisión de TOTP, ni el emisor MFA E2. Base de pruebas destruida; sin despliegue ni migración persistente. `G14_E2_ISSUER=NOT_IMPLEMENTED`, `G14_E3_INTEGRAL=PENDING`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
