@@ -1,5 +1,11 @@
 
 
+> **06/11/2026 — B2-C permiso Android auditado (publicado sin ejecución):** script read-only `scripts/android_beta_notification_readiness.py` + dos tests. El manifiesto fuente no declara explícitamente POST_NOTIFICATIONS o soporte de reboot, pero es necesario inspeccionar el manifiesto fusionado por el plugin antes de afirmar que falta el permiso en APK. La app normal no monta el scheduler y la función nativa permanece sin activar. B2-C integral no está cerrado; falta evidencia OS en Android físico. Ver [ANDROID_BETA_CRITICAL_PATH_2026-11-06.md](ANDROID_BETA_CRITICAL_PATH_2026-11-06.md).
+
+---
+
+
+
 > **B2-C permiso/reinicio publicado, prueba local pendiente:** auditoría estática `scripts/b2c_android_notification_boundary.py`, seis tests y control N1 `android_beta_b2c_permission_and_reboot_guard`. Confirma límites del código fuente, no permiso real Android ni manifiesto fusionado. La activación de avisos sigue NO y los receptores de reboot faltan hasta autorización expresa de esa función. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
 
 ---
