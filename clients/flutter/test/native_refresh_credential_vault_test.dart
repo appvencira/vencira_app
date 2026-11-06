@@ -1,0 +1,141 @@
+import 'dart:async';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:vencira/api/native_api_endpoint.dart';
+import 'package:vencira/api/native_refresh_credential_vault.dart';
+
+class FakeNativeSecretStore implements NativeSecretStore {
+  final data = <String, String>{};
+  bool failRead = false;
+  bool failWrite = false;
+  bool failDelete = false;
+  bool ignoreWrite = false;
+  bool ignoreDelete = false;
+  Completer<void>? blockWrite;
+  int writeStarts = 0;
+  int deleteStarts = 0;
+
+  @override
+  Future<String?> read(String key) async {
+    if (failRead) throw StateError('protected storage unavailable');
+    return data[key];
+  }
+
+  @override
+  Future<void> write(String key, String value) async {
+    writeStarts++;
+    if (blockWrite != null) await blockWrite!.future;
+    if (failWrite) throw StateError('write failed');
+    if (!ignoreWrite) data[key] = value;
+  }
+
+  @override
+  Future<void> delete(String key) async {
+    deleteStarts++;
+    if (failDelete) throw StateError('delete failed');
+    if (!ignoreDelete) data.remove(key);
+  }
+}
+
+void main() {
+  const token = 'v1.r.0123456789abcdef0123456789abcdef.'
+      'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+
+  NativeRefreshCredentialVault vault(FakeNativeSecretStore store,
+          {String origin = 'https://dev.vencira.es'}) =>
+      NativeRefreshCredentialVault(
+        endpoint: NativeApiEndpoint.parse(origin), store: store);
+
+  test('writes, reads and verifies a protected refresh credential', () async {
+    final store = FakeNativeSecretStore();
+    final target = vault(store);
+    expect(await target.read(), isNull);
+    await target.replace(token);
+    expect(await target.read(), token);
+    await target.clear();
+    expect(await target.read(), isNull);
+  });
+
+  test('dev and production credentials remain isolated', () async {
+    final store = FakeNativeSecretStore();
+    final dev = vault(store);
+    final prod = vault(store, origin: 'https://vencira.es');
+    await dev.replace(token);
+    expect(await prod.read(), isNull);
+    await prod.replace(token.replaceFirst(
+      '0123456789abcdef0123456789abcdef',
+      'fedcba9876543210fedcba9876543210'));
+    expect(await dev.read(), token);
+    await dev.clear();
+    expect(await prod.read(), isNotNull);
+  });
+
+  test('rejects malformed credential without touching storage', () async {
+    final store = FakeNativeSecretStore();
+    final target = vault(store);
+    final access = token.replaceFirst('v1.r.', 'v1.a.');
+    final noncanonical = '${token.substring(0, token.length - 1)}B';
+    for (final bad in [
+      '', 'short', 'secret\\r\\n' * 8,
+      'contains whitespace and unsafe header characters!!!',
+      access, noncanonical,
+    ]) {
+      await expectLater(target.replace(bad), throwsFormatException);
+    }
+    expect(store.data, isEmpty);
+  });
+
+  test('read rejects corrupted protected records', () async {
+    final store = FakeNativeSecretStore();
+    final target = vault(store);
+    await target.replace(token);
+    store.data[store.data.keys.single] = 'corrupted';
+    await expectLater(target.read(), throwsStateError);
+  });
+
+  test('silent write and delete failures are detected', () async {
+    final store = FakeNativeSecretStore();
+    final target = vault(store);
+    store.ignoreWrite = true;
+    await expectLater(target.replace(token), throwsStateError);
+    expect(await target.read(), isNull);
+    store.ignoreWrite = false;
+    await target.replace(token);
+    store.ignoreDelete = true;
+    await expectLater(target.clear(), throwsStateError);
+    expect(await target.read(), token);
+  });
+
+  test('storage exceptions never become an apparent successful operation',
+      () async {
+    final store = FakeNativeSecretStore();
+    final target = vault(store);
+    store.failWrite = true;
+    await expectLater(target.replace(token), throwsStateError);
+    store.failWrite = false;
+    await target.replace(token);
+    store.failRead = true;
+    await expectLater(target.read(), throwsStateError);
+    await expectLater(target.replace(token), throwsStateError);
+    store.failRead = false;
+    store.failDelete = true;
+    await expectLater(target.clear(), throwsStateError);
+  });
+  test('slow refresh write completes before queued logout deletion', () async {
+    final store = FakeNativeSecretStore();
+    final gate = Completer<void>();
+    store.blockWrite = gate;
+    final target = vault(store);
+    final rotate = target.replace(token);
+    await Future<void>.delayed(Duration.zero);
+    expect(store.writeStarts, 1);
+    final logout = target.clear();
+    await Future<void>.delayed(Duration.zero);
+    expect(store.deleteStarts, 0);
+    gate.complete();
+    await rotate;
+    await logout;
+    expect(store.deleteStarts, 1);
+    expect(await target.read(), isNull);
+  });
+
+}

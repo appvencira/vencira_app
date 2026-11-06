@@ -88,7 +88,9 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
 
   Future<void> _createExplicitControl() async {
     final policy = _value?.c2Policy;
-    if (_creating || _retryKey != null || policy?.offerExplicitControl != true ||
+    if (_creating || _retryKey != null ||
+        _value?.latestExplicitControlState != null ||
+        policy?.offerExplicitControl != true ||
         policy?.latestExplicitControlDay == null) return;
     final last = policy!.latestExplicitControlDay!;
     final today = DateUtils.dateOnly(DateTime.now());
@@ -258,7 +260,28 @@ class _ControlAssessmentCardState extends State<VenciraControlAssessmentCard> {
                   Expanded(child: Text(_reason(reason))),
                 ]),
               ],
-              if (value.c2Policy?.offerExplicitControl == true) ...[
+              if (value.latestExplicitControlState != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  Localizations.localeOf(context).languageCode == 'ca'
+                    ? 'Últim avís intern: ${value.latestExplicitControlState} '
+                      '(${_date(value.latestExplicitControlDay!)}). '
+                      'Revisa l’historial abans de crear-ne un altre.'
+                    : 'Último aviso interno: ${value.latestExplicitControlState} '
+                      '(${_date(value.latestExplicitControlDay!)}). '
+                      'Revisa el historial antes de crear otro.',
+                ),
+              ],
+              if (value.explicitControlExisting &&
+                  value.latestExplicitControlState == null) ...[
+                const SizedBox(height: 12),
+                Text(Localizations.localeOf(context).languageCode == 'ca'
+                  ? 'Ja hi ha un avís intern de control actiu per a aquesta anotació.'
+                  : 'Ya existe un aviso interno de control activo para esta anotación.'),
+              ],
+              if (value.c2Policy?.offerExplicitControl == true &&
+                  !value.explicitControlExisting &&
+                  value.latestExplicitControlState == null) ...[
                 const SizedBox(height: 14),
                 FilledButton.icon(
                   key: const ValueKey('explicit-control-create'),

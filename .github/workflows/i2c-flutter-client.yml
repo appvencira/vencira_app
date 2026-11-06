@@ -1,0 +1,37 @@
+name: I2C Flutter client integration (no deploy)
+on:
+  pull_request:
+    paths:
+      - 'clients/flutter/**'
+      - '.github/workflows/i2c-flutter-client.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  flutter:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: clients/flutter
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve Flutter dependencies
+        run: flutter pub get
+      - name: Static analysis of all Flutter sources
+        run: flutter analyze
+      - name: Widget and service regressions
+        run: flutter test test/widget_test.dart test/control_assessment_test.dart test/vencira_api_test.dart test/android_web_access_screen_test.dart test/design_v3_test.dart test/renewal_editor_test.dart test/renewal_attachments_card_test.dart test/device_notice_startup_gate_test.dart
+      - name: Compile Flutter Web without publication
+        run: flutter build web --release --pwa-strategy=none
+      - name: Keep operational release blocked
+        run: |
+          echo 'I2C_DEPLOY_AUTHORIZED=NO'
+          echo 'MFA_RELEASE_AUTHORIZED=NO'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
