@@ -37,12 +37,18 @@ jobs:
         run: python manage.py check
       - name: Detect model/migration drift without migrating persistent DB
         run: python manage.py makemigrations --check --dry-run
-      - name: Isolated attachment API, security and schema tests
+      - name: Independent split-only attachment API and contract tests
         run: >-
           python manage.py test
           renewal_attachments.test_independent_api
           renewal_attachments.test_transition_object_contract
           reminders.test_attachment_release_boundaries
+          --verbosity 1
+      - name: Legacy attachment API and scope remain fail-closed
+        env:
+          VENCIRA_ATTACHMENT_SPLIT_REHEARSAL: '0'
+        run: >-
+          python manage.py test
           reminders.test_attachment_gate
           reminders.test_attachment_api
           --verbosity 1
