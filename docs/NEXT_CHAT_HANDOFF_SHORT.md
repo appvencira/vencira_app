@@ -1,5 +1,11 @@
 
 
+> **B2-B suites PASS (06/11/2026):** los 10 tests Flutter de arranque pasaron y el log N1 aporta `N1_STATIC_android_beta_b2b_startup_recovery_regressions=OK` y `N1_STATIC_GATE_RESULT=OK`. Sin HEAD local explícito, exit N1 independiente, APK nueva o validación física adicional. Pendientes permisos Android, offline/recovery integrado y emisor MFA confiable E2.
+
+---
+
+
+
 > **B2-B Flutter PASS parcial (06/11/2026):** log recibido con 10/10 tests dirigidos correctos, incluidos cuatro nuevos escenarios. Falta salida N1 y HEAD local del mismo lote. No declarar B2-B integral PASS hasta recibirlos. Sin cambios de runtime Android ni release.
 
 ---
