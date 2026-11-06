@@ -419,6 +419,12 @@ def verify():
             and "raise CandidateMfaDenied() from None" in g14_e1_verifier
             and "test_malformed_key_denied_without_details_or_consumption" in g14_e1d_tests
             and "self.assertIsNone(denied.exception.__cause__)" in g14_e1d_tests,
+        "g14_e1d3_pg17_state_and_secret_binding":
+            "test_disabled_mfa_denied_without_factor_consumption" in g14_e1d_tests
+            and "test_password_rotation_denies_stale_password_without_consumption" in g14_e1d_tests
+            and "test_tampered_ciphertext_denied_without_consumption" in g14_e1d_tests
+            and "test_secret_from_another_account_denied_without_consumption" in g14_e1d_tests
+            and "self.assert_untouched()" in g14_e1d_tests,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
