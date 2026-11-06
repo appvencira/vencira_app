@@ -18,6 +18,24 @@ if ((g8LabBuild || g12LabBuild || g13LabBuild) && gradle.startParameter.taskName
     throw GradleException("Physical Android labs must never build release/profile")
 }
 
+// Release distribution uses a separate keystore held outside this repository.
+// No release artifact may silently fall back to Android's debug signing key.
+val releaseBuildRequested = gradle.startParameter.taskNames.any {
+    it.contains("release", ignoreCase = true)
+}
+val releaseSigningEnvironment = listOf(
+    "VENCIRA_ANDROID_KEYSTORE_PATH",
+    "VENCIRA_ANDROID_KEYSTORE_PASSWORD",
+    "VENCIRA_ANDROID_KEY_ALIAS",
+    "VENCIRA_ANDROID_KEY_PASSWORD",
+)
+val releaseSigningReady = releaseSigningEnvironment.all {
+    !System.getenv(it).isNullOrBlank()
+}
+if (releaseBuildRequested && !releaseSigningReady) {
+    throw GradleException("VENCIRA_ANDROID_RELEASE_SIGNING_REQUIRED")
+}
+
 android {
     namespace = "es.vencira.vencira"
     compileSdk = flutter.compileSdkVersion
@@ -41,6 +59,17 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (releaseSigningReady) {
+            create("venciraRelease") {
+                storeFile = file(System.getenv("VENCIRA_ANDROID_KEYSTORE_PATH"))
+                storePassword = System.getenv("VENCIRA_ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("VENCIRA_ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("VENCIRA_ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         debug {
             if (g8LabBuild) {
@@ -57,9 +86,9 @@ android {
             }
         }
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            if (releaseSigningReady) {
+                signingConfig = signingConfigs.getByName("venciraRelease")
+            }
         }
     }
 }
