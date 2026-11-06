@@ -26,6 +26,9 @@ def verify(badging: str, permissions: str, tree: str) -> None:
             permissions, re.MULTILINE,
         ):
             raise ValueError("G15_MISSING_DECLARED_PERMISSION")
+    if re.search(r"^uses-permission: name='android\\.permission\\.INTERNET'", permissions,
+                 re.MULTILINE):
+        raise ValueError("G15_FORBIDDEN_INTERNET_PERMISSION")
     for receiver in RECEIVERS:
         if receiver not in tree:
             raise ValueError("G15_MISSING_NOTIFICATION_RECEIVER")
@@ -62,6 +65,7 @@ def main() -> int:
     print("G15_BOOT_RECEIVER_DECLARED=OK")
     print("G15_SCHEDULE_RECEIVER_DECLARED=OK")
     print("G15_EXACT_ALARM_PERMISSIONS=ABSENT")
+    print("G15_INTERNET_PERMISSION=ABSENT")
     print("G15_MANIFEST_GATE=PASS")
     print("G15_OS_PERMISSIONS_ON_PHONE=NOT_VERIFIED")
     return 0
