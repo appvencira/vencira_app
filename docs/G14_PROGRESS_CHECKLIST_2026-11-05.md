@@ -133,8 +133,13 @@ Recibo complementario del operador: `G14_E0_TESTS=0`, `G14_E0_AUDIT=0`. Junto co
 
 ## 06/11/2026 — G14-E1 prueba autoritativa de contraseña + TOTP (pendiente local)
 
-- [~] **G14-E1**: implementado en rama de laboratorio `backend/native_mobile_service/g14_e1_locked_mfa_verifier.py`. Pide credenciales originales, bloquea usuario→estado MFA en una transacción PostgreSQL y consume TOTP mediante el escritor anti-replay existente. Rechaza recuperación administrativa pendiente, no devuelve identidad, época ni capacidad, y **no emite ningún token**.
+- [x] **G14-E1**: implementado en rama de laboratorio `backend/native_mobile_service/g14_e1_locked_mfa_verifier.py`. Pide credenciales originales, bloquea usuario→estado MFA en una transacción PostgreSQL y consume TOTP mediante el escritor anti-replay existente. Rechaza recuperación administrativa pendiente, no devuelve identidad, época ni capacidad, y **no emite ningún token**.
 - Cinco regresiones PG17 en `native_mobile_service.test_g14_e1_locked_mfa_verifier`: verificación y replay, contraseña incorrecta, TOTP incorrecto, recuperación pendiente, input inválido.
 - Integrado en el runner `--candidate`, CI y N1 `g14_e1_locked_mfa_proof_without_issuer`. **Publicado pero NO ejecutado localmente**.
 - Es solo la primera etapa de un verificador compuesto, **no** el trusted issuer. Quedan cotas de abuso/auditoría, códigos de recuperación, errores, rollback, emisión atómica y carreras reales con cambios de cuenta/factor.
 - Sin rutas operativas, despliegue ni migración persistente.
+
+
+## 06/11/2026 — G14-E1 PASS local, 123 PG17 tests
+
+Recibo del operador: `G14_E1_HEAD=60c3bbfae`, `G14_E1_N1=0`, `G14_E1_BUILD=0`, `G14_E1_PG17=0`, `N1_STATIC_g14_e1_locked_mfa_proof_without_issuer=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 123 tests in 23.421s`, `G5_CANDIDATE_PG17_RESULT=0`. **G14-E1 PASS LOCAL** para verificación aislada de contraseña y TOTP bajo lock, sin token ni identidad devuelta al llamante. Sudo falló al primer intento pero el build/test concluyeron OK. **Siguiente fase E2:** composición transaccional de verificación de contraseña/MFA, emisión candidata y auditoría; diseñar y probar rollback, replay y carreras PG17 sin rutas operativas. No asumir emisión confiable antes de aceptación y revisión independiente. `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
