@@ -1,3 +1,7 @@
+> **WEB DEV — revisión navegador completada, 06/11/2026:** tras despliegue `WEB_RELEASE_MODE_RESULT=PASS:deploy` para la imagen `vencira-web-candidate:308c69da24aa`, el operador respondió «Done» a la revisión manual de DEV. **`WEB_DEV_BROWSER_REVIEW=OPERATOR_DONE`**, sin informe separado por pantalla ni UAT exhaustiva demostrada; API/DB no modificadas. Estado y límites en [WEB_DEV_VISUAL_DEPLOY_READINESS_2026-11-06.md](WEB_DEV_VISUAL_DEPLOY_READINESS_2026-11-06.md). Próximo corte: nuevas funciones web/API compatibles con backend actualizado y gate propio; no habilitar MFA G14-E2 ni ejecutar migraciones no aprobadas.
+
+---
+
 > **WEB DEV DESPLEGADA — 06/11/2026:** el operador ejecutó despliegue **exclusivamente web_preview**, con `WEB_RELEASE_POSTCHECK=PASS`, `WEB_RELEASE_API_DB_IMAGES_UNCHANGED=YES`, `WEB_RELEASE_MODE_RESULT=PASS:deploy`, `WEB_DEV_DEPLOY_RESULT=0` y `NO_LIVE_DB_MIGRATION=1`. Imagen publicada `vencira-web-candidate:308c69da24aa` (fuente `308c69da24aa7c75502d132e28645d9b1150c1ef`); imagen previa `sha256:9de96e4a9a3ae18b13dbcfbb6c2a25857d7511df3840c4851c6400223136eaf1`, prevista para rollback. **`WEB_DEV_WEB_ONLY_DEPLOY=PASS_OPERATOR_VERIFIED`; `WEB_DEV_BROWSER_UAT=PENDING`**. API/DB conservadas; no hay autorización MFA/adjuntos. PR #17 sigue sin merge. Detalle [WEB_DEV_VISUAL_DEPLOY_READINESS_2026-11-06.md](WEB_DEV_VISUAL_DEPLOY_READINESS_2026-11-06.md). No repetir despliegue; siguiente paso revisión visual y funcional con sesión DEMO.
 
 ---
