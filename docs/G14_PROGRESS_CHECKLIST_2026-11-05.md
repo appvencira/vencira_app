@@ -95,3 +95,12 @@ El operador informa: `G14_D9B_N1=0`, `G14_D9B_BUILD=0`, `G14_D9B_PG17=0`, `N1_ST
 ## 06/11/2026 — G14-D9C PASS local (116 tests PG17)
 
 El operador comunica `G14_D9C_N1=0`, `G14_D9C_BUILD=0`, `G14_D9C_PG17=0`, `N1_STATIC_g14_d9c_admin_factor_finalization_pg17=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 116 tests in 18.464s`, `G5_CANDIDATE_PG17_RESULT=0`. **G14_D9C=PASS_LOCAL** para exclusión concurrente cancelación/finalización administrativa y rechazo sin verificador externo. Es prueba con datos sintéticos, no autorización de ejecución real. Quedan caducidad/rechazo frente a finalización, emisor verificado MFA, custodia, reconciliación de gates y UAT. `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## 06/11/2026 — G14-D9D: terminales de expediente en carrera (pendiente PG17)
+
+- [~] **G14-D9D**: dos tests PostgreSQL 17 publicados en `backend/native_mobile_service/test_g14_d9c_admin_finalization_pg17.py`: `test_expiry_vs_finalization_cannot_both_succeed` y `test_rejection_vs_finalization_cannot_both_succeed`.
+- Verifican que `EXPIRED` o `REJECTED` y `CLOSED` no resulten simultáneamente exitosos; si no se finaliza, factor activo y `session_epoch` se conservan. Si se finaliza, factor cambia y época se incrementa.
+- El test de rechazo usa un tercer revisor autorizado sintético para que la denegación compita con dos aprobaciones ya almacenadas; el de caducidad inyecta una hora de expiración futura solo en la rama de caducidad. Ninguno simula custodia externa real.
+- Registrado N1 `g14_d9d_terminal_case_races_pg17`. Como se amplió una suite existente ya incluida en el runner y CI, no se repiten entradas ni se cambia comportamiento de MFA.
+- **G14_D9D_CODE=PUBLISHED; G14_D9D_PG17=NOT_RUN.** G14-D9 global permanece parcial; trusted MFA issuer, claves y autorización pendientes.
