@@ -46,6 +46,7 @@ class G15LabBoundaryTests(unittest.TestCase):
         self.assertIn("ScheduledNotificationBootReceiver", manifest)
         self.assertNotIn("SCHEDULE_EXACT_ALARM", manifest)
         self.assertNotIn("USE_EXACT_ALARM", manifest)
+        self.assertIn('android.permission.INTERNET" tools:node="remove"', manifest)
         self.assertNotIn("ScheduledNotificationBootReceiver",
                          read("clients/flutter/android/app/src/main/AndroidManifest.xml"))
 
@@ -67,6 +68,8 @@ class G15LabBoundaryTests(unittest.TestCase):
             verify(badging, perms, "ScheduledNotificationReceiver")
         with self.assertRaises(ValueError):
             verify(badging, perms + "android.permission.SCHEDULE_EXACT_ALARM", tree)
+        with self.assertRaises(ValueError):
+            verify(badging, perms + "uses-permission: name=\'android.permission.INTERNET\'", tree)
 
 
 if __name__ == "__main__":
