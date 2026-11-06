@@ -852,3 +852,8 @@ Dos pruebas PostgreSQL 17 sintéticas añadidas: cancelación vs finalización a
 ## 06/11/2026 — D9D carreras de caducidad y rechazo: pendiente local
 
 Publicados dos tests nuevos en la suite PG17 existente de G14-D9C: expiración de expediente contra finalización MFA, y rechazo por tercer reviewer contra la misma finalización. Nuevo control N1 `g14_d9d_terminal_case_races_pg17`. **PENDIENTE** de evidencia N1+PG17. Previas 116 pruebas D9C PASS no cubren estos commits. Sin cambios de MFA operativo, rutas ni migración persistente. Checklist: `docs/G14_PROGRESS_CHECKLIST_2026-11-05.md`.
+
+
+## 06/11/2026 — D9-D 118 pruebas PASS
+
+`G14_D9D_N1=0`, `G14_D9D_BUILD=0`, `G14_D9D_PG17=0`, `N1_STATIC_g14_d9d_terminal_case_races_pg17=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 118 tests in 19.205s`, `G5_CANDIDATE_PG17_RESULT=0`. D9-D PASS local sintético; la aprobación de seguridad integral no está concedida. Mantener bloqueo de despliegue y `docs/G14_PROGRESS_CHECKLIST_2026-11-05.md` actualizado.
