@@ -130,15 +130,18 @@ class G14D9CAdminFinalizePG17(TransactionTestCase):
         # A deterministic, future expiry timestamp is supplied only to the
         # isolated expiration worker; the finalizer uses its own clock.
         expiry_time = self.case.expires_at + timedelta(seconds=1)
-        finalized, (expired, reason) = self.race(
-            lambda: finalize_administrative_factor(
-                case_id=self.case.pk, proof_code=self.proof,
-            ),
-            lambda: expire_recovery_case(
-                case_id=self.case.pk, actor=self.reviewers[0],
-                now=expiry_time,
-            ),
-        )
+        with override_settings(VENCIRA_MFA_RECOVERY_REVIEWER_IDS=tuple(
+            reviewer.pk for reviewer in self.reviewers
+        )):
+            finalized, (expired, reason) = self.race(
+                lambda: finalize_administrative_factor(
+                    case_id=self.case.pk, proof_code=self.proof,
+                ),
+                lambda: expire_recovery_case(
+                    case_id=self.case.pk, actor=self.reviewers[0],
+                    now=expiry_time,
+                ),
+            )
         self.assertNotEqual(finalized, expired)
         self.case.refresh_from_db()
         self.state.refresh_from_db()
