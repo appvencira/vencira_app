@@ -103,6 +103,8 @@ def verify():
     g14_d8_races = read("backend/native_mobile_service/test_g14_d8_admin_rotation_pg17.py")
     g14_d9_guards = read("backend/native_mobile_service/test_g14_d9_recovery_guards_pg17.py")
     g14_d9c_races = read("backend/native_mobile_service/test_g14_d9c_admin_finalization_pg17.py")
+    g14_e1_verifier = read("backend/native_mobile_service/g14_e1_locked_mfa_verifier.py")
+    g14_e1_tests = read("backend/native_mobile_service/test_g14_e1_locked_mfa_verifier.py")
     mfa_enrollment_lock = read("backend/reminders/mfa_enrollment.py")
     g14_inventory = read("scripts/g14_mfa_writer_inventory.py")
     g14_inventory_tests = read("scripts/test_g14_mfa_writer_inventory.py")
@@ -371,6 +373,17 @@ def verify():
             and "G14_TRUSTED_ISSUER_IMPLEMENTED=NO" in g14_issuer_guard
             and "test_unreviewed_caller_denied" in g14_issuer_guard_tests
             and "test_aliased_import_detected" in g14_issuer_guard_tests,
+        "g14_e1_locked_mfa_proof_without_issuer":
+            "verify_candidate_password_and_totp(" in g14_e1_verifier
+            and "transaction.atomic()" in g14_e1_verifier
+            and "select_for_update()" in g14_e1_verifier
+            and "consume_totp(" in g14_e1_verifier
+            and "issue_verified_candidate_session(" not in g14_e1_verifier
+            and "MobileDeviceSession" not in g14_e1_verifier
+            and "test_verified_factor_consumes_once_without_session" in g14_e1_tests
+            and "test_pending_administrative_recovery_blocks_factor" in g14_e1_tests
+            and "g14_e1_locked_mfa_verifier" not in config
+            and "g14_e1_locked_mfa_verifier" not in routes,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
@@ -1021,6 +1034,8 @@ def verify():
         "backend/native_mobile_service/test_g14_d8_admin_rotation_pg17.py",
         "backend/native_mobile_service/test_g14_d9_recovery_guards_pg17.py",
         "backend/native_mobile_service/test_g14_d9c_admin_finalization_pg17.py",
+        "backend/native_mobile_service/g14_e1_locked_mfa_verifier.py",
+        "backend/native_mobile_service/test_g14_e1_locked_mfa_verifier.py",
         "scripts/g14_mfa_writer_inventory.py",
         "scripts/test_g14_mfa_writer_inventory.py",
         "scripts/g14_mfa_lock_order_report.py",
