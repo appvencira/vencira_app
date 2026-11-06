@@ -922,3 +922,8 @@ Corrección del verificador E1 para uniformar las excepciones al carecer de cust
 ## 06/11/2026 — G14-E1D2 cerrado
 
 HEAD validado `d7fc8aa4b`: N1=0, build=0, PG17=0, 135 pruebas en 32.577s; N1 E1D y uniformidad de custodia OK. PASS local para verificador MFA de laboratorio; no hay emisor confiable, token+auditoría ni despliegue. Pendiente E2. La línea `G5_CANDIDATE_PG17_RESULT` no aparece en el extracto del recibo, aunque consta `PG17=0`.
+
+
+## 06/11/2026 — G14-E1D3 preparado, pendiente local
+
+Lote de cuatro regresiones PG17 añadidas a `test_g14_e1d_key_custody_pg17.py`: factor desactivado, contraseña rotada, secreto cifrado manipulado y secreto perteneciente a otra cuenta. N1 `g14_e1d3_pg17_state_and_secret_binding` publicado. Suite candidata esperada: 139 tests, sin resultado local todavía. No modifica rutas ni habilita emisión; G14-E2 bloqueada.
