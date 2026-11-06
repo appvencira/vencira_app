@@ -937,3 +937,8 @@ HEAD validado `07fa7818b`. N1=0; build=0; PG17=0; control específico `g14_e1d3_
 ## 06/11/2026 — G14-F0 publicado, verificación estática pendiente
 
 AST del emisor de laboratorio ampliado para accesos `getattr` literales, tres nuevos tests unitarios y N1 actualizado. No se tocó Django operativo ni PostgreSQL. Validación requerida: tests unitarios de escáner, barrido del código, N1. E2 no implementado.
+
+
+## 06/11/2026 — G14-F0 PASS local
+
+Recibo: HEAD `5291785bd`, tests unitarios=0 (9/9), scan=0 (una llamada revisada, cero no revisadas), N1=0, gate OK. Scanner reforzado mediante `getattr` literal validado. `G14_TRUSTED_ISSUER_IMPLEMENTED=NO`. No token MFA confiable y sin despliegue.
