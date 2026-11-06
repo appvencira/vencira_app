@@ -1,3 +1,7 @@
+> **TRASPASO VIGENTE — 06/11/2026, G15 CERRADO EN LABORATORIO.** Leer primero **[HANDOFF_ANDROID_G15_CLOSED_2026-11-06.md](HANDOFF_ANDROID_G15_CLOSED_2026-11-06.md)**: consolida B2-A (firma estática), B2-B (10/10 Flutter + N1), B2-C (13/13 transporte + 2/2 auditoría), B2-D (manifiesto G13), B2-E/G15 (4/4 tests, N1, compilación debug, manifiesto sin INTERNET, permisos, aviso real en Android y cancelación y entrega tras reinicio confirmadas por el operador). **G15_LAB=COMPLETE_WITH_SCOPE_LIMITS**; no repetir validaciones. **BETA FUNCIONAL=NO GO**: G14-E2 aún no implementado, E3 pendiente, integración Android operativa, firma release real y aprobaciones B3 pendientes. Los párrafos antiguos que indiquen G15 pendiente o `release` firmado con debug son históricos y NO representan el estado actual. `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+---
+
 
 
 > **B2-B publicado, validación pendiente (06/11/2026):** cuatro regresiones Flutter de arranque de avisos y cambio de ámbito, control N1 `android_beta_b2b_startup_recovery_regressions`. Ejecutar **una única vez** el test widget dirigido y N1 sobre nuevo HEAD; no repetir PG17, G13 ni build Android. No se ha habilitado autenticación nativa ni datos reales.
