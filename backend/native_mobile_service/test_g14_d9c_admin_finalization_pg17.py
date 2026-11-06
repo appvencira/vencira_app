@@ -10,7 +10,8 @@ from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 
 from reminders.mfa_admin_recovery_service import (
-    cancel_recovery_case, finalize_administrative_factor,
+    cancel_recovery_case, expire_recovery_case,
+    finalize_administrative_factor, record_review,
 )
 from reminders.mfa_secrets import encrypt_totp_secret, hash_recovery_code
 from reminders.mfa_totp import generate_secret
@@ -121,3 +122,65 @@ class G14D9CAdminFinalizePG17(TransactionTestCase):
         self.assertEqual(self.case.status, self.case.Status.PENDING)
         self.assertEqual(self.state.encrypted_totp_secret, self.original)
         self.assertEqual(self.state.session_epoch, 9)
+
+    @override_settings(
+        VENCIRA_MFA_RECOVERY_EXECUTION_VERIFIER=lambda **kwargs: True,
+    )
+    def test_expiry_vs_finalization_cannot_both_succeed(self):
+        # A deterministic, future expiry timestamp is supplied only to the
+        # isolated expiration worker; the finalizer uses its own clock.
+        expiry_time = self.case.expires_at + timedelta(seconds=1)
+        finalized, (expired, reason) = self.race(
+            lambda: finalize_administrative_factor(
+                case_id=self.case.pk, proof_code=self.proof,
+            ),
+            lambda: expire_recovery_case(
+                case_id=self.case.pk, actor=self.reviewers[0],
+                now=expiry_time,
+            ),
+        )
+        self.assertNotEqual(finalized, expired)
+        self.case.refresh_from_db()
+        self.state.refresh_from_db()
+        if finalized:
+            self.assertEqual(self.case.status, self.case.Status.CLOSED)
+            self.assertEqual(self.state.encrypted_totp_secret, self.prepared)
+            self.assertEqual(self.state.session_epoch, 10)
+            self.assertEqual(reason, "CASE_NOT_PENDING")
+        else:
+            self.assertEqual(self.case.status, self.case.Status.EXPIRED)
+            self.assertEqual(self.state.encrypted_totp_secret, self.original)
+            self.assertEqual(self.state.session_epoch, 9)
+            self.assertEqual(reason, "CASE_EXPIRED")
+
+    @override_settings(
+        VENCIRA_MFA_RECOVERY_EXECUTION_VERIFIER=lambda **kwargs: True,
+    )
+    def test_rejection_vs_finalization_cannot_both_succeed(self):
+        third_reviewer = get_user_model().objects.create_user(
+            username="g14d9d-third-reviewer", is_staff=True,
+        )
+        roster = tuple(user.pk for user in self.reviewers) + (third_reviewer.pk,)
+        with override_settings(VENCIRA_MFA_RECOVERY_REVIEWER_IDS=roster):
+            finalized, (rejected, reason) = self.race(
+                lambda: finalize_administrative_factor(
+                    case_id=self.case.pk, proof_code=self.proof,
+                ),
+                lambda: record_review(
+                    case_id=self.case.pk, reviewer=third_reviewer,
+                    approve=False, now=timezone.now(),
+                ),
+            )
+        self.assertNotEqual(finalized, rejected)
+        self.case.refresh_from_db()
+        self.state.refresh_from_db()
+        if finalized:
+            self.assertEqual(self.case.status, self.case.Status.CLOSED)
+            self.assertEqual(self.state.encrypted_totp_secret, self.prepared)
+            self.assertEqual(self.state.session_epoch, 10)
+            self.assertEqual(reason, "CASE_NOT_PENDING")
+        else:
+            self.assertEqual(self.case.status, self.case.Status.REJECTED)
+            self.assertEqual(self.state.encrypted_totp_secret, self.original)
+            self.assertEqual(self.state.session_epoch, 9)
+            self.assertEqual(reason, "REJECTED")
