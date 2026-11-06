@@ -113,3 +113,8 @@ Resultado textual aportado por operador: `B2_C_FLUTTER=0`, `All tests passed!`, 
 - Pendiente de ejecución local: pruebas del auditor + informe. Pendiente posterior: inspeccionar el AndroidManifest fusionado de un APK aislado y realizar campaña Android 13+ conceder / denegar / retirar permiso, reinicio, almacenamiento seguro y cancelación, solo con datos ficticios y rollout desactivado. B2-C sigue abierto.
 
 Referencias técnicas: [Android Developers — permission for notifications](https://developer.android.com/develop/ui/compose/notifications/notification-permission), [flutter_local_notifications — Android manifest setup](https://pub.dev/packages/flutter_local_notifications).
+
+
+## 06/11/2026 — B2-C auditor de fuentes PASS local, permisos físicos pendientes
+
+Salida del operador: `Ran 2 tests in 0.000s`, `OK`, `B2_C_AUDIT_TESTS=0`, `B2_C_AUDIT_RESULT=0`, `B2_C_ANDROID_READINESS_AUDIT=PASS_READONLY`. Informe: `APP_MANIFEST_POST_NOTIFICATIONS=NO`, `APP_MANIFEST_BOOT_PERMISSION=NO`, `APP_MANIFEST_BOOT_RECEIVERS=NO`, `OS_PERMISSION_PREFLIGHT_IN_ALARM_PORT=YES`, `EXPLICIT_OPT_IN_GATE_IN_COORDINATOR=YES`, `NATIVE_NOTICE_ROLLOUT_WIRED_TO_MAIN=NO`, `RUNTIME_OS_PERMISSION_REQUEST_IN_MAIN=NO`. El propio informe indica `OS_PERMISSION_ON_DEVICE=NOT_VERIFIED`, `MERGED_ANDROID_MANIFEST=NOT_VERIFIED`, `REBOOT_RESCHEDULE_ON_DEVICE=NOT_VERIFIED`. Los saltos de línea de algunos marcadores se pegaron unidos, pero sus nombres y valores son legibles. **B2_C_AUDIT=PASS_LOCAL; B2_C_INTEGRAL=PENDING**. Sin HEAD concreto en la salida. No se modificaron la aplicación operativa, las rutas ni la BD persistente.
