@@ -1,0 +1,27 @@
+name: I2B Django bootstrap source isolation
+on:
+  pull_request:
+    paths:
+      - 'backend/manage.py'
+      - 'backend/requirements.txt'
+      - 'backend/config/**'
+      - 'backend/reminders/apps.py'
+      - 'backend/reminders/__init__.py'
+      - 'scripts/i2b_django_bootstrap_source_gate.py'
+      - '.github/workflows/i2b-django-bootstrap.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Static bootstrap and explicit not-runnable inventory
+        run: python3 scripts/i2b_django_bootstrap_source_gate.py
+      - name: Previous main integration gate
+        run: python3 scripts/i2_main_foundation_gate.py
