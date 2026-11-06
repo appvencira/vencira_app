@@ -106,6 +106,7 @@ def verify():
     g14_e1_verifier = read("backend/native_mobile_service/g14_e1_locked_mfa_verifier.py")
     g14_e1_tests = read("backend/native_mobile_service/test_g14_e1_locked_mfa_verifier.py")
     g14_e1b_tests = read("backend/native_mobile_service/test_g14_e1_concurrency_pg17.py")
+    g14_e1c_tests = read("backend/native_mobile_service/test_g14_e1c_transaction_rollback_pg17.py")
     mfa_enrollment_lock = read("backend/reminders/mfa_enrollment.py")
     g14_inventory = read("scripts/g14_mfa_writer_inventory.py")
     g14_inventory_tests = read("scripts/test_g14_mfa_writer_inventory.py")
@@ -394,6 +395,15 @@ def verify():
             and "MobileDeviceSession.objects.exists()" in g14_e1b_tests
             and "g14_e1_concurrency_pg17" not in config
             and "g14_e1_concurrency_pg17" not in routes,
+        "g14_e1c_pg17_outer_savepoint_rollback":
+            "TransactionTestCase" in g14_e1c_tests
+            and "test_successful_proof_rolls_back_when_outer_transaction_fails" in g14_e1c_tests
+            and "test_invalid_code_budget_rolls_back_with_outer_transaction" in g14_e1c_tests
+            and "test_inner_savepoint_rollback_does_not_consume_factor" in g14_e1c_tests
+            and "transaction.atomic()" in g14_e1c_tests
+            and "MobileDeviceSession.objects.exists()" in g14_e1c_tests
+            and "g14_e1c_transaction_rollback_pg17" not in config
+            and "g14_e1c_transaction_rollback_pg17" not in routes,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
@@ -1047,6 +1057,7 @@ def verify():
         "backend/native_mobile_service/g14_e1_locked_mfa_verifier.py",
         "backend/native_mobile_service/test_g14_e1_locked_mfa_verifier.py",
         "backend/native_mobile_service/test_g14_e1_concurrency_pg17.py",
+        "backend/native_mobile_service/test_g14_e1c_transaction_rollback_pg17.py",
         "scripts/g14_mfa_writer_inventory.py",
         "scripts/test_g14_mfa_writer_inventory.py",
         "scripts/g14_mfa_lock_order_report.py",
