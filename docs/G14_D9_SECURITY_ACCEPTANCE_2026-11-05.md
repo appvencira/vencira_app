@@ -95,3 +95,16 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 ## 06/11/2026 — Validación G14-D9C
 
 Operador confirma `N1=0`, build=0 y PG17=0, con **116 tests** y marcador `N1_STATIC_g14_d9c_admin_factor_finalization_pg17=OK`. G14-D9C PASS local bajo fixture de evidencia administrativa sintética. Alcance: cancelación vs finalización y denegación cuando no hay verificador de ejecución. No implica ausencia de todos los interbloqueos ni sustitución autorizada en producción. Pendientes: caducidad y rechazo concurrentes, custodia/evidencia independiente real y trusted MFA issuer.
+
+
+## 06/11/2026 — G14-D9D nuevas carreras terminales, código no validado
+
+Pruebas añadidas a `test_g14_d9c_admin_finalization_pg17.py` contra dos terminaciones concurrentes del expediente: caducidad y rechazo. Las transacciones comparten lock de expediente y solo una transición final puede ganar en las condiciones del test; la otra debe negar el cambio. Se exige invariancia de `encrypted_totp_secret` y `session_epoch` cuando la finalización pierde. El test de rechazo emplea un tercer reviewer sintético, no una autorización operativa. N1 comprueba la existencia de ambos ensayos. **No se ha ejecutado el lote local ni CI de estos commits.**
+
+```
+G14_D9C=PASS_LOCAL_116_TESTS
+G14_D9D_CODE=PUBLISHED
+G14_D9D_PG17=NOT_RUN
+G14_D9_SECURITY_ACCEPTANCE=PARTIAL
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
