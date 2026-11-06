@@ -78,6 +78,15 @@ case "$MODE" in
       native_mobile_service.test_g14_e1d_key_custody_pg17
     )
     ;;
+  --e3-refresh)
+    # G14-E3 only: two new refresh/revocation races in disposable PG17.
+    # No issuer/MFA login, no network port, no production database.
+    EXTRA_ENV=(-e VENCIRA_NATIVE_SERVICE_CANDIDATE=1)
+    SUITES=(
+      native_mobile_service.test_pg17_races.CandidateRacePG17Tests.test_refresh_racing_account_revocation_cannot_restore_session
+      native_mobile_service.test_pg17_races.CandidateRacePG17Tests.test_refresh_racing_password_change_cannot_keep_old_credential
+    )
+    ;;
   --lab-case)
     # Fixed allowlisted regression; do not accept arbitrary test targets.
     # Uses the same isolated PG17 tmpfs network as the full --lab suite.
@@ -87,7 +96,7 @@ case "$MODE" in
     )
     ;;
   *)
-    echo "Usage: bash scripts/n1_identity_pg17_ephemeral.sh [--lab|--lab-https|--lab-case|--candidate]" >&2
+    echo "Usage: bash scripts/n1_identity_pg17_ephemeral.sh [--lab|--lab-https|--lab-case|--candidate|--e3-refresh]" >&2
     exit 2
     ;;
 esac
@@ -146,7 +155,7 @@ result=0
   -e "POSTGRES_HOST=$PG_CONTAINER" \
   -e POSTGRES_PORT=5432 \
   "$API_IMAGE" sh -c '
-    if [ "$1" = "--candidate" ]; then
+    if [ "$1" = "--candidate" ] || [ "$1" = "--e3-refresh" ]; then
       python manage.py makemigrations native_mobile_service --check --dry-run || exit $?
     fi
     shift
@@ -159,6 +168,8 @@ elif [ "$MODE" = "--lab-https" ]; then
   echo "G7_D1_TLS_PG17_RESULT=$result"
 elif [ "$MODE" = "--lab-case" ]; then
   echo "N1_PG17_LAB_CASE_RESULT=$result"
+elif [ "$MODE" = "--e3-refresh" ]; then
+  echo "G14_E3_REFRESH_PG17_RESULT=$result"
 elif [ "$MODE" = "--candidate" ]; then
   echo "G4_CANDIDATE_PG17_RESULT=$result"
   echo "G5_CANDIDATE_PG17_RESULT=$result"
