@@ -1,5 +1,11 @@
 
 
+> **B2-B Flutter PASS parcial (06/11/2026):** log recibido con 10/10 tests dirigidos correctos, incluidos cuatro nuevos escenarios. Falta salida N1 y HEAD local del mismo lote. No declarar B2-B integral PASS hasta recibirlos. Sin cambios de runtime Android ni release.
+
+---
+
+
+
 > **B2-B publicado, validación pendiente (06/11/2026):** cuatro regresiones Flutter de arranque de avisos y cambio de ámbito, control N1 `android_beta_b2b_startup_recovery_regressions`. Ejecutar **una única vez** el test widget dirigido y N1 sobre nuevo HEAD; no repetir PG17, G13 ni build Android. No se ha habilitado autenticación nativa ni datos reales.
 
 ---
