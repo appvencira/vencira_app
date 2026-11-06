@@ -207,3 +207,8 @@ Recibo textual aportado por operador: `G14_E1D_HEAD=263767dac`, `G14_E1D_N1=0`, 
 - Se actualiza el test E1D de clave desconocida para exigir denegación uniforme, se añade el caso de clave malformada y la ausencia de causa explícita en ambas denegaciones. Total previsto del runner candidato: **135** pruebas, sujeto a ejecución.
 - N1 incluye `g14_e1d_uniform_custody_denial`. Runner PG17 y CI ya incluyen el módulo E1D, por lo que no es necesaria una segunda entrada de suite.
 - **ESTADO: CODE_PUBLISHED_NOT_VALIDATED.** El PASS anterior E1D de 134 pruebas no cubre este nuevo tratamiento. G14-E2 confiable sigue pendiente; sin desplegar ni migrar.
+
+
+## 06/11/2026 — G14-E1D2 PASS local: 135 pruebas
+
+Recibo aportado por operador: `G14_E1D2_HEAD=d7fc8aa4b`, `G14_E1D2_N1=0`, `G14_E1D2_BUILD=0`, `G14_E1D2_PG17=0`, `N1_STATIC_g14_e1d_pg17_key_custody_failclosed=OK`, `N1_STATIC_g14_e1d_uniform_custody_denial=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 135 tests in 32.577s`. **G14-E1D2=PASS_LOCAL**: normalización de fallos de descifrado MFA, denegación uniforme y regresiones sin emisión. La salida copiada no incluye la línea final `G5_CANDIDATE_PG17_RESULT`, pero sí informa `PG17=0` del mismo runner. G14-E2 emisión MFA atómica sigue bloqueada, sin integración ni pruebas. Ningún despliegue ni migración persistente; `MFA_RELEASE_AUTHORIZED=NO`.
