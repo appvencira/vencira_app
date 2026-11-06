@@ -173,3 +173,14 @@ El operador entregó `vencira-e1b-pg17.log`: `N1_PG17=isolated (private internal
 ## 06/11/2026 — G14-E1C PASS local: 130 pruebas PG17
 
 Evidencia adjunta por operador: `N1_PG17=isolated (private internal network, tmpfs, no published ports)`, `N1_PG17_POSTGRES_READY=OK`, `Found 130 test(s)`, `System check identified no issues (0 silenced)`, `Ran 130 tests in 29.700s`, `OK`, `G4_CANDIDATE_PG17_RESULT=0`, `G5_CANDIDATE_PG17_RESULT=0`. Registros N1 y build del mismo lote aportados anteriormente: `N1_STATIC_g14_e1c_pg17_outer_savepoint_rollback=OK`, `N1_STATIC_GATE_RESULT=OK` e imagen Docker construida OK. **G14-E1C=PASS_LOCAL** en pruebas de rollback MFA sin tokens. E2 pendiente de composición token+auditoría; la aprobación para producción sigue bloqueada. Sin despliegue ni migración persistente.
+
+
+## 06/11/2026 — Macrofase E2: revisión integral agrupada (sin emisor)
+
+- [x] Revisión de límites E1/E2 y criterios de aceptación consolidada en `docs/G14_E2_ATOMIC_ISSUANCE_ACCEPTANCE_2026-11-06.md`. Se comprueba por inspección que E1 devuelve bool sin token ni capacidad transferible; el emisor candidato de bajo nivel recibe estados declarados por el llamante y no verifica contraseña/TOTP. El retorno E1 no debe enlazarse a dicho emisor fuera de transacción segura.
+- [x] Última evidencia PG17 recibida: E1C, **130 tests PASS**, N1 y build OK.
+- [ ] **G14-E2** composición real de contraseña, TOTP, sesión y auditoría: **NO_IMPLEMENTADO**; los intentos de publicar código de integración fueron bloqueados por seguridad. No se debe reintentar eludir el control.
+- [ ] **G14-E3** concurrencia real de emisión, prueba de respuesta ambigua y revocación cruzada: no ejecutadas.
+- [ ] Emisor real, custodia externa, recuperación operativa y autorización beta: no aceptados.
+
+No hay cambios operativos ni nuevas pruebas a ejecutar en esta revisión documental. `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
