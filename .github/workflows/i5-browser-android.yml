@@ -1,0 +1,189 @@
+name: I5 real Chromium Flutter and Android debug gates (isolated)
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/i4_*.py'
+      - 'scripts/i5_*.py'
+      - '.github/workflows/i5-browser-android.yml'
+      - 'backend/**'
+      - 'clients/flutter/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  https-pg17-flutter:
+    name: Chromium renders Flutter over HTTPS and disposable PG17
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: vencira_i4_ci
+          POSTGRES_USER: vencira_i4_ci
+          POSTGRES_PASSWORD: i4-disposable-database-pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vencira_i4_ci -d vencira_i4_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      VENCIRA_ENV: test
+      VENCIRA_DB_ENGINE: postgresql
+      POSTGRES_DB: vencira_i4_ci
+      POSTGRES_USER: vencira_i4_ci
+      POSTGRES_PASSWORD: i4-disposable-database-pass
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: '5432'
+      DJANGO_SECRET_KEY: i4-ci-only-ephemeral-secret-never-for-production-2026
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      DJANGO_HTTPS_BEHIND_PROXY: '1'
+      DJANGO_DEBUG: '0'
+      VENCIRA_NATIVE_SESSION_LAB: '0'
+      VENCIRA_NATIVE_SERVICE_CANDIDATE: '0'
+      VENCIRA_ATTACHMENT_SPLIT_REHEARSAL: '0'
+      VENCIRA_MFA_ENROLLMENT_ENABLED: '0'
+      I4_DISPOSABLE_DATABASE: 'YES'
+      I4_OWNER_PASSWORD: 'I4-only-synthetic-CI-password-2026!'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Install Django in runner environment
+        run: python -m pip install -r backend/requirements.txt
+      - name: Install headless Chromium testing dependencies
+        run: |
+          python -m pip install playwright==1.58.0
+          python -m playwright install --with-deps chromium
+      - name: Build real Flutter Web bundle without publishing
+        working-directory: clients/flutter
+        run: |
+          flutter pub get
+          flutter build web --release --pwa-strategy=none
+      - name: Verify the lab is the isolated CI database
+        run: |
+          test "$VENCIRA_ENV" = test
+          test "$VENCIRA_DB_ENGINE" = postgresql
+          test "$POSTGRES_DB" = vencira_i4_ci
+          test "$POSTGRES_HOST" = 127.0.0.1
+          test "$I4_DISPOSABLE_DATABASE" = YES
+          test "$VENCIRA_NATIVE_SERVICE_CANDIDATE" = 0
+          test "$VENCIRA_NATIVE_SESSION_LAB" = 0
+          test "$VENCIRA_ATTACHMENT_SPLIT_REHEARSAL" = 0
+          python backend/manage.py check
+      - name: Migrate disposable PG17, seed fictional data and run same-origin HTTPS smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$POSTGRES_DB" = vencira_i4_ci
+          python backend/manage.py migrate --noinput
+          python scripts/i4_lab_seed.py
+          mkdir -p /tmp/vencira-i4-tls
+          openssl req -x509 -newkey rsa:2048 -nodes \
+            -keyout /tmp/vencira-i4-tls/key.pem \
+            -out /tmp/vencira-i4-tls/cert.pem \
+            -days 1 -subj '/CN=localhost' \
+            -addext 'subjectAltName=DNS:localhost' \
+            >/tmp/vencira-i4-openssl.log 2>&1
+          python backend/manage.py runserver 127.0.0.1:18731 --noreload \
+            >/tmp/vencira-i4-django.log 2>&1 &
+          DJANGO_PID=$!
+          python scripts/i4_https_proxy.py \
+            --web clients/flutter/build/web \
+            --cert /tmp/vencira-i4-tls/cert.pem \
+            --key /tmp/vencira-i4-tls/key.pem \
+            >/tmp/vencira-i4-proxy.log 2>&1 &
+          PROXY_PID=$!
+          trap 'result=$?; if [ "$result" -ne 0 ]; then echo "I5_SERVER_DIAGNOSTICS"; tail -n 30 /tmp/vencira-i4-django.log || true; tail -n 20 /tmp/vencira-i4-proxy.log || true; fi; kill "$PROXY_PID" "$DJANGO_PID" 2>/dev/null || true' EXIT
+          # I4's smoke retries connection errors but not a transient 502.
+          # Wait for a real 200 from Django before running HTTP and Chromium tests.
+          READY=0
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail --cacert /tmp/vencira-i4-tls/cert.pem \
+              https://localhost:18732/api/health/ >/dev/null; then
+              READY=1
+              break
+            fi
+            sleep 1
+          done
+          test "$READY" = 1
+          echo 'I5_HTTPS_HEALTH_READY=OK'
+          python scripts/i4_https_smoke.py --ca /tmp/vencira-i4-tls/cert.pem
+          python scripts/i5_chromium_flutter_smoke.py --artifacts /tmp/vencira-i5-screenshots
+          echo 'I5_CHROMIUM_REAL_UI_RESULT=0'
+          echo 'I4_NO_DEPLOY=1'
+          echo 'I4_NO_LIVE_MIGRATION=1'
+          echo 'MFA_RELEASE_AUTHORIZED=NO'
+          echo 'C_FICHA_RELEASE_AUTHORIZED=NO'
+          echo 'MB1_RELEASE_AUTHORIZED=NO'
+
+      - name: Archive synthetic desktop and mobile browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: i5-synthetic-chromium-screenshots
+          path: /tmp/vencira-i5-screenshots/*.png
+          if-no-files-found: ignore
+          retention-days: 3
+
+  android-debug:
+    name: Android APK debug build without release or publication
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve Android dependencies
+        working-directory: clients/flutter
+        run: flutter pub get
+      - name: Refuse lab flags, operational MFA and release signing
+        run: |
+          test "${VENCIRA_G8_LAB_BUILD:-0}" = 0
+          test "${VENCIRA_G12_LAB_BUILD:-0}" = 0
+          test "${VENCIRA_G13_LAB_BUILD:-0}" = 0
+          test "${VENCIRA_G15_LAB_BUILD:-0}" = 0
+          test -z "${VENCIRA_ANDROID_KEYSTORE_PATH:-}"
+          test -z "${VENCIRA_ANDROID_KEYSTORE_PASSWORD:-}"
+          test -z "${VENCIRA_ANDROID_KEY_PASSWORD:-}"
+          test -z "${VENCIRA_ANDROID_KEY_ALIAS:-}"
+          python - <<'PY'
+          from pathlib import Path
+          main = Path('clients/flutter/lib/main.dart').read_text()
+          android = Path('clients/flutter/lib/ui/android_web_access_screen.dart').read_text()
+          gradle = Path('clients/flutter/android/app/build.gradle.kts').read_text()
+          assert "const AndroidWebAccessScreen()" in main
+          assert "no native authentication contract yet" in android
+          assert 'VENCIRA_ANDROID_RELEASE_SIGNING_REQUIRED' in gradle
+          print("I5_ANDROID_AUTH_FAILCLOSED=OK")
+          PY
+      - name: Build DEBUG APK only (not installed and not released)
+        working-directory: clients/flutter
+        run: flutter build apk --debug
+      - name: Check generated debug artifact
+        run: |
+          test -s clients/flutter/build/app/outputs/flutter-apk/app-debug.apk
+          echo "I5_ANDROID_DEBUG_BUILD=OK"
+          echo "I5_ANDROID_APK_NOT_INSTALLED=1"
+          echo "MFA_RELEASE_AUTHORIZED=NO"
+          echo "NO_DEPLOY_NO_LIVE_MIGRATION=1"
