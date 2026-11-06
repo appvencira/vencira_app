@@ -75,6 +75,7 @@ case "$MODE" in
       native_mobile_service.test_g14_e1_locked_mfa_verifier
       native_mobile_service.test_g14_e1_concurrency_pg17
       native_mobile_service.test_g14_e1c_transaction_rollback_pg17
+      native_mobile_service.test_g14_e1d_key_custody_pg17
     )
     ;;
   --lab-case)
