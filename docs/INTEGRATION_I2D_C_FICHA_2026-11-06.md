@@ -26,3 +26,9 @@ Después de fusionar código aislado se podrá evaluar de forma independiente un
 `MB1_RELEASE_AUTHORIZED=NO`
 `MFA_RELEASE_AUTHORIZED=NO`
 `NO_DEPLOY_NO_LIVE_MIGRATION=1`
+
+## Primera ejecución de CI — corrección de alcance
+
+El primer workflow de I2-D (HEAD 385fd09) ejecutó 26 pruebas con 4 fallos: las pruebas del modelo histórico `reminders.RenewalAttachment` esperaban resultados del esquema original, pero el flag de ensayo de esquema independiente estaba activado globalmente. Django check y `makemigrations --check --dry-run` fueron correctos. No se atribuyó fallo de migración ni seguridad por este síntoma.
+
+La suite ahora se divide de forma explícita: pruebas `renewal_attachments` con `VENCIRA_ATTACHMENT_SPLIT_REHEARSAL=1` y pruebas de API/alcance histórico con `VENCIRA_ATTACHMENT_SPLIT_REHEARSAL=0`. El test de denegación en entorno no-test continúa. El nuevo HEAD necesita CI verde antes del merge; ninguna función de subida/descarga queda autorizada.
