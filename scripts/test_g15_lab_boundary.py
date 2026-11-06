@@ -58,14 +58,15 @@ class G15LabBoundaryTests(unittest.TestCase):
                 "android.permission.RECEIVE_BOOT_COMPLETED",
             )
         )
-        tree = "ScheduledNotificationReceiver\nScheduledNotificationBootReceiver"
+        tree = ("com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver\n"
+                "com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver")
         verify(badging, perms, tree)
         with self.assertRaises(ValueError):
             verify("package: name='es.vencira.vencira'", perms, tree)
         with self.assertRaises(ValueError):
             verify(badging, perms.replace("RECEIVE_BOOT_COMPLETED", "INTERNET"), tree)
         with self.assertRaises(ValueError):
-            verify(badging, perms, "ScheduledNotificationReceiver")
+            verify(badging, perms, "com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver")
         with self.assertRaises(ValueError):
             verify(badging, perms + "android.permission.SCHEDULE_EXACT_ALARM", tree)
         with self.assertRaises(ValueError):
