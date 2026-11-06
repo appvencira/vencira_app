@@ -41,6 +41,14 @@ def direct_issuer_calls(source):
               and isinstance(target.value, ast.Name)
               and target.value.id in module_aliases):
             hits.append(node.lineno)
+        elif (isinstance(target, ast.Name) and target.id == "getattr"
+              and len(node.args) >= 2
+              and isinstance(node.args[0], ast.Name)
+              and node.args[0].id in module_aliases
+              and isinstance(node.args[1], ast.Constant)
+              and node.args[1].value == ISSUER):
+            # Detect obtaining the issuer via a literal getattr before call.
+            hits.append(node.lineno)
     return sorted(set(hits))
 
 
