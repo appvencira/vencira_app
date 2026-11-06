@@ -75,3 +75,8 @@ Recibo del operador: `B2_A_HEAD=b4065dd8d`, `B2_A_TESTS=0`, `B2_A_N1=0`, `B2_A_D
 ## 06/11/2026 — B2-B Flutter dirigido PASS, N1 sin recibo
 
 Operador aporta `vencira-b2b-flutter.log`: `flutter pub get` completo; `flutter test test/device_notice_startup_gate_test.dart` ejecutó los **10 tests y terminó `All tests passed!`**. Las cuatro pruebas de carreras/reintento de B2-B están incluidas. Se muestran avisos no bloqueantes de 23 paquetes desactualizados respecto de restricciones actuales; no son fallos. **No se ha recibido resultado N1 ni SHA local**, así que declarar `B2_B_FLUTTER=PASS`, `B2_B_N1=NOT_EVIDENCED`, `B2_B_INTEGRAL=PENDING`. Sin alteraciones operativas, APK nueva ni despliegue.
+
+
+## 06/11/2026 — B2-B PASS de suites aportadas
+
+Evidencia del operador: log Flutter `vencira-b2b-flutter.log` / `vencira-b2b-flutter(1).log` con `All tests passed!`, 10/10 tests de barrera de arranque incluyendo las 4 regresiones B2-B. Log N1 `vencira-b2b-n1.log` con `N1_STATIC_android_beta_b2b_startup_recovery_regressions=OK`, `N1_STATIC_android_beta_release_signing_external_only=OK` y `N1_STATIC_GATE_RESULT=OK`. **B2_B=PASS_LOCAL_EN_SUITES_APORTADAS**. No consta HEAD exacto del lote ni código de salida N1 en el archivo, pero sí marcador final del propio gate. No se han ejecutado permisos Android físicos, modo sin conexión o recovery nativo operativo; no confundir con beta. No requiere repetir Flutter ni N1 salvo cambios pertinentes.
