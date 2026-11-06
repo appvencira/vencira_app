@@ -199,3 +199,11 @@ No hay cambios operativos ni nuevas pruebas a ejecutar en esta revisión documen
 Recibo textual aportado por operador: `G14_E1D_HEAD=263767dac`, `G14_E1D_N1=0`, `G14_E1D_BUILD=0`, `G14_E1D_PG17=0`, `N1_STATIC_g14_e1d_pg17_key_custody_failclosed=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 134 tests in 33.065s`, `G5_CANDIDATE_PG17_RESULT=0`. Primer intento sudo fallido, seguido de build/test con resultado cero. **G14-E1D=PASS_LOCAL** para cuatro pruebas de llaves ausentes/extrañas, usuario inactivo y recuperación pendiente, sin sesiones. El hallazgo conocido de excepción `ValueError` en custodia incorrecta continúa sin corregirse: las pruebas esperan esa excepción, no comprueban su normalización.
 
 **G14-E2 y E3 siguen pendientes**. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## 06/11/2026 — G14-E1D2: tratamiento uniforme de errores criptográficos (pendiente de validación)
+
+- Código de laboratorio `g14_e1_locked_mfa_verifier.py`: captura `MobileTokenDenied` y `ValueError` y devuelve `CandidateMfaDenied` sin encadenamiento explícito de la causa. La transacción de verificación continúa fallando de forma cerrada, sin emisión de sesiones.
+- Se actualiza el test E1D de clave desconocida para exigir denegación uniforme, se añade el caso de clave malformada y la ausencia de causa explícita en ambas denegaciones. Total previsto del runner candidato: **135** pruebas, sujeto a ejecución.
+- N1 incluye `g14_e1d_uniform_custody_denial`. Runner PG17 y CI ya incluyen el módulo E1D, por lo que no es necesaria una segunda entrada de suite.
+- **ESTADO: CODE_PUBLISHED_NOT_VALIDATED.** El PASS anterior E1D de 134 pruebas no cubre este nuevo tratamiento. G14-E2 confiable sigue pendiente; sin desplegar ni migrar.
