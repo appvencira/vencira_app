@@ -842,3 +842,8 @@ Operador comunica `G14_D9B_N1=0`, `G14_D9B_BUILD=0`, `G14_D9B_PG17=0`, `N1_STATI
 ## 06/11/2026 — G14-D9C PG17 pendiente
 
 Dos pruebas PostgreSQL 17 sintéticas añadidas: cancelación vs finalización administrativa simultáneas y rechazo de sustitución si falta el verificador externo de ejecución. `test_g14_d9c_admin_finalization_pg17.py`, runner `--candidate`, CI y N1 publicados. Pendiente de lote local; G14-D9 integral sigue parcial. No hubo cambios en lógica de autenticación, rutas o base persistente.
+
+
+## 06/11/2026 — G14-D9C PASS local
+
+`G14_D9C_N1=0`, `G14_D9C_BUILD=0`, `G14_D9C_PG17=0`, `N1_STATIC_g14_d9c_admin_factor_finalization_pg17=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 116 tests in 18.464s`, `G5_CANDIDATE_PG17_RESULT=0`. Confirmación local de concurrencia cancelación/finalización administrativa y denegación de reemplazo sin verificador externo. Resto de G14-D9 y emisor MFA siguen pendientes; sin deploy ni migración persistente.
