@@ -1,3 +1,7 @@
+> **TRASPASO VIGENTE — 06/11/2026, G15 CERRADO EN LABORATORIO.** Leer primero **[HANDOFF_ANDROID_G15_CLOSED_2026-11-06.md](HANDOFF_ANDROID_G15_CLOSED_2026-11-06.md)**: consolida B2-A (firma estática), B2-B (10/10 Flutter + N1), B2-C (13/13 transporte + 2/2 auditoría), B2-D (manifiesto G13), B2-E/G15 (4/4 tests, N1, compilación debug, manifiesto sin INTERNET, permisos, aviso real en Android y cancelación y entrega tras reinicio confirmadas por el operador). **G15_LAB=COMPLETE_WITH_SCOPE_LIMITS**; no repetir validaciones. **BETA FUNCIONAL=NO GO**: G14-E2 aún no implementado, E3 pendiente, integración Android operativa, firma release real y aprobaciones B3 pendientes. Los párrafos antiguos que indiquen G15 pendiente o `release` firmado con debug son históricos y NO representan el estado actual. `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+---
+
 > **G15 cerrado en alcance de laboratorio (06/11/2026):** 4/4 tests fuente, N1 y APK/manifiesto fusionado PASS; capturas de permiso/programación/aviso real Android. El usuario confirmó expresamente que la cancelación fue efectiva y que la notificación se entregó **tras reiniciar completamente el teléfono**. `G15_PHYSICAL_MANUAL=PASS_OPERATOR_CONFIRMED`. No existe prueba ADB independiente ni cobertura multi-OEM; no extender el PASS a integración de avisos con cuentas/servidor reales. Próxima prioridad: G14-E2 confiable y enlace B2 nativo, sin desplegar ni activar funciones operativas.
 
 ---
