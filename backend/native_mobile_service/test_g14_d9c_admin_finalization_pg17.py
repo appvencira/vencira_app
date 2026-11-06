@@ -58,7 +58,7 @@ class G14D9CAdminFinalizePG17(TransactionTestCase):
         UserMfaPendingRotationCode.objects.bulk_create([
             UserMfaPendingRotationCode(
                 state=self.state,
-                code_hash=hash_recovery_code(self.proof if i == 0 else "B" * 32),
+                code_hash=hash_recovery_code(self.proof) if i == 0 else "synthetic-unused",
             ) for i in range(10)
         ])
         for reviewer in self.reviewers:
