@@ -35,11 +35,53 @@ def main() -> int:
     # understood. A new callsite changes this report and must be reviewed.
     allowed = {
         "fetchAttachmentManifest": {"ui/renewal_attachments_card.dart"},
-        "fetchDeviceNoticePreview": set(),
+        "fetchDeviceNoticePreview": {"notifications/device_notice_session_coordinator.dart"},
         "startMfaSetup": {"ui/mfa_setup_screen.dart"},
         "confirmMfaSetup": {"ui/mfa_setup_screen.dart"},
         "acknowledgeMfaRecovery": {"ui/mfa_setup_screen.dart"},
     }
+    # The Android-only coordinator must remain outside the transitive import
+    # graph of lib/main.dart, the web entrypoint. An allowlisted Dart callsite
+    # alone would not establish that its endpoint is unreachable on web.
+    import_pattern = re.compile(r"^\\s*import\\s+['\\\"]([^'\\\"]+)['\\\"]", re.MULTILINE)
+
+    def import_graph(entry: Path) -> set[Path]:
+        visited: set[Path] = set()
+        pending = [entry]
+        while pending:
+            path = pending.pop()
+            if path in visited:
+                continue
+            if not path.is_file() or not path.is_relative_to(LIB):
+                raise ValueError(f"WEB_DEV_INVALID_IMPORT_GRAPH:{path.name}")
+            visited.add(path)
+            source = path.read_text(encoding="utf-8")
+            for uri in import_pattern.findall(source):
+                if uri.startswith("dart:") or (
+                    uri.startswith("package:") and not uri.startswith("package:vencira/")
+                ):
+                    continue
+                if uri.startswith("package:vencira/"):
+                    child = LIB / uri.removeprefix("package:vencira/")
+                else:
+                    child = path.parent / uri
+                pending.append(child.resolve())
+        return visited
+
+    try:
+        imports = import_graph((LIB / "main.dart").resolve())
+        coordinator = (LIB / "notifications/device_notice_session_coordinator.dart").resolve()
+        checks["android_notice_coordinator_unreachable_from_web_entry"] = (
+            coordinator not in imports
+        )
+    except (OSError, ValueError):
+        checks["android_notice_coordinator_unreachable_from_web_entry"] = False
+    print(
+        "WEB_DEV_WEB_ENTRY_IMPORT_GRAPH="
+        + ("ISOLATED" if checks["android_notice_coordinator_unreachable_from_web_entry"]
+           else "FAIL")
+    )
+
     for method, allowed_paths in allowed.items():
         callsites = []
         for source in LIB.rglob("*.dart"):
