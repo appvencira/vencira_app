@@ -36,6 +36,12 @@ Renewal.objects.create(workspace=workspace, assigned_to=owner,
                        customer_reference="I4-SYNTHETIC-ONLY",
                        full_name="Synthetic Person",
                        expires_on="2027-04-10")
+import json
+Path("/tmp/vencira-i4-fixture.json").write_text(json.dumps({
+    "workspace": str(workspace.pk),
+    "foreign": str(foreign.pk),
+    "renewal": str(workspace.renewals.get().pk),
+}), encoding="utf-8")
 print(f"I4_WORKSPACE_ID={workspace.pk}")
 print(f"I4_FOREIGN_WORKSPACE_ID={foreign.pk}")
 print(f"I4_RENEWAL_ID={workspace.renewals.get().pk}")
