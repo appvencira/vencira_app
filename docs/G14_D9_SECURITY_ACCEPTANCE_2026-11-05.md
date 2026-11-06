@@ -58,3 +58,15 @@ El operador comunica HEAD `af493c6c`, `G14_D9_TESTS=0`, `G14_D9_N1=0`, `G14_D9_R
 - `mfa_admin_recovery_service.py`: 11 puntos; revisión/cancelación/expiración de expediente, apertura usuario→MFA y preparación/confirmación/finalización expediente→MFA.
 
 **Dictamen:** inventario y pruebas del analizador `PASS_LOCAL`, **auditoría transaccional integral D9 todavía abierta**. No afirmar ausencia de deadlocks, carreras o seguridad del emisor. Prioridad técnica: comprobar el grafo de transacciones que mezclan cuenta, expediente y MFA, especialmente la apertura administrativa contra cualquier cierre de factor o modificación de expediente. Distinguir órdenes sintácticos de locks efectivos (FK, ORM y callbacks externos). Mantener release bloqueado.
+
+
+## 06/11/2026 — D9-B pruebas de fallo cerrado preparadas
+
+Cuatro escenarios negativos de verificación independiente en `test_g14_d9_recovery_guards_pg17.py`: callback no configurado, False, valor no exactamente True (1) y error de callback. En cada escenario el resultado esperado es ausencia de expediente y ausencia de revocación de época. Test-only, PG17 aislado. Conectados N1, `--candidate` y CI; resultado pendiente. No equivale a validar ejecución administrativa de sustitución; pendientes los interleavings de caso→MFA y las garantías de custodia.
+
+```
+G14_D9_B_CODE=PUBLISHED
+G14_D9_B_LOCAL_RESULT=NOT_RUN
+G14_D9_SECURITY_ACCEPTANCE=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
