@@ -225,3 +225,11 @@ Recibo aportado por operador: `G14_E1D2_HEAD=d7fc8aa4b`, `G14_E1D2_N1=0`, `G14_E
 ## 06/11/2026 — G14-E1D3 PASS local: 139 pruebas PG17
 
 Recibo textual del operador: `G14_E1D3_HEAD=07fa7818b`, `G14_E1D3_N1=0`, `G14_E1D3_BUILD=0`, `G14_E1D3_PG17=0`, `N1_STATIC_g14_e1d3_pg17_state_and_secret_binding=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 139 tests in 36.805s`. **G14-E1D3=PASS_LOCAL** para MFA desactivado, contraseña antigua tras rotación, secreto cifrado alterado y secreto vinculado a otra cuenta. Un primer intento de contraseña `sudo` falló, seguido de ejecución satisfactoria. El extracto no incluye la línea final `G5_CANDIDATE_PG17_RESULT`; sí confirma PG17=0. No confundir este PASS con emisión confiable: E2 continúa bloqueado/no implementado y E3 pendiente. Sin despliegue ni migraciones persistentes.
+
+
+## 06/11/2026 — G14-F0, escáner AST reforzado sin alterar emisiones
+
+- [~] `scripts/g14_trusted_issuer_boundary.py` inspecciona también accesos con `getattr(module, "issue_verified_candidate_session")` de nombre literal, incluidos alias `import session_store as store`. Mantiene la misma lista explícita de llamantes internos revisados; no habilita ninguna ruta o sesión.
+- [~] Tres nuevos tests unitarios: invocación por `getattr`, captura de referencia sin invocación y control de `getattr` no relacionado. Gate N1 obliga a conservar los nuevos casos.
+- [ ] **F0 validation PENDING**: ejecutar `python3 -m unittest discover -s scripts -p test_g14_trusted_issuer_boundary.py`, escáner AST y N1 en un único paso. No repetir PG17 ni build por tratarse de un control estático sin cambios de backend/CI.
+- [ ] **Limitaciones persistentes:** acceso dinámico, reflexión de nombres no literales, aliases por reasignación, llamadas indirectas y entradas en otros lenguajes no quedan descartados por este análisis. E2 sigue no implementado y sin autorización.
