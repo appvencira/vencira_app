@@ -1,5 +1,11 @@
 
 
+> **B2-A PASS_LOCAL estático (06/11/2026):** `HEAD=b4065dd8d`, cuatro tests 0, N1 0, git diff --check 0; control `android_beta_release_signing_external_only=OK`. No se ejecutó Gradle ni se generó APK beta firmada. B2-B (arranque, permisos de notificación, sesión/recovery y offline) pendiente, sin emisión nativa confiable ni autorización de release.
+
+---
+
+
+
 > **B2-A — Firma Android sin debug (06/11/2026):** publicado cambio en `clients/flutter/android/app/build.gradle.kts` para impedir firma `release` con claves debug y exigir cuatro parámetros de entorno externos. Cuatro pruebas estáticas y N1/CI integrados, pero **sin ejecución local todavía**. No existe APK beta firmada ni autorización. Ver [ANDROID_BETA_CRITICAL_PATH_2026-11-06.md](ANDROID_BETA_CRITICAL_PATH_2026-11-06.md).
 
 ---
