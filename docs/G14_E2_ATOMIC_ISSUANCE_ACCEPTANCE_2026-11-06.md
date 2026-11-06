@@ -49,3 +49,19 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 ## 06/11/2026 — G14-E1C pruebas de rollback previas a emisión
 
 Tres nuevas pruebas con `TransactionTestCase` para PostgreSQL 17: rollback del TOTP consumido tras excepción exterior, rollback de contador de fallos en excepción exterior y recuperación de un savepoint interno sin consumir TOTP. Integración N1 y runner candidato preparada. **No hay pruebas locales E1C todavía**; estas regresiones no acreditan persistencia ni rollback de tokens y auditoría. E2 continúa sin publicación de emisor.
+
+
+## Revisión consolidada de garantías (06/11/2026)
+
+**Verificado con resultados aportados:** E1C tiene 130 tests PG17 OK, N1 específico OK y Docker OK. Esto cubre verificación y rollback del factor **sin emitir token**.
+
+**Hallazgos de código que bloquean la aceptación E2:**
+
+- `g14_e1_locked_mfa_verifier.verify_candidate_password_and_totp` devuelve un booleano. Su `transaction.atomic()` es interno; sin transacción externa supervisada, un `True` no acredita que el llamante conserve el bloqueo de usuario y MFA cuando inicie la emisión. El booleano jamás debe usarse como credencial para emitir.
+- `session_store.issue_verified_candidate_session` recibe `verified_mfa` y `mfa_epoch` del llamante. La validación posterior comprueba coherencia, no prueba de contraseña y TOTP, por lo que permanece limitado al laboratorio.
+- `mfa_store.consume_totp` actualiza contador antirreutilización dentro de una transacción. La prueba E1C evidencia que una excepción exterior revierte el consumo y también el presupuesto de errores; el diseño E2 debe especificar qué efectos se revierten y cómo persisten los intentos denegados.
+- El predicado de identidad móvil consulta el estado MFA y casos pendientes, pero no constituye un autenticador HTTP ni una prueba de procedencia de token.
+
+**Condiciones de salida de una única macrovalidación futura:** trazabilidad del servidor desde contraseña y TOTP hasta sesión y auditoría; misma transacción y bloqueos hasta commit; una sola emisión ante carrera; cero sesiones válidas ante excepción o fallo de auditoría; denegaciones con cuota y evidencia; cambio de contraseña, revocación MFA y recuperación pendientes fail-closed; reintento ante respuesta ambigua; ausencias verificadas de rutas operativas; ejecutables N1, CI y PG17 aislado.
+
+`G14_E2_STATUS=BLOCKED_NOT_IMPLEMENTED`. Mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`. No sustituir estas condiciones por pruebas sintéticas de una primitiva aislada.
