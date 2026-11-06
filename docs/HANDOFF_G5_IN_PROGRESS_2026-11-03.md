@@ -917,3 +917,8 @@ Cuatro tests en `native_mobile_service.test_g14_e1d_key_custody_pg17`, N1 y runn
 ## 06/11/2026 — G14-E1D2 publicado y pendiente de regresión
 
 Corrección del verificador E1 para uniformar las excepciones al carecer de custodia criptográfica correcta. Dos comprobaciones de denegación sin causa, incluidas en el módulo E1D, y N1 `g14_e1d_uniform_custody_denial`. La suite PG17 candidata debe pasar **135 tests**; todavía no hay evidencia local. G14-E2 continúa sin integrar token y auditoría.
+
+
+## 06/11/2026 — G14-E1D2 cerrado
+
+HEAD validado `d7fc8aa4b`: N1=0, build=0, PG17=0, 135 pruebas en 32.577s; N1 E1D y uniformidad de custodia OK. PASS local para verificador MFA de laboratorio; no hay emisor confiable, token+auditoría ni despliegue. Pendiente E2. La línea `G5_CANDIDATE_PG17_RESULT` no aparece en el extracto del recibo, aunque consta `PG17=0`.
