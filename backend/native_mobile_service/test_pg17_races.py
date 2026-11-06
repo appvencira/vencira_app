@@ -107,6 +107,108 @@ class CandidateRacePG17Tests(TransactionTestCase):
                 validate_candidate_access(issued[0])
         self._connections_drained()
 
+
+    def test_refresh_racing_account_revocation_cannot_restore_session(self):
+        """E3: a refresh racing global revoke must never remain usable."""
+        old_access, refresh = issue_verified_candidate_session(
+            user_id=self.user.pk, verified_mfa=False, mfa_epoch=None,
+            expected_generation=0,
+        )
+        start = Barrier(3)
+
+        def refresh_worker():
+            connections.close_all()
+            try:
+                start.wait(timeout=12)
+                try:
+                    return rotate_candidate_refresh(refresh)
+                except MobileTokenDenied:
+                    return None
+            finally:
+                connections.close_all()
+
+        def revoke_worker():
+            connections.close_all()
+            try:
+                start.wait(timeout=12)
+                return revoke_all_candidate_devices(user_id=self.user.pk)
+            finally:
+                connections.close_all()
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            rotated_job = pool.submit(refresh_worker)
+            revoked_job = pool.submit(revoke_worker)
+            start.wait(timeout=12)
+            rotated = rotated_job.result(timeout=35)
+            revoked_job.result(timeout=35)
+
+        self.assertEqual(
+            MobileAccountFence.objects.get(user_id=self.user.pk).generation, 1,
+        )
+        self.assertFalse(MobileDeviceSession.objects.filter(
+            user_id=self.user.pk, revoked_at__isnull=True,
+        ).exists())
+        with self.assertRaises(MobileTokenDenied):
+            validate_candidate_access(old_access)
+        if rotated is not None:
+            with self.assertRaises(MobileTokenDenied):
+                validate_candidate_access(rotated[0])
+            with self.assertRaises(MobileTokenDenied):
+                rotate_candidate_refresh(rotated[1])
+        self._connections_drained()
+
+    def test_refresh_racing_password_change_cannot_keep_old_credential(self):
+        """E3: an older password version must not authenticate after change."""
+        from django.db import transaction
+
+        old_access, refresh = issue_verified_candidate_session(
+            user_id=self.user.pk, verified_mfa=False, mfa_epoch=None,
+            expected_generation=0,
+        )
+        start = Barrier(3)
+
+        def refresh_worker():
+            connections.close_all()
+            try:
+                start.wait(timeout=12)
+                try:
+                    return rotate_candidate_refresh(refresh)
+                except MobileTokenDenied:
+                    return None
+            finally:
+                connections.close_all()
+
+        def password_worker():
+            connections.close_all()
+            try:
+                start.wait(timeout=12)
+                with transaction.atomic():
+                    user = get_user_model().objects.select_for_update().get(
+                        pk=self.user.pk,
+                    )
+                    user.set_password("SyntheticRotatedE3Password-2026")
+                    user.save(update_fields=["password"])
+            finally:
+                connections.close_all()
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            rotated_job = pool.submit(refresh_worker)
+            password_job = pool.submit(password_worker)
+            start.wait(timeout=12)
+            rotated = rotated_job.result(timeout=35)
+            password_job.result(timeout=35)
+
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("SyntheticRotatedE3Password-2026"))
+        with self.assertRaises(MobileTokenDenied):
+            validate_candidate_access(old_access)
+        if rotated is not None:
+            with self.assertRaises(MobileTokenDenied):
+                validate_candidate_access(rotated[0])
+            with self.assertRaises(MobileTokenDenied):
+                rotate_candidate_refresh(rotated[1])
+        self._connections_drained()
+
     def _connections_drained(self):
         with connection.cursor() as cursor:
             cursor.execute(
