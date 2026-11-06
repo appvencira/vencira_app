@@ -356,6 +356,13 @@ def verify():
             and "finalize_administrative_factor(" in g14_d9c_races
             and "g14_d9c_admin_finalization_pg17" not in config
             and "g14_d9c_admin_finalization_pg17" not in routes,
+        "g14_d9d_terminal_case_races_pg17":
+            "test_expiry_vs_finalization_cannot_both_succeed" in g14_d9c_races
+            and "test_rejection_vs_finalization_cannot_both_succeed" in g14_d9c_races
+            and "expire_recovery_case(" in g14_d9c_races
+            and "record_review(" in g14_d9c_races
+            and "self.assertNotEqual(finalized, expired)" in g14_d9c_races
+            and "self.assertNotEqual(finalized, rejected)" in g14_d9c_races,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
