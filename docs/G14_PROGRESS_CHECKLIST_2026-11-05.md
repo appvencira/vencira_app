@@ -129,3 +129,12 @@ Recibo aportado: `G14_E0_N1=0`; `G14_TRUSTED_BOUNDARY_DIRECT_CALLS=1`, `G14_TRUS
 ## 06/11/2026 — G14-E0 cerrado con recibo completo
 
 Recibo complementario del operador: `G14_E0_TESTS=0`, `G14_E0_AUDIT=0`. Junto con los marcadores anteriores `G14_E0_N1=0`, `G14_TRUSTED_BOUNDARY_UNREVIEWED_CALLS=0`, `G14_TRUSTED_BOUNDARY_SCAN=PASS`, `N1_STATIC_g14_trusted_issuer_direct_call_boundary=OK`, queda **G14-E0=PASS_LOCAL** para tests unitarios, escaneo AST y N1. La herramienta es una protección sintáctica parcial; `G14_TRUSTED_ISSUER_IMPLEMENTED=NO`. Próxima fase G14-E1 en laboratorio, sin habilitar rutas ni migrar la base persistente.
+
+
+## 06/11/2026 — G14-E1 prueba autoritativa de contraseña + TOTP (pendiente local)
+
+- [~] **G14-E1**: implementado en rama de laboratorio `backend/native_mobile_service/g14_e1_locked_mfa_verifier.py`. Pide credenciales originales, bloquea usuario→estado MFA en una transacción PostgreSQL y consume TOTP mediante el escritor anti-replay existente. Rechaza recuperación administrativa pendiente, no devuelve identidad, época ni capacidad, y **no emite ningún token**.
+- Cinco regresiones PG17 en `native_mobile_service.test_g14_e1_locked_mfa_verifier`: verificación y replay, contraseña incorrecta, TOTP incorrecto, recuperación pendiente, input inválido.
+- Integrado en el runner `--candidate`, CI y N1 `g14_e1_locked_mfa_proof_without_issuer`. **Publicado pero NO ejecutado localmente**.
+- Es solo la primera etapa de un verificador compuesto, **no** el trusted issuer. Quedan cotas de abuso/auditoría, códigos de recuperación, errores, rollback, emisión atómica y carreras reales con cambios de cuenta/factor.
+- Sin rutas operativas, despliegue ni migración persistente.
