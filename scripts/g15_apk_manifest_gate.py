@@ -26,7 +26,7 @@ def verify(badging: str, permissions: str, tree: str) -> None:
             permissions, re.MULTILINE,
         ):
             raise ValueError("G15_MISSING_DECLARED_PERMISSION")
-    if re.search(r"^uses-permission: name='android\\.permission\\.INTERNET'", permissions,
+    if re.search(r"^uses-permission: name='android\.permission\.INTERNET'", permissions,
                  re.MULTILINE):
         raise ValueError("G15_FORBIDDEN_INTERNET_PERMISSION")
     for receiver in RECEIVERS:
