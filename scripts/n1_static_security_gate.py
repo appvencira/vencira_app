@@ -375,7 +375,9 @@ def verify():
             audit_g14_issuer_calls(ROOT / "backend")[1] == []
             and "G14_TRUSTED_ISSUER_IMPLEMENTED=NO" in g14_issuer_guard
             and "test_unreviewed_caller_denied" in g14_issuer_guard_tests
-            and "test_aliased_import_detected" in g14_issuer_guard_tests,
+            and "test_aliased_import_detected" in g14_issuer_guard_tests
+            and "test_literal_getattr_issuer_detected" in g14_issuer_guard_tests
+            and "test_literal_getattr_even_if_result_not_called" in g14_issuer_guard_tests,
         "g14_e1_locked_mfa_proof_without_issuer":
             "verify_candidate_password_and_totp(" in g14_e1_verifier
             and "transaction.atomic()" in g14_e1_verifier
