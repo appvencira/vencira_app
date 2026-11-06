@@ -1,5 +1,11 @@
 
 
+> **B2-C permiso/reinicio publicado, prueba local pendiente:** auditoría estática `scripts/b2c_android_notification_boundary.py`, seis tests y control N1 `android_beta_b2c_permission_and_reboot_guard`. Confirma límites del código fuente, no permiso real Android ni manifiesto fusionado. La activación de avisos sigue NO y los receptores de reboot faltan hasta autorización expresa de esa función. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+---
+
+
+
 > **06/11/2026 B2-C transporte PASS:** el usuario aporta `B2_C_FLUTTER=0` y 13/13 tests de `native_api_transport_test.dart`, con dos negativos nuevos de red offline y logout. B2-C integral sigue PENDING por permisos Android físicos y recuperación de avisos locales. No hay evidencia de HEAD local en este recibo.
 
 ---
