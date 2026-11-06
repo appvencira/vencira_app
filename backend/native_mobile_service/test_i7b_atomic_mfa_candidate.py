@@ -124,8 +124,12 @@ class I7BAtomicMfaCandidatePG17Tests(TransactionTestCase):
         self.assertFalse(MobileDeviceSession.objects.exists())
 
     def test_missing_or_incorrect_key_cannot_create_session(self):
-        with self.assertRaises(Exception):
+        self.assertIsNone(
             self.attempt(keys=[Fernet.generate_key().decode("ascii")])
+        )
+        self.assertEqual(
+            MobileAuthAuditEvent.objects.get().event_type, "auth_denied",
+        )
         self.assertFalse(MobileDeviceSession.objects.exists())
         self.state.refresh_from_db()
         self.assertEqual(self.state.last_accepted_counter, -1)
