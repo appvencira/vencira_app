@@ -882,3 +882,8 @@ Operador aporta `G14_E1_HEAD=60c3bbfae`, `G14_E1_N1=0`, `G14_E1_BUILD=0`, `G14_E
 ## 06/11/2026 — G14-E2: aceptación diseñada, integración no publicada
 
 Se publicó `docs/G14_E2_ATOMIC_ISSUANCE_ACCEPTANCE_2026-11-06.md` con invariantes de consumo único de MFA, bloqueo de cuenta, auditoría, token y rollback, así como casos de carrera. El intento de incorporar código de emisión recibió un bloqueo de seguridad de la herramienta; **no hay cambios de emisión ni pruebas E2**. E1 sigue en 123 tests PASS local; `G14_E2_CODE=NOT_PUBLISHED`, `G14_E2_PG17=NOT_RUN`. Prohibido tratar el diseño como emisor autorizado, desplegar o migrar persistente.
+
+
+## 06/11/2026 — G14-E1B PASS, 127 pruebas PG17 aisladas
+
+Registro adjunto por operador: `N1_PG17_POSTGRES_READY=OK`, `Found 127 test(s)`, `Ran 127 tests in 26.610s`, `OK`, `G4_CANDIDATE_PG17_RESULT=0`, `G5_CANDIDATE_PG17_RESULT=0`. N1 y compilación Docker OK comunicados anteriormente. G14-E1B PASS local; G14-E2 permanece bloqueado y sin implementación. No migración persistente ni deploy.
