@@ -1,0 +1,60 @@
+name: G15 isolated Android notification APK (debug only)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'clients/flutter/lib/g15_lab_main.dart'
+      - 'clients/flutter/lib/g15_lab/**'
+      - 'clients/flutter/android/app/build.gradle.kts'
+      - 'clients/flutter/android/app/src/g15lab/**'
+      - 'scripts/g15_*'
+      - 'scripts/test_g15_lab_boundary.py'
+      - 'scripts/n1_static_security_gate.py'
+      - '.github/workflows/g15-android-notifications-lab.yml'
+  push:
+    branches:
+      - feature/m3-android-local-notifications
+    paths:
+      - 'clients/flutter/lib/g15_lab_main.dart'
+      - 'clients/flutter/lib/g15_lab/**'
+      - 'clients/flutter/android/app/build.gradle.kts'
+      - 'clients/flutter/android/app/src/g15lab/**'
+      - 'scripts/g15_*'
+      - 'scripts/test_g15_lab_boundary.py'
+      - 'scripts/n1_static_security_gate.py'
+      - '.github/workflows/g15-android-notifications-lab.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  g15-isolated-debug:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build and verify isolated G15 lab
+        run: |
+          docker run --rm \
+            -e VENCIRA_G15_LAB_BUILD=1 \
+            -v "$PWD:/src" -w /src \
+            ghcr.io/cirruslabs/flutter:stable \
+            bash scripts/g15_phone_apk_build.sh
+      - name: Publish debug-only synthetic lab
+        uses: actions/upload-artifact@v4
+        with:
+          name: VENCIRA-G15-NOTICES-DEBUG-ONLY
+          path: |
+            clients/flutter/build/g15-phone/VENCIRA-G15-LAB-debug.apk
+            clients/flutter/build/g15-phone/VENCIRA-G15-LAB-debug.apk.sha256
+          retention-days: 7
+          if-no-files-found: error
+      - name: Physical and operational gates remain closed
+        if: always()
+        run: |
+          echo 'G15_ANDROID_PHYSICAL_RESULT=NOT_RUN'
+          echo 'G15_RELEASE_AUTHORIZED=NO'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
