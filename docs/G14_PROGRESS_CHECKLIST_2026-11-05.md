@@ -212,3 +212,11 @@ Recibo textual aportado por operador: `G14_E1D_HEAD=263767dac`, `G14_E1D_N1=0`, 
 ## 06/11/2026 — G14-E1D2 PASS local: 135 pruebas
 
 Recibo aportado por operador: `G14_E1D2_HEAD=d7fc8aa4b`, `G14_E1D2_N1=0`, `G14_E1D2_BUILD=0`, `G14_E1D2_PG17=0`, `N1_STATIC_g14_e1d_pg17_key_custody_failclosed=OK`, `N1_STATIC_g14_e1d_uniform_custody_denial=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 135 tests in 32.577s`. **G14-E1D2=PASS_LOCAL**: normalización de fallos de descifrado MFA, denegación uniforme y regresiones sin emisión. La salida copiada no incluye la línea final `G5_CANDIDATE_PG17_RESULT`, pero sí informa `PG17=0` del mismo runner. G14-E2 emisión MFA atómica sigue bloqueada, sin integración ni pruebas. Ningún despliegue ni migración persistente; `MFA_RELEASE_AUTHORIZED=NO`.
+
+
+## 06/11/2026 — G14-E1D3 suite agrupada de estados y vínculo de secretos
+
+- [~] Se añaden cuatro pruebas al módulo PG17 de custodia E1D (misma suite CI/runner): MFA desactivado, contraseña rotada, ciphertext manipulado y secreto cifrado perteneciente a otra cuenta.
+- [~] Se preservan los invariantes de no consumo de TOTP, época MFA sin cambios y cero sesiones; ante errores de secreto se exige denegación uniforme.
+- [~] N1: `g14_e1d3_pg17_state_and_secret_binding`. Pendiente de ejecución local. **139 pruebas** previstas (base E1D2: 135).
+- [ ] No se ha implementado el emisor MFA confiable ni la auditoría atómica de E2; este conjunto solo amplía los casos negativos del verificador de laboratorio. Sin modificación de rutas, esquema ni producción.
