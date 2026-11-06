@@ -832,3 +832,8 @@ Recibo operador: `G14_D8_N1=0`, `G14_D8_BUILD=0`, `G14_D8_PG17=0`, `N1_STATIC_g1
 ## 06/11/2026 — D9-B verificador externo negativo (pendiente PG17)
 
 Cuatro pruebas sintéticas de recuperación sin verificador válido, con aserciones de ausencia de expediente y de modificación de época. Archivo `native_mobile_service/test_g14_d9_recovery_guards_pg17.py`; suite PG17 candidata, CI y N1 actualizados. No ejecutadas todavía. Ver `docs/G14_PROGRESS_CHECKLIST_2026-11-05.md`. No hay cambio de lógica operativa ni autorización de release.
+
+
+## 06/11/2026 — G14-D9B PASS local, 114 PG17 tests
+
+Operador comunica `G14_D9B_N1=0`, `G14_D9B_BUILD=0`, `G14_D9B_PG17=0`, `N1_STATIC_g14_d9_lock_report_readonly=OK`, `N1_STATIC_g14_d9_recovery_verifier_failclosed_tests=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 114 tests in 19.592s`, `G5_CANDIDATE_PG17_RESULT=0`. Sin SHA de checkout ni recibo CI remoto. Cuatro casos de rechazo de verificador administrativo validados; G14-D9 global permanece parcial. Estado en `docs/G14_PROGRESS_CHECKLIST_2026-11-05.md` y `docs/G14_D9_SECURITY_ACCEPTANCE_2026-11-05.md`. No desplegar ni migrar persistente.
