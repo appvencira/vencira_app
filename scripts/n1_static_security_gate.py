@@ -68,6 +68,7 @@ def verify():
     g11_lab_runner = read("scripts/g7_d2_https_flutter_django.sh")
     g11_probe = read("clients/flutter/tool/g7_d2_https_probe.dart")
     g8_phone_ci = read(".github/workflows/g8-phone-apk.yml")
+    b2b_alarm_tests = read("clients/flutter/test/device_notice_startup_gate_test.dart")
     g8_gradle = read("clients/flutter/android/app/build.gradle.kts")
     beta_signing_tests = read("scripts/test_android_release_signing_boundary.py")
     flutter_pubspec = read("clients/flutter/pubspec.yaml")
@@ -1011,6 +1012,14 @@ def verify():
             and "NativeFirstIssuanceEntry" not in flutter_main
             and "native_sessions_lab.test_urls" not in config
             and "native_sessions_lab.test_urls" not in routes,
+        "android_beta_b2b_startup_recovery_regressions":
+            "DeviceNoticeStartupGate(" in flutter_main
+            and "AndroidWebAccessScreen()" in flutter_main
+            and "late failure from replaced cleanup" not in flutter_main.lower()
+            and "Late failure from replaced cleanup cannot relock" in b2b_alarm_tests
+            and "Late success from replaced cleanup cannot bypass" in b2b_alarm_tests
+            and "Repeated recovery taps never start overlapping" in b2b_alarm_tests
+            and "Disabled-to-enabled transition requires new cleanup" in b2b_alarm_tests,
         "android_beta_release_signing_external_only":
             'signingConfig = signingConfigs.getByName("debug")' not in g8_gradle
             and 'signingConfig = signingConfigs.getByName("venciraRelease")' in g8_gradle
