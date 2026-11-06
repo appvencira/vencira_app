@@ -1,3 +1,7 @@
+> **G15 cerrado en alcance de laboratorio (06/11/2026):** 4/4 tests fuente, N1 y APK/manifiesto fusionado PASS; capturas de permiso/programación/aviso real Android. El usuario confirmó expresamente que la cancelación fue efectiva y que la notificación se entregó **tras reiniciar completamente el teléfono**. `G15_PHYSICAL_MANUAL=PASS_OPERATOR_CONFIRMED`. No existe prueba ADB independiente ni cobertura multi-OEM; no extender el PASS a integración de avisos con cuentas/servidor reales. Próxima prioridad: G14-E2 confiable y enlace B2 nativo, sin desplegar ni activar funciones operativas.
+
+---
+
 > **G15 evidencia física (06/11/2026):** ocho capturas muestran permisos concedidos/retirados, `G15_SYNTHETIC_INEXACT_SCHEDULE=OK`, `G15_PENDING_SYNTHETIC=YES`, notificación real Android `VENCIRA · prueba G15`, y `G15_SCHEDULE_GATE=LOCKED` tras retirada. **PASS_VISUAL permisos y entrega**. Cancelación comprobada y reprogramación tras reinicio **NO VERIFICADAS** en capturas. No declarar G15 integral PASS ni beta operativa. Consultar plan Android.
 
 ---
