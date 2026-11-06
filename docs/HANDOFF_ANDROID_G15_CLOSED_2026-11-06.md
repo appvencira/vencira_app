@@ -59,3 +59,12 @@ Esperado: `Ran 2 tests`, `OK`, `G14_E3_REFRESH_PG17_RESULT=0`, `G14_E3_REFRESH_L
 Evidencia del operador: checkout `d67698012`, imagen Docker reconstruida y `G14_E3_IMAGE_SYNC=OK`; runner PostgreSQL 17 interno/tmpfs: `Found 2 test(s)`, `Ran 2 tests in 1.306s`, `OK`, `G14_E3_REFRESH_PG17_RESULT=0`, test DB destruida. Los intentos iniciales fallaron por imagen obsoleta y preflight Django incompleto; no eran fallos de concurrencia. **E3-R1/R2 PASS_LOCAL_PG17**. Informe de aceptación actualizado en commit `4aa4d18c7138fc405edaaab7a64ceb89a1e1714d`. No hay evidencia del echo externo `G14_E3_REFRESH_LOCAL_RESULT`.
 
 No repetir este ensayo salvo cambios relevantes. Faltan emisor MFA confiable E2, concurrencia de emisión TOTP/recovery y auditoría transaccional; beta/release continúan NO GO. Conservar todas las restricciones de seguridad y no modificar base persistente.
+
+## 06/11/2026 — E3-R3/R4: refresh vs estado MFA (publicado, pendiente de PG17)
+
+- Código `b486a0aa26c164c67bfa6259a1d0b7df4555004a`: se añaden dos pruebas en `native_mobile_service.test_g14_d8_admin_rotation_pg17`, ya incluida en el runner y CI. Ambas usan **sesión MFA sintética de laboratorio** y dos conexiones independientes.
+- R3: `test_e3_refresh_vs_mfa_epoch_revocation_invalidates_both_tokens`, refresh frente a `revoke_mfa_sessions`, verifica que los tokens existentes y cualquier par devuelto quedan inválidos por `session_epoch`.
+- R4: `test_e3_refresh_vs_admin_recovery_does_not_keep_valid_tokens`, refresh frente a `open_recovery_case` con verificador sintético; comprueba expediente pendiente y revocación efectiva de tokens por cambio de época.
+- Runner `9fa684932ddf5360ec4b7262e0a6c729435a1d13`: `bash scripts/n1_identity_pg17_ephemeral.sh --e3-mfa-refresh`, **dos pruebas dirigidas**, sin puertos Docker ni datos de producción, sin repetir G13/G15 ni toda la batería E1.
+- **ESTADO: R3/R4 CODE_PUBLISHED, PG17_NOT_RUN**. Estas pruebas no prueban el emisor MFA E2, la cadena de custodia real ni una ruta HTTP autorizada. Mantener `G14_E2_ISSUER=NOT_IMPLEMENTED`, `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
