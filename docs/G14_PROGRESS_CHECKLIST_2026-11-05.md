@@ -154,3 +154,8 @@ Recibo del operador: `G14_E1_HEAD=60c3bbfae`, `G14_E1_N1=0`, `G14_E1_BUILD=0`, `
 - [ ] Autorización de MFA y beta: bloqueada.
 
 Mantener la base previa de E1 (123 tests PASS local), sin atribuirle emisión segura. No se modificó ningún servicio operativo ni la base persistente.
+
+
+## 06/11/2026 — G14-E1B validado con log PG17 adjunto
+
+El operador entregó `vencira-e1b-pg17.log`: `N1_PG17=isolated (private internal network, tmpfs, no published ports)`, `N1_PG17_POSTGRES_READY=OK`, `Found 127 test(s).`, `System check identified no issues (0 silenced).`, `Ran 127 tests in 26.610s`, `OK`, `G4_CANDIDATE_PG17_RESULT=0`, `G5_CANDIDATE_PG17_RESULT=0`. N1 y Docker se habían informado OK en el lote previo. **G14-E1B=PASS_LOCAL_PG17_127_TESTS**. La ejecución está registrada en log de usuario, sin un SHA HEAD nuevo acreditado en ese log. Concurrencia MFA, bloqueo y presupuesto probados únicamente con datos sintéticos. G14-E2 emisor confiable aún no implementado; sin despliegue ni migración persistente.
