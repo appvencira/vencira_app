@@ -184,3 +184,11 @@ Evidencia adjunta por operador: `N1_PG17=isolated (private internal network, tmp
 - [ ] Emisor real, custodia externa, recuperación operativa y autorización beta: no aceptados.
 
 No hay cambios operativos ni nuevas pruebas a ejecutar en esta revisión documental. `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## 06/11/2026 — G14-E1D: custodia y estados fail-closed, suite pendiente
+
+- [~] Cuatro pruebas PG17 agregadas en `backend/native_mobile_service/test_g14_e1d_key_custody_pg17.py`: ausencia de llaves, llave criptográfica desconocida, cuenta desactivada y recuperación administrativa pendiente. Comprobación explícita de TOTP sin consumir, época intacta y cero sesiones. Se enlaza al runner candidato y a GitHub Actions.
+- [~] Gate N1 `g14_e1d_pg17_key_custody_failclosed` publicado; pruebas sin ejecutar todavía. Si todo pasa y el total previo era 130, la suite deberá tener 134.
+- [ ] **Deuda concreta de errores de custodia:** con llave incorrecta `decrypt_totp_secret` propaga `ValueError` desde el verificador E1. Los tests verifican ausencia de efectos, pero el futuro interfaz deberá normalizar errores sin exponer detalles y definir auditabilidad de averías de custodia. No declarar cumplimiento hasta prueba adicional.
+- [ ] **G14-E2** emisión MFA confiable sigue no implementada; **no hay rutas públicas ni autorización de beta**. Mantener `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
