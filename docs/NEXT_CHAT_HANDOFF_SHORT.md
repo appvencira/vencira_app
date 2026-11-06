@@ -1,3 +1,9 @@
+
+
+> **G15 PASS build y APK fusionado (06/11/2026):** 4/4 Python, N1 OK, `G15_BUILD_RESULT=0`, paquete `.g15lab`, permisos POST_NOTIFICATIONS y BOOT, ambos receivers, sin INTERNET ni alarmas exactas, `G15_MANIFEST_GATE=PASS`. Falta comprobar permisos/avisos/reinicio en Android físico. Recurso local: `clients/flutter/build/g15-phone/VENCIRA-G15-LAB-debug.apk` + SHA256.
+
+---
+
 > **B2-E/G15 publicado 06/11/2026 (sin compilación comprobada):** nueva APK debug independiente `es.vencira.vencira.g15lab` para permiso Android, programación de aviso sintético +15 minutos, consulta, cancelación, reinicio físico. Cambios: `lib/g15_lab_main.dart`, `lib/g15_lab/physical_notice_checks.dart`, manifiesto `src/g15lab`, Gradle lab condicional, `scripts/g15_phone_apk_build.sh`, `scripts/g15_apk_manifest_gate.py`, `scripts/test_g15_lab_boundary.py`, CI `g15-android-notifications-lab.yml`, N1. Solo laboratorio sin Django ni credenciales. **Pendiente** gate de fuente/analyze/build/manifest real; permisos y entrega en teléfono físico NO probados. No desplegar ni conectar app operativa. Ver `docs/ANDROID_BETA_CRITICAL_PATH_2026-11-06.md`.
 
 ---
