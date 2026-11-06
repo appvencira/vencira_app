@@ -28,6 +28,27 @@ class TrustedIssuerBoundaryTests(unittest.TestCase):
                  "def sample():\n    return unrelated()\n"
         self.assertEqual(direct_issuer_calls(source), [])
 
+    def test_literal_getattr_issuer_detected(self):
+        source = (
+            "import session_store as store\n"
+            'getattr(store, "issue_verified_candidate_session")(user_id=3)\n'
+        )
+        self.assertEqual(direct_issuer_calls(source), [2])
+
+    def test_literal_getattr_even_if_result_not_called(self):
+        source = (
+            "import session_store\n"
+            'issuer = getattr(session_store, "issue_verified_candidate_session")\n'
+        )
+        self.assertEqual(direct_issuer_calls(source), [2])
+
+    def test_unrelated_getattr_does_not_trigger(self):
+        source = (
+            "import session_store\n"
+            'getattr(session_store, "unrelated")(user_id=3)\n'
+        )
+        self.assertEqual(direct_issuer_calls(source), [])
+
     def test_unreviewed_caller_denied(self):
         with tempfile.TemporaryDirectory() as tmp:
             folder = Path(tmp) / "other"
