@@ -932,3 +932,8 @@ Lote de cuatro regresiones PG17 añadidas a `test_g14_e1d_key_custody_pg17.py`: 
 ## 06/11/2026 — E1D3 evidencia de cierre
 
 HEAD validado `07fa7818b`. N1=0; build=0; PG17=0; control específico `g14_e1d3_pg17_state_and_secret_binding=OK`; 139 tests en 36.805s. PASS local E1D3. Sin emisión MFA integrada ni prueba E2; beta no autorizada.
+
+
+## 06/11/2026 — G14-F0 publicado, verificación estática pendiente
+
+AST del emisor de laboratorio ampliado para accesos `getattr` literales, tres nuevos tests unitarios y N1 actualizado. No se tocó Django operativo ni PostgreSQL. Validación requerida: tests unitarios de escáner, barrido del código, N1. E2 no implementado.
