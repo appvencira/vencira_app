@@ -69,6 +69,8 @@ def verify():
     g11_probe = read("clients/flutter/tool/g7_d2_https_probe.dart")
     g8_phone_ci = read(".github/workflows/g8-phone-apk.yml")
     b2b_alarm_tests = read("clients/flutter/test/device_notice_startup_gate_test.dart")
+    b2c_android_audit = read("scripts/b2c_android_notification_boundary.py")
+    b2c_android_tests = read("scripts/test_b2c_android_notification_boundary.py")
     g8_gradle = read("clients/flutter/android/app/build.gradle.kts")
     beta_signing_tests = read("scripts/test_android_release_signing_boundary.py")
     flutter_pubspec = read("clients/flutter/pubspec.yaml")
@@ -1012,6 +1014,13 @@ def verify():
             and "NativeFirstIssuanceEntry" not in flutter_main
             and "native_sessions_lab.test_urls" not in config
             and "native_sessions_lab.test_urls" not in routes,
+        "android_beta_b2c_permission_and_reboot_guard":
+            "scheduling_receivers_not_operationally_registered" in b2c_android_audit
+            and "no_privileged_exact_alarm_permissions" in b2c_android_audit
+            and "os_permission_check_before_scheduling" in b2c_android_audit
+            and "native_rollout_default_disabled" in b2c_android_audit
+            and "test_reboot_receiver_registration_requires_review" in b2c_android_tests
+            and "test_enabling_native_rollout_by_default_is_detected" in b2c_android_tests,
         "android_beta_b2b_startup_recovery_regressions":
             "DeviceNoticeStartupGate(" in flutter_main
             and "AndroidWebAccessScreen()" in flutter_main
