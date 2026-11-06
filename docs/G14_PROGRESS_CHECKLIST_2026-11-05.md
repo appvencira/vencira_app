@@ -143,3 +143,14 @@ Recibo complementario del operador: `G14_E0_TESTS=0`, `G14_E0_AUDIT=0`. Junto co
 ## 06/11/2026 — G14-E1 PASS local, 123 PG17 tests
 
 Recibo del operador: `G14_E1_HEAD=60c3bbfae`, `G14_E1_N1=0`, `G14_E1_BUILD=0`, `G14_E1_PG17=0`, `N1_STATIC_g14_e1_locked_mfa_proof_without_issuer=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 123 tests in 23.421s`, `G5_CANDIDATE_PG17_RESULT=0`. **G14-E1 PASS LOCAL** para verificación aislada de contraseña y TOTP bajo lock, sin token ni identidad devuelta al llamante. Sudo falló al primer intento pero el build/test concluyeron OK. **Siguiente fase E2:** composición transaccional de verificación de contraseña/MFA, emisión candidata y auditoría; diseñar y probar rollback, replay y carreras PG17 sin rutas operativas. No asumir emisión confiable antes de aceptación y revisión independiente. `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## 06/11/2026 — G14-E2 contrato publicado, implementación bloqueada
+
+- [x] Matriz de aceptación y rollback de un futuro emisor MFA: `docs/G14_E2_ATOMIC_ISSUANCE_ACCEPTANCE_2026-11-06.md`.
+- [ ] **G14-E2 código**: NO publicado; intento de escritura de la composición de emisión bloqueado por controles de seguridad.
+- [ ] **G14-E2 tests PG17**: no ejecutados; no existe evidencia que permita un PASS de emisión.
+- [ ] **G14-E3** concurrencia y replay del emisor: pendiente.
+- [ ] Autorización de MFA y beta: bloqueada.
+
+Mantener la base previa de E1 (123 tests PASS local), sin atribuirle emisión segura. No se modificó ningún servicio operativo ni la base persistente.
