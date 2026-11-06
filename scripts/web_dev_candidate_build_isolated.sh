@@ -17,6 +17,8 @@ fi
 for bin in git docker; do
   command -v "$bin" >/dev/null || { echo "WEB_CANDIDATE_REQUIRED_TOOL_MISSING=$bin"; exit 2; }
 done
+python3 scripts/web_dev_legacy_api_guard.py || { echo "WEB_CANDIDATE_LEGACY_API_GUARD=FAIL"; exit 7; }
+echo "WEB_CANDIDATE_LEGACY_API_GUARD=PASS"
 HEAD_SHA="$(git rev-parse HEAD)"
 SHORT="${HEAD_SHA:0:12}"
 echo "WEB_CANDIDATE_SOURCE_SHA=$HEAD_SHA"
