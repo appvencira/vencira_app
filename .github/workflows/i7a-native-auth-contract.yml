@@ -1,0 +1,83 @@
+name: I7A native issuance stays unavailable (candidate tests only)
+on:
+  pull_request:
+    paths:
+      - 'backend/native_mobile_service/**'
+      - 'backend/reminders/native_mobile_identity_gate.py'
+      - 'backend/config/**'
+      - '.github/workflows/i7a-native-auth-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  issuer-denied:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: vencira_i7a_ci
+          POSTGRES_USER: vencira_i7a_ci
+          POSTGRES_PASSWORD: disposable-not-live
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vencira_i7a_ci -d vencira_i7a_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 15
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      VENCIRA_ENV: test
+      VENCIRA_DB_ENGINE: postgresql
+      POSTGRES_DB: vencira_i7a_ci
+      POSTGRES_USER: vencira_i7a_ci
+      POSTGRES_PASSWORD: disposable-not-live
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: '5432'
+      DJANGO_SECRET_KEY: disposable-i7a-test-only-not-production-secret
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      VENCIRA_NATIVE_SERVICE_CANDIDATE: '1'
+      VENCIRA_NATIVE_SESSION_LAB: '0'
+      VENCIRA_ATTACHMENT_SPLIT_REHEARSAL: '0'
+      VENCIRA_MFA_ENROLLMENT_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install backend dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Candidate migration graph and Django system gate
+        run: |
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+      - name: Verify no issuer or bearer fallback and locked verifier
+        run: >-
+          python manage.py test
+          native_mobile_service.test_i7_native_issuer_absence
+          native_mobile_service.test_g14_issuance_contract
+          native_mobile_service.test_g14_locked_verifier
+          native_mobile_service.test_g14_e1_locked_mfa_verifier
+          native_mobile_service.test_contract
+          --verbosity 1
+      - name: Non-test registration is prohibited
+        run: |
+          if VENCIRA_ENV=production python manage.py check > /tmp/i7a-prod-denied.log 2>&1; then
+            echo "I7A_PRODUCTION_DENIAL=FAIL"
+            exit 1
+          fi
+          grep -q 'Native mobile service candidate only allowed in isolated tests' /tmp/i7a-prod-denied.log
+          echo "I7A_PRODUCTION_DENIAL=OK"
+      - name: No operational release
+        run: |
+          echo 'I7A_ISSUER_AUTHORIZED=NO'
+          echo 'MFA_RELEASE_AUTHORIZED=NO'
+          echo 'MB1_RELEASE_AUTHORIZED=NO'
+          echo 'C_FICHA_RELEASE_AUTHORIZED=NO'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
