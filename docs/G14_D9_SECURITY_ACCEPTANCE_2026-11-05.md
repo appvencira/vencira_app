@@ -108,3 +108,8 @@ G14_D9D_PG17=NOT_RUN
 G14_D9_SECURITY_ACCEPTANCE=PARTIAL
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## 06/11/2026 — Resultado D9-D: PASS local, 118 tests
+
+Confirmación operador: `G14_D9D_N1=0`, `G14_D9D_BUILD=0`, `G14_D9D_PG17=0`, `N1_STATIC_g14_d9d_terminal_case_races_pg17=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 118 tests in 19.205s`, `G5_CANDIDATE_PG17_RESULT=0`. Carrera de caducidad frente a cierre y rechazo frente a cierre de expediente PASS, únicamente PG17 test-only. D9 integral NO aprobado por persistir auditoría completa de escritores y condiciones reales de operación, custodia, verificadores externos y trusted MFA issuer.
