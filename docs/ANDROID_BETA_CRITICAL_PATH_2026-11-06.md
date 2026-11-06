@@ -57,3 +57,8 @@ Rama: `feature/m3-android-local-notifications`. Documento de planificación, no 
 - Pruebas fuente `scripts/test_android_release_signing_boundary.py` (cuatro casos); N1 `android_beta_release_signing_external_only` y workflow `m3-product-contracts.yml` actualizados. **Pendiente comprobar en VPS**: cuatro unit tests, N1 y resolución Gradle real antes de atribuir firma segura.
 - No se ha creado certificado/keystore, no hay APK/AAB de distribución firmada, y faltan políticas de actualización/versionado, canal de pruebas, QA físico y autorización de release.
 - No se cambió backend Django, esquema o rutas HTTP. `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## 06/11/2026 — B2-A PASS local (pruebas estáticas, no Gradle real)
+
+Recibo del operador: `B2_A_HEAD=b4065dd8d`, `B2_A_TESTS=0`, `B2_A_N1=0`, `B2_A_DIFF=0`; `Ran 4 tests in 0.001s`, `OK`, `N1_STATIC_android_beta_release_signing_external_only=OK`, `N1_STATIC_GATE_RESULT=OK`. Se cierra B2-A **solo en alcance de fuentes/tests estáticos**. Se requiere todavía ensayo de configuración Gradle sin parámetros de firmado (rechazo), y build release con keystore custodiado fuera de GitHub (en entorno aislado, únicamente tras autorización de pruebas de firma). No se ha firmado ni distribuido APK beta. B2-B queda pendiente.
