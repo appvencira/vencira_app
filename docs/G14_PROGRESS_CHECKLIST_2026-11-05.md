@@ -71,8 +71,13 @@ El operador aportó `G14_D9_HEAD=af493c6c`, `G14_D9_TESTS=0`, `G14_D9_N1=0`, `G1
 
 **Publicado, pendiente de ejecutar.** `backend/native_mobile_service/test_g14_d9_recovery_guards_pg17.py`: verificador externo ausente, rechazo, valor truthy distinto de True y excepción; comprueba que no aparezca expediente ni cambie `session_epoch` en PostgreSQL 17 efímero. Añadido al runner `--candidate`, workflow y gate `N1_STATIC_g14_d9_recovery_verifier_failclosed_tests`.
 
-- [~] D9-B fail-closed: pruebas publicadas, **sin PASS local todavía**.
+- [x] D9-B fail-closed: **PASS local**; 114 pruebas PostgreSQL 17, controles N1 y build correctos.
 - [ ] Carreras con modificación simultánea de expediente y sustitución de factores; auditoría definitiva del grafo de locks.
 - [ ] Emisor MFA autoritativo / custodia operativa / autorización.
 
 No se modificaron servicios MFA ni endpoints, no deploy, no migración persistente.
+
+
+## 06/11/2026 — D9-B validación local confirmada
+
+El operador informa: `G14_D9B_N1=0`, `G14_D9B_BUILD=0`, `G14_D9B_PG17=0`, `N1_STATIC_g14_d9_lock_report_readonly=OK`, `N1_STATIC_g14_d9_recovery_verifier_failclosed_tests=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 114 tests in 19.592s`, `G5_CANDIDATE_PG17_RESULT=0`. **D9-B PASS local**. No se adjuntó SHA del checkout para el lote; no inferir CI remoto. Alcance: cuatro casos negativos de verificador administrativo sin expediente ni cambio de época. **D9 integral permanece parcial** hasta validar sustitución administrativa, carreras de caso y custodia/verificación operativa. Sin despliegue ni migración persistente.
