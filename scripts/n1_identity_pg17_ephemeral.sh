@@ -72,6 +72,7 @@ case "$MODE" in
       native_mobile_service.test_g14_d8_admin_rotation_pg17
       native_mobile_service.test_g14_d9_recovery_guards_pg17
       native_mobile_service.test_g14_d9c_admin_finalization_pg17
+      native_mobile_service.test_g14_e1_locked_mfa_verifier
     )
     ;;
   --lab-case)
