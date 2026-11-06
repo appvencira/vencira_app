@@ -1,0 +1,186 @@
+"""Configuración segura por entorno para VENCIRA."""
+import os
+from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+VENCIRA_ENV = os.getenv("VENCIRA_ENV", "development").lower()
+if VENCIRA_ENV not in {"development", "test", "production"}:
+    raise ImproperlyConfigured("VENCIRA_ENV incorrecto")
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "")
+if len(SECRET_KEY) < 32 or "CHANGE_ME" in SECRET_KEY:
+    raise ImproperlyConfigured("Falta DJANGO_SECRET_KEY aleatoria (>=32 caracteres)")
+DEBUG = os.getenv("DJANGO_DEBUG", "0").lower() in {"1", "true", "yes"}
+if VENCIRA_ENV == "production" and DEBUG:
+    raise ImproperlyConfigured("DEBUG prohibido en producción")
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
+if not ALLOWED_HOSTS or "*" in ALLOWED_HOSTS:
+    raise ImproperlyConfigured("ALLOWED_HOSTS debe ser explícito")
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
+
+INSTALLED_APPS = [
+    "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
+    "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
+    "rest_framework", "reminders",
+]
+# Explicit test-only registration of the experimental split app.
+# Never enable it in development/production or normal application images.
+if os.getenv("VENCIRA_ATTACHMENT_SPLIT_REHEARSAL", "") == "1":
+    if VENCIRA_ENV != "test":
+        raise ImproperlyConfigured("Attachment split rehearsal only allowed in test")
+    INSTALLED_APPS.append("renewal_attachments")
+    VENCIRA_ATTACHMENT_SPLIT_REHEARSAL_ENABLED = True
+
+# A strictly test-only application with its own ephemeral migrations. It must
+# NEVER enter an operational Django installation or live migration graph.
+VENCIRA_NATIVE_SESSION_LAB = os.getenv("VENCIRA_NATIVE_SESSION_LAB", "0") == "1"
+if VENCIRA_NATIVE_SESSION_LAB:
+    if VENCIRA_ENV != "test":
+        raise ImproperlyConfigured("Native device session lab only allowed in test")
+    INSTALLED_APPS.append("native_sessions_lab")
+
+# G4 candidate: operational-shaped schema exercised ONLY in disposable test DBs.
+# This is deliberately NOT a production feature flag. Production has no route,
+# no Django app registration, and no DRF bearer fallback.
+VENCIRA_NATIVE_SERVICE_CANDIDATE = (
+    os.getenv("VENCIRA_NATIVE_SERVICE_CANDIDATE", "0") == "1"
+)
+VENCIRA_NATIVE_BEARER_ENABLED = False
+if VENCIRA_NATIVE_SERVICE_CANDIDATE:
+    if VENCIRA_ENV != "test":
+        raise ImproperlyConfigured(
+            "Native mobile service candidate only allowed in isolated tests"
+        )
+    INSTALLED_APPS.append("native_mobile_service")
+
+
+# Only in an explicitly isolated test lab, omit the historical registered
+# model whose table requires MFA-gated reminders.0027. Does not touch schema.
+VENCIRA_M103_SPLIT_DELETE_LAB = os.getenv("VENCIRA_M103_SPLIT_DELETE_LAB", "0") == "1"
+if VENCIRA_M103_SPLIT_DELETE_LAB and not (
+    VENCIRA_ENV == "test" and
+    os.getenv("VENCIRA_ATTACHMENT_SPLIT_REHEARSAL", "") == "1"
+):
+    raise ImproperlyConfigured("M103 historical-model omission is test-only")
+
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "reminders.mfa_middleware.RequireMfaSessionMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+ROOT_URLCONF = "config.urls"
+TEMPLATES = [{
+    "BACKEND": "django.template.backends.django.DjangoTemplates",
+    "DIRS": [BASE_DIR / "templates"], "APP_DIRS": True,
+    "OPTIONS": {"context_processors": [
+        "django.template.context_processors.debug",
+        "django.template.context_processors.request",
+        "django.contrib.auth.context_processors.auth",
+        "django.contrib.messages.context_processors.messages",
+    ]},
+}]
+WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
+
+DB_ENGINE = os.getenv("VENCIRA_DB_ENGINE", "postgresql")
+if DB_ENGINE == "sqlite":
+    if VENCIRA_ENV == "production":
+        raise ImproperlyConfigured("SQLite no permitido en producción")
+    DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}}
+elif DB_ENGINE == "postgresql":
+    missing = [key for key in ("POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_HOST") if not os.getenv(key)]
+    if missing:
+        raise ImproperlyConfigured("Variables PostgreSQL ausentes: " + ", ".join(missing))
+    DATABASES = {"default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ["POSTGRES_DB"], "USER": os.environ["POSTGRES_USER"],
+        "PASSWORD": os.environ["POSTGRES_PASSWORD"], "HOST": os.environ["POSTGRES_HOST"],
+        "PORT": os.getenv("POSTGRES_PORT", "5432"),
+        "CONN_MAX_AGE": 60, "OPTIONS": {"connect_timeout": 5},
+    }}
+else:
+    raise ImproperlyConfigured("VENCIRA_DB_ENGINE no válido")
+
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 12}},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+LANGUAGE_CODE = "es-es"
+TIME_ZONE = "Europe/Madrid"
+USE_TZ = True
+USE_I18N = True
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+# Nombres exclusivos: otras apps Django del mismo 127.0.0.1 pueden usar
+# cookies "csrftoken" y "sessionid"; las cookies no se aíslan por puerto.
+SESSION_COOKIE_NAME = "vencira_sessionid"
+CSRF_COOKIE_NAME = "vencira_csrftoken"
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+# Solo cuando el acceso HTTPS termina en Caddy, que sobreescribe
+# X-Forwarded-Proto, y el proxy Nginx interno escucha únicamente en loopback.
+HTTPS_BEHIND_TRUSTED_PROXY = os.getenv("DJANGO_HTTPS_BEHIND_PROXY", "0") == "1"
+if HTTPS_BEHIND_TRUSTED_PROXY:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+if VENCIRA_ENV == "production":
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
+    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
+}
+
+LOGIN_REDIRECT_URL = "/api/v1/me/"
+LOGOUT_REDIRECT_URL = "/accounts/login/"
+
+# Solo el motivo de rechazo CSRF, no cookies, contraseñas ni cuerpos POST.
+# Se mantiene DEBUG=False. Django emite este aviso en django.security.csrf
+# al fallar la validación de origen, referer, cookie o token.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "csrf_reason": {"format": "VENCIRA_CSRF %(levelname)s %(message)s"},
+    },
+    "handlers": {
+        "csrf_console": {
+            "class": "logging.StreamHandler",
+            "level": "WARNING",
+            "formatter": "csrf_reason",
+        },
+    },
+    "loggers": {
+        "django.security.csrf": {
+            "handlers": ["csrf_console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+}
+
+# D1.5k: no exponer alta MFA sin activación operativa explícita.
+VENCIRA_MFA_ENROLLMENT_ENABLED = os.getenv("VENCIRA_MFA_ENROLLMENT_ENABLED", "0") == "1"
+
+# D1.5-S1: los revisores de recuperación NO se configuran desde HTTP ni
+# se infieren de is_staff. Hasta disponer de un registro custodial autenticado,
+# no se autorizan revisores operativos. Pruebas usan override_settings.
+VENCIRA_MFA_RECOVERY_REVIEWER_IDS = ()
