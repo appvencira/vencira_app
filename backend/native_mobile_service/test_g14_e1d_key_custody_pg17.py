@@ -59,11 +59,18 @@ class G14E1DKeyCustodyPG17(TransactionTestCase):
 
     def test_unknown_key_cannot_decrypt_or_consume_factor(self):
         foreign = [Fernet.generate_key().decode("ascii")]
-        with self.assertRaises(ValueError):
+        with self.assertRaises(CandidateMfaDenied) as denied:
             self.verify(keys=foreign)
+        self.assertIsNone(denied.exception.__cause__)
         self.assert_untouched()
         self.assertIs(self.verify(), True)
         self.assertFalse(MobileDeviceSession.objects.exists())
+
+    def test_malformed_key_denied_without_details_or_consumption(self):
+        with self.assertRaises(CandidateMfaDenied) as denied:
+            self.verify(keys=["not-a-valid-fernet-key"])
+        self.assertIsNone(denied.exception.__cause__)
+        self.assert_untouched()
 
     def test_inactive_account_denied_without_factor_consumption(self):
         self.user.is_active = False
