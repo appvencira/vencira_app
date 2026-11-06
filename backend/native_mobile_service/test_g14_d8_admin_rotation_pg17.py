@@ -24,7 +24,8 @@ from reminders.models import (
     UserMfaState,
 )
 from .session_store import (
-    MobileTokenDenied, issue_verified_candidate_session, validate_candidate_access,
+    MobileTokenDenied, issue_verified_candidate_session, rotate_candidate_refresh,
+    validate_candidate_access,
 )
 
 
@@ -97,6 +98,70 @@ class G14D8AdminRotationPG17(TransactionTestCase):
         self.assertEqual(self.state.pending_rotation_secret, "")
         with self.assertRaises(MobileTokenDenied):
             validate_candidate_access(access)
+
+
+    def test_e3_refresh_vs_mfa_epoch_revocation_invalidates_both_tokens(self):
+        """E3: a concurrent refresh cannot survive an MFA epoch increment."""
+        old_access, old_refresh = self.issue_synthetic_candidate()
+
+        def try_refresh():
+            try:
+                return rotate_candidate_refresh(old_refresh)
+            except MobileTokenDenied:
+                return None
+
+        refreshed, revoked = self.run_two(
+            try_refresh, lambda: revoke_mfa_sessions(user_id=self.user.pk),
+        )
+        self.assertEqual(revoked, (True, "MFA_SESSIONS_REVOKED"))
+        self.state.refresh_from_db()
+        self.assertEqual(self.state.session_epoch, 4)
+        with self.assertRaises(MobileTokenDenied):
+            validate_candidate_access(old_access)
+        with self.assertRaises(MobileTokenDenied):
+            rotate_candidate_refresh(old_refresh)
+        if refreshed is not None:
+            with self.assertRaises(MobileTokenDenied):
+                validate_candidate_access(refreshed[0])
+            with self.assertRaises(MobileTokenDenied):
+                rotate_candidate_refresh(refreshed[1])
+
+    @override_settings(
+        VENCIRA_MFA_RECOVERY_IDENTITY_VERIFIER=lambda **kwargs: True,
+    )
+    def test_e3_refresh_vs_admin_recovery_does_not_keep_valid_tokens(self):
+        """E3: opening an admin case invalidates a concurrent candidate refresh."""
+        old_access, old_refresh = self.issue_synthetic_candidate()
+
+        def try_refresh():
+            try:
+                return rotate_candidate_refresh(old_refresh)
+            except MobileTokenDenied:
+                return None
+
+        def open_case():
+            return open_recovery_case(
+                subject_id=self.user.pk, requester=self.user,
+            )
+
+        refreshed, (case_id, reason) = self.run_two(try_refresh, open_case)
+        self.assertEqual(reason, "CASE_OPENED_RESTRICTED")
+        self.assertIsNotNone(case_id)
+        self.assertTrue(MfaAdministrativeRecoveryCase.objects.filter(
+            pk=case_id,
+            status=MfaAdministrativeRecoveryCase.Status.PENDING,
+        ).exists())
+        self.state.refresh_from_db()
+        self.assertEqual(self.state.session_epoch, 4)
+        with self.assertRaises(MobileTokenDenied):
+            validate_candidate_access(old_access)
+        with self.assertRaises(MobileTokenDenied):
+            rotate_candidate_refresh(old_refresh)
+        if refreshed is not None:
+            with self.assertRaises(MobileTokenDenied):
+                validate_candidate_access(refreshed[0])
+            with self.assertRaises(MobileTokenDenied):
+                rotate_candidate_refresh(refreshed[1])
 
     @override_settings(
         VENCIRA_MFA_RECOVERY_IDENTITY_VERIFIER=lambda **kwargs: True,
