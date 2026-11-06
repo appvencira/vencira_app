@@ -57,8 +57,8 @@ def main():
         print("B2_D_AAPT=NOT_FOUND")
         return 2
     try:
-        def dump(*command):
-            result = subprocess.run([str(aapt), "dump", *command, str(apk)],
+        def dump(command, *extra):
+            result = subprocess.run([str(aapt), "dump", command, str(apk), *extra],
                                     capture_output=True, text=True, timeout=30,
                                     check=True)
             return result.stdout
