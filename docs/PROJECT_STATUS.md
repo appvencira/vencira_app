@@ -1,3 +1,7 @@
+> **07/11/2026 — ADJUNTOS: AISLAMIENTO YA EXISTE EN TEST:** el operador confirmó `BACKEND_DEPENDENCY_RESULT=0`, `0027` exige las 8 migraciones MFA 0019–0026; no GO. La fuente ya dispone de `backend/renewal_attachments` con `0001_initial` independiente de MFA (base `reminders.0018`), pero restringido explícitamente a `VENCIRA_ENV=test`, con modelo histórico paralelo aún en `reminders`. **No crear otra app; adaptar/ensayar la separación existente, sin autorizar deploy.** Comprobador read-only publicado `scripts/backend_attachment_split_release_readonly.py`. Referencia [BACKEND_DEV_RELEASE_SPLIT_2026-11-07.md](BACKEND_DEV_RELEASE_SPLIT_2026-11-07.md).
+
+---
+
 > **07/11/2026 — BACKEND DEV NO-GO HASTA SEPARAR MIGRACIONES:** inventario ejecutado: 27 migraciones en fuente, 18 aplicadas en DEV, **9 pendientes**: `0019`–`0026` MFA y `0027_renewal_attachment_metadata`. Se verificó en fuente que `0027` **depende de 0026**, de modo que no puede desplegarse selectivamente sin arrastrar toda la cadena MFA. No usar `--fake` ni `migrate 0027`. La API de adjuntos actual solo expone metadatos y bloquea subida/descarga/borrado. Publicados análisis y gate AST read-only `scripts/backend_dev_release_dependency_gate.py` (ejecución local pendiente); ver [BACKEND_DEV_RELEASE_SPLIT_2026-11-07.md](BACKEND_DEV_RELEASE_SPLIT_2026-11-07.md). **`NO_DEPLOY_NO_LIVE_MIGRATION=1`**, frontend WEB V2 desplegado intacto. Próximo desarrollo: candidato separado de adjuntos con grafo de migraciones propio, validación PG17 efímera/O5 y autorización de migración independiente.
 
 ---
