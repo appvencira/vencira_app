@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <base href="/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="VENCIRA: anticipa vencimientos.">
+  <meta name="theme-color" content="#145C75">
+  <title>VENCIRA</title>
+</head>
+<body>
+  <script>
+    // La versión web actual no registra service workers (build --pwa-strategy=none).
+    // Si una versión anterior dejó uno, retirarlo sin borrar cookies ni sesiones.
+    (async () => {
+      try {
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          const legacy = registrations.filter((registration) =>
+            [registration.active, registration.waiting, registration.installing]
+              .some((worker) => {
+                if (!worker) return false;
+                const script = new URL(worker.scriptURL, location.href);
+                return script.origin === location.origin &&
+                  script.pathname === '/flutter_service_worker.js';
+              })
+          );
+          if (legacy.length > 0) {
+            await Promise.all(legacy.map((registration) => registration.unregister()));
+            if ('caches' in window) {
+              const names = await caches.keys();
+              const flutterCaches = new Set([
+                'flutter-app-cache', 'flutter-temp-cache', 'flutter-app-manifest'
+              ]);
+              await Promise.all(names.filter((name) => flutterCaches.has(name))
+                .map((name) => caches.delete(name)));
+            }
+            // Una página aún controlada necesita una navegación nueva.
+            const reloadKey = 'vencira.legacy-sw-cleanup.v1';
+            if (navigator.serviceWorker.controller &&
+                sessionStorage.getItem(reloadKey) !== 'done') {
+              sessionStorage.setItem(reloadKey, 'done');
+              location.reload();
+              return;
+            }
+          }
+        }
+      } catch (_) {
+        // No bloquear VENCIRA por APIs de caché no disponibles.
+      }
+
+      // Forzar la lectura del bootstrap actual en cada navegación/re carga.
+      // Los demás assets mantienen no-store desde Nginx.
+      const bootstrap = document.createElement('script');
+      bootstrap.src = 'flutter_bootstrap.js?v=' + Date.now();
+      bootstrap.async = true;
+      document.body.appendChild(bootstrap);
+    })();
+  </script>
+</body>
+</html>
