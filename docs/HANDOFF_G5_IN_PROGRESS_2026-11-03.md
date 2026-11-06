@@ -912,3 +912,8 @@ Cuatro tests en `native_mobile_service.test_g14_e1d_key_custody_pg17`, N1 y runn
 ## 06/11/2026 — E1D: evidencia completa recibida
 
 `HEAD=263767dac`; N1=0 (control E1D y gate OK), Docker build=0, PG17=0; 134 tests en 33.065 segundos y `G5_CANDIDATE_PG17_RESULT=0`. E1D cerrado PASS local. No confundir esta validación con un emisor MFA operativo: integración E2 pendiente y normalización de fallos de custodia todavía sin resolver. Ningún despliegue o migración persistente autorizado.
+
+
+## 06/11/2026 — G14-E1D2 publicado y pendiente de regresión
+
+Corrección del verificador E1 para uniformar las excepciones al carecer de custodia criptográfica correcta. Dos comprobaciones de denegación sin causa, incluidas en el módulo E1D, y N1 `g14_e1d_uniform_custody_denial`. La suite PG17 candidata debe pasar **135 tests**; todavía no hay evidencia local. G14-E2 continúa sin integrar token y auditoría.
