@@ -70,3 +70,10 @@ G14_D9_B_LOCAL_RESULT=NOT_RUN
 G14_D9_SECURITY_ACCEPTANCE=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## 06/11/2026 — D9-B PG17 local PASS
+
+Evidence from operator: `G14_D9B_N1=0`, `G14_D9B_BUILD=0`, `G14_D9B_PG17=0`, `N1_STATIC_g14_d9_lock_report_readonly=OK`, `N1_STATIC_g14_d9_recovery_verifier_failclosed_tests=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 114 tests in 19.592s`, `G5_CANDIDATE_PG17_RESULT=0`. **D9-B PASS local**. The result validates only these synthetic negative-verifier cases in temporary PG17, not end-to-end administrative authorization. Checkout HEAD not included; remote Actions status not established.
+
+Remaining: cross-transaction races involving case cancellation/expiry/finalization, complete independent authorization and delivery/custody evidence, trusted MFA issuer and release gates. `G14_D9_SECURITY_ACCEPTANCE=PARTIAL`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
