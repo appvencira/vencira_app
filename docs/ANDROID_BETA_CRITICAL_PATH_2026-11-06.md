@@ -118,3 +118,12 @@ Referencias técnicas: [Android Developers — permission for notifications](htt
 ## 06/11/2026 — B2-C auditor de fuentes PASS local, permisos físicos pendientes
 
 Salida del operador: `Ran 2 tests in 0.000s`, `OK`, `B2_C_AUDIT_TESTS=0`, `B2_C_AUDIT_RESULT=0`, `B2_C_ANDROID_READINESS_AUDIT=PASS_READONLY`. Informe: `APP_MANIFEST_POST_NOTIFICATIONS=NO`, `APP_MANIFEST_BOOT_PERMISSION=NO`, `APP_MANIFEST_BOOT_RECEIVERS=NO`, `OS_PERMISSION_PREFLIGHT_IN_ALARM_PORT=YES`, `EXPLICIT_OPT_IN_GATE_IN_COORDINATOR=YES`, `NATIVE_NOTICE_ROLLOUT_WIRED_TO_MAIN=NO`, `RUNTIME_OS_PERMISSION_REQUEST_IN_MAIN=NO`. El propio informe indica `OS_PERMISSION_ON_DEVICE=NOT_VERIFIED`, `MERGED_ANDROID_MANIFEST=NOT_VERIFIED`, `REBOOT_RESCHEDULE_ON_DEVICE=NOT_VERIFIED`. Los saltos de línea de algunos marcadores se pegaron unidos, pero sus nombres y valores son legibles. **B2_C_AUDIT=PASS_LOCAL; B2_C_INTEGRAL=PENDING**. Sin HEAD concreto en la salida. No se modificaron la aplicación operativa, las rutas ni la BD persistente.
+
+
+## 06/11/2026 — B2-D inventario del APK compilado, pendiente de ejecución VPS
+
+- Código publicado: `scripts/b2d_apk_manifest_audit.py` inspecciona mediante `aapt dump badging/permissions/xmltree` un **APK G13 debug ya compilado**. Rechaza explícitamente cualquier identificador distinto de `es.vencira.vencira.g13lab`; no ejecuta Gradle, no instala APK y no se conecta a un teléfono ni al backend.
+- Extrae del **manifiesto fusionado** las declaraciones `POST_NOTIFICATIONS`, `RECEIVE_BOOT_COMPLETED`, permisos exact-alarm y receivers de programación/reinicio. Su resultado `DECLARED` solo representa presencia en binario: **no es consentimiento ni prueba de ejecución en Android físico**.
+- Cuatro tests sintéticos `scripts/test_b2d_apk_manifest_audit.py` cubren permisos de plugins en manifiesto fusionado, no inferir permisos a partir de receivers, rechazo de paquetes no G13 y exact alarms sin afirmar concesión del sistema. Pendientes de ejecución local junto a inspección real del APK G13.
+- El APK G13 incluye una CA TLS efímera de pruebas; el inspector **no** imprime contenido del APK, certificados o claves. Si el APK G13 ya no existe, la auditoría no debe iniciar G13 automáticamente: reconstruirlo requeriría una campaña separada con fixture efímero.
+- Gate posterior físico, no disponible todavía: conceder, denegar y retirar permiso Android 13+; reinicio, restauración/cancelación de alarmas, sincronización aislada sin datos reales. El cliente actual no habilita la programación nativa. `B2_D=NOT_VERIFIED` hasta evidencia.
