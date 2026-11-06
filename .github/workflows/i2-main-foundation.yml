@@ -1,0 +1,39 @@
+name: I2 main foundation (read-only)
+on:
+  pull_request:
+    paths:
+      - 'backend/reminders/legal_deadlines.py'
+      - 'backend/reminders/default_reminders.py'
+      - 'backend/reminders/reminder_planning.py'
+      - 'backend/config/**'
+      - 'backend/manage.py'
+      - 'backend/requirements.txt'
+      - 'clients/flutter/pubspec.yaml'
+      - 'clients/flutter/lib/main.dart'
+      - 'clients/flutter/lib/ui/control_assessment_card.dart'
+      - 'scripts/c2_deploy_readiness_readonly.sh'
+      - 'scripts/i2_main_foundation_gate.py'
+      - 'scripts/test_i1_calendar_core.py'
+      - '.github/workflows/i2-main-foundation.yml'
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run source and I1 calendar gates
+        run: python3 scripts/i2_main_foundation_gate.py
+      - name: Explicit no-deploy gate
+        run: |
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
+          echo 'MFA_RELEASE_AUTHORIZED=NO'
+          echo 'MB1_RELEASE_AUTHORIZED=NO'
+          echo 'C_FICHA_RELEASE_AUTHORIZED=NO'
