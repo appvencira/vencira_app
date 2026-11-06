@@ -77,3 +77,8 @@ Se añaden cuatro regresiones PG17 aisladas para verificar que una clave ausente
 ## 06/11/2026 — G14-E1D2, cierre del error de clave antes de E2
 
 La verificación de contraseña/TOTP bajo locks ahora convierte errores de descifrado de clave en `CandidateMfaDenied` sin encadenamiento explícito. Casos de clave incorrecta y clave malformada integrados en E1D. **No acreditado por pruebas locales aún**; se esperan 135 tests PG17 y gate N1 `g14_e1d_uniform_custody_denial`. Ello no implementa la emisión MFA ni la auditoría atómica requeridas para E2.
+
+
+## 06/11/2026 — Evidencia posterior E1D2
+
+Verificador candidato: manejo uniforme de error de custodia probado con resultado local `G14_E1D2_N1=0`, `G14_E1D2_BUILD=0`, `G14_E1D2_PG17=0` y 135 tests en 32.577s. G14-E1D2 PASS en laboratorio, no habilita ni reemplaza el emisor confiable E2. La emisión y auditoría atómicas permanecen sin implementar.
