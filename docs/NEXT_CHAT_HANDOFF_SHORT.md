@@ -1,5 +1,11 @@
 
 
+> **06/11/2026 B2-C transporte PASS:** el usuario aporta `B2_C_FLUTTER=0` y 13/13 tests de `native_api_transport_test.dart`, con dos negativos nuevos de red offline y logout. B2-C integral sigue PENDING por permisos Android físicos y recuperación de avisos locales. No hay evidencia de HEAD local en este recibo.
+
+---
+
+
+
 > **B2-B suites PASS (06/11/2026):** los 10 tests Flutter de arranque pasaron y el log N1 aporta `N1_STATIC_android_beta_b2b_startup_recovery_regressions=OK` y `N1_STATIC_GATE_RESULT=OK`. Sin HEAD local explícito, exit N1 independiente, APK nueva o validación física adicional. Pendientes permisos Android, offline/recovery integrado y emisor MFA confiable E2.
 
 ---
