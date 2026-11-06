@@ -23,3 +23,11 @@ Fecha: 2026-11-06
 `C_FICHA_RELEASE_AUTHORIZED=NO`
 `MB1_RELEASE_AUTHORIZED=NO`
 `NO_DEPLOY_NO_LIVE_MIGRATION=1`
+
+## Aceptación comunicada en Android físico — 06/11/2026
+
+El usuario ha instalado manualmente la APK debug normal de I6 y confirma de primera mano que **arranca, muestra «Acceso seguro a VENCIRA» y el botón abre la versión web en el navegador del teléfono**. Evidencia comunicada en la conversación, no telemetría ni prueba automatizada del móvil. `I6_PHYSICAL_WEB_HANDOFF=USER_CONFIRMED`.
+
+**Alcance limitado:** NO implica login nativo ni MFA real validados, ni prueba de navegación autenticada posterior, acceso a datos, permisos de notificación, alarmas tras reinicio o compatibilidad en otros dispositivos. No autoriza publicación, despliegue, migraciones ni habilitar laboratorios. Continuar hacia controles nativos solo con sus gates de seguridad.
+
+`MFA_RELEASE_AUTHORIZED=NO` / `C_FICHA_RELEASE_AUTHORIZED=NO` / `MB1_RELEASE_AUTHORIZED=NO` / `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
