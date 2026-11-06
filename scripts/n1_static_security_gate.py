@@ -75,6 +75,7 @@ def verify():
     g15_checks = read("clients/flutter/lib/g15_lab/physical_notice_checks.dart")
     g15_manifest = read("clients/flutter/android/app/src/g15lab/AndroidManifest.xml")
     g15_build = read("scripts/g15_phone_apk_build.sh")
+    g15_manifest_gate = read("scripts/g15_apk_manifest_gate.py")
     g8_gradle = read("clients/flutter/android/app/build.gradle.kts")
     beta_signing_tests = read("scripts/test_android_release_signing_boundary.py")
     flutter_pubspec = read("clients/flutter/pubspec.yaml")
@@ -1043,6 +1044,8 @@ def verify():
             and "requestNotificationsPermission()" in g15_checks
             and "AndroidScheduleMode.inexactAllowWhileIdle" in g15_checks
             and "RECEIVE_BOOT_COMPLETED" in g15_manifest
+            and 'android.permission.INTERNET" tools:node="remove"' in g15_manifest
+            and "G15_FORBIDDEN_INTERNET_PERMISSION" in g15_manifest_gate
             and "ScheduledNotificationBootReceiver" in g15_manifest
             and "flutter build apk --debug" in g15_build
             and "G15_RELEASE_AUTHORIZED=NO" in g15_build,
