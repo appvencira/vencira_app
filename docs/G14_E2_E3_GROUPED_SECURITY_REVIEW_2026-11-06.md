@@ -76,3 +76,14 @@ MB1_RELEASE_AUTHORIZED=NO
 C_FICHA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+## 2026-11-06 — E3-R1/R2: nuevas carreras de refresh (pendientes de ejecutar)
+
+Commit de código: `e269963d003b3c82ac5eb2a73c518d0a92320635`. Se añadieron **dos** `TransactionTestCase` a la suite **ya registrada** `native_mobile_service.test_pg17_races`:
+
+- `test_refresh_racing_account_revocation_cannot_restore_session`: dos conexiones y barrera; refresh y revocación global compiten; la generación final es 1, no quedan sesiones no revocadas, y cualquier access/refresh devuelto termina denegado.
+- `test_refresh_racing_password_change_cannot_keep_old_credential`: dos conexiones y barrera; refresh compite con cambio de contraseña bajo lock de usuario; ni access antiguo ni token devuelto deben seguir autenticando después del cambio.
+
+No hay cambios en emisor, backend operativo, migrations, URL, secretos o CI: el runner `--candidate` y el workflow PG17 ya incluyen esta suite. **Estas son carreras del almacén de sesiones candidato SIN MFA**, y no prueban E2 ni las carreras de emisión con TOTP.
+
+**Estado: `E3_REFRESH_CODE=PUBLISHED`, `E3_REFRESH_PG17=NOT_RUN`.** Una vez sincronizado el HEAD, ejecutar una validación agrupada PG17 efímera para ambos casos y, si procede, el runner general una sola vez; no repetir G13/G15. Un posible fallo de estas regresiones debe conservarse como evidencia y bloquear la aceptación: no debilitar aserciones para lograr verde.
