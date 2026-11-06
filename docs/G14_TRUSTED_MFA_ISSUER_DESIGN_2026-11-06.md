@@ -38,3 +38,8 @@ TRUSTED_MFA_ISSUER=NOT_IMPLEMENTED
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+
+## 06/11/2026 — E1: verificación aislada sin emisión
+
+Se incorpora `g14_e1_locked_mfa_verifier.py`: `verify_candidate_password_and_totp` recibe contraseña y código, no datos de autorización. El usuario se bloquea antes de MFA; dentro de la transacción se consume TOTP utilizando `reminders.mfa_store.consume_totp`. El resultado es booleano de prueba, nunca una capacidad que permita llamar de forma segura a `issue_verified_candidate_session`. Rechazo del caso administrativo pendiente, sin rutas HTTP. Cinco pruebas PG17 de regresión, N1 y workflow añadidos; **pendiente de evidencia local**. No asociar esta operación a la producción ni considerar completada emisión MFA.
