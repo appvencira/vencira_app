@@ -106,7 +106,20 @@ jobs:
             --key /tmp/vencira-i4-tls/key.pem \
             >/tmp/vencira-i4-proxy.log 2>&1 &
           PROXY_PID=$!
-          trap 'kill "$PROXY_PID" "$DJANGO_PID" 2>/dev/null || true' EXIT
+          trap 'result=$?; if [ "$result" -ne 0 ]; then echo "I5_SERVER_DIAGNOSTICS"; tail -n 30 /tmp/vencira-i4-django.log || true; tail -n 20 /tmp/vencira-i4-proxy.log || true; fi; kill "$PROXY_PID" "$DJANGO_PID" 2>/dev/null || true' EXIT
+          # I4's smoke retries connection errors but not a transient 502.
+          # Wait for a real 200 from Django before running HTTP and Chromium tests.
+          READY=0
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail --cacert /tmp/vencira-i4-tls/cert.pem \
+              https://localhost:18732/api/health/ >/dev/null; then
+              READY=1
+              break
+            fi
+            sleep 1
+          done
+          test "$READY" = 1
+          echo 'I5_HTTPS_HEALTH_READY=OK'
           python scripts/i4_https_smoke.py --ca /tmp/vencira-i4-tls/cert.pem
           python scripts/i5_chromium_flutter_smoke.py --artifacts /tmp/vencira-i5-screenshots
           echo 'I5_CHROMIUM_REAL_UI_RESULT=0'
