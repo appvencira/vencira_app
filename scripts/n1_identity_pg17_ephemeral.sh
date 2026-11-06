@@ -71,6 +71,7 @@ case "$MODE" in
       native_mobile_service.test_g14_d5_mfa_writer_pg17_races
       native_mobile_service.test_g14_d8_admin_rotation_pg17
       native_mobile_service.test_g14_d9_recovery_guards_pg17
+      native_mobile_service.test_g14_d9c_admin_finalization_pg17
     )
     ;;
   --lab-case)
