@@ -55,7 +55,10 @@ if [[ "$MODE" = rollback ]]; then
   [[ "$old" =~ ^sha256:[a-f0-9]{64}$ && "$candidate" =~ ^sha256:[a-f0-9]{64}$ ]] || exit 6
   test "$web_before" = "$candidate" || { echo "WEB_ROLLBACK_ACTIVE_IMAGE_MISMATCH"; exit 6; }
   "${DOCKER[@]}" image inspect "$old" >/dev/null
-  target="$old"
+  old_tag="$(sed -n 's/^OLD_WEB_TAG=//p' "$RECEIPT" | head -n 1)"
+  [[ "$old_tag" =~ ^vencira-web-rollback:[a-f0-9]{12}$ ]] || exit 6
+  test "$("\${DOCKER[@]}" image inspect -f '{{.Id}}' "$old_tag")" = "$old" || exit 6
+  target="$old_tag"
 else
   test "$web_before" = "$EXPECTED_OLD_WEB" || {
     echo "WEB_RELEASE_BASELINE_IMAGE_CHANGED"; exit 5; }
@@ -103,6 +106,12 @@ http_check() {
   [[ "$code" = 401 || "$code" = 403 ]]
 }
 echo "WEB_RELEASE_MUTATION_START=web_preview_ONLY"
+if [[ "$MODE" = deploy ]]; then
+  # Convert the immutable old image ID into a stable, inspected local reference.
+  rollback_tag="vencira-web-rollback:${web_before:7:12}"
+  "${DOCKER[@]}" image tag "$web_before" "$rollback_tag"
+  test "$("${DOCKER[@]}" image inspect -f '{{.Id}}' "$rollback_tag")" = "$web_before" || exit 8
+fi
 if ! restore "$target"; then
   echo "WEB_RELEASE_COMPOSE=FAIL"
   if [[ "$MODE" = deploy ]]; then restore "$web_before" || true; fi
@@ -112,7 +121,7 @@ if ! http_check || [[ "$(idof "$API")" != "$api_before" || "$(idof "$DB")" != "$
   echo "WEB_RELEASE_POSTCHECK=FAIL"
   if [[ "$MODE" = deploy ]]; then
     echo "WEB_RELEASE_AUTO_ROLLBACK=START"
-    restore "$web_before" && http_check && echo "WEB_RELEASE_AUTO_ROLLBACK=PASS" || echo "WEB_RELEASE_AUTO_ROLLBACK=NEEDS_MANUAL_ACTION"
+    restore "$rollback_tag" && http_check && echo "WEB_RELEASE_AUTO_ROLLBACK=PASS" || echo "WEB_RELEASE_AUTO_ROLLBACK=NEEDS_MANUAL_ACTION"
   fi
   exit 9
 fi
