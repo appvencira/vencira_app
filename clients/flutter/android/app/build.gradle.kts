@@ -9,10 +9,11 @@ plugins {
 val g8LabBuild = System.getenv("VENCIRA_G8_LAB_BUILD") == "1"
 val g12LabBuild = System.getenv("VENCIRA_G12_LAB_BUILD") == "1"
 val g13LabBuild = System.getenv("VENCIRA_G13_LAB_BUILD") == "1"
-if (listOf(g8LabBuild, g12LabBuild, g13LabBuild).count { it } > 1) {
+val g15LabBuild = System.getenv("VENCIRA_G15_LAB_BUILD") == "1"
+if (listOf(g8LabBuild, g12LabBuild, g13LabBuild, g15LabBuild).count { it } > 1) {
     throw GradleException("Physical Android labs are mutually exclusive")
 }
-if ((g8LabBuild || g12LabBuild || g13LabBuild) && gradle.startParameter.taskNames.any {
+if ((g8LabBuild || g12LabBuild || g13LabBuild || g15LabBuild) && gradle.startParameter.taskNames.any {
     it.contains("Release", ignoreCase = true) || it.contains("Profile", ignoreCase = true)
 }) {
     throw GradleException("Physical Android labs must never build release/profile")
@@ -70,6 +71,13 @@ android {
         }
     }
 
+    sourceSets {
+        if (g15LabBuild) {
+            // Only this G15 debug variant has OS alarm reboot receivers.
+            getByName("debug").manifest.srcFile("src/g15lab/AndroidManifest.xml")
+        }
+    }
+
     buildTypes {
         debug {
             if (g8LabBuild) {
@@ -83,6 +91,10 @@ android {
             if (g13LabBuild) {
                 applicationIdSuffix = ".g13lab"
                 manifestPlaceholders["venciraAppLabel"] = "VENCIRA G13 TLS"
+            }
+            if (g15LabBuild) {
+                applicationIdSuffix = ".g15lab"
+                manifestPlaceholders["venciraAppLabel"] = "VENCIRA G15 Avisos"
             }
         }
         release {
