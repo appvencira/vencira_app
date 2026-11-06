@@ -76,3 +76,9 @@ El operador ha comunicado el resultado del runner dirigido `--e3-mfa-refresh`: `
 **E3-R3/R4=PASS_LOCAL_PG17** para las carreras de refresh frente a incremento de epoch MFA y apertura de recuperación administrativa sintética. No se recibió la línea externa `G14_E3_MFA_LOCAL_RESULT`; no se infiere. No consta SHA del checkout de esa ejecución en el mensaje; los métodos corresponden al lote registrado anteriormente y deben correlacionarse con HEAD ante cualquier auditoría formal.
 
 Con R1/R2 ya aprobados, **E3-R1..R4 están cerrados dentro de su alcance de pruebas**. No se ha ejecutado ni aprobado el emisor atómico MFA E2 ni carreras de login TOTP/recovery. `G14_E3_INTEGRAL=PENDING`; `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. No repetir estas suites por rutina.
+
+## 06/11/2026 — G14-E2-F1, control de transferencia booleana publicado
+
+Se añadió `scripts/g14_e2_bool_issuance_fence.py` (AST, solo lectura) con 7 pruebas en `scripts/test_g14_e2_bool_issuance_fence.py` y N1 `g14_e2_boolean_proof_nontransferable`. Documentado en `docs/G14_E2_E3_GROUPED_SECURITY_REVIEW_2026-11-06.md` (commit `1282757e37f2a58b10e0f75e214f88ea6da038e6`). **No hay resultado de pruebas locales aún.** El guard impide referencias explícitas al verificador E1 desde código no-test, pero no equivale a un análisis completo de todas las rutas dinámicas ni implementa el emisor MFA confiable.
+
+Validación dirigida única sin Docker: sincronizar rama y ejecutar unittest nuevo, scanner y N1, según el informe E2/E3. No ejecutar PostgreSQL ni G13/G15 por este cambio. `G14_E2_ISSUER=NOT_IMPLEMENTED`, `G14_E3_INTEGRAL=PENDING`; continuar sin despliegue, migración persistente ni release.
