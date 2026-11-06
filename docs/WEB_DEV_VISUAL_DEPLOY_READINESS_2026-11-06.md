@@ -26,3 +26,12 @@
 
 ## Próxima acción agrupada
 En el siguiente lote, recopilar una auditoría **read-only** del VPS de Compose y la versión web desplegada, determinar los commits visuales que se quieren enseñar, crear candidata web-only y verificarla contra la API/DB existentes. Una sola ejecución de gates al final del lote. **G15 ya está cerrado en laboratorio**; no repetir G13/G15 ni activar las notificaciones operativas. **G14-E2** permanece pendiente y es bloqueante de beta privada nativa, pero no debería forzar la publicación de backend para una revisión visual segura.
+
+
+## 06/11/2026 — Inicio del corte incremental DEV solicitado
+
+El titular pide que el avance acumulado sea visible en DEV sin dejarlo indefinidamente aparcado. La actualización debe avanzar por cortes funcionales: **primero web/UI compatible**, después API/backend únicamente con validaciones y migraciones específicas (no simultáneamente con Flutter Web), y finalmente autenticación nativa/MFA cuando su emisor transaccional G14-E2 esté implementado y autorizado. No afirmar que todos los cambios pueden salir en un solo deploy.
+
+Se publicó `scripts/web_dev_predeploy_inventory_readonly.sh` en la rama Android para recopilar en una ejecución: estado y digest de contenedores Compose DEV, imagen web recuperable, salud local por HTTP, HEAD/rama de checkouts, suciedad tracked y timers O5. No imprime entornos ni variables de secretos, no consulta datos de usuarios, no construye imágenes, no despliega ni migra. **Ejecución VPS pendiente.**
+
+Después de recibir el inventario: seleccionar set explícito de cambios y SHA, cerrar compatibilidad con API, preparar script nuevo de despliegue **web-only** y rollback con validación en clon. Los viejos scripts O7/O8 de deploy no se pueden reutilizar directamente por anclajes a SHA/esquema históricos. Compromiso de progreso: no otra batería de ensayos de APK aisladas mientras el gate de publicación web esté pendiente. `NO_DEPLOY_NO_LIVE_MIGRATION=1` hasta que se autorice el corte verificado.
