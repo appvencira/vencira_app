@@ -56,7 +56,14 @@ def candidate_mfa_atomic_flow(*, username, password, code, keys,
                 keys=keys, timestamp=timestamp,
             )
             if verified is not True:
-                raise CandidateMfaDenied()
+                # A wrong TOTP increments UserMfaState.failed_attempts.
+                # Commit that rate-limit writer together with denial audit;
+                # raising/rolling back here would disable MFA lockout.
+                record_candidate_auth_event(
+                    event_id=event_id, event_type="auth_denied",
+                    actor=username,
+                )
+                return None
 
             state = UserMfaState.objects.select_for_update().filter(
                 user_id=user.pk, enabled=True,
