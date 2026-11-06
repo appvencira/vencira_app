@@ -69,6 +69,7 @@ def verify():
     g11_probe = read("clients/flutter/tool/g7_d2_https_probe.dart")
     g8_phone_ci = read(".github/workflows/g8-phone-apk.yml")
     g8_gradle = read("clients/flutter/android/app/build.gradle.kts")
+    beta_signing_tests = read("scripts/test_android_release_signing_boundary.py")
     flutter_pubspec = read("clients/flutter/pubspec.yaml")
     android_manifest = read("clients/flutter/android/app/src/main/AndroidManifest.xml")
     recovery_gateway = read("clients/flutter/lib/api/native_recovery_login_gateway.dart")
@@ -1010,6 +1011,13 @@ def verify():
             and "NativeFirstIssuanceEntry" not in flutter_main
             and "native_sessions_lab.test_urls" not in config
             and "native_sessions_lab.test_urls" not in routes,
+        "android_beta_release_signing_external_only":
+            'signingConfig = signingConfigs.getByName("debug")' not in g8_gradle
+            and 'signingConfig = signingConfigs.getByName("venciraRelease")' in g8_gradle
+            and "VENCIRA_ANDROID_RELEASE_SIGNING_REQUIRED" in g8_gradle
+            and "releaseBuildRequested && !releaseSigningReady" in g8_gradle
+            and "test_release_must_not_use_debug_signing" in beta_signing_tests
+            and "test_debug_labs_remain_isolated_and_release_denied" in beta_signing_tests,
         "lab_issuer_requires_epoch":
             "expected_generation," in session_rules
             and "expected_generation=None" not in session_rules,
