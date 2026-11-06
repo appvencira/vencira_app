@@ -48,3 +48,8 @@ Se incorpora `g14_e1_locked_mfa_verifier.py`: `verify_candidate_password_and_tot
 ## 06/11/2026 — E1 aceptado en laboratorio
 
 `G14_E1_HEAD=60c3bbfae`; `G14_E1_N1=0`, `G14_E1_BUILD=0`, `G14_E1_PG17=0`, `Ran 123 tests in 23.421s`. Comprobación de contraseña y TOTP en transacción sin emisión de sesión PASS. Mantener rechazo de reutilización de factor y de recuperación pendiente. No equivale a trusted issuer. E2 debe unir verificación, consumo de factor, auditoría y emisión, con rollback y tests de carreras bajo PostgreSQL 17 efímero; no abrir endpoints.
+
+
+## 06/11/2026 — F0 cobertura suplementaria del límite AST
+
+El escáner también registra un acceso literal `getattr(session_store, "issue_verified_candidate_session")` incluso si la función se almacena sin ejecutarse inmediatamente. Esta defensa complementa las llamadas directas; su naturaleza sintáctica no prueba procedencia confiable, ausencia de todas las referencias reflejadas ni soporte de MFA de producción. Tres tests de sintaxis agregados, aún no ejecutados localmente. La aceptación E2 no cambia.
