@@ -877,3 +877,8 @@ Verificador candidato de contraseña+TOTP bajo bloqueo PG17 (usuario→MFA), sin
 ## 06/11/2026 — G14-E1 PASS local, 123 tests
 
 Operador aporta `G14_E1_HEAD=60c3bbfae`, `G14_E1_N1=0`, `G14_E1_BUILD=0`, `G14_E1_PG17=0`, `N1_STATIC_g14_e1_locked_mfa_proof_without_issuer=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 123 tests in 23.421s` y `G5_CANDIDATE_PG17_RESULT=0`. Prueba de verificación contraseña+TOTP aislada PASS; no token emitido. Próximo E2: composición transaccional completa, pruebas de rollback/replay/carreras, autorización operativa NO. Sin despliegue ni migración persistente.
+
+
+## 06/11/2026 — G14-E2: aceptación diseñada, integración no publicada
+
+Se publicó `docs/G14_E2_ATOMIC_ISSUANCE_ACCEPTANCE_2026-11-06.md` con invariantes de consumo único de MFA, bloqueo de cuenta, auditoría, token y rollback, así como casos de carrera. El intento de incorporar código de emisión recibió un bloqueo de seguridad de la herramienta; **no hay cambios de emisión ni pruebas E2**. E1 sigue en 123 tests PASS local; `G14_E2_CODE=NOT_PUBLISHED`, `G14_E2_PG17=NOT_RUN`. Prohibido tratar el diseño como emisor autorizado, desplegar o migrar persistente.
