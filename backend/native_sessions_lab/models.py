@@ -24,6 +24,8 @@ class MobileDeviceSessionLab(models.Model):
 
 
 class SpentRefreshLab(models.Model):
+    # Match the historical 0001_initial schema explicitly (no new migration).
+    id = models.BigAutoField(primary_key=True)
     session = models.ForeignKey(
         MobileDeviceSessionLab, on_delete=models.CASCADE,
         related_name="spent_refreshes",
