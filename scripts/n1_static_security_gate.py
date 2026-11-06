@@ -6,6 +6,7 @@ Runs with stdlib, without Django settings, Docker, database or network.
 """
 from pathlib import Path
 import ast
+from g14_trusted_issuer_boundary import audit_tree as audit_g14_issuer_calls
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -107,6 +108,8 @@ def verify():
     g14_inventory_tests = read("scripts/test_g14_mfa_writer_inventory.py")
     g14_lock_report = read("scripts/g14_mfa_lock_order_report.py")
     g14_lock_report_tests = read("scripts/test_g14_mfa_lock_order_report.py")
+    g14_issuer_guard = read("scripts/g14_trusted_issuer_boundary.py")
+    g14_issuer_guard_tests = read("scripts/test_g14_trusted_issuer_boundary.py")
 
     failures = []
     checks = {
@@ -363,6 +366,11 @@ def verify():
             and "record_review(" in g14_d9c_races
             and "self.assertNotEqual(finalized, expired)" in g14_d9c_races
             and "self.assertNotEqual(finalized, rejected)" in g14_d9c_races,
+        "g14_trusted_issuer_direct_call_boundary":
+            audit_g14_issuer_calls(ROOT / "backend")[1] == []
+            and "G14_TRUSTED_ISSUER_IMPLEMENTED=NO" in g14_issuer_guard
+            and "test_unreviewed_caller_denied" in g14_issuer_guard_tests
+            and "test_aliased_import_detected" in g14_issuer_guard_tests,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
@@ -1017,6 +1025,8 @@ def verify():
         "scripts/test_g14_mfa_writer_inventory.py",
         "scripts/g14_mfa_lock_order_report.py",
         "scripts/test_g14_mfa_lock_order_report.py",
+        "scripts/g14_trusted_issuer_boundary.py",
+        "scripts/test_g14_trusted_issuer_boundary.py",
         "backend/reminders/native_mobile_identity_gate.py",
         "backend/reminders/native_mobile_token_primitives.py",
     ):
