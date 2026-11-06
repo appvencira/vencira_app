@@ -31,3 +31,9 @@
 
 ## Primera acción en el próximo chat
 Leer este traspaso y documentos G14-E2. Evaluar con precisión la frontera de seguridad del issuer y proponer un bloque grande **que sea implementable sin pasar por alto restricciones**. Solicitar pruebas locales solo si se introducen cambios y suministrar un único comando reproducible; no pedir de nuevo las evidencias G15.
+
+## Continuación G14-E2/E3 en el siguiente chat (06/11/2026)
+
+Se revisaron de nuevo fuentes de `g14_e1_locked_mfa_verifier.py`, `session_store.py` y `g14_trusted_issuer_boundary.py` y se publicó el análisis agrupado **`docs/G14_E2_E3_GROUPED_SECURITY_REVIEW_2026-11-06.md`**, commit `c3b6373e2cefd62ed8c9a334424be6a7e618c967`. Contiene contrato de transacción, riesgos, matriz de carreras, gates y orden de revisión.
+
+**Sin cambios de runtime ni pruebas E2/E3 nuevas.** E2 continúa `NOT_IMPLEMENTED` y E3 `NOT_EXECUTED`; la documentación no habilita emisión ni beta. Siguiente actividad de código, si los controles del conector lo permiten: diseñar y revisar conjuntamente auditoría transaccional + cuotas de denegaciones, después implementar una interfaz interna que nunca reciba afirmaciones MFA y probar PG17 efímero con carreras reales. No reconectar el `bool` de E1 al emisor de laboratorio ni eludir bloqueos de publicación anteriores. No pedir nuevas pruebas G15.
