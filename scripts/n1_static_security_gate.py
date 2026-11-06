@@ -7,6 +7,7 @@ Runs with stdlib, without Django settings, Docker, database or network.
 from pathlib import Path
 import ast
 from g14_trusted_issuer_boundary import audit_tree as audit_g14_issuer_calls
+from g14_e2_bool_issuance_fence import audit_tree as audit_g14_e2_bool
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -238,6 +239,9 @@ def verify():
             and "VENCIRA_G5_AUDIT_KEY" in g5_audit
             and "MobileAuthAuditEvent" in g5_audit
             and "native_mobile_service" not in config,
+        "g14_e2_boolean_proof_nontransferable":
+            not audit_g14_e2_bool()
+            and "test_unreviewed_non_test_file_denied" in read("scripts/test_g14_e2_bool_issuance_fence.py"),
         "g14_admission_test_only":
             "transaction.atomic()" in g14_admission
             and "consume_candidate_auth_attempt(" in g14_admission
@@ -1132,6 +1136,8 @@ def verify():
         "scripts/test_g14_mfa_writer_inventory.py",
         "scripts/g14_mfa_lock_order_report.py",
         "scripts/test_g14_mfa_lock_order_report.py",
+        "scripts/g14_e2_bool_issuance_fence.py",
+        "scripts/test_g14_e2_bool_issuance_fence.py",
         "scripts/g14_trusted_issuer_boundary.py",
         "scripts/test_g14_trusted_issuer_boundary.py",
         "backend/reminders/native_mobile_identity_gate.py",
