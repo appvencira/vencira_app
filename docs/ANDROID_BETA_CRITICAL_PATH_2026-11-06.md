@@ -47,3 +47,13 @@ Rama: `feature/m3-android-local-notifications`. Documento de planificación, no 
 - Gates G0–G9 según último registro revisado: 1/10 formalmente cerrados. **No es porcentaje ponderado del software o días restantes**.
 - No se dispone de inventario ponderado de funcionalidades aceptadas; no asignar porcentaje global ni fecha de beta sin cerrar B1, B2 y B3.
 - Android beta aislada de laboratorio ya existe como APK G13 debug, pero **no es beta comercial ni beta operativa con usuarios reales**.
+
+
+## 06/11/2026 — B2-A preparación de firmado: publicado, NO validado
+
+- `clients/flutter/android/app/build.gradle.kts` ya no asigna `signingConfigs.debug` a `release`. Cualquier tarea Gradle que solicite `release` sin las cuatro variables externas de firmado falla cerrada con `VENCIRA_ANDROID_RELEASE_SIGNING_REQUIRED`.
+- Las variables se leen exclusivamente del entorno de ejecución: `VENCIRA_ANDROID_KEYSTORE_PATH`, `VENCIRA_ANDROID_KEYSTORE_PASSWORD`, `VENCIRA_ANDROID_KEY_ALIAS` y `VENCIRA_ANDROID_KEY_PASSWORD`. **No añadir valores reales a GitHub, scripts, CI logs ni conversación**. El keystore debe custodiarse fuera del repositorio y contar con copia de recuperación independiente.
+- G8/G12/G13 siguen siendo compilaciones `debug` con `applicationIdSuffix` propio y rechazo expreso de modo `release/profile`. No se ha convertido ninguna prueba G13 en una beta operativa.
+- Pruebas fuente `scripts/test_android_release_signing_boundary.py` (cuatro casos); N1 `android_beta_release_signing_external_only` y workflow `m3-product-contracts.yml` actualizados. **Pendiente comprobar en VPS**: cuatro unit tests, N1 y resolución Gradle real antes de atribuir firma segura.
+- No se ha creado certificado/keystore, no hay APK/AAB de distribución firmada, y faltan políticas de actualización/versionado, canal de pruebas, QA físico y autorización de release.
+- No se cambió backend Django, esquema o rutas HTTP. `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
