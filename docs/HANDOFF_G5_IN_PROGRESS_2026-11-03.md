@@ -872,3 +872,8 @@ Recibo operador: `G14_E0_N1=0`, `G14_TRUSTED_BOUNDARY_DIRECT_CALLS=1`, `G14_TRUS
 ## 06/11/2026 — G14-E1 publicado, pendiente PG17
 
 Verificador candidato de contraseña+TOTP bajo bloqueo PG17 (usuario→MFA), sin tokens, sin user ID y sin API. Cinco pruebas, N1 y runner aislado publicados. Falta ejecución de N1/build/PG17. El emisor real sigue bloqueado; conservar custodia y auditoría como obligaciones pendientes.
+
+
+## 06/11/2026 — G14-E1 PASS local, 123 tests
+
+Operador aporta `G14_E1_HEAD=60c3bbfae`, `G14_E1_N1=0`, `G14_E1_BUILD=0`, `G14_E1_PG17=0`, `N1_STATIC_g14_e1_locked_mfa_proof_without_issuer=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 123 tests in 23.421s` y `G5_CANDIDATE_PG17_RESULT=0`. Prueba de verificación contraseña+TOTP aislada PASS; no token emitido. Próximo E2: composición transaccional completa, pruebas de rollback/replay/carreras, autorización operativa NO. Sin despliegue ni migración persistente.
