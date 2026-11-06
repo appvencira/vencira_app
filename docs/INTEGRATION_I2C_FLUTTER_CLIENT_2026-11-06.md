@@ -29,3 +29,12 @@ No ejecutar `flutter build apk --release` sin firma aprobada. La compilación We
 
 ## Resultado de preparación
 `I2C_STAGED=YES`; `I2C_TESTS=PENDING`; `I2C_MERGE=NO`. El objetivo es fusionar a `main` tras corregir cualquier incompatibilidad conservando la ficha de control de `main`.
+
+
+## Reconciliación C2 — 06/11/2026
+
+El primer workflow en HEAD 28b3e877 falló en dos regresiones de control_assessment_test.dart: el botón Crear aviso no se ocultaba cuando había un control activo y faltaba el aviso histórico completado. Flutter analyze y los otros 82 tests dirigidos fueron correctos; la compilación Web quedó omitida por el fallo.
+
+Se incorporaron a la ficha original de main los controles de duplicación, la visualización del aviso histórico y el aviso de control ya existente, preservando el reintento idempotente. La corrección no modifica endpoint, base de datos ni despliegue.
+
+NUEVO HEAD: pendiente CI (Flutter analyze, widgets y Flutter Web). No atribuir PASS al HEAD hasta comprobarlo. NO_DEPLOY_NO_LIVE_MIGRATION=1.
