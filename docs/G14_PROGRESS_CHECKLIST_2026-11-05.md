@@ -65,3 +65,14 @@ Nuevo informe de solo lectura `scripts/g14_mfa_lock_order_report.py`, pruebas `s
 ## 05/11/2026 — G14-D9 informe validado (parcial)
 
 El operador aportó `G14_D9_HEAD=af493c6c`, `G14_D9_TESTS=0`, `G14_D9_N1=0`, `G14_D9_REPORT=0`, `N1_STATIC_g14_d9_lock_report_readonly=OK`, `N1_STATIC_GATE_RESULT=OK` y `G14_D9_LOCK_SITES=21`. El informe es de solo lectura, no certifica seguridad transaccional. Próxima prioridad: contrastar conflictos entre el orden usuario→MFA de apertura administrativa, expediente→MFA de sustitución y MFA exclusivo de rotación; conservar controles fail-closed y ensayar PG17 efímero. Emisor MFA confiable y release siguen pendientes.
+
+
+## 06/11/2026 — D9-B: cuatro regresiones negativas de verificador administrativo
+
+**Publicado, pendiente de ejecutar.** `backend/native_mobile_service/test_g14_d9_recovery_guards_pg17.py`: verificador externo ausente, rechazo, valor truthy distinto de True y excepción; comprueba que no aparezca expediente ni cambie `session_epoch` en PostgreSQL 17 efímero. Añadido al runner `--candidate`, workflow y gate `N1_STATIC_g14_d9_recovery_verifier_failclosed_tests`.
+
+- [~] D9-B fail-closed: pruebas publicadas, **sin PASS local todavía**.
+- [ ] Carreras con modificación simultánea de expediente y sustitución de factores; auditoría definitiva del grafo de locks.
+- [ ] Emisor MFA autoritativo / custodia operativa / autorización.
+
+No se modificaron servicios MFA ni endpoints, no deploy, no migración persistente.
