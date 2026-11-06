@@ -892,3 +892,8 @@ Registro adjunto por operador: `N1_PG17_POSTGRES_READY=OK`, `Found 127 test(s)`,
 ## 06/11/2026 — E1C preparada: rollback TOTP sin emisor
 
 Suite `backend/native_mobile_service/test_g14_e1c_transaction_rollback_pg17.py` con tres pruebas PG17, N1 `g14_e1c_pg17_outer_savepoint_rollback` y CI integrados. La fase E1B previa está validada con 127 tests. E1C requiere validación local; no implica un emisor MFA real ni autorización operativa. No desplegar, no migrar persistente.
+
+
+## 06/11/2026 — G14-E1C PASS local
+
+Log PG17 adjunto: 130 tests, `Ran 130 tests in 29.700s`, `OK`, `G4_CANDIDATE_PG17_RESULT=0`, `G5_CANDIDATE_PG17_RESULT=0`, red interna y PostgreSQL tmpfs. N1 estático específico y build Docker también acreditados con logs previos. E1C validado en laboratorio; E2 emisor de token+auditoría continúa sin implementar y sin autorización. No despliegue ni migración persistente.
