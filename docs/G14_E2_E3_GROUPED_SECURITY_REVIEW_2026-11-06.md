@@ -122,3 +122,25 @@ El operador ha comunicado el resultado del runner dirigido `--e3-mfa-refresh`: `
 **E3-R3/R4=PASS_LOCAL_PG17** para las carreras de refresh frente a incremento de epoch MFA y apertura de recuperación administrativa sintética. No se recibió la línea externa `G14_E3_MFA_LOCAL_RESULT`; no se infiere. No consta SHA del checkout de esa ejecución en el mensaje; los métodos corresponden al lote registrado anteriormente y deben correlacionarse con HEAD ante cualquier auditoría formal.
 
 Con R1/R2 ya aprobados, **E3-R1..R4 están cerrados dentro de su alcance de pruebas**. No se ha ejecutado ni aprobado el emisor atómico MFA E2 ni carreras de login TOTP/recovery. `G14_E3_INTEGRAL=PENDING`; `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. No repetir estas suites por rutina.
+
+## 06/11/2026 — E2-F1: barrera de no transferencia del bool E1 (sin issuer)
+
+Publicados los siguientes cambios en `feature/m3-android-local-notifications`:
+
+- `scripts/g14_e2_bool_issuance_fence.py`: análisis AST fail-closed de referencias/importaciones de `verify_candidate_password_and_totp` fuera del verificador y de tests. Detecta import directo/alias, módulo y `getattr` literal; rechaza el uso de E1 como prueba de autenticación reutilizable en código no-test. **No es análisis completo de flujo de datos** y no detecta todas las llamadas dinámicas.
+- `scripts/test_g14_e2_bool_issuance_fence.py`: 7 pruebas sintéticas de detección y exclusión de test.
+- `scripts/n1_static_security_gate.py`: incorpora `N1_STATIC_g14_e2_boolean_proof_nontransferable` y análisis sintáctico de ambos scripts.
+
+Commits: `879bf6a17f38e45c56966c8ba8a3b67367c0a0e2`, `b12fde6a05c427b471d40371bd0940ba3aa5826a`, `77b5306d30d8c0b19c02a8c30153d6b990b154a1`.
+
+**Pruebas locales pendientes.** Ejecutar en VPS, sin Docker/PG17 porque solo cambian controles estáticos:
+```bash
+cd ~/vencira-m3-localcheck
+git fetch origin feature/m3-android-local-notifications &&
+git merge --ff-only FETCH_HEAD &&
+python3 -m unittest discover -s scripts -p test_g14_e2_bool_issuance_fence.py &&
+python3 scripts/g14_e2_bool_issuance_fence.py &&
+python3 scripts/n1_static_security_gate.py
+echo "G14_E2_F1_LOCAL_RESULT=$?"
+```
+Si la prueba falla, conservar el error y revisar el código; no eliminar el control para fabricar PASS. Este avance **no implementa ni autoriza** el emisor E2 y no altera bases, rutas, MFA real, certificados, APK ni producción. `G14_E2_ISSUER=NOT_IMPLEMENTED`, `G14_E3_INTEGRAL=PENDING`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
