@@ -1,0 +1,72 @@
+name: I2E native auth isolated security labs
+on:
+  pull_request:
+    paths:
+      - 'backend/native_mobile_service/**'
+      - 'backend/native_sessions_lab/**'
+      - '.github/workflows/i2e-native-security-labs.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-isolation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      VENCIRA_ENV: test
+      VENCIRA_DB_ENGINE: sqlite
+      DJANGO_SECRET_KEY: ci-only-disposable-i2e-native-tests-not-for-release
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      DJANGO_DEBUG: '0'
+      VENCIRA_NATIVE_SESSION_LAB: '0'
+      VENCIRA_NATIVE_SERVICE_CANDIDATE: '0'
+      VENCIRA_ATTACHMENT_SPLIT_REHEARSAL: '0'
+      VENCIRA_MFA_ENROLLMENT_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install test backend
+        run: python -m pip install -r requirements.txt
+      - name: Normal Django configuration without lab registration
+        run: |
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+      - name: Production and development must reject both lab registrations
+        run: |
+          if VENCIRA_ENV=production VENCIRA_NATIVE_SESSION_LAB=1 python manage.py check > /tmp/i2e-session-denied.log 2>&1; then
+            echo 'I2E_SESSION_PROD_DENIAL=FAIL'
+            exit 1
+          fi
+          grep -q 'Native device session lab only allowed in test' /tmp/i2e-session-denied.log
+          if VENCIRA_ENV=production VENCIRA_NATIVE_SERVICE_CANDIDATE=1 python manage.py check > /tmp/i2e-mobile-denied.log 2>&1; then
+            echo 'I2E_MOBILE_PROD_DENIAL=FAIL'
+            exit 1
+          fi
+          grep -q 'Native mobile service candidate only allowed in isolated tests' /tmp/i2e-mobile-denied.log
+          echo 'I2E_PRODUCTION_GUARDS=OK'
+      - name: Native session lab only on isolated SQLite test DB
+        env:
+          VENCIRA_NATIVE_SESSION_LAB: '1'
+        run: |
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+          python manage.py test native_sessions_lab.test_login_rules native_sessions_lab.tests --verbosity 1
+      - name: Mobile issuer candidate only on isolated SQLite test DB
+        env:
+          VENCIRA_NATIVE_SERVICE_CANDIDATE: '1'
+        run: |
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+          python manage.py test native_mobile_service.test_contract native_mobile_service.test_g14_issuance_contract native_mobile_service.test_g14_locked_verifier native_mobile_service.test_g14_e1_locked_mfa_verifier --verbosity 1
+      - name: No release authorization
+        run: |
+          echo 'MFA_RELEASE_AUTHORIZED=NO'
+          echo 'MB1_RELEASE_AUTHORIZED=NO'
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
