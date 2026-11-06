@@ -105,6 +105,7 @@ def verify():
     g14_d9c_races = read("backend/native_mobile_service/test_g14_d9c_admin_finalization_pg17.py")
     g14_e1_verifier = read("backend/native_mobile_service/g14_e1_locked_mfa_verifier.py")
     g14_e1_tests = read("backend/native_mobile_service/test_g14_e1_locked_mfa_verifier.py")
+    g14_e1b_tests = read("backend/native_mobile_service/test_g14_e1_concurrency_pg17.py")
     mfa_enrollment_lock = read("backend/reminders/mfa_enrollment.py")
     g14_inventory = read("scripts/g14_mfa_writer_inventory.py")
     g14_inventory_tests = read("scripts/test_g14_mfa_writer_inventory.py")
@@ -384,6 +385,15 @@ def verify():
             and "test_pending_administrative_recovery_blocks_factor" in g14_e1_tests
             and "g14_e1_locked_mfa_verifier" not in config
             and "g14_e1_locked_mfa_verifier" not in routes,
+        "g14_e1b_pg17_concurrency_and_lockout":
+            "TransactionTestCase" in g14_e1b_tests
+            and "test_same_totp_concurrent_accepts_once_no_sessions" in g14_e1b_tests
+            and "test_bad_totp_persists_attempt_budget" in g14_e1b_tests
+            and "test_five_bad_totp_attempts_lock_and_deny_good_code" in g14_e1b_tests
+            and "test_wrong_password_does_not_increment_totp_budget" in g14_e1b_tests
+            and "MobileDeviceSession.objects.exists()" in g14_e1b_tests
+            and "g14_e1_concurrency_pg17" not in config
+            and "g14_e1_concurrency_pg17" not in routes,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
@@ -1036,6 +1046,7 @@ def verify():
         "backend/native_mobile_service/test_g14_d9c_admin_finalization_pg17.py",
         "backend/native_mobile_service/g14_e1_locked_mfa_verifier.py",
         "backend/native_mobile_service/test_g14_e1_locked_mfa_verifier.py",
+        "backend/native_mobile_service/test_g14_e1_concurrency_pg17.py",
         "scripts/g14_mfa_writer_inventory.py",
         "scripts/test_g14_mfa_writer_inventory.py",
         "scripts/g14_mfa_lock_order_report.py",
