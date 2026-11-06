@@ -37,3 +37,19 @@ Leer este traspaso y documentos G14-E2. Evaluar con precisión la frontera de se
 Se revisaron de nuevo fuentes de `g14_e1_locked_mfa_verifier.py`, `session_store.py` y `g14_trusted_issuer_boundary.py` y se publicó el análisis agrupado **`docs/G14_E2_E3_GROUPED_SECURITY_REVIEW_2026-11-06.md`**, commit `c3b6373e2cefd62ed8c9a334424be6a7e618c967`. Contiene contrato de transacción, riesgos, matriz de carreras, gates y orden de revisión.
 
 **Sin cambios de runtime ni pruebas E2/E3 nuevas.** E2 continúa `NOT_IMPLEMENTED` y E3 `NOT_EXECUTED`; la documentación no habilita emisión ni beta. Siguiente actividad de código, si los controles del conector lo permiten: diseñar y revisar conjuntamente auditoría transaccional + cuotas de denegaciones, después implementar una interfaz interna que nunca reciba afirmaciones MFA y probar PG17 efímero con carreras reales. No reconectar el `bool` de E1 al emisor de laboratorio ni eludir bloqueos de publicación anteriores. No pedir nuevas pruebas G15.
+
+## 06/11/2026 — E3 refresh races preparadas; validación local dirigida pendiente
+
+Nuevo código de pruebas `e269963d003b3c82ac5eb2a73c518d0a92320635`: dos escenarios PG17 de refresh vs revocación global y refresh vs cambio de contraseña; ambos en `native_mobile_service.test_pg17_races`, sin lógica de runtime nueva. Informe `docs/G14_E2_E3_GROUPED_SECURITY_REVIEW_2026-11-06.md` actualizado en `801ef0cb155db07d805a8187da3ccf5903b762bc`. Runner `scripts/n1_identity_pg17_ephemeral.sh --e3-refresh` añadido en `2947ea9628767b62e0af7aa8a146d649c5903cf3`: ejecuta solo los dos casos en PostgreSQL 17 efímero, sin puertos ni datos reales. **No hay PASS de estas pruebas aún.**
+
+Comprobación local única sugerida, tras `git fetch` + `merge --ff-only` en checkout limpio y confirmar HEAD:
+```bash
+cd ~/vencira-m3-localcheck
+git fetch origin feature/m3-android-local-notifications
+git merge --ff-only FETCH_HEAD
+git rev-parse --short HEAD
+bash -n scripts/n1_identity_pg17_ephemeral.sh &&
+bash scripts/n1_identity_pg17_ephemeral.sh --e3-refresh
+echo "G14_E3_REFRESH_LOCAL_RESULT=$?"
+```
+Esperado: `Ran 2 tests`, `OK`, `G14_E3_REFRESH_PG17_RESULT=0`, `G14_E3_REFRESH_LOCAL_RESULT=0`; los resultados deben aportarse antes de cambiar el estado. Este lote **no** cubre emisión MFA E2, E3 TOTP ni lanzamiento beta. No repetir G15/G13 o 139 pruebas E1D3 por rutina.
