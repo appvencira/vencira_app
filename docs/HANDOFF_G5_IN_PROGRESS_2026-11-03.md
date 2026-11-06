@@ -927,3 +927,8 @@ HEAD validado `d7fc8aa4b`: N1=0, build=0, PG17=0, 135 pruebas en 32.577s; N1 E1D
 ## 06/11/2026 — G14-E1D3 preparado, pendiente local
 
 Lote de cuatro regresiones PG17 añadidas a `test_g14_e1d_key_custody_pg17.py`: factor desactivado, contraseña rotada, secreto cifrado manipulado y secreto perteneciente a otra cuenta. N1 `g14_e1d3_pg17_state_and_secret_binding` publicado. Suite candidata esperada: 139 tests, sin resultado local todavía. No modifica rutas ni habilita emisión; G14-E2 bloqueada.
+
+
+## 06/11/2026 — E1D3 evidencia de cierre
+
+HEAD validado `07fa7818b`. N1=0; build=0; PG17=0; control específico `g14_e1d3_pg17_state_and_secret_binding=OK`; 139 tests en 36.805s. PASS local E1D3. Sin emisión MFA integrada ni prueba E2; beta no autorizada.
