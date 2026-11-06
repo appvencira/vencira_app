@@ -49,5 +49,7 @@ def verify_candidate_password_and_totp(*, username, password, code, keys,
             if not consume_totp(user.pk, code, keys=keys, timestamp=timestamp):
                 return False
             return True
-    except MobileTokenDenied as exc:
-        raise CandidateMfaDenied() from exc
+    except (MobileTokenDenied, ValueError):
+        # Invalid or unavailable MFA key material must not expose details.
+        # Any MFA writer changes are rolled back by the atomic boundary.
+        raise CandidateMfaDenied() from None
