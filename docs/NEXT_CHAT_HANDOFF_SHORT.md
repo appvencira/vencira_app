@@ -1,5 +1,11 @@
 
 
+> **B2-D inspección G13 publicada, pendiente de ensayo (06/11/2026):** `scripts/b2d_apk_manifest_audit.py` + cuatro tests del parser. Solo lectura sobre APK debug existente, package G13 obligatorio. Faltan log de inspección del manifiesto fusionado y campaña de Android físico; ningún despliegue ni permiso concedido. Ver [ANDROID_BETA_CRITICAL_PATH_2026-11-06.md](ANDROID_BETA_CRITICAL_PATH_2026-11-06.md).
+
+---
+
+
+
 > **B2-C auditoría PASS local (06/11/2026):** dos pruebas Python correctas, `B2_C_AUDIT_RESULT=0`, controles de permiso/consentimiento presentes en módulos aislados, pero ni autorización Android OS, ni manifiesto fusionado, ni reprogramación tras reinicio han sido verificados. `B2_C_INTEGRAL=PENDING`. Requiere inspección de APK fusionado y campaña Android física aislada; no activar rutas ni rollout.
 
 ---
