@@ -1,5 +1,11 @@
 
 
+> **B2-B publicado, validación pendiente (06/11/2026):** cuatro regresiones Flutter de arranque de avisos y cambio de ámbito, control N1 `android_beta_b2b_startup_recovery_regressions`. Ejecutar **una única vez** el test widget dirigido y N1 sobre nuevo HEAD; no repetir PG17, G13 ni build Android. No se ha habilitado autenticación nativa ni datos reales.
+
+---
+
+
+
 > **B2-A PASS_LOCAL estático (06/11/2026):** `HEAD=b4065dd8d`, cuatro tests 0, N1 0, git diff --check 0; control `android_beta_release_signing_external_only=OK`. No se ejecutó Gradle ni se generó APK beta firmada. B2-B (arranque, permisos de notificación, sesión/recovery y offline) pendiente, sin emisión nativa confiable ni autorización de release.
 
 ---
