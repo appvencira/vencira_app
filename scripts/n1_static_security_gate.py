@@ -100,6 +100,7 @@ def verify():
     g14_d3_races = read("backend/native_mobile_service/test_g14_d3_pg17_races.py")
     g14_d5_races = read("backend/native_mobile_service/test_g14_d5_mfa_writer_pg17_races.py")
     g14_d8_races = read("backend/native_mobile_service/test_g14_d8_admin_rotation_pg17.py")
+    g14_d9_guards = read("backend/native_mobile_service/test_g14_d9_recovery_guards_pg17.py")
     mfa_enrollment_lock = read("backend/reminders/mfa_enrollment.py")
     g14_inventory = read("scripts/g14_mfa_writer_inventory.py")
     g14_inventory_tests = read("scripts/test_g14_mfa_writer_inventory.py")
@@ -337,6 +338,15 @@ def verify():
             and "READ_ONLY_REVIEW_REQUIRED" in g14_lock_report
             and "test_two_locks_are_sorted_by_source_line" in g14_lock_report_tests
             and "test_nonexecuted_syntax" in g14_lock_report_tests,
+        "g14_d9_recovery_verifier_failclosed_tests":
+            "TransactionTestCase" in g14_d9_guards
+            and "test_missing_verifier_fails_closed" in g14_d9_guards
+            and "test_negative_verifier_fails_closed" in g14_d9_guards
+            and "test_truthy_non_boolean_verifier_fails_closed" in g14_d9_guards
+            and "test_verifier_exception_fails_closed" in g14_d9_guards
+            and "assert_unchanged" in g14_d9_guards
+            and "g14_d9_recovery_guards_pg17" not in config
+            and "g14_d9_recovery_guards_pg17" not in routes,
         "g5_keyring_not_connected":
             "CandidateKeyring" in g5_keyring
             and "DJANGO_SECRET_KEY" not in g5_keyring.replace("Django SECRET_KEY", "")
@@ -985,6 +995,7 @@ def verify():
         "backend/native_mobile_service/test_g14_d3_pg17_races.py",
         "backend/native_mobile_service/test_g14_d5_mfa_writer_pg17_races.py",
         "backend/native_mobile_service/test_g14_d8_admin_rotation_pg17.py",
+        "backend/native_mobile_service/test_g14_d9_recovery_guards_pg17.py",
         "scripts/g14_mfa_writer_inventory.py",
         "scripts/test_g14_mfa_writer_inventory.py",
         "scripts/g14_mfa_lock_order_report.py",
