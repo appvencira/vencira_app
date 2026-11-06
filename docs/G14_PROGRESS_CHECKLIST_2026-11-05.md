@@ -109,3 +109,13 @@ El operador comunica `G14_D9C_N1=0`, `G14_D9C_BUILD=0`, `G14_D9C_PG17=0`, `N1_ST
 ## 06/11/2026 — D9-D validación local confirmada (118 pruebas)
 
 El operador confirma `G14_D9D_N1=0`, `G14_D9D_BUILD=0`, `G14_D9D_PG17=0`, `N1_STATIC_g14_d9d_terminal_case_races_pg17=OK`, `N1_STATIC_GATE_RESULT=OK`, `Ran 118 tests in 19.205s`, `G5_CANDIDATE_PG17_RESULT=0`. Los dos escenarios adicionales de expiración/rechazo frente a finalización son PASS en PostgreSQL 17 efímero; no se dispone de recibo CI remoto. **D9-D completado en laboratorio.** D9 global continúa parcial: cobertura exhaustiva de escritores/locks, evidencia externa real, custodia y emisión MFA confiable sin finalizar. No release, no despliegue ni migraciones persistentes.
+
+
+## 06/11/2026 — G14-E0: inventario de llamadas al emisor de laboratorio (pendiente local)
+
+- [~] **G14-E0**: script `scripts/g14_trusted_issuer_boundary.py` publicado; seis regresiones sintéticas `scripts/test_g14_trusted_issuer_boundary.py`, gate N1 `g14_trusted_issuer_direct_call_boundary`. Rechaza llamadas directas al emisor de bajo nivel en módulos no-test fuera del límite `g14_d3_candidate_boundary.py`. **Sin ejecución local todavía; no afirmar PASS.**
+- [x] **G14-D9D**: 118 pruebas PG17 PASS local, evidencia recibida y documentada.
+- [ ] **Emisor MFA confiable**: contrato de aceptación, riesgos y orden de bloqueos documentados en `docs/G14_TRUSTED_MFA_ISSUER_DESIGN_2026-11-06.md`; implementación y pruebas de emisión MFA real pendientes.
+- [ ] Aprobación de recuperación administrativa con evidencias externas reales, custodia de claves, auditoría integral de escritores y gates G0–G9.
+
+La comprobación AST no detecta toda llamada indirecta, no verifica contraseña/TOTP y no autoriza login nativo. Sin cambios operativos, sin despliegue y sin migraciones.
