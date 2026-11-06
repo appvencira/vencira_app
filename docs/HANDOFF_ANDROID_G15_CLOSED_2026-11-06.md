@@ -53,3 +53,9 @@ bash scripts/n1_identity_pg17_ephemeral.sh --e3-refresh
 echo "G14_E3_REFRESH_LOCAL_RESULT=$?"
 ```
 Esperado: `Ran 2 tests`, `OK`, `G14_E3_REFRESH_PG17_RESULT=0`, `G14_E3_REFRESH_LOCAL_RESULT=0`; los resultados deben aportarse antes de cambiar el estado. Este lote **no** cubre emisión MFA E2, E3 TOTP ni lanzamiento beta. No repetir G15/G13 o 139 pruebas E1D3 por rutina.
+
+## 06/11/2026 — G14-E3 refresh R1/R2 validado en VPS
+
+Evidencia del operador: checkout `d67698012`, imagen Docker reconstruida y `G14_E3_IMAGE_SYNC=OK`; runner PostgreSQL 17 interno/tmpfs: `Found 2 test(s)`, `Ran 2 tests in 1.306s`, `OK`, `G14_E3_REFRESH_PG17_RESULT=0`, test DB destruida. Los intentos iniciales fallaron por imagen obsoleta y preflight Django incompleto; no eran fallos de concurrencia. **E3-R1/R2 PASS_LOCAL_PG17**. Informe de aceptación actualizado en commit `4aa4d18c7138fc405edaaab7a64ceb89a1e1714d`. No hay evidencia del echo externo `G14_E3_REFRESH_LOCAL_RESULT`.
+
+No repetir este ensayo salvo cambios relevantes. Faltan emisor MFA confiable E2, concurrencia de emisión TOTP/recovery y auditoría transaccional; beta/release continúan NO GO. Conservar todas las restricciones de seguridad y no modificar base persistente.
