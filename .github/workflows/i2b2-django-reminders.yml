@@ -1,0 +1,45 @@
+name: I2B2 Django reminders integration (disposable SQLite)
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'scripts/i2b_django_bootstrap_source_gate.py'
+      - '.github/workflows/i2b2-django-reminders.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VENCIRA_ENV: test
+      VENCIRA_DB_ENGINE: sqlite
+      DJANGO_SECRET_KEY: ci-only-disposable-django-secret-key-not-for-live-services-2026
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      DJANGO_DEBUG: '0'
+      VENCIRA_NATIVE_SESSION_LAB: '0'
+      VENCIRA_NATIVE_SERVICE_CANDIDATE: '0'
+      VENCIRA_ATTACHMENT_SPLIT_REHEARSAL: '0'
+      VENCIRA_MFA_ENROLLMENT_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install backend dependencies
+        run: python -m pip install -r backend/requirements.txt
+      - name: Check Django configuration
+        run: python backend/manage.py check
+      - name: Confirm migration sources do not require new generated models
+        run: python backend/manage.py makemigrations --check --dry-run
+      - name: Focused Django tests on disposable database
+        run: python backend/manage.py test reminders.test_default_reminders reminders.test_legal_deadlines reminders.test_reminder_planning reminders.test_api --verbosity 1
+      - name: Preserve I1 and integration gates
+        run: |
+          python scripts/i2_main_foundation_gate.py
+          python scripts/i2b_django_bootstrap_source_gate.py
+      - name: No persistent database or deployment
+        run: |
+          echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
+          echo 'MFA_RELEASE_AUTHORIZED=NO'

@@ -1,0 +1,56 @@
+from django.contrib.auth import get_user_model
+from django.test import TestCase, override_settings
+
+from .mfa_admin_recovery_service import open_recovery_case
+from .models import MfaAdministrativeRecoveryCase, UserMfaState
+
+
+def synthetic_identity_verifier(*, subject_id, requester):
+    return requester is not None and requester.pk == subject_id
+
+
+@override_settings(VENCIRA_MFA_RECOVERY_IDENTITY_VERIFIER=synthetic_identity_verifier)
+class RecoveryOpeningTests(TestCase):
+    def test_open_and_duplicate(self):
+        user = get_user_model().objects.create_user("opening_fixture")
+        state = UserMfaState.objects.create(user=user, enabled=True, encrypted_totp_secret="fixture")
+        case_id, reason = open_recovery_case(subject_id=user.pk, requester=user)
+        self.assertEqual(reason, "CASE_OPENED_RESTRICTED")
+        self.assertTrue(MfaAdministrativeRecoveryCase.objects.filter(pk=case_id).exists())
+        state.refresh_from_db()
+        self.assertEqual(state.session_epoch, 1)
+        self.assertEqual(open_recovery_case(subject_id=user.pk, requester=user)[1], "CASE_ALREADY_PENDING")
+
+    def test_inactive_factor_rejected(self):
+        user = get_user_model().objects.create_user("inactive_fixture")
+        UserMfaState.objects.create(user=user, enabled=False, encrypted_totp_secret="")
+        self.assertEqual(open_recovery_case(subject_id=user.pk, requester=user)[1], "ACTIVE_MFA_REQUIRED")
+        self.assertFalse(MfaAdministrativeRecoveryCase.objects.filter(subject=user).exists())
+
+
+class RecoveryOpeningExternalVerificationTests(TestCase):
+    def test_absent_verifier_blocks_without_mutation(self):
+        user = get_user_model().objects.create_user("opening_unverified")
+        state = UserMfaState.objects.create(user=user, enabled=True, encrypted_totp_secret="fixture")
+        with override_settings(VENCIRA_MFA_RECOVERY_IDENTITY_VERIFIER=None):
+            result = open_recovery_case(subject_id=user.pk, requester=user)
+        self.assertEqual(result[1], "INDEPENDENT_IDENTITY_VERIFIER_REQUIRED")
+        self.assertFalse(MfaAdministrativeRecoveryCase.objects.filter(subject=user).exists())
+        state.refresh_from_db()
+        self.assertEqual(state.session_epoch, 0)
+
+
+    def test_verifier_outage_does_not_open_case(self):
+        user = get_user_model().objects.create_user("opening_outage")
+        state = UserMfaState.objects.create(
+            user=user, enabled=True, encrypted_totp_secret="fixture"
+        )
+        def unavailable(**kwargs):
+            raise ConnectionError("synthetic offline")
+        with override_settings(VENCIRA_MFA_RECOVERY_IDENTITY_VERIFIER=unavailable):
+            case_id, reason = open_recovery_case(subject_id=user.pk, requester=user)
+        self.assertIsNone(case_id)
+        self.assertEqual(reason, "INDEPENDENT_IDENTITY_VERIFICATION_UNAVAILABLE")
+        self.assertFalse(MfaAdministrativeRecoveryCase.objects.filter(subject=user).exists())
+        state.refresh_from_db()
+        self.assertEqual(state.session_epoch, 0)
