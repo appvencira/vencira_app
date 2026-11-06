@@ -144,3 +144,11 @@ python3 scripts/n1_static_security_gate.py
 echo "G14_E2_F1_LOCAL_RESULT=$?"
 ```
 Si la prueba falla, conservar el error y revisar el código; no eliminar el control para fabricar PASS. Este avance **no implementa ni autoriza** el emisor E2 y no altera bases, rutas, MFA real, certificados, APK ni producción. `G14_E2_ISSUER=NOT_IMPLEMENTED`, `G14_E3_INTEGRAL=PENDING`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## 06/11/2026 — G14-E2-F1 PASS local (evidencia aportada)
+
+El operador ejecutó el gate dirigido con resultados: `Ran 7 tests in 0.003s`, `OK`, `G14_E2_E1_BOOL_CROSS_BOUNDARY=0`, `G14_E2_BOOL_FENCE=PASS`, `G14_E2_TRUSTED_ISSUER_IMPLEMENTED=NO`, `N1_STATIC_g14_e2_boolean_proof_nontransferable=OK`, `N1_STATIC_GATE_RESULT=OK`, `G14_E2_F1_LOCAL_RESULT=0`.
+
+**E2-F1=PASS_LOCAL_STATIC**. Solo se verifica la barrera sintáctica contra reutilización explícita del resultado booleano E1 fuera de tests. No se acredita análisis dinámico completo, transacción de token+auditoría, emisor confiable, E3 integral, release ni despliegue. No se aportó SHA del checkout en esta salida, por lo que no se deduce uno. No volver a ejecutar este gate sin cambios relevantes.
+
+Se mantienen `G14_E2_ISSUER=NOT_IMPLEMENTED`, `MFA_RELEASE_AUTHORIZED=NO`, `MB1_RELEASE_AUTHORIZED=NO`, `C_FICHA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
