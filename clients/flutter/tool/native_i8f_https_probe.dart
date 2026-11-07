@@ -20,7 +20,7 @@ const _host = 'dev.vencira.es';
 const _port = 8443;
 
 void _check(bool value, String marker) {
-  if (!value) throw StateError('I8F_$marker_FAILED');
+  if (!value) throw StateError('I8F_${marker}_FAILED');
   stdout.writeln('NATIVE_I8F_$marker=PASS');
 }
 
