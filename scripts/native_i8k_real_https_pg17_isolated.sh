@@ -72,7 +72,6 @@ VENCIRA_NATIVE_SERVICE_CANDIDATE=1
 VENCIRA_NATIVE_SESSION_LAB=0
 VENCIRA_I8D_HTTP_LAB=1
 VENCIRA_I8K_RECOVERY_LAB=1
-VENCIRA_I8K_MFA_SECRET=$mfa_secret
 VENCIRA_I8K_NETWORK_ISOLATED=1
 VENCIRA_I8D_MFA_KEY=$mfa_key
 VENCIRA_G5_AUDIT_KEY=$(openssl rand -hex 36)
@@ -121,7 +120,7 @@ for username, secret in [
     ("i8k-recovery-synthetic", os.environ["VENCIRA_I8K_MFA_SECRET"]),
 ]:
     user = User.objects.create_user(
-        username=username, password="synthetic-i8e-password",
+        username=username, password="synthetic-i8k-password",
     )
     UserMfaState.objects.create(
         user=user, enabled=True, session_epoch=1,
