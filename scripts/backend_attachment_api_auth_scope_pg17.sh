@@ -62,6 +62,11 @@ django migrate renewal_attachments --plan | grep -F 'renewal_attachments' >/dev/
 echo "ATT_API_PG17_MIGRATION_PLAN=OK"
 django migrate renewal_attachments --noinput >/dev/null
 echo "ATT_API_PG17_MIGRATE=OK"
+# The targeted attachment migration does not apply unrelated sessions migrations.
+# force_login() uses the DB-backed session engine, so prepare sessions on this
+# disposable PG17 only, without running unrestricted migrate.
+django migrate sessions --noinput >/dev/null
+echo "ATT_API_PG17_TEST_SESSIONS=OK"
 CHECK="$(cat <<'PY'
 from datetime import date
 from django.contrib.auth import get_user_model
