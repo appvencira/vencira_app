@@ -12,14 +12,14 @@ echo "MAIN_INTEGRATION_FEATURE=$(git rev-parse "$FEAT")"
 echo "=== COMMITS EXCLUSIVOS DE MAIN (hasta 30) ==="
 git log --format='%h %s' --max-count=30 "$FEAT..$MAIN"
 echo "=== ARCHIVOS TOCADOS POR COMMITS EXCLUSIVOS DE MAIN ==="
-git log --format= --name-only "$FEAT..$MAIN" | LC_ALL=C sort -u | sed '/^$/d' | head -100
+git log --format= --name-only "$FEAT..$MAIN" | LC_ALL=C sort -u | sed '/^$/d' | sed -n '1,100p'
 echo "=== MIGRACIONES DIFERENTES ENTRE ARBOLES ==="
 git diff --name-status "$MAIN" "$FEAT" -- backend/reminders/migrations backend/renewal_attachments/migrations backend/native_mobile_service/migrations backend/native_sessions_lab/migrations
 echo "=== MIGRACIONES CAMBIADAS DESDE ANCESTRO ==="
 BASE=$(git merge-base "$MAIN" "$FEAT")
-git diff --name-status "$BASE" "$FEAT" -- backend/reminders/migrations backend/renewal_attachments/migrations backend/native_mobile_service/migrations backend/native_sessions_lab/migrations | head -100
+git diff --name-status "$BASE" "$FEAT" -- backend/reminders/migrations backend/renewal_attachments/migrations backend/native_mobile_service/migrations backend/native_sessions_lab/migrations | sed -n '1,100p'
 echo "=== CONFIGURACION Y DESPLIEGUE — DIFERENCIAS DE ARBOLES ==="
-git diff --name-status "$MAIN" "$FEAT" -- backend/config backend/Dockerfile backend/requirements.txt compose.yaml compose.web.yaml compose.preview.yaml .github/workflows | head -100
+git diff --name-status "$MAIN" "$FEAT" -- backend/config backend/Dockerfile backend/requirements.txt compose.yaml compose.web.yaml compose.preview.yaml .github/workflows | sed -n '1,100p'
 echo "MAIN_INTEGRATION_GATE=READ_ONLY_COMPLETE"
 echo "MAIN_INTEGRATION_MERGE_AUTHORIZED=NO"
 echo "MAIN_INTEGRATION_DEPLOY_AUTHORIZED=NO"
