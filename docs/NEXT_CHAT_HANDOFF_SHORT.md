@@ -1,3 +1,7 @@
+> **07/11/2026 — ADJUNTOS: PARIDAD DE MIGRACIONES PASS:** el operador confirmó `ATTACHMENT_DRYRUN_MODEL_MIGRATION_PARITY=YES` y `No changes detected in app 'renewal_attachments'` con imagen candidata (no API antigua), sin modificaciones DEV. Publicado `scripts/backend_attachment_split_pg17_isolated.sh` para ensayo **PG17 temporal** de migración independiente desde `reminders.0018`, verificación ausencia de MFA y rollback en BD desechable; ejecución local pendiente. **No desplegar en DEV** hasta separar el candidato operativo de flags `VENCIRA_ENV=test`. Detalle en [BACKEND_DEV_RELEASE_SPLIT_2026-11-07.md](BACKEND_DEV_RELEASE_SPLIT_2026-11-07.md).
+
+---
+
 > **07/11/2026 — ADJUNTOS: AISLAMIENTO YA EXISTE EN TEST:** el operador confirmó `BACKEND_DEPENDENCY_RESULT=0`, `0027` exige las 8 migraciones MFA 0019–0026; no GO. La fuente ya dispone de `backend/renewal_attachments` con `0001_initial` independiente de MFA (base `reminders.0018`), pero restringido explícitamente a `VENCIRA_ENV=test`, con modelo histórico paralelo aún en `reminders`. **No crear otra app; adaptar/ensayar la separación existente, sin autorizar deploy.** Comprobador read-only publicado `scripts/backend_attachment_split_release_readonly.py`. Referencia [BACKEND_DEV_RELEASE_SPLIT_2026-11-07.md](BACKEND_DEV_RELEASE_SPLIT_2026-11-07.md).
 
 ---
