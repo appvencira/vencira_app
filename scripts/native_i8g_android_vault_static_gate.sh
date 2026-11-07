@@ -3,7 +3,7 @@
 # Does NOT claim a physical Android Keystore test. No Django/DB/deploy.
 set -Eeuo pipefail
 umask 077
-ROOT="$(cd "$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 command -v docker >/dev/null || exit 2
@@ -19,7 +19,7 @@ cleanup() {
   trap - EXIT
   local unchanged=YES
   for s in vencira_localcheck-api-1 vencira_localcheck-db-1 vencira_localcheck-web_preview-1; do
-    if [[ "$(D inspect -f '{{.Id}}:{{.Image}}' "$s" 2>/dev/null || true)" != "\${before[$s]}" ]]; then
+    if [[ "$(D inspect -f '{{.Id}}:{{.Image}}' "$s" 2>/dev/null || true)" != "${before[$s]}" ]]; then
       unchanged=NO
       rc=9
     fi
