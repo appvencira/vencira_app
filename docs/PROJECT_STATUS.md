@@ -1,3 +1,7 @@
+> **07/11/2026 — PG17 ADJUNTOS PASS Y CANDIDATA API RECORTADA:** ensayo con Postgres 17 temporal validado: migración independiente desde `reminders.0018`, 0 migraciones MFA, creación y rollback correcto, live API/DB/web intactos. Publicado `scripts/backend_attachment_api_candidate_build.sh` que construye **sin deploy** una API a partir del checkout backend vivo 0018 y solo el módulo de metadatos de adjuntos. No empaquetar la rama Android completa. **Validación de build candidato pendiente.** Ver [BACKEND_DEV_RELEASE_SPLIT_2026-11-07.md](BACKEND_DEV_RELEASE_SPLIT_2026-11-07.md). `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+---
+
 > **07/11/2026 — ADJUNTOS: PARIDAD DE MIGRACIONES PASS:** el operador confirmó `ATTACHMENT_DRYRUN_MODEL_MIGRATION_PARITY=YES` y `No changes detected in app 'renewal_attachments'` con imagen candidata (no API antigua), sin modificaciones DEV. Publicado `scripts/backend_attachment_split_pg17_isolated.sh` para ensayo **PG17 temporal** de migración independiente desde `reminders.0018`, verificación ausencia de MFA y rollback en BD desechable; ejecución local pendiente. **No desplegar en DEV** hasta separar el candidato operativo de flags `VENCIRA_ENV=test`. Detalle en [BACKEND_DEV_RELEASE_SPLIT_2026-11-07.md](BACKEND_DEV_RELEASE_SPLIT_2026-11-07.md).
 
 ---
