@@ -13,7 +13,15 @@ os.environ["HTTPS"] = "on"
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 from django.core.wsgi import get_wsgi_application
 
-app = get_wsgi_application()
+django_app = get_wsgi_application()
+
+
+def app(environ, start_response):
+    # The socket itself is TLS. Tell Django the real request scheme rather
+    # than trusting a client-supplied forwarded-proto header.
+    environ["wsgi.url_scheme"] = "https"
+    environ["HTTP_X_FORWARDED_PROTO"] = "https"
+    return django_app(environ, start_response)
 
 from django.contrib.auth import authenticate, login
 from django.http import JsonResponse
