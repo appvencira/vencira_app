@@ -112,11 +112,15 @@ status, _ = request(mfa_path, {"challenge": challenge, "code": correct})
 assert status == 401
 print("NATIVE_I8K_RECOVERY_CHALLENGE_REPLAY_DENIED=PASS")
 
-status, _ = request("/api/v1/mobile/auth/password/", {
-    "username": "i8k-recovery-synthetic", "password": "synthetic-i8k-password",
-})
-assert status == 404
-print("NATIVE_I8K_NORMAL_LOGIN_ENDPOINT_ABSENT=PASS")
+try:
+    trusted.open(urllib.request.Request(
+        BASE + "/api/v1/mobile/auth/password/", method="GET",
+    ), timeout=6)
+except urllib.error.HTTPError as err:
+    assert err.code == 404
+    print("NATIVE_I8K_NORMAL_LOGIN_ENDPOINT_ABSENT=PASS")
+else:
+    raise AssertionError("normal login unexpectedly routed")
 
 status, _ = request(password_path, {
     "username": "i8k-recovery-synthetic", "password": "synthetic-i8k-password",
