@@ -51,7 +51,7 @@ else:
     raise AssertionError("TLS hostname mismatch was accepted")
 
 
-def request(path, data=None, headers=None):
+def request(path, data=None, headers=None, *, expect_cookie_clear=False):
     provided = headers or {}
     body = None if data is None else json.dumps(data).encode("utf-8")
     fields = {"Accept": "application/json", **provided}
@@ -66,7 +66,18 @@ def request(path, data=None, headers=None):
             status, raw, hdr = response.status, response.read(), response.headers
     except urllib.error.HTTPError as error:
         status, raw, hdr = error.code, error.read(), error.headers
-    assert "set-cookie" not in hdr, hdr
+    cookies = hdr.get_all("Set-Cookie", [])
+    if expect_cookie_clear:
+        # Django may discard an injected invalid web-session cookie. Only an
+        # empty, expired deletion is permitted, never a newly issued cookie.
+        assert status == 403, status
+        assert len(cookies) == 1, len(cookies)
+        cookie = cookies[0]
+        assert cookie.startswith('vencira_sessionid=""'), "unexpected cookie"
+        assert "Max-Age=0" in cookie and "expires=Thu, 01 Jan 1970" in cookie, "cookie not expired"
+        print("NATIVE_I8E_ONLY_WEB_COOKIE_DELETION=PASS")
+    else:
+        assert not cookies, "unexpected native cookie issuance"
     assert hdr.get("Cache-Control") == "no-store, max-age=0", hdr
     assert hdr.get_content_type() == "application/json", hdr
     assert len(raw) < 8192
@@ -179,7 +190,15 @@ status, data, _ = request(
     "/api/v1/mobile/auth/password/",
     {"username": "i8e-synthetic-mfa", "password": "synthetic-i8e-password"},
     headers={"Cookie": "vencira_sessionid=should-be-denied"},
+    expect_cookie_clear=True,
 )
 assert status == 403
 print("NATIVE_I8E_BROWSER_COOKIE_DENIED=PASS")
+status, data, _ = request(
+    "/api/v1/mobile/auth/password/",
+    {"username": "i8e-synthetic-mfa", "password": "synthetic-i8e-password"},
+    headers={"Origin": "https://untrusted-origin.invalid"},
+)
+assert status == 403 and data == {"error": "native_auth_unavailable"}
+print("NATIVE_I8E_BROWSER_ORIGIN_DENIED=PASS")
 print("NATIVE_I8E_REAL_HTTPS_GATE=PASS")
