@@ -64,18 +64,18 @@ login = urllib.parse.urlencode({
     "csrfmiddlewaretoken": csrf,
 }).encode("utf-8")
 status, raw, headers = request(
-    "/accounts/login/", "POST", login, {
+    "/_att_lab/login/", "POST", login, {
         "Content-Type": "application/x-www-form-urlencoded",
         "Origin": BASE,
-        "Referer": BASE + "/accounts/login/",
+        "Referer": BASE + "/_att_lab/login/",
         "X-CSRFToken": csrf,
     })
-assert status == 200, (status,raw[:240])
+assert status == 200 and json.loads(raw).get("lab") == "authenticated", (status,raw[:240])
 cookies = {c.name:c for c in jar}
 assert cookies["vencira_sessionid"].secure, cookies
 assert "HttpOnly" in cookies["vencira_sessionid"]._rest, cookies
 assert cookies["vencira_csrftoken"].secure, cookies
-print("ATT_HTTPS_PASSWORD_SESSION_SECURE_COOKIES=PASS")
+print("ATT_HTTPS_TEST_ONLY_PASSWORD_SESSION_SECURE_COOKIES=PASS")
 status, raw, headers = request(PATH)
 assert status == 200, (status,raw[:240])
 doc=json.loads(raw)
