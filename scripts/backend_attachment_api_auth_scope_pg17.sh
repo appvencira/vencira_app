@@ -65,13 +65,14 @@ echo "ATT_API_PG17_MIGRATE=OK"
 CHECK="$(cat <<'PY'
 from datetime import date
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from django.test import Client
 from reminders.models import Workspace, WorkspaceMember, Renewal
 from renewal_attachments.models import RenewalAttachment
 from django.db.migrations.recorder import MigrationRecorder
 
 User = get_user_model()
-users = [User.objects.create_user(username=n, password="disposable-only-test-password-2026") for n in ("aowner","bowner","assigned","unassigned","outsider")]
+users = [User.objects.create_user(username=n, password="disposable-only-test-password-2026", last_login=timezone.now()) for n in ("aowner","bowner","assigned","unassigned","outsider")]
 ao,bo,assigned,unassigned,outsider = users
 wa = Workspace.objects.create(name="fixture-A")
 wb = Workspace.objects.create(name="fixture-B")
