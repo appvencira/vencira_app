@@ -34,9 +34,9 @@ manejo de respuesta ambigua en Android ni custodia definitiva de claves.
 ## Gate agrupado
 
 `backend/native_mobile_service/test_i8j_recovery_pg17.py` contiene
-**9 tests** de revocación de sesiones anteriores, emisión de una sola
+**11 tests** de revocación de sesiones anteriores, emisión de una sola
 nueva sesión, separación de propósitos, contraseña/TOTP incorrectos,
-challenge caducado o repetido, rollback de auditoría y carrera de
+challenge caducado o repetido, invalidación de desafío de login pendiente, bloqueo de cuenta desactivada, rollback de auditoría y carrera de
 dos confirmaciones simultáneas.
 
 `scripts/native_i8j_atomic_recovery_pg17_isolated.sh` reúne los tests
