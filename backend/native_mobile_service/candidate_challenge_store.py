@@ -18,8 +18,8 @@ from .candidate_challenge_wire import (
     NativeChallengeMalformed, matches_candidate_digest,
     new_candidate_challenge, parse_candidate_challenge,
 )
-from .models import MobilePendingChallenge
-from .session_store import MobileAccountFence, MobileTokenDenied, _gate
+from .models import MobileAccountFence, MobilePendingChallenge
+from .session_store import MobileTokenDenied, _gate
 
 
 class CandidateChallengeDenied(Exception):
