@@ -1,3 +1,7 @@
+> **07/11/2026 — PR #32 CI PARCIAL (3/5 PASS):** sobre commit `6f836971` GitHub Actions confirma I2C Flutter `success`, I3 integral `success`, I4 HTTPS `success`; I5 Chromium+Android y I6 emulador todavía `in_progress` en la consulta. Dentro de I5, job Chromium HTTPS+PG17 `success`, job APK debug `in_progress`; I6 job instalación debug en emulador `in_progress`. PR #32 sigue `draft`, `open`, `mergeable=true` según GitHub, **no fusionado**. No asumir PASS total ni release. MFA y backend DEV inalterados.
+
+---
+
 > **07/11/2026 — PR AISLADO #32 DESDE MAIN (DRAFT, NO MERGE):** inspección de blobs GitHub `main` vs `feature/m3-android-local-notifications`: `backend/config/settings.py`, `backend/config/urls.py`, `backend/reminders/models.py` y `backend/reminders/attachment_api.py` son idénticos; los dos archivos Flutter distintos son `clients/flutter/lib/ui/renewal_detail_screen.dart` (main muestra tarjeta de adjuntos sin gate; feature usa `VENCIRA_WEB_ATTACHMENTS_ENABLED=false` por defecto) y `clients/flutter/lib/ui/control_assessment_card.dart` (solo comentarios). Creada rama `integration/main-web-attachments-failclosed-20261107` desde main y commit `6f836971` cambiando exclusivamente la tarjeta para que el archivo resultante coincida exactamente con feature. PR **#32** borrador `https://github.com/appvencira/vencira_app/pull/32`, 1 archivo, **sin merge, CI pendiente, sin deploy**. Revisar PR y pruebas antes de aprobación. Las divergencias de scripts/CI/infraestructura seguirán separadas. MFA y migraciones DEV bloqueadas.
 
 ---
