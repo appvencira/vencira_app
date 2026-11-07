@@ -184,3 +184,7 @@ Comparación GitHub por SHA de blob en las puntas de `main` y `feature/m3-androi
 ## 07/11/2026 — CI parcial PR #32 desde main
 
 Validación en GitHub Actions del SHA `6f836971dad4759016924303944acc0f0f8e76b1`: `I2C Flutter client integration` completado `success`, `I3 integral main` completado `success`, `I4 HTTPS same-origin` completado `success`; `I5 Chromium Flutter and Android` todavía `in_progress` (subjob Chromium HTTPS + PG17 `success`, APK debug compilando), `I6 Android emulator` todavía `in_progress` (build APK debug). No se reportan fallos de jobs en esta comprobación; faltan conclusiones completas. PR #32 borrador, abierto, `mergeable=true`. No confundir mergeable con revisado ni autorizado; no hacer merge ni deploy aún.
+
+## 07/11/2026 — I5 finalizó PASS; I6 aún inspecciona emulador
+
+GitHub Actions para PR #32 / SHA `6f836971`: I2C `success`, I3 `success`, I4 `success`, I5 (Chromium y APK debug) `success`. I6 `in_progress`; su único job ya completó compilación y se encuentra en el paso de instalación, arranque e inspección en emulador Android 35. Pendiente resultado final, capturas y aprobación. No autorizar merge ni deploy por avance parcial; mantener feature flag de adjuntos cerrado por defecto y gates de release bloqueados.
