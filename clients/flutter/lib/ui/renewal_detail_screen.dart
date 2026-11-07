@@ -837,9 +837,14 @@ class _DetailState extends State<VenciraRenewalDetailScreen> {
                   _info(_t.noticeDate,
                     DateFormat.yMd(locale).format(renewal.noticeDeadlineOn!)),
             ]),
-            VenciraRenewalAttachmentsCard(
-              locale: locale, api: widget.api,
-              workspaceId: widget.workspace.id, renewalId: renewal.id),
+            // The DEV API currently deployed has no attachment routes.
+            // Fail closed in default web builds until backend is explicitly
+            // deployed and the feature's release boundary is approved.
+            if (const bool.fromEnvironment(
+              'VENCIRA_WEB_ATTACHMENTS_ENABLED', defaultValue: false))
+              VenciraRenewalAttachmentsCard(
+                locale: locale, api: widget.api,
+                workspaceId: widget.workspace.id, renewalId: renewal.id),
             const SizedBox(height: 12),
             if (renewal.notes.isNotEmpty)
               _sectionCard(Icons.notes_outlined,
