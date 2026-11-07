@@ -84,7 +84,7 @@ status, body, _ = request(
     "/api/v1/mobile/auth/password/",
     {"username": "i8e-synthetic-mfa", "password": "synthetic-i8e-password"},
 )
-assert status == 200 and set(body) == {"status", "challenge"}
+assert status == 200 and set(body) == {"status", "challenge"}, (status, sorted(body))
 assert body["status"] == "mfa_required"
 challenge = body["challenge"]
 assert challenge.startswith("lc1.")
