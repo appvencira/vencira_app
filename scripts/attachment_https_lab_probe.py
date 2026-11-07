@@ -14,9 +14,14 @@ PATH = f"/api/v1/workspaces/{WS}/renewals/{REN}/attachments/"
 CA = "/tmp/attachment-lab-cert.pem"
 
 # A self-signed test certificate must NEVER be accepted by the default store.
+untrusted = urllib.request.build_opener(
+    urllib.request.ProxyHandler({}),
+    urllib.request.HTTPSHandler(context=ssl.create_default_context()),
+)
 try:
-    urllib.request.urlopen(BASE + "/api/health/", timeout=5)
-except (urllib.error.URLError, ssl.SSLError):
+    untrusted.open(BASE + "/api/health/", timeout=5)
+except urllib.error.URLError as error:
+    assert isinstance(error.reason, ssl.SSLCertVerificationError), error
     print("ATT_HTTPS_UNTRUSTED_CA_DENIED=PASS")
 else:
     raise AssertionError("Untrusted certificate was accepted")
@@ -25,6 +30,7 @@ ctx = ssl.create_default_context(cafile=CA)
 ctx.check_hostname = True
 jar = http.cookiejar.CookieJar()
 opener = urllib.request.build_opener(
+    urllib.request.ProxyHandler({}),
     urllib.request.HTTPSHandler(context=ctx),
     urllib.request.HTTPCookieProcessor(jar),
 )
