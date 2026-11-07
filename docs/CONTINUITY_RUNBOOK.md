@@ -1,3 +1,7 @@
+> **CORTE VIGENTE 07/11/2026 — ADJUNTOS / API CANDIDATA.** Handoff prioritario: [HANDOFF_ATTACHMENT_API_CANDIDATE_2026-11-07.md](HANDOFF_ATTACHMENT_API_CANDIDATE_2026-11-07.md). Django paridad `renewal_attachments` PASS y migración+rollback PG17 efímero PASS, 0 migraciones MFA y contenedores DEV intactos. Script `scripts/backend_attachment_api_candidate_build.sh` publicado y **pendiente de ejecución local**; siguiente acción: build aislado, luego pruebas PG17/HTTP sobre la imagen exacta, nunca desplegar la rama Android completa. `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Los encabezados antiguos son históricos.
+
+---
+
 > **CORTE VIGENTE 03/11/2026 — M3 G4→G5.** La referencia prioritaria para un nuevo chat es [HANDOFF_G4_G5_2026-11-03.md](HANDOFF_G4_G5_2026-11-03.md) y la [matriz de autorización beta](M3_NATIVE_BETA_RELEASE_GATES_2026-11-02.md). Rama `feature/m3-android-local-notifications`, PR #17 borrador. G4 candidato PG17 `G4_CANDIDATE_PG17_RESULT=0` (20/20), G6 laboratorio `M3_HTTP_RESULT=0` anterior a G4. G4 SQLite, CI y gate M3 completo posterior a G4 todavía sin prueba acreditada. La siguiente macrofase de desarrollo es G5; las cronologías/encabezados históricos posteriores pueden contradecir el estado actual. **`MFA_RELEASE_AUTHORIZED=NO`; `MB1_RELEASE_AUTHORIZED=NO`; `C_FICHA_RELEASE_AUTHORIZED=NO`; `GLOBAL_FREEZE=NOT_VERIFIED`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.**
 
 ---
