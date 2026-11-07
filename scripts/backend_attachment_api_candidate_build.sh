@@ -6,6 +6,8 @@ umask 077
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 BASE=/home/vencira/vencira-localcheck
+# Explicit, audited code ref for the historical schema-0018 DEV baseline.
+BASE_REF="${ATT_API_BASE_REF:-HEAD}"
 API=vencira_localcheck-api-1
 DB=vencira_localcheck-db-1
 WEB=vencira_localcheck-web_preview-1
@@ -26,13 +28,36 @@ for name in "$API" "$DB" "$WEB"; do
 done
 test "$("${DOCKER[@]}" inspect -f '{{.Image}}' "$API")" = "$EXPECTED_API" || {
   echo "ATT_API_CANDIDATE_LIVE_API_CHANGED=DENIED"; exit 3; }
+# Fail closed BEFORE building if the checkout HEAD has advanced past schema 0018.
+# A matching 0018 file alone does not establish that the full backend is historical.
+git -C "$BASE" rev-parse --verify "$BASE_REF^{commit}" >/dev/null || {
+  echo "ATT_API_CANDIDATE_BASE_REF_INVALID=DENIED"; exit 4; }
+MIGRATION_NAMES="$(git -C "$BASE" ls-tree -r --name-only "$BASE_REF" -- backend/reminders/migrations |
+  sed -n 's|^backend/reminders/migrations/\([0-9][0-9][0-9][0-9]\)_[^/]*\.py$|\1|p' | sort -u)"
+if [[ "$(printf '%s\n' "$MIGRATION_NAMES" | tail -n 1)" != 0018 ]] ||
+   [[ "$(printf '%s\n' "$MIGRATION_NAMES" | wc -l)" -ne 18 ]]; then
+  echo "ATT_API_CANDIDATE_BASE_SCHEMA=NOT_0018"
+  echo "ATT_API_CANDIDATE_BASE_REF=$BASE_REF"
+  echo "ATT_API_CANDIDATE_BASE_LATEST_MIGRATION=$(printf '%s\n' "$MIGRATION_NAMES" | tail -n 1)"
+  echo "ATT_API_CANDIDATE_BUILD=BLOCKED_BASELINE_MISMATCH"
+  echo "ATT_API_CANDIDATE_DEPLOY_EXECUTED=NO"
+  echo "ATT_API_CANDIDATE_LIVE_MIGRATION_EXECUTED=NO"
+  exit 4
+fi
+# An older baseline must not already import MFA and attachment routes.
+if git -C "$BASE" show "$BASE_REF:backend/config/urls.py" | grep -Eq 'mfa_challenge|mfa_store' ||
+   git -C "$BASE" show "$BASE_REF:backend/reminders/urls.py" | grep -Eq 'renewal_attachment_detail|mfa_setup_start'; then
+  echo "ATT_API_CANDIDATE_BASE_ROUTES=INCOMPATIBLE"
+  exit 4
+fi
+echo "ATT_API_CANDIDATE_BASE_SCHEMA=0018_ONLY"
 # Prevent transplanting schema code onto an incompatible historical 0018.
-BASE_0018="$(git -C "$BASE" show HEAD:backend/reminders/migrations/0018_draft_reasons.py | sha256sum | cut -d' ' -f1)"
+BASE_0018="$(git -C "$BASE" show "$BASE_REF:backend/reminders/migrations/0018_draft_reasons.py" | sha256sum | cut -d' ' -f1)"
 SOURCE_0018="$(git show HEAD:backend/reminders/migrations/0018_draft_reasons.py | sha256sum | cut -d' ' -f1)"
 test "$BASE_0018" = "$SOURCE_0018" || {
   echo "ATT_API_CANDIDATE_BASE_0018_MISMATCH=DENIED"; exit 4; }
 SOURCE_SHA="$(git rev-parse HEAD)"
-BASE_SHA="$(git -C "$BASE" rev-parse HEAD)"
+BASE_SHA="$(git -C "$BASE" rev-parse "$BASE_REF")"
 TAG="vencira-attachment-api-candidate:${SOURCE_SHA:0:12}"
 echo "ATT_API_CANDIDATE_BASE_SHA=$BASE_SHA"
 echo "ATT_API_CANDIDATE_SOURCE_SHA=$SOURCE_SHA"
@@ -40,7 +65,7 @@ echo "ATT_API_CANDIDATE_BASE_0018=IDENTICAL"
 WORK="$(mktemp -d /tmp/vencira-attachment-candidate.XXXXXXXX)"
 trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK"
-git -C "$BASE" archive HEAD backend | tar -xf - -C "$WORK"
+git -C "$BASE" archive "$BASE_REF" backend | tar -xf - -C "$WORK"
 git archive HEAD backend/renewal_attachments backend/reminders/attachment_api.py backend/reminders/attachment_gate.py | tar -xf - -C "$WORK"
 # The build must contain exactly the historical reminders migration chain
 # through 0018, plus independent renewal_attachments migrations.
