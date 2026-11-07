@@ -57,6 +57,7 @@ class I8INonMfaRecoveryDeniedPG17(TransactionTestCase):
     def test_disabled_mfa_record_password_never_issues(self):
         UserMfaState.objects.create(
             user=self.user, enabled=False, session_epoch=1,
+            encrypted_totp_secret="",
         )
         response = self.password()
         self.assertEqual(response.status_code, 401)
