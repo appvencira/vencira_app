@@ -22,8 +22,7 @@ from .candidate_challenge_store import (
     CandidateChallengeDenied, _generation, _require_lab, _state,
 )
 from .candidate_challenge_wire import (
-    NativeChallengeMalformed, matches_candidate_digest,
-    new_candidate_challenge, parse_candidate_challenge,
+    NativeChallengeMalformed, new_candidate_challenge, parse_candidate_challenge,
 )
 from .g14_admission import admit_candidate_password_attempt
 from .g5_audit import record_candidate_auth_event
@@ -31,7 +30,7 @@ from .models import (
     MobileAccountFence, MobileDeviceSession, MobilePendingChallenge,
 )
 from .session_store import (
-    MobileTokenDenied, issue_verified_candidate_session,
+    issue_verified_candidate_session,
 )
 
 _RECOVERY_DOMAIN = b"vencira:native:account-recovery:challenge:v1:"
