@@ -1,6 +1,7 @@
 """Contract-level proof only: no DB row, MFA decision or token issuer."""
 import unittest
 import uuid
+from unittest.mock import patch
 
 from .candidate_challenge_wire import (
     NativeChallengeMalformed, matches_candidate_digest,
@@ -8,7 +9,16 @@ from .candidate_challenge_wire import (
 )
 
 
+@patch.dict("os.environ", {"VENCIRA_ENV": "test", "VENCIRA_NATIVE_SERVICE_CANDIDATE": "1"})
 class CandidateChallengeWireTests(unittest.TestCase):
+    def test_generating_outside_explicit_lab_is_denied(self):
+        for environment, candidate in [("production", "1"), ("development", "1"), ("test", "0")]:
+            with self.subTest(environment=environment, candidate=candidate), patch.dict(
+                "os.environ", {"VENCIRA_ENV": environment, "VENCIRA_NATIVE_SERVICE_CANDIDATE": candidate}
+            ):
+                with self.assertRaises(NativeChallengeMalformed):
+                    new_candidate_challenge()
+
     def test_random_secret_matches_flutter_lc1_shape(self):
         wire, challenge_id, digest = new_candidate_challenge()
         self.assertRegex(wire, r"^lc1\.[0-9a-f]{32}\.[A-Za-z0-9_-]{43}$")
