@@ -86,6 +86,8 @@ test "$ready" == YES || exit 4
 echo "NATIVE_I8B_PG17_READY=OK"
 django() { D run --rm --network "$net" --env-file "$tmp/env" "$img" python manage.py "$@"; }
 django check >/dev/null
+django makemigrations native_mobile_service --check --dry-run --noinput >/dev/null
+echo "NATIVE_I8B_MIGRATION_PARITY=OK"
 django migrate --noinput >/dev/null
 echo "NATIVE_I8B_DISPOSABLE_SCHEMA=OK"
 # Test runner itself creates a second temporary DB in ephemeral Postgres.
