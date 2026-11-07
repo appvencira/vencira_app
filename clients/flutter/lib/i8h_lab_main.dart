@@ -22,6 +22,7 @@ void main() {
 
 class I8hLabHome extends StatefulWidget {
   const I8hLabHome({super.key});
+
   @override
   State<I8hLabHome> createState() => _I8hLabHomeState();
 }
@@ -32,56 +33,21 @@ class _I8hLabHomeState extends State<I8hLabHome> {
 
   Future<void> _run(Future<List<String>> Function() work) async {
     if (busy) return;
-    setState(() { busy = true; outcome = 'NATIVE_I8H_RUNNING'; });
+    setState(() {
+      busy = true;
+      outcome = 'NATIVE_I8H_RUNNING';
+    });
     try {
       final records = await work();
       if (mounted) setState(() => outcome = records.join('\n'));
     } catch (_) {
-      // No exception text, certificate, token, password, username or
-      // server address may enter the screenshot/log.
+      // Never expose exception messages, credentials, certificates or tokens.
       final stage = i8hDiagnosticStage;
-      final safe = RegExp(r'^[A-Z0-9_]{1,45}
-    } finally {
-      if (mounted) setState(() => busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('VENCIRA · I8-H Android')),
-    body: SafeArea(child: ListView(
-      padding: const EdgeInsets.all(18),
-      children: [
-        const Text('MFA + HTTPS + almacenamiento Android',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 21)),
-        const SizedBox(height: 12),
-        const Text('Solo cuenta sintética, PostgreSQL temporal, certificado '
-          'de laboratorio y túnel privado Android 127.0.0.1:18743. '
-          'No hay acceso al servidor operativo.'),
-        const SizedBox(height: 20),
-        FilledButton(
-          onPressed: busy ? null : () => _run(runPhysicalMfa),
-          child: const Text('Ejecutar prueba integral I8-H'),
-        ),
-        const SizedBox(height: 10),
-        const Text('La prueba verifica TLS, MFA, almacenamiento protegido '
-          'del refresh y revocación remota. Una ejecución incompleta '
-          'permanece bloqueada para evitar una emisión ambigua.'),
-        const SizedBox(height: 16),
-        SelectableText(outcome,
-          style: const TextStyle(fontFamily: 'monospace', fontSize: 12.5)),
-        const SizedBox(height: 20),
-        const Text('DEBUG sintético. No acredita recuperación total ni '
-          'autoriza despliegue, migración o publicación.'),
-      ],
-    )),
-  );
-}
-).hasMatch(stage)
+      final safeStage = RegExp(r'^[A-Z0-9_]{1,45}$').hasMatch(stage)
           ? stage : 'UNKNOWN';
       if (mounted) {
         setState(() => outcome = 'NATIVE_I8H_ANDROID_GATE=FAIL\n'
-            'NATIVE_I8H_FAILURE_STAGE=$safe');
+            'NATIVE_I8H_FAILURE_STAGE=$safeStage');
       }
     } finally {
       if (mounted) setState(() => busy = false);
@@ -91,31 +57,43 @@ class _I8hLabHomeState extends State<I8hLabHome> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('VENCIRA · I8-H Android')),
-    body: SafeArea(child: ListView(
-      padding: const EdgeInsets.all(18),
-      children: [
-        const Text('MFA + HTTPS + almacenamiento Android',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 21)),
-        const SizedBox(height: 12),
-        const Text('Solo cuenta sintética, PostgreSQL temporal, certificado '
-          'de laboratorio y túnel privado Android 127.0.0.1:18743. '
-          'No hay acceso al servidor operativo.'),
-        const SizedBox(height: 20),
-        FilledButton(
-          onPressed: busy ? null : () => _run(runPhysicalMfa),
-          child: const Text('Ejecutar prueba integral I8-H'),
-        ),
-        const SizedBox(height: 10),
-        const Text('La prueba verifica TLS, MFA, almacenamiento protegido '
-          'del refresh y revocación remota. Una ejecución incompleta '
-          'permanece bloqueada para evitar una emisión ambigua.'),
-        const SizedBox(height: 16),
-        SelectableText(outcome,
-          style: const TextStyle(fontFamily: 'monospace', fontSize: 12.5)),
-        const SizedBox(height: 20),
-        const Text('DEBUG sintético. No acredita recuperación total ni '
-          'autoriza despliegue, migración o publicación.'),
-      ],
-    )),
+    body: SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.all(18),
+        children: [
+          const Text(
+            'MFA + HTTPS + almacenamiento Android',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 21),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Solo cuenta sintética, PostgreSQL temporal, certificado '
+            'de laboratorio y túnel privado Android 127.0.0.1:18743. '
+            'No hay acceso al servidor operativo.',
+          ),
+          const SizedBox(height: 20),
+          FilledButton(
+            onPressed: busy ? null : () => _run(runPhysicalMfa),
+            child: const Text('Ejecutar prueba integral I8-H'),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'La prueba verifica TLS, MFA, almacenamiento protegido '
+            'del refresh y revocación remota. Una ejecución incompleta '
+            'permanece bloqueada para evitar una emisión ambigua.',
+          ),
+          const SizedBox(height: 16),
+          SelectableText(
+            outcome,
+            style: const TextStyle(fontFamily: 'monospace', fontSize: 12.5),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'DEBUG sintético. No acredita recuperación total ni autoriza '
+            'despliegue, migración o publicación.',
+          ),
+        ],
+      ),
+    ),
   );
 }
