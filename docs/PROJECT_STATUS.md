@@ -1,3 +1,7 @@
+> **07/11/2026 — API ADJUNTOS CANDIDATA PG17/HTTP ANÓNIMO PASS:** operador confirmó `ATT_API_PG17_READY=YES`, `ATT_API_PG17_DJANGO_CHECK=OK`, `ATT_API_PG17_MIGRATION_PLAN=OK`, `ATT_API_PG17_MIGRATE=OK`, `ATT_API_PG17_MFA_APPLIED=0`, `ATT_API_PG17_INDEPENDENT_TABLE=OK`, `ATT_API_HTTP_ANONYMOUS_DENIED=OK`, `ATT_API_HTTP_ANONYMOUS_DETAIL_DENIED=OK`, `ATT_API_PG17_ROLLBACK=OK`, `ATT_API_LIVE_CONTAINERS_UNCHANGED=OK`, `ATT_API_PG17_EXACT_CANDIDATE_RESULT=PASS` y `ATT_API_PG17_LOCAL_RESULT=0`. Imagen exacta `vencira-attachment-api-candidate:f8efc90a2647`; no hubo despliegue ni migraciones DEV. Gate de sesiones simuladas y aislamiento entre organizaciones publicado como `scripts/backend_attachment_api_auth_scope_pg17.sh` (commit `8a44e39b`), pendiente ejecución. No fusionar/desplegar todavía.
+
+---
+
 > **07/11/2026 — API ADJUNTOS CANDIDATA BUILD PASS, PG17/HTTP PENDIENTES:** operador confirmó base histórica `4eb0130d`, fuente `f8efc90a`, imagen `vencira-attachment-api-candidate:f8efc90a2647`, `ATT_API_CANDIDATE_HISTORICAL_MIGRATIONS=0018_ONLY`, `ATT_API_CANDIDATE_IMAGE_BUILD=OK`, `ATT_API_CANDIDATE_DJANGO_CHECK=OK`, `ATT_API_CANDIDATE_LIVE_CONTAINERS_UNCHANGED=OK`, `ATT_API_CANDIDATE_BUILD=PASS`, `ATT_API_BUILD_RESULT=0`; API/DB DEV sin cambios. Publicado gate siguiente `scripts/backend_attachment_api_candidate_pg17_http.sh` para ejecutar **esa imagen exacta**, migraciones PG17 efímeras y denegación HTTP anónima (pendiente validación local). **No habilitar release ni MFA.**
 
 ---
