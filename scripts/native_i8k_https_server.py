@@ -1,4 +1,4 @@
-"""I8-K isolated TLS bridge for I8-D only; refuses operational configuration."""
+"""I8-K isolated TLS bridge for recovery-only URLconf; refuses operational configuration."""
 import os
 import ssl
 from wsgiref.simple_server import make_server
