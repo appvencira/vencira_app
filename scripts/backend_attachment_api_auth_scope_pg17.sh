@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Exact prebuilt attachment API candidate: disposable PG17 + authenticated scope smoke.
+# Exact prebuilt attachment API candidate: disposable PG17 + authenticated authorization smoke.
 # NEVER deploy or connect to DEV PostgreSQL; deliberately no Compose up/migrate.
 set -Eeuo pipefail
 umask 077
@@ -56,8 +56,13 @@ django() {
   "${DOCKER[@]}" run --rm --network "$NETWORK" "${APP_ENV[@]}" "$IMAGE" python manage.py "$@"
 }
 django check >/dev/null
-echo "ATT_API_PG17_DJANGO_CHECK="$(cat <<'PY'
-
+echo "ATT_API_PG17_DJANGO_CHECK=OK"
+django migrate renewal_attachments --plan | grep -F 'renewal_attachments' >/dev/null || {
+ echo "ATT_API_PG17_MIGRATION_PLAN=FAIL"; exit 6; }
+echo "ATT_API_PG17_MIGRATION_PLAN=OK"
+django migrate renewal_attachments --noinput >/dev/null
+echo "ATT_API_PG17_MIGRATE=OK"
+CHECK="$(cat <<'PY'
 from datetime import date
 from django.contrib.auth import get_user_model
 from django.test import Client
