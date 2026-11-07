@@ -28,6 +28,9 @@ const _username = 'i8e-synthetic-logout';
 const _password = 'synthetic-i8e-password';
 const _namespace = 'vencira_i8h_candidate_pg17_v1';
 
+String i8hDiagnosticStage = 'START';
+void _stage(String value) { i8hDiagnosticStage = value; }
+
 const _store = FlutterSecureStorage(
   aOptions: AndroidOptions(
     storageNamespace: _namespace,
@@ -109,6 +112,7 @@ Future<int> _me(http.Client client, String? access) async {
 }
 
 Future<List<String>> runPhysicalMfa() async {
+  _stage('VAULT_START');
   final store = FlutterNativeSecretStore(storage: _store);
   final fence = NativeSessionFence();
   final vault = NativeRefreshCredentialVault(endpoint: _endpoint, store: store);
@@ -120,11 +124,14 @@ Future<List<String>> runPhysicalMfa() async {
   );
   // MUST verify local storage is empty before any network request.
   // An incomplete previous run must remain fenced for manual cleanup.
+  _stage('STARTUP_INSPECTION');
   _require(await startup.inspect() == NativeStartupDisposition.cleanLogin,
       'PREEXISTING_SESSION_REQUIRES_RECOVERY');
   final trusted = _client(trusted: true);
   try {
+    _stage('TLS_PREFLIGHT');
     _require(await _me(trusted, null) == 401, 'TLS_PREFLIGHT_401');
+    _stage('UNTRUSTED_CA');
     final untrusted = _client(trusted: false);
     try {
       var rejected = false;
@@ -151,13 +158,16 @@ Future<List<String>> runPhysicalMfa() async {
       ),
       coordinator: coordinator, journal: journal,
     );
+    _stage('FIRST_ISSUE_INSPECT');
     _require(await entry.inspect() == NativeStartupDisposition.cleanLogin,
         'FIRST_ISSUANCE_GATE');
+    _stage('PASSWORD_CHALLENGE');
     _require(await entry.verifyPassword(
       username: _username, password: _password,
     ) == NativePasswordDecision.mfaRequired, 'PASSWORD_MFA_REQUIRED');
     _require(fence.ticket == null && await vault.read() == null &&
         await journal.requiresReauthentication(), 'PASSWORD_NO_ACCESS');
+    _stage('TOTP_ISSUANCE');
     await entry.verifyTotp(_totp());
     final access = await entry.accessToken();
     _require(access != null && fence.ticket != null &&
@@ -169,9 +179,11 @@ Future<List<String>> runPhysicalMfa() async {
       accessToken: entry.accessToken,
       sessionFence: fence,
     );
+    _stage('BEARER_ME');
     final me = await transport.getJson('/api/v1/mobile/me/');
     _require(me is Map<String, dynamic> && me['authenticated'] == true,
         'ANDROID_BEARER_HTTPS_ME');
+    _stage('LOGOUT_REVOKE');
     final closing = entry.logout();
     _require(fence.ticket == null, 'LOGOUT_LOCAL_FENCE');
     await closing;
@@ -179,6 +191,7 @@ Future<List<String>> runPhysicalMfa() async {
         !await journal.requiresReauthentication() &&
         await _me(trusted, access) == 401,
         'LOGOUT_REMOTE_REVOKED_AND_CLEAN');
+    _stage('COMPLETE');
     return const [
       'NATIVE_I8H_ANDROID_CA_VERIFIED=PASS',
       'NATIVE_I8H_ANDROID_UNTRUSTED_CA_DENIED=PASS',
