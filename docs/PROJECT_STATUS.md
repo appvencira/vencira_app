@@ -1,3 +1,7 @@
+> **07/11/2026 — MAIN/FEATURE MIGRATION TREE IDENTICAL (4 ROUTES):** operador ejecutó `git diff --name-status origin/main origin/feature/m3-android-local-notifications -- backend/reminders/migrations backend/renewal_attachments/migrations backend/native_mobile_service/migrations backend/native_sessions_lab/migrations` sin entradas de diff y con `MAIN_MIGRATION_TREE_REVIEW=COMPLETE`. Significa identidad de **árboles actuales en esas rutas**, no identidad de historiales ni migraciones aplicadas en DEV. El anterior `MAIN_RISK_FEATURE_MIGRATION_CHANGE_COUNT=45` compara `merge-base` contra feature. Mantener `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`; no hacer merge o deploy automático. Siguiente foco: comparar cambios funcionales de `main`/feature y dependencias, no repetir migraciones ya iguales.
+
+---
+
 > **07/11/2026 — RISK REVIEW `main` PASS (solo lectura):** operador confirma `MAIN_INTEGRATION_GATE=READ_ONLY_COMPLETE`, `MAIN_INTEGRATION_LOCAL_RESULT=0`; no autorizaciones de merge/deploy, MFA o migraciones persistentes. La salida recibida contiene solo los marcadores finales, por lo que **no se ha revisado aún** el detalle de las migraciones ni los 17 commits exclusivos de main. Preparado resumen compacto `scripts/main_integration_risk_summary_readonly.sh` commit `9bd7c164`; pendiente ejecución local. Mantener `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
 
 ---
