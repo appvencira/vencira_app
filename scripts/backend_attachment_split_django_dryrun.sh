@@ -19,6 +19,13 @@ test "$PROJECT" = vencira_localcheck && test "$HEALTH" = healthy || {
 }
 test -d backend/renewal_attachments/migrations || exit 2
 echo "ATTACHMENT_DRYRUN_MODE=DISPOSABLE_CONTAINER"
+# DEV API image is older than the candidate source and lacks cryptography.
+# Build a separate, disposable candidate-dependency image; never alter live API.
+SHA="$(git rev-parse HEAD)"
+DRY_IMAGE="vencira-backend-attachment-dryrun:${SHA:0:12}"
+echo "ATTACHMENT_DRYRUN_DEPENDENCIES=CANDIDATE_SOURCE"
+"${DOCKER[@]}" build --pull=false -f backend/Dockerfile -t "$DRY_IMAGE" backend >/dev/null
+echo "ATTACHMENT_DRYRUN_IMAGE_BUILD=OK"
 echo "ATTACHMENT_DRYRUN_LIVE_API_IMAGE_UNCHANGED=YES"
 # A throwaway clone of the source tree under /tmp lets Django inspect files
 # with a writable tree if needed. No data mounts, no network.
@@ -37,15 +44,17 @@ set +e
   -e VENCIRA_DB_ENGINE=sqlite \
   -e VENCIRA_ATTACHMENT_SPLIT_REHEARSAL=1 \
   -e VENCIRA_M103_SPLIT_DELETE_LAB=1 \
-  -v "$SCRATCH:/app:rw" -w /app "$IMAGE" \
+  -v "$SCRATCH:/app:rw" -w /app "$DRY_IMAGE" \
   python manage.py makemigrations renewal_attachments --check --dry-run --noinput \
   >"$SCRATCH/report.txt" 2>&1
 RC=$?
 set -e
 if [[ "$RC" -eq 0 ]]; then
   echo "ATTACHMENT_DRYRUN_MODEL_MIGRATION_PARITY=YES"
-else
+elif grep -Eq '^(Migrations for|    [+-] )' "$SCRATCH/report.txt"; then
   echo "ATTACHMENT_DRYRUN_MODEL_MIGRATION_PARITY=NO"
+else
+  echo "ATTACHMENT_DRYRUN_MODEL_MIGRATION_PARITY=NOT_VERIFIED"
 fi
 # No customer content or keys; show only the Django detection report.
 grep -E '^(Migrations for|  renewal_attachments/|    \+|    -|No changes detected|SystemCheckError|ERRORS:|CommandError:)' "$SCRATCH/report.txt" | head -n 70 || true
@@ -60,5 +69,8 @@ echo "ATTACHMENT_DRYRUN_LIVE_IMAGE_CHANGED=NO"
 echo "ATTACHMENT_DRYRUN_API_DEPLOY_EXECUTED=NO"
 echo "ATTACHMENT_DRYRUN_LIVE_MIGRATIONS_EXECUTED=NO"
 echo "NO_DEPLOY_NO_LIVE_MIGRATION=1"
-# A model delta is a diagnostic finding, not an execution failure.
+# Model drift is a diagnostic finding, but startup errors must fail.
+if [[ "$RC" -ne 0 ]] && ! grep -Eq '^(Migrations for|    [+-] )' "$SCRATCH/report.txt"; then
+  exit "$RC"
+fi
 exit 0
