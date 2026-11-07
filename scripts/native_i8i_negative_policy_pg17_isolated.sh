@@ -97,6 +97,20 @@ django test \
   native_mobile_service.test_i8d_http_pg17 \
   native_mobile_service.test_i8i_non_mfa_recovery_policy_pg17 \
   --verbosity 1
+# Regress the existing Flutter recovery/boot fences in the same operator gate.
+# These are mock-backed policy tests, NOT real Android recovery.
+pubvol="vencira-g7-public-dart-pub-v1"
+D volume create "$pubvol" >/dev/null
+D run --rm -v "$ROOT/clients/flutter:/work" -w /work \
+  -v "$pubvol:/tmp/g7-d2-pub-cache" \
+  -e PUB_CACHE=/tmp/g7-d2-pub-cache \
+  ghcr.io/cirruslabs/flutter:stable sh -ec '
+    flutter pub get --offline || flutter pub get
+    flutter analyze lib/api/native_mobile_recovery_entry.dart lib/api/native_mobile_startup_gate.dart lib/api/native_refresh_recovery_journal.dart
+    echo NATIVE_I8I_FLUTTER_RECOVERY_ANALYZE=OK
+    flutter test --no-pub test/native_mobile_recovery_entry_test.dart test/native_mobile_startup_gate_test.dart test/native_refresh_recovery_journal_test.dart
+    echo NATIVE_I8I_FLUTTER_RECOVERY_POLICY=PASS
+  '
 echo "NATIVE_I8I_NO_PUBLIC_ISSUER=PASS"
 echo "NATIVE_I8I_NO_MFA_DENIAL_POLICY=PASS"
 echo "NATIVE_I8I_RECOVERY_ENDPOINTS_ABSENT=PASS"
