@@ -8,6 +8,7 @@ must be implemented and reviewed separately.
 import base64
 import hashlib
 import hmac
+import os
 import re
 import secrets
 import uuid
@@ -35,6 +36,8 @@ def new_candidate_challenge():
     Only test-only trusted code should call this. The wire token is a bearer
     secret; never place it in database, analytics, audit events, logs, or URL.
     """
+    if os.environ.get("VENCIRA_ENV") != "test" or os.environ.get("VENCIRA_NATIVE_SERVICE_CANDIDATE") != "1":
+        raise NativeChallengeMalformed()
     challenge_id = uuid.uuid4()
     raw = secrets.token_bytes(32)
     encoded = base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
@@ -70,6 +73,6 @@ def matches_candidate_digest(wire, *, expected_id, stored_digest):
         return False
     if len(stored_digest) != 64 or re.fullmatch(r"[0-9a-f]{64}", stored_digest) is None:
         return False
-    return hmac.compare_digest(challenge_id.bytes, expected_id.bytes) and hmac.compare_digest(
-        _digest(challenge_id, secret), stored_digest
-    )
+    id_matches = hmac.compare_digest(challenge_id.bytes, expected_id.bytes)
+    secret_matches = hmac.compare_digest(_digest(challenge_id, secret), stored_digest)
+    return id_matches & secret_matches
