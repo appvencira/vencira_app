@@ -1,6 +1,7 @@
 """I8-E real HTTPS probe; no browser cookies, no redirected/cached bearer."""
 import json
 import os
+import socket
 import ssl
 import time
 import urllib.error
@@ -37,13 +38,17 @@ except urllib.error.URLError as error:
 else:
     raise AssertionError("untrusted TLS CA accepted")
 
-wrong_host = client(ssl.create_default_context(cafile=CERT))
+# Verify wrong DNS name against the real server, not an unreachable host.
 try:
-    wrong_host.open("https://native-i8e.test.invalid:8443/api/v1/mobile/me/", timeout=3)
-except urllib.error.URLError:
-    pass  # This tests DNS failure, not certificate hostname mismatch.
+    raw = socket.create_connection(("native-i8e.test", 8443), timeout=5)
+    with ssl.create_default_context(cafile=CERT).wrap_socket(
+        raw, server_hostname="wrong-host.invalid",
+    ):
+        pass
+except ssl.SSLCertVerificationError:
+    print("NATIVE_I8E_HOSTNAME_MISMATCH_DENIED=PASS")
 else:
-    raise AssertionError("unexpectedly resolved invalid host")
+    raise AssertionError("TLS hostname mismatch was accepted")
 
 
 def request(path, data=None, headers=None):
@@ -131,7 +136,30 @@ status, _, _ = request(
 assert status == 401
 print("NATIVE_I8E_REFRESH_REPLAY_REVOKES=PASS")
 
-# Separate fresh authentication, then explicit revoke/401.
+# Second independent synthetic MFA account permits logout without
+# weakening replay protection for the first account's current TOTP counter.
+status, data, _ = request(
+    "/api/v1/mobile/auth/password/",
+    {"username": "i8e-synthetic-logout", "password": "synthetic-i8e-password"},
+)
+assert status == 200
+status, logout_tokens, _ = request(
+    "/api/v1/mobile/auth/mfa/",
+    {"challenge": data["challenge"],
+     "code": totp_at(os.environ["VENCIRA_I8E_MFA_LOGOUT_SECRET"], int(time.time()))},
+)
+assert status == 200
+status, data, _ = request(
+    "/api/v1/mobile/token/revoke/", {"refresh": logout_tokens["refresh"]},
+)
+assert status == 200 and data == {"status": "revoked"}
+status, _, _ = request(
+    "/api/v1/mobile/me/",
+    headers={"Authorization": "Bearer " + logout_tokens["access"]},
+)
+assert status == 401
+print("NATIVE_I8E_LOGOUT_REVOKES=PASS")
+
 status, data, _ = request(
     "/api/v1/mobile/auth/password/",
     {"username": "i8e-synthetic-mfa", "password": "synthetic-i8e-password"},
