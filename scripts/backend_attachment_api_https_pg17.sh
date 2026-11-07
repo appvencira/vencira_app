@@ -145,6 +145,7 @@ D run --rm --network "$NETWORK" \
   -v "$TMP/cert.pem:/tmp/attachment-lab-cert.pem:ro" \
   "$IMAGE" python -u /opt/attachment_https_lab_probe.py
 D rm -f "$SERVER" >/dev/null
+django shell -c 'from renewal_attachments.models import RenewalAttachment; assert RenewalAttachment.objects.count()==1; RenewalAttachment.objects.all().delete(); assert RenewalAttachment.objects.count()==0; print("ATT_HTTPS_FIXTURE_CLEANUP=OK")' | grep -Fx "ATT_HTTPS_FIXTURE_CLEANUP=OK"
 django migrate renewal_attachments zero --noinput >/dev/null
 REVERSE="$(cat <<'PY'
 from django.db import connection
