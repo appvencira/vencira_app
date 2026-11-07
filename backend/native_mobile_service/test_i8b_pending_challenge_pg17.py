@@ -1,9 +1,11 @@
 """I8-B isolated PG17 one-time challenge lifecycle, no HTTP/issuance."""
 import uuid
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
-from django.db import connection
+from django.db import connection, close_old_connections
 from django.test import TransactionTestCase
 from django.utils import timezone
 
@@ -37,6 +39,31 @@ class I8BPendingChallengePG17Tests(TransactionTestCase):
         self.assertIsNotNone(MobilePendingChallenge.objects.get().consumed_at)
         with self.assertRaises(CandidateChallengeDenied):
             retire_pending_candidate_challenge(wire=wire)
+        self.assertFalse(MobileDeviceSession.objects.exists())
+
+
+    def test_concurrent_retirement_only_one_winner(self):
+        wire = self.wire()
+        start = Barrier(2)
+
+        def attempt():
+            close_old_connections()
+            try:
+                start.wait(timeout=10)
+                try:
+                    retire_pending_candidate_challenge(wire=wire)
+                    return "retired"
+                except CandidateChallengeDenied:
+                    return "denied"
+            finally:
+                close_old_connections()
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first = pool.submit(attempt)
+            second = pool.submit(attempt)
+            outcomes = sorted((first.result(timeout=20), second.result(timeout=20)))
+        self.assertEqual(outcomes, ["denied", "retired"])
+        self.assertEqual(MobilePendingChallenge.objects.count(), 1)
         self.assertFalse(MobileDeviceSession.objects.exists())
 
     def test_expiry_denies_without_consuming(self):
