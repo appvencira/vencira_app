@@ -1,3 +1,7 @@
+> **07/11/2026 — PR #32 CI 5/5 PASS Y READY FOR REVIEW:** commit `6f836971` registra workflow GitHub I2C, I3, I4, I5 e I6 `completed/success`; I6 confirmó instalación, arranque e inspección de Android 35 en emulador temporal. Comparación exacta `main...integration/main-web-attachments-failclosed-20261107`: `ahead=1`, `behind=0`, solo `clients/flutter/lib/ui/renewal_detail_screen.dart` modificado (+8/-3), protegiendo UI adjuntos con `VENCIRA_WEB_ATTACHMENTS_ENABLED=false` por defecto. PR #32 marcado **ready for review** (draft=false), `mergeable=true`, `merged=false`. **NO merge, NO deploy**, sin activación del flag ni modificación del backend. Sigue pendiente aprobación de merge de este PR independiente. MFA y migraciones DEV no autorizadas.
+
+---
+
 > **07/11/2026 — PR #32 CI 4/5 PASS:** GitHub verificó I2C Flutter, I3 integral, I4 HTTPS y **I5 Chromium + APK debug** con conclusión `success` para commit `6f836971`; I6 emulador Android 35 todavía `in_progress`, ya en paso `Install, launch and inspect UI on disposable Android 35 emulator`. PR #32 sigue abierto/borrador, un archivo, sin merge/despliegue. Esperar conclusión I6 antes de cerrar gate PR. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
 
 ---
