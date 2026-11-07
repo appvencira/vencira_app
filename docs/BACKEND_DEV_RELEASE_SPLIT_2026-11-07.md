@@ -58,3 +58,14 @@ El operador ejecutó `scripts/backend_dev_release_dependency_gate.py`, `BACKEND_
 Se creó `scripts/backend_attachment_split_release_readonly.py` (commit `56ced809`) que revisa sin ejecutar Django ni consultar la BD que existe esa app separada, que su migración se apoya en 0018, que el registro/router son test-only y que persiste el doble modelo. **Gate nuevo pendiente de ejecución local.** No duplicar la app ni reescribir 0027: el siguiente esfuerzo técnico es convertir **el aislamiento ya ensayado** en un candidato operativo separado con un nuevo límite de despliegue, eliminar el conflicto de modelo en ese candidato sin tocar las migraciones históricas y demostrar `makemigrations --check`/PG17/rollback sobre clon.
 
 **Decisión:** Backend API DEV y esquema persistentemente intactos; `ATTACHMENT_SPLIT_DEV_RELEASE_READY=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. No publicar una API de solo lectura como si la función completa de adjuntos estuviera terminada.
+
+
+## 07/11/2026 — Segundo gate superado y revisión de cobertura de migraciones
+
+El operador confirmó `ATTACHMENT_SPLIT_INDEPENDENT_0018_BASE=YES`, `ATTACHMENT_SPLIT_REGISTERED_ONLY_IN_TEST=YES`, `ATTACHMENT_SPLIT_DUAL_MODEL_REGISTRATION_CONFLICT=YES`, `ATTACHMENT_SPLIT_MODEL_ROUTER_TEST_ONLY=YES`, `ATTACHMENT_SPLIT_ATTACHMENT_WRITE_AND_DOWNLOAD_BLOCKED=YES`, `ATTACHMENT_SPLIT_SOURCE_REVIEW=PASS`, `ATTACHMENT_SPLIT_DEV_RELEASE_READY=NO` y `ATTACHMENT_SPLIT_CHECK_RESULT=0`. El comando se ejecutó con éxito sin cambios en el backend ni la base viva.
+
+La inspección del modelo `backend/renewal_attachments/models.py` evidencia, además de `RenewalAttachment`, `AttachmentScanEvidence`, `AttachmentDiscardJob` y `AttachmentRecoveryCase`. En la migración `0001_initial.py` revisada solo se crean los metadatos iniciales. Antes de plantear siquiera el candidato integrado hay que comprobar todas las migraciones reales para estos otros modelos (sin suponer que falten, pues pueden existir migraciones posteriores con nombres diferentes).
+
+Nuevo script `scripts/backend_attachment_split_django_dryrun.sh` (commit `404b0caa`): copia fuentes backend a un directorio efímero, ejecuta `manage.py makemigrations renewal_attachments --check --dry-run` dentro de un contenedor aislado **sin red**, con SQLite, secreto efímero y banderas de ensayo `VENCIRA_ENV=test` existentes, y compara que la imagen de API real permanezca intacta. **Este gate aún está pendiente de ejecución del operador.** `ATTACHMENT_DRYRUN_MODEL_MIGRATION_PARITY=NO` significa que todavía se necesitan migraciones/modelado; no significa que haya fallado la infraestructura ni autoriza generarlas/aplicarlas sin revisar. `ATTACHMENT_DRYRUN_MODEL_MIGRATION_PARITY=YES` sería solo paridad estática, no release.
+
+No cambiar flags test-only por fuera, no habilitar adjuntos en Flutter Web, no publicar rutas hasta resolver migración independiente y controles operativos.
