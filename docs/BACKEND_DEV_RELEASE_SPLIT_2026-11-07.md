@@ -69,3 +69,12 @@ La inspección del modelo `backend/renewal_attachments/models.py` evidencia, ade
 Nuevo script `scripts/backend_attachment_split_django_dryrun.sh` (commit `404b0caa`): copia fuentes backend a un directorio efímero, ejecuta `manage.py makemigrations renewal_attachments --check --dry-run` dentro de un contenedor aislado **sin red**, con SQLite, secreto efímero y banderas de ensayo `VENCIRA_ENV=test` existentes, y compara que la imagen de API real permanezca intacta. **Este gate aún está pendiente de ejecución del operador.** `ATTACHMENT_DRYRUN_MODEL_MIGRATION_PARITY=NO` significa que todavía se necesitan migraciones/modelado; no significa que haya fallado la infraestructura ni autoriza generarlas/aplicarlas sin revisar. `ATTACHMENT_DRYRUN_MODEL_MIGRATION_PARITY=YES` sería solo paridad estática, no release.
 
 No cambiar flags test-only por fuera, no habilitar adjuntos en Flutter Web, no publicar rutas hasta resolver migración independiente y controles operativos.
+
+
+## 07/11/2026 — Primer ensayo Django detenido por dependencia de imagen anterior
+
+El usuario ejecutó `scripts/backend_attachment_split_django_dryrun.sh`, que devolvió `ATTACHMENT_DRYRUN_MODEL_MIGRATION_PARITY=NO` pero el stack trace muestra un **error de inicio antes del autodetector**: `ModuleNotFoundError: No module named 'cryptography'`, importado por `config.urls → reminders.mfa_challenge → reminders.mfa_store → reminders.mfa_secrets`. La imagen usada era la **API DEV histórica**, aunque el volumen montaba fuentes actuales. Por ello el `NO` **no prueba deriva del esquema**. `ATTACHMENT_DRYRUN_LIVE_IMAGE_CHANGED=NO`, ningún servicio/DB afectado.
+
+Se corrigió `scripts/backend_attachment_split_django_dryrun.sh` (commit `26d3b1bd`) para construir una **imagen Docker descartable del backend fuente usando `backend/Dockerfile` y `backend/requirements.txt`**, donde sí figura `cryptography>=44,<47`. La API DEV activa sigue intacta. El nuevo gate distingue `PARITY=YES` (sin diferencias), `PARITY=NO` (migraciones necesarias detectadas) de `PARITY=NOT_VERIFIED` (fallo de arranque/entorno, con exit distinto de cero). La compilación temporal puede precisar acceder a registries/PyPI; la **ejecución del ensayo corregido aún está pendiente**. Sigue sin implicar instalación de MFA, migración viva ni deploy.
+
+Mantener bloqueo del segundo release y no calificar la paridad de migraciones hasta que Django arranque en contenedor independiente.
