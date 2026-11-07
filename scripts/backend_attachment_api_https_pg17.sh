@@ -119,8 +119,9 @@ print("ATT_HTTPS_SYNTHETIC_FIXTURE=OK")
 PY
 )"
 django shell -c "$FIXTURE" | grep -Fx "ATT_HTTPS_SYNTHETIC_FIXTURE=OK"
-D run --rm -d --name "$SERVER" --network "$NETWORK" \
+D run -d --name "$SERVER" --network "$NETWORK" \
   --network-alias attachment.test --env-file "$TMP/app.env" \
+  -e PYTHONPATH=/app \
   --read-only --tmpfs /tmp:rw,size=64m,mode=1777 \
   --cap-drop ALL --security-opt no-new-privileges --pids-limit 128 \
   -v "$ROOT/scripts/attachment_https_lab_server.py:/opt/attachment_https_lab_server.py:ro" \
@@ -134,7 +135,10 @@ for _ in $(seq 1 45); do
 done
 if [[ "$ready" != YES ]]; then
   echo "ATT_HTTPS_LAB_SERVER_READY=FAIL"
-  D logs --tail 30 "$SERVER" || true
+  echo "ATT_HTTPS_LAB_SERVER_DIAGNOSTICS_BEGIN"
+  D inspect -f 'ATT_HTTPS_LAB_CONTAINER_STATUS={{.State.Status}} EXIT={{.State.ExitCode}}' "$SERVER" || true
+  D logs --tail 50 "$SERVER" || true
+  echo "ATT_HTTPS_LAB_SERVER_DIAGNOSTICS_END"
   exit 7
 fi
 echo "ATT_HTTPS_LAB_SERVER_READY=YES"
