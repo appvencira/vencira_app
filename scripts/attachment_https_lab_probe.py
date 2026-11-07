@@ -67,7 +67,7 @@ status, raw, headers = request(
 assert status == 200, (status,raw[:240])
 cookies = {c.name:c for c in jar}
 assert cookies["vencira_sessionid"].secure, cookies
-assert cookies["vencira_sessionid"]._rest.get("HttpOnly") is not None, cookies
+assert "HttpOnly" in cookies["vencira_sessionid"]._rest, cookies
 assert cookies["vencira_csrftoken"].secure, cookies
 print("ATT_HTTPS_PASSWORD_SESSION_SECURE_COOKIES=PASS")
 status, raw, headers = request(PATH)
