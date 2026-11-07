@@ -2,6 +2,7 @@
 ///
 /// Debug only. Credentials are synthetic and the HTTPS TCP peer is Android
 /// localhost:18743 over a user-controlled SSH forward/USB reverse.
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -131,8 +132,45 @@ Future<List<String>> runPhysicalMfa() async {
       'PREEXISTING_SESSION_REQUIRES_RECOVERY');
   final trusted = _client(trusted: true);
   try {
-    _stage('TLS_PREFLIGHT');
-    _require(await _me(trusted, null) == 401, 'TLS_PREFLIGHT_401');
+    // Independently separate localhost TCP, TLS handshake with SAN/SNI,
+    // and HTTP status. No credentials are involved in the preflight.
+    _stage('LOCAL_TCP_CONNECT');
+    final Socket tcp;
+    try {
+      tcp = await Socket.connect(
+        InternetAddress.loopbackIPv4, _port,
+        timeout: const Duration(seconds: 5),
+      );
+    } on SocketException {
+      throw StateError('NATIVE_I8H_LOCAL_TCP_UNAVAILABLE');
+    } on TimeoutException {
+      throw StateError('NATIVE_I8H_LOCAL_TCP_TIMEOUT');
+    }
+    _stage('TLS_HANDSHAKE');
+    final trust = SecurityContext(withTrustedRoots: false);
+    final labCa = utf8.decode(base64.decode(_ca64));
+    trust.setTrustedCertificatesBytes(utf8.encode(labCa));
+    try {
+      final tls = await SecureSocket.secure(
+        tcp, host: 'dev.vencira.es', context: trust,
+      ).timeout(const Duration(seconds: 8));
+      tls.destroy();
+    } on HandshakeException {
+      tcp.destroy();
+      throw StateError('NATIVE_I8H_CA_OR_HOSTNAME_REJECTED');
+    } on TlsException {
+      tcp.destroy();
+      throw StateError('NATIVE_I8H_TLS_PROTOCOL_REJECTED');
+    } on TimeoutException {
+      tcp.destroy();
+      throw StateError('NATIVE_I8H_TLS_HANDSHAKE_TIMEOUT');
+    } on SocketException {
+      tcp.destroy();
+      throw StateError('NATIVE_I8H_TUNNEL_DROPPED_CONNECTION');
+    }
+    _stage('HTTP_PREFLIGHT');
+    final status = await _me(trusted, null);
+    _require(status == 401, 'HTTP_UNAUTH_STATUS_NOT_401');
     _stage('UNTRUSTED_CA');
     final untrusted = _client(trusted: false);
     try {
