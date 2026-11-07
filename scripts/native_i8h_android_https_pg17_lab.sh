@@ -50,6 +50,24 @@ cleanup() {
 trap cleanup EXIT
 
 # Fail fast on Dart diagnostics BEFORE building images or starting a DB/TLS lab.
+# Guard against accidentally truncated or repeated Dart UI code.
+python3 - <<'PY'
+from pathlib import Path
+source = Path("clients/flutter/lib/i8h_lab_main.dart").read_text(encoding="utf-8")
+checks = (
+    source.count("Widget build(") == 1,
+    source.count("} catch (error) {") == 1,
+    source.count("} finally {") == 1,
+    source.count("RegExp(") == 2,
+    "RegExp(r'^[A-Z0-9_]{1,45}$').hasMatch(stage)" in source,
+    "RegExp(r'^NATIVE_I8H_[A-Z0-9_]{1,80}$').hasMatch(rawCode)" in source,
+    "NATIVE_I8H_FAILURE_CODE=$safeCode" in source,
+)
+if not all(checks):
+    raise SystemExit("NATIVE_I8H_UI_STRUCTURAL_PREFLIGHT=FAIL")
+print("NATIVE_I8H_UI_STRUCTURAL_PREFLIGHT=OK")
+PY
+
 pubvol="vencira-g7-public-dart-pub-v1"
 D volume create "$pubvol" >/dev/null
 D run --rm -v "$ROOT/clients/flutter:/work" -w /work \
