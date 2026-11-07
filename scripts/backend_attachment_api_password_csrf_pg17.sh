@@ -100,8 +100,18 @@ def client(u):
     assert c.login(username=u.username, password="disposable-only-test-password-2026"), u.username
     return c
 def expect(c, method, path, status):
-    response=(c.post(path, data="{}", content_type="application/json")
-              if method == "post" else getattr(c,method)(path))
+    if method in ("post", "put", "patch", "delete"):
+        # Supply an actual CSRF cookie/header to test DRF method routing and
+        # app-level fences rather than short-circuiting at CSRF 403.
+        request = RequestFactory().get(path, HTTP_HOST="localhost")
+        csrf_token = get_token(request)
+        c.cookies[settings.CSRF_COOKIE_NAME] = request.META["CSRF_COOKIE"]
+        response = getattr(c, method)(
+            path, data="{}", content_type="application/json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+    else:
+        response = getattr(c, method)(path)
     assert response.status_code == status, (method,response.status_code,status)
     return response
 owner=client(ao)
