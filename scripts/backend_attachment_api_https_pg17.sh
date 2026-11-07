@@ -105,10 +105,11 @@ FIXTURE="$(cat <<'PY'
 from datetime import date
 from uuid import UUID
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from reminders.models import Workspace,WorkspaceMember,Renewal
 from renewal_attachments.models import RenewalAttachment
 from django.db.migrations.recorder import MigrationRecorder
-u=get_user_model().objects.create_user(username="att-https-owner",password="disposable-only-attachment-https-password-2026")
+u=get_user_model().objects.create_user(username="att-https-owner",password="disposable-only-attachment-https-password-2026",last_login=timezone.now())
 w=Workspace.objects.create(id=UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),name="attachment-https-disposable")
 WorkspaceMember.objects.create(user=u,workspace=w,role="owner")
 r=Renewal.objects.create(id=UUID("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"),workspace=w,assigned_to=u,customer_reference="https-lab-only",expires_on=date(2027,1,20))
