@@ -60,3 +60,8 @@ PostgreSQL real, credenciales operativas o APK funcional para usuarios.
 G13 ya tiene pruebas físicas de HTTPS sobre otro laboratorio; I8-G no las
 sustituye. Mantener separado el gate de Android, la autorización de emisión
 MFA y el futuro despliegue operativo.
+
+## Evidencia física posterior — 07/11/2026
+
+El usuario aportó capturas de la APK DEBUG de laboratorio que muestran `NATIVE_I8G_ANDROID_PHASE1=PASS`, `NATIVE_I8G_ANDROID_PHASE2_PERSISTENCE=PASS` y `NATIVE_I8G_ANDROID_LAB_CLEAN=PASS`. Se confirma ejecución visible de las tres fases y limpieza de la credencial sintética, no uso de cuentas operativas. La secuencia exacta de «Forzar detención» en Ajustes no queda demostrada únicamente por las capturas; para una certificación formal de resistencia al cierre forzado debe registrarse esa acción como evidencia adicional. Sigue sin equivaler a una atestación hardware ni al backend MFA operativo. Restricciones invariables: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
