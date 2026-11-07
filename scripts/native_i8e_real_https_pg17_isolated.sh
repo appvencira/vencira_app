@@ -100,6 +100,9 @@ test "$ready" == YES || exit 5
 echo "NATIVE_I8E_PG17_READY=YES"
 django() { D run --rm --network "$network" --env-file "$TMP/env" "$image" python manage.py "$@"; }
 django check >/dev/null
+# Prevent silent false-positive setup: the real WSGI process must see G5
+# keys through Django settings, not only Docker env or Django test overrides.
+django shell -c 'from django.conf import settings; assert settings.VENCIRA_ENV == "test"; assert settings.VENCIRA_NATIVE_SERVICE_CANDIDATE; assert settings.VENCIRA_NATIVE_BEARER_ENABLED is False; assert isinstance(settings.VENCIRA_G5_AUDIT_KEY, str) and len(settings.VENCIRA_G5_AUDIT_KEY) >= 32; assert isinstance(settings.VENCIRA_G5_ABUSE_KEY, str) and len(settings.VENCIRA_G5_ABUSE_KEY) >= 32; print("NATIVE_I8E_G5_SETTINGS_READY=OK")' | grep -Fx 'NATIVE_I8E_G5_SETTINGS_READY=OK'
 django migrate --noinput >/dev/null
 echo "NATIVE_I8E_FULL_SCHEMA_DISPOSABLE=OK"
 django makemigrations native_mobile_service --check --dry-run --noinput >/dev/null
