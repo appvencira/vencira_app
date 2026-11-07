@@ -133,6 +133,27 @@ class I8JAtomicRecoveryPG17(TransactionTestCase):
         self.assertEqual(validate_candidate_access(pair[0]).pk, self.user.pk)
         self.assertEqual(MobileAccountFence.objects.get(user=self.user).generation, 1)
 
+    def test_recovery_invalidates_outstanding_normal_login_challenge(self):
+        normal = self.password(recovery=False)
+        recovery = self.password()
+        pair = self.finish(recovery)
+        with self.assertRaises(CandidateChallengeDenied):
+            self.finish(
+                normal, recovery=False, timestamp=self.timestamp + 30,
+                code=totp_at(self.secret, self.timestamp + 30),
+            )
+        self.assertEqual(validate_candidate_access(pair[0]).pk, self.user.pk)
+        self.assertEqual(MobileDeviceSession.objects.count(), 1)
+
+    def test_disabled_account_cannot_complete_recovery(self):
+        recovery = self.password()
+        self.user.is_active = False
+        self.user.save(update_fields=["is_active"])
+        with self.assertRaises(CandidateChallengeDenied):
+            self.finish(recovery)
+        self.assertFalse(MobileDeviceSession.objects.exists())
+        self.assertFalse(MobileAccountFence.objects.exists())
+
     def test_expired_challenge_cannot_revoke(self):
         wire = self.password()
         MobilePendingChallenge.objects.update(
