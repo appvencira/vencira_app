@@ -100,7 +100,8 @@ def client(u):
     assert c.login(username=u.username, password="disposable-only-test-password-2026"), u.username
     return c
 def expect(c, method, path, status):
-    response=getattr(c,method)(path)
+    response=(c.post(path, data="{}", content_type="application/json")
+              if method == "post" else getattr(c,method)(path))
     assert response.status_code == status, (method,response.status_code,status)
     return response
 owner=client(ao)
@@ -121,13 +122,15 @@ assert "sha256" not in data["results"][0]
 assert expect(member,"get",p,200).json()["results"][0]["id"] == str(aa.pk)
 print("ATT_API_AUTHORIZED_METADATA=PASS")
 print("ATT_API_PASSWORD_LOGIN_SESSIONS=PASS")
-# Missing CSRF token must be denied; a valid token must still meet app denial.
-blocked=owner.post(p)
+# Use JSON (a supported DRF parser); a default form POST would be rejected
+# at the parser boundary with HTTP 415, before the application's 403 fence.
+# Missing CSRF must be denied; valid CSRF must still meet application denial.
+blocked=owner.post(p, data="{}", content_type="application/json")
 assert blocked.status_code == 403,blocked.status_code
 req=RequestFactory().get(p, HTTP_HOST="localhost")
 token=get_token(req)
 owner.cookies[settings.CSRF_COOKIE_NAME] = req.META["CSRF_COOKIE"]
-checked=owner.post(p, HTTP_X_CSRFTOKEN=token)
+checked=owner.post(p, data="{}", content_type="application/json", HTTP_X_CSRFTOKEN=token)
 assert checked.status_code == 403,checked.status_code
 assert checked.json()["detail"] == "Adjuntos no habilitados.",checked.content
 assert RenewalAttachment.objects.count()==3
