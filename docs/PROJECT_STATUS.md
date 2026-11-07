@@ -1,3 +1,7 @@
+> **07/11/2026 — API ADJUNTOS CANDIDATA BUILD PASS, PG17/HTTP PENDIENTES:** operador confirmó base histórica `4eb0130d`, fuente `f8efc90a`, imagen `vencira-attachment-api-candidate:f8efc90a2647`, `ATT_API_CANDIDATE_HISTORICAL_MIGRATIONS=0018_ONLY`, `ATT_API_CANDIDATE_IMAGE_BUILD=OK`, `ATT_API_CANDIDATE_DJANGO_CHECK=OK`, `ATT_API_CANDIDATE_LIVE_CONTAINERS_UNCHANGED=OK`, `ATT_API_CANDIDATE_BUILD=PASS`, `ATT_API_BUILD_RESULT=0`; API/DB DEV sin cambios. Publicado gate siguiente `scripts/backend_attachment_api_candidate_pg17_http.sh` para ejecutar **esa imagen exacta**, migraciones PG17 efímeras y denegación HTTP anónima (pendiente validación local). **No habilitar release ni MFA.**
+
+---
+
 > **07/11/2026 — PG17 ADJUNTOS PASS Y CANDIDATA API RECORTADA:** ensayo con Postgres 17 temporal validado: migración independiente desde `reminders.0018`, 0 migraciones MFA, creación y rollback correcto, live API/DB/web intactos. Publicado `scripts/backend_attachment_api_candidate_build.sh` que construye **sin deploy** una API a partir del checkout backend vivo 0018 y solo el módulo de metadatos de adjuntos. No empaquetar la rama Android completa. **Validación de build candidato pendiente.** Ver [BACKEND_DEV_RELEASE_SPLIT_2026-11-07.md](BACKEND_DEV_RELEASE_SPLIT_2026-11-07.md). `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
 
 ---
