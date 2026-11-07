@@ -194,14 +194,3 @@ Future<List<String>> runPhysicalMfa() async {
   }
 }
 
-Future<void> cleanPhysicalLab() async {
-  final store = FlutterNativeSecretStore(storage: _store);
-  // Only discard synthetic credentials after the disposable server has
-  // been torn down or confirmed no longer usable. This function cannot
-  // revoke an active remote session. The user must know the lab status.
-  await store.delete('vencira.mobile.dev.refresh.v1');
-  await store.delete('vencira.mobile.dev.uncertain.v1');
-  _require(await store.read('vencira.mobile.dev.refresh.v1') == null &&
-      await store.read('vencira.mobile.dev.uncertain.v1') == null,
-      'LAB_CLEANUP_UNVERIFIED');
-}
