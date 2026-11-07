@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Actual /accounts/login/ -> /accounts/mfa/ -> /api/v1/me/ over real HTTPS.
-# Full migrations ONLY in disposable PG17; do not touch DEV database/services.
+# I8-E synthetic native JSON password -> MFA -> bearer through verified TLS.
+# Full migrations ONLY in disposable PG17; no host ports or live DB changes.
 set -Eeuo pipefail
 umask 077
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
