@@ -108,6 +108,14 @@ django migrate --noinput >/dev/null
 echo "NATIVE_I8K_FULL_SCHEMA_DISPOSABLE=OK"
 django makemigrations native_mobile_service --check --dry-run --noinput >/dev/null
 echo "NATIVE_I8K_MIGRATION_PARITY=OK"
+# All HTTP/PG17 recovery regressions run before starting a TLS listener.
+# Django uses a secondary test database inside the disposable PG17 network.
+django test \
+  native_mobile_service.test_i8k_recovery_http_pg17 \
+  native_mobile_service.test_i8j_recovery_pg17 \
+  native_mobile_service.test_i8i_non_mfa_recovery_policy_pg17 \
+  --verbosity 1
+echo "NATIVE_I8K_RECOVERY_JSON_PG17=PASS"
 FIXTURE="$(cat <<'PY'
 import os
 from django.contrib.auth import get_user_model
