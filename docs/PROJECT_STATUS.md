@@ -1,3 +1,7 @@
+> **07/11/2026 — RISK REVIEW `main` PASS (solo lectura):** operador confirma `MAIN_INTEGRATION_GATE=READ_ONLY_COMPLETE`, `MAIN_INTEGRATION_LOCAL_RESULT=0`; no autorizaciones de merge/deploy, MFA o migraciones persistentes. La salida recibida contiene solo los marcadores finales, por lo que **no se ha revisado aún** el detalle de las migraciones ni los 17 commits exclusivos de main. Preparado resumen compacto `scripts/main_integration_risk_summary_readonly.sh` commit `9bd7c164`; pendiente ejecución local. Mantener `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+---
+
 > **07/11/2026 — INVENTARIO INTEGRACIÓN MAIN PASS:** operador confirma `MAIN_INVENTORY_LOCAL_RESULT=0`, merge-base `2a891f33d145a035ec4727e0495edfeab5e85692`, `main=8694e56318ed0d9ad48894524f511b33546073a9`, feature=`8bd006e84767571727f89f27fdfd7a87d85fe865`, 3731 commits exclusivos feature, 17 main, 543 archivos diferentes (37 MFA/security, 0 migrations según clasificación excluyente, 10 adjuntos, 17 backend restante, 2 Flutter, 226 operaciones, 241 docs, 10 otros). El contador de migraciones **no basta para aprobar compatibilidad histórica**. Publicado `scripts/main_integration_risk_review_readonly.sh` (commit `7df8d005`) para inspección separada de commits exclusivos de main, migraciones de árboles/historial y configuración de deploy. **Pendiente ejecución.** Nada fusionado, desplegado o migrado.
 
 ---
