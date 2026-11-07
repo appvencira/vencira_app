@@ -55,10 +55,12 @@ http.Client _client({required bool trusted}) {
       'PUBLIC_CA_FORMAT');
   final context = SecurityContext(withTrustedRoots: false);
   if (trusted) context.setTrustedCertificatesBytes(utf8.encode(pem));
-  final client = HttpClient(context: context)
-    ..findProxy = (_) => 'DIRECT'
-    ..connectionTimeout = const Duration(seconds: 5)
-    ..idleTimeout = const Duration(seconds: 4);
+  // Keep assignments separate: chaining a cascade after a callback
+  // assignment can bind the next cascade to the callback's String result.
+  final client = HttpClient(context: context);
+  client.findProxy = (_) => 'DIRECT';
+  client.connectionTimeout = const Duration(seconds: 5);
+  client.idleTimeout = const Duration(seconds: 4);
   client.connectionFactory = (uri, proxyHost, proxyPort) {
     if (proxyHost != null || proxyPort != null ||
         uri.scheme != 'https' || uri.host != 'dev.vencira.es' ||
