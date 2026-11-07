@@ -15,7 +15,6 @@ const _synthetic = 'v1.r.0123456789abcdef0123456789abcdef.'
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 const _syntheticNext = 'v1.r.fedcba9876543210fedcba9876543210.'
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-const _testKey = 'vencira.mobile.dev.refresh.v1';
 
 NativeRefreshCredentialVault _vault() {
   // Explicitly test-only namespace; NEVER use the default production vault.
