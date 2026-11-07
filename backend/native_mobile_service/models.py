@@ -85,3 +85,27 @@ class MobileAuthAuditEvent(models.Model):
             models.Index(fields=["occurred_at"], name="nms_audit_age_idx"),
             models.Index(fields=["event_type", "occurred_at"], name="nms_audit_type_age_idx"),
         ]
+
+
+class MobilePendingChallenge(models.Model):
+    """I8-B test-only native MFA challenge; contains digest, never bearer secret.
+
+    This record is NOT proof that password or MFA was verified. No production
+    endpoint, token issuance or trusted HTTP pre-auth context exists yet.
+    """
+    id = models.UUIDField(primary_key=True, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+",
+    )
+    secret_digest = models.CharField(max_length=64)
+    credential_version = models.CharField(max_length=64)
+    mfa_epoch = models.PositiveIntegerField()
+    auth_generation = models.PositiveBigIntegerField()
+    expires_at = models.DateTimeField()
+    consumed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["user", "expires_at"], name="nms_chal_user_exp_idx"),
+        ]
