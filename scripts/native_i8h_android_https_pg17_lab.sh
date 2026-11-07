@@ -49,6 +49,18 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Fail fast on Dart diagnostics BEFORE building images or starting a DB/TLS lab.
+pubvol="vencira-g7-public-dart-pub-v1"
+D volume create "$pubvol" >/dev/null
+D run --rm -v "$ROOT/clients/flutter:/work" -w /work \
+  -v "$pubvol:/tmp/g7-d2-pub-cache" \
+  -e PUB_CACHE=/tmp/g7-d2-pub-cache \
+  ghcr.io/cirruslabs/flutter:stable sh -ec '
+    flutter pub get --offline || flutter pub get
+    flutter analyze lib/i8h_lab_main.dart lib/i8h_lab/physical_mfa_checks.dart
+  '
+echo "NATIVE_I8H_FLUTTER_PREFLIGHT_ANALYZE=OK"
+
 D build -q -t "$image" ./backend >/dev/null
 image_built=1
 echo "NATIVE_I8H_IMAGE_BUILT=OK"
