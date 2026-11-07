@@ -45,11 +45,6 @@ class _I8hLabHomeState extends State<I8hLabHome> {
     }
   }
 
-  Future<List<String>> _clean() async {
-    await cleanPhysicalLab();
-    return const ['NATIVE_I8H_ANDROID_SYNTHETIC_STORAGE_CLEAN=PASS'];
-  }
-
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('VENCIRA · I8-H Android')),
@@ -71,11 +66,6 @@ class _I8hLabHomeState extends State<I8hLabHome> {
         const Text('La prueba verifica TLS, MFA, almacenamiento protegido '
           'del refresh y revocación remota. Una ejecución incompleta '
           'permanece bloqueada para evitar una emisión ambigua.'),
-        const SizedBox(height: 18),
-        OutlinedButton(
-          onPressed: busy ? null : () => _run(_clean),
-          child: const Text('Limpiar laboratorio tras detener el servidor'),
-        ),
         const SizedBox(height: 16),
         SelectableText(outcome,
           style: const TextStyle(fontFamily: 'monospace', fontSize: 12.5)),
