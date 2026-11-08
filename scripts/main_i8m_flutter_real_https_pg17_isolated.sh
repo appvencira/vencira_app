@@ -195,8 +195,11 @@ django shell -c "$fixture" | grep -Fx 'MAIN_I8M_FLUTTER_TLS_FIXTURE_READY=PASS'
 
 # The Flutter test process sees no PostgreSQL credentials and no private
 # TLS key. The synthetic public CA is the only certificate mounted in.
+# Flutter updates /sdks/flutter/bin/cache/engine.stamp during test startup.
+# Keep the SDK in the container's disposable writable layer; source, pub
+# cache, and certificates remain separately mounted. No host code is writable.
 D run --rm --network "$network" \
-  --read-only --tmpfs /tmp:rw,size=128m,mode=1777 \
+  --tmpfs /tmp:rw,size=128m,mode=1777 \
   --cap-drop ALL --security-opt no-new-privileges --pids-limit 128 \
   -v "$flutter_volume:/work" -v "$pub_volume:/pub" \
   -v "$tmp/cert.pem:/tmp/i8m-lab-ca.pem:ro" \
