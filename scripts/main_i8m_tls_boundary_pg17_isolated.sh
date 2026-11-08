@@ -103,6 +103,7 @@ echo "MAIN_I8M_TLS_EPHEMERAL_MIGRATIONS=PASS"
 
 D run -d --name "$server" --network "$network" \
   --network-alias native-i8k.test --env-file "$tmp/env" \
+  -e PYTHONPATH=/app \
   --read-only --tmpfs /tmp:rw,size=64m,mode=1777 \
   --cap-drop ALL --security-opt no-new-privileges --pids-limit 128 \
   -v "$root/scripts/native_i8k_https_server.py:/opt/i8k_server.py:ro" \
