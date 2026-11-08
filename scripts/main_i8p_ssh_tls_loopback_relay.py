@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""I8P: stream-only localhost ADB proxy to one disposable Docker TLS server.
+"""I8-P: stream-only localhost SSH tunnel relay to one disposable Docker TLS server.
 
 NO HTTP parsing, credential logging, public listener, DNS, or operational URL.
 Host binds 127.0.0.1 ONLY; the backend is a checked RFC1918 Docker address.
