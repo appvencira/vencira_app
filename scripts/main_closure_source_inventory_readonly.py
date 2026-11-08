@@ -40,7 +40,13 @@ def require(value, reason):
         raise RuntimeError(reason)
 
 def extract_dependencies(path):
-    """Read only literal Migration.dependencies from an AST."""
+    """Read literal dependency edges, ignoring reviewed swappable expressions.
+
+    A migrations.swappable_dependency(settings.AUTH_USER_MODEL) is a
+    standard dynamic Django edge; it does not invalidate an explicit
+    literal reminders predecessor. Dynamic/unknown edges are surfaced
+    separately; no Python migration file is imported or executed.
+    """
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=path.name)
     for node in tree.body:
         if isinstance(node, ast.ClassDef) and node.name == "Migration":
@@ -48,13 +54,22 @@ def extract_dependencies(path):
                 if isinstance(item, ast.Assign) and any(
                         isinstance(target, ast.Name) and
                         target.id == "dependencies" for target in item.targets):
-                    try:
-                        value = ast.literal_eval(item.value)
-                    except (ValueError, TypeError):
+                    if not isinstance(item.value, (ast.List, ast.Tuple)):
                         return None
-                    if not isinstance(value, (tuple, list)):
-                        return None
-                    return value
+                    edges = []
+                    for dependency in item.value.elts:
+                        try:
+                            edges.append(ast.literal_eval(dependency))
+                        except (ValueError, TypeError):
+                            if (isinstance(dependency, ast.Call)
+                                and isinstance(dependency.func, ast.Attribute)
+                                and dependency.func.attr == "swappable_dependency"
+                                and isinstance(dependency.func.value, ast.Name)
+                                and dependency.func.value.id == "migrations"):
+                                edges.append(("DJANGO_DYNAMIC", "AUTH_USER_MODEL"))
+                            else:
+                                edges.append(("UNKNOWN_DYNAMIC", "REVIEW_REQUIRED"))
+                    return edges
     return None
 
 def main():
@@ -107,6 +122,7 @@ def main():
     migrations = BACKEND / "reminders/migrations"
     pending = []
     dependency_unknown = []
+    swappable = []
     for n in range(19, 28):
         files = sorted(migrations.glob(f"{n:04d}_*.py"))
         require(len(files) == 1, f"reminders migration {n} missing/duplicate")
@@ -116,6 +132,10 @@ def main():
             dependency_unknown.append(name)
             status = "REVIEW_DYNAMIC_DEPENDENCIES"
         else:
+            if ("UNKNOWN_DYNAMIC", "REVIEW_REQUIRED") in dependencies:
+                dependency_unknown.append(name)
+            if ("DJANGO_DYNAMIC", "AUTH_USER_MODEL") in dependencies:
+                swappable.append(name)
             references_prev = any(
                 isinstance(dep, (list, tuple)) and len(dep) == 2
                 and dep[0] == "reminders"
@@ -129,6 +149,7 @@ def main():
     mark("REMINDERS_0019_0027_FILES", len(pending))
     mark("REMINDERS_UNKNOWN_STATIC_DEPENDENCIES",
          len(dependency_unknown))
+    mark("REMINDERS_DJANGO_SWAPPABLE_AUTH_DEPENDENCIES", len(swappable))
     mark("DEV_MIGRATION_PLAN_EXECUTED", "NO")
     mark("O5_BACKUP_RESTORED", "NOT_VERIFIED")
     mark("APK_VISUAL_SMOKE", "NOT_VERIFIED")
