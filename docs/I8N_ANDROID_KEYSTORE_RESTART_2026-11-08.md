@@ -1,3 +1,30 @@
+> **ACTUALIZACIÓN PRIORITARIA — 08/11/2026: ejecución con Termius/SSH existente, SIN ADB.**
+>
+> Se añadió una APK debug con interfaz manual dedicada al Keystore Android. El túnel SSH existente permite **transferir** la APK desde el VPS; el test de almacenamiento no utiliza red ni el túnel. No hace falta montar un servidor Android de pruebas ni usar `flutter test -d` si se elige la APK manual. Se requiere instalar un paquete debug adicional y reiniciar el teléfono entre las fases de guardar y verificar.
+>
+> Archivo de arranque: `clients/flutter/lib/main_i8n_keystore_lab.dart` (distinto de `main.dart`).
+>
+> Build desde la copia de `main` del VPS, sin tocar Docker DEV ni su PostgreSQL:
+>
+> ```bash
+> cd ~/vencira-main-check-20261108
+> git fetch origin main
+> git merge --ff-only FETCH_HEAD
+> set -o pipefail
+> bash scripts/main_i8n_android_keystore_lab_apk_build.sh 2>&1 | tee ~/vencira-i8n-apk-build.log
+> echo "I8N_APK_BUILD_SHELL_RESULT=${PIPESTATUS[0]}"
+> ```
+>
+> Solo tras `I8N_APK_DEBUG_BUILD=PASS` e `I8N_APK_BUILD_SHELL_RESULT=0` tomar el archivo `/home/vencira/vencira-i8n-phone/VENCIRA-I8N-Keystore-debug.apk`. No afirmar que se ha creado sin ese resultado. Copiarlo al móvil por SFTP/SCP a través de la cuenta SSH existente o desde Termux en una sesión aparte (la conexión normal al VPS, sin depender del forward HTTP): `scp vencira@SERVIDOR_VPS:~/vencira-i8n-phone/VENCIRA-I8N-Keystore-debug.apk ~/storage/downloads/`, sustituyendo `SERVIDOR_VPS` por el host SSH ya configurado. Usar el método de descarga de Termux/SFTP si no están concedidos permisos de almacenamiento. No desinstalar VENCIRA normal ni otras APK de laboratorio.
+>
+> Instalar **VENCIRA I8N Keystore Lab**, paquete aislado `es.vencira.vencira.i8nlab`; pulsar **1 Guardar datos sintéticos** y anotar `I8N_ANDROID_KEYSTORE_SEED=PASS`. Reiniciar completamente el dispositivo (esta acción puede cerrar el túnel Termux, pero el test no lo necesita). Abrir la misma APK sin borrar datos y pulsar **2 Verificar tras reinicio**: exigir `I8N_ANDROID_RESTART_RECOVERY_FENCED=PASS`. Finalmente pulsar **3 Limpiar laboratorio** y exigir `I8N_ANDROID_KEYSTORE_CLEANUP=PASS`. Capturar las tres pantallas/resultados, sin contraseñas ni valores secretos.
+>
+> **Limitaciones:** la APK comprueba Keystore+marcador con un refresh sintético; NO conecta al backend, no usa MFA real, no valida una sesión operativa y no permite inferir que un logout real funcione. El éxito tras reiniciar el teléfono sí aporta evidencia de durabilidad en el dispositivo, siempre que no se haya reinstalado/limpiado el paquete entre fases.
+>
+> **Estado actual: APK integrada en main; BUILD/INSTALACIÓN/TEST FÍSICO = PENDIENTES.** No activar despliegue ni migraciones persistentes.
+>
+---
+
 # VENCIRA — I8-N Android Keystore: persistencia y fence tras reinicio
 
 **Corte:** 2026-11-08. **Rama:** `main`. **Estado:** código de prueba preparado, NO ejecutado todavía en Android físico. **Sin despliegue ni migración persistente**.
