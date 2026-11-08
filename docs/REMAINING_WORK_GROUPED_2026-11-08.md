@@ -64,3 +64,26 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 **Prohibido por ahora:** deploy, live migration, autorización automática de emisión/recovery real en DEV, reusar certificados efímeros de los labs o presentar simulaciones como fallos reales. Continuar integrando directamente en `main` y registrar cada resultado con SHA del ensayo.
 
 **Fuentes internas:** `docs/MAIN_BRANCH_AUDIT_2026-11-08.md`, `docs/D1_DEV_DEPLOY_PREPARATION_2026-11-08.md`, `docs/I8P_ANDROID_HTTPS_KEYSTORE_SSH_LAB_2026-11-08.md`, `docs/I8Q_NATIVE_RECOVERY_FAULT_MATRIX_2026-11-08.md`.
+
+## Ejecución acelerada — lote de inventario B2+B3 (08/11/2026)
+
+**Hallazgo en código, no deducción:** `clients/flutter/lib/main.dart` dirige la APK Android normal a `AndroidWebAccessScreen` y `clients/flutter/lib/ui/android_web_access_screen.dart` utiliza `LaunchMode.externalApplication` para abrir `https://dev.vencira.es/` en el navegador. La autenticación y recuperación nativas I8-M–I8-Q se han demostrado **solo en laboratorios Android separados**, no están integradas en el arranque operativo. Esta diferencia se convierte en bloqueo de aceptación de B2, no en un FAIL de la seguridad ya ensayada.
+
+**Preflight añadido directamente en main:**
+- `scripts/main_closure_source_inventory_readonly.py` (`725a3bbb`) recorre archivos Flutter esenciales sin ejecutar la app; marca pantallas presentes como `SOURCE_PRESENT_NOT_VISUALLY_TESTED` y verifica que la entrada Android normal siga aislada, que `backend/config/urls.py` no publique endpoints móviles candidatos y que el bearer siga desactivado. Identifica por AST las nueve migraciones `reminders.0019–0027` y las dependencias estáticas. **No interpreta presencia de fuente como funcionalidad probada, no usa DB ni Docker**.
+- `scripts/main_closure_grouped_readonly_gate.sh` (`2c0bf8e6`) ejecuta en una sola invocación ese inventario y `scripts/d1b_dev_compose_o5_metadata_readonly.py` para obtener metadatos del Compose operativo y estados systemd O5. **No consulta secretos, no verifica backups, no restaura ni ejecuta migraciones.**
+
+**Operación única en Termius:**
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin main
+git merge --ff-only FETCH_HEAD
+bash -n scripts/main_closure_grouped_readonly_gate.sh
+set -o pipefail
+bash scripts/main_closure_grouped_readonly_gate.sh 2>&1 | tee ~/vencira-closure-readonly.log
+echo "CLOSE_COMBINED_SHELL_RESULT=${PIPESTATUS[0]}"
+```
+
+**Criterio:** `CLOSE_DJANGO_OPERATIONAL_NATIVE_ROUTE_FENCE=PASS`, `CLOSE_ANDROID_NORMAL_ENTRY=EXTERNAL_BROWSER_ONLY`, `CLOSE_REMINDERS_0019_0027_FILES=9`, `D1B_COMPOSE_PROJECT=vencira_localcheck`, `CLOSE_COMBINED_PREFLIGHT=PASS`, `CLOSE_COMBINED_SHELL_RESULT=0`. Si el informe señala un hallazgo de compatibilidad o un temporizador inactivo, **no se modifica DEV para que el gate pase**: investigar la causa y diseñar un ensayo aislado.
+
+**Importante:** este preflight no certifica que los backups O5 sean restaurables ni que `reminders.0019–0027` puedan migrarse. Los gates de restore y rollback siguen pendientes y requieren un ensayo de PG17 aislado. I8-R de pérdida controlada de respuestas HTTPS Android permanece pendiente; no se finge completado por esta publicación. Las 15 migraciones de aplicaciones lab siguen excluidas de DEV.
