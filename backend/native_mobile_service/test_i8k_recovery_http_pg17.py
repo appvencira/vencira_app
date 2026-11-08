@@ -101,6 +101,47 @@ class I8KRecoveryHttpPG17(TransactionTestCase):
             revoked_at__isnull=True).count(), 1)
         self.assertEqual(MobileAccountFence.objects.get(user=self.user).generation, 1)
 
+    def test_recovery_issued_refresh_can_revoke_and_access_is_denied(self):
+        response = self.password()
+        self.assertEqual(response.status_code, 200)
+        tokens = self.mfa(response.json()["challenge"])
+        self.assertEqual(tokens.status_code, 200)
+        access = tokens.json()["access"]
+        refresh = tokens.json()["refresh"]
+        self.assertEqual(self.client.get(
+            "/api/v1/mobile/me/",
+            HTTP_AUTHORIZATION="Bearer " + access,
+        ).status_code, 200)
+        revoked = self.post("/api/v1/mobile/token/revoke/", {
+            "refresh": refresh,
+        })
+        self.assertEqual(revoked.status_code, 200)
+        self.assertEqual(revoked.json(), {"status": "revoked"})
+        self.assertNotIn("Set-Cookie", revoked)
+        self.assertEqual(self.client.get(
+            "/api/v1/mobile/me/",
+            HTTP_AUTHORIZATION="Bearer " + access,
+        ).status_code, 401)
+        self.assertEqual(self.post("/api/v1/mobile/token/revoke/", {
+            "refresh": refresh,
+        }).status_code, 401)
+
+    def test_recovery_revoke_rejects_invalid_token_and_browser_metadata(self):
+        route = "/api/v1/mobile/token/revoke/"
+        self.assertEqual(self.post(route, {"refresh": "not-a-token"}).status_code, 401)
+        self.assertEqual(self.post(route, {"refresh": "not-a-token", "other": "x"}).status_code, 400)
+        self.assertEqual(self.client.get(route).status_code, 405)
+        for meta in (
+            {"HTTP_COOKIE": "sessionid=synthetic"},
+            {"HTTP_ORIGIN": "https://untrusted.invalid"},
+            {"HTTP_AUTHORIZATION": "Bearer synthetic"},
+        ):
+            with self.subTest(meta=meta):
+                self.assertEqual(self.post(route, {
+                    "refresh": "not-a-token",
+                }, **meta).status_code, 403)
+        self.assertFalse(MobileDeviceSession.objects.exists())
+
     def test_password_only_does_not_revoke_or_issue(self):
         old = self.initial_device()
         result = self.password()
@@ -159,6 +200,7 @@ class I8KRecoveryHttpPG17(TransactionTestCase):
             for route in (
                 "/api/v1/mobile/auth/recover/password/",
                 "/api/v1/mobile/auth/recover/mfa/",
+                "/api/v1/mobile/token/revoke/",
             ):
                 with self.assertRaises(Resolver404):
                     resolve(route)
