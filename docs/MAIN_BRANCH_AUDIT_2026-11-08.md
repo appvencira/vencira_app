@@ -400,3 +400,21 @@ Después del gate Flutter I8-M 47/47 PASS, el paso previo al TLS real es comprob
 - `f79b4645`: se ajusta el entrypoint para emitir `MAIN_I8M_TLS_BRIDGE_NEGATIVE_GUARD=PASS` **únicamente** si `unittest` termina sin fallos.
 
 **No ejecutado aún:** el operador debe actualizar `main` y lanzar `python3 scripts/main_i8m_tls_bridge_denial_test.py`; se esperan dos tests unittest que internamente verifican 13 escenarios negativos. No asociar su PASS a TLS verificado. Los marcadores `MAIN_I8M_REAL_TLS_CLIENT_SERVER=NOT_TESTED` y `MAIN_I8M_ANDROID_PERSISTENCE=NOT_TESTED` siguen vigentes. No se ha creado ni ejecutado un probe de autenticación HTTPS real ni se ha publicado ninguna ruta de recuperación. Se mantienen `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## Z. I8-M: rechazo de arranque TLS validado (operador 08/11/2026)
+
+El operador ejecutó `python3 scripts/main_i8m_tls_bridge_denial_test.py` sobre su checkout actualizado de `main`. Evidencia completa relevante:
+
+```text
+OK
+MAIN_I8M_TLS_BRIDGE_NEGATIVE_GUARD=PASS
+MAIN_I8M_REAL_TLS_CLIENT_SERVER=NOT_TESTED
+MAIN_I8M_ANDROID_PERSISTENCE=NOT_TESTED
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+MAIN_I8M_TLS_NEGATIVE_RESULT=0
+```
+
+**Conclusión:** pruebas negativas de arranque del servidor TLS I8-K **PASS**: el guard inicial deniega configuraciones incompletas o incompatibles con laboratorio (omisión de variables y valores alternativos). El resultado presentado no reproduce `Ran 2 tests`, aunque `OK` y el marcador interno se imprimen solo tras el éxito de unittest. Los resultados Flutter I8-M **47/47 PASS** y backend PG17 **44/44 PASS** permanecen confirmados.
+
+**Pendientes:** transporte HTTPS real y validación CA/hostname cliente Flutter, sesión Django PG17 recuperada de extremo a extremo y reinicio en Android. El gate negativo no prueba ninguna de esas propiedades. No autorizar producción.
