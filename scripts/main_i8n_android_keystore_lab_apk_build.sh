@@ -27,6 +27,7 @@ D run --rm \
     cd /tmp/vencira-i8n-flutter
     flutter pub get
     flutter analyze lib/main_i8n_keystore_lab.dart \
+      lib/i8o_android_keystore_failure_lab.dart \
       integration_test/native_i8n_android_restart_secure_store_test.dart
     VENCIRA_I8N_LAB_BUILD=1 flutter build apk --debug \
       --target lib/main_i8n_keystore_lab.dart \
@@ -40,6 +41,7 @@ echo "I8N_APK_DEBUG_BUILD=PASS"
 echo "I8N_APK_PACKAGE=es.vencira.vencira.i8nlab"
 echo "I8N_APK_PATH=$output/VENCIRA-I8N-Keystore-debug.apk"
 echo "I8N_APK_DEVICE_TEST=NOT_RUN"
+echo "I8O_ANDROID_FAULT_TEST=NOT_RUN"
 echo "I8N_APK_DEPLOY_EXECUTED=NO"
 echo "I8N_APK_LIVE_MIGRATIONS_EXECUTED=NO"
 echo "MFA_RELEASE_AUTHORIZED=NO"
