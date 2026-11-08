@@ -665,3 +665,35 @@ MAIN_I8M_FLUTTER_TLS_BOUNDARY_RESULT=1
 **Corrección en `main`, commit `74fd920e`:** se retira exclusivamente `--read-only` del contenedor efímero que ejecuta `flutter test`. La capa escribible es descartable y se elimina con `--rm`; el checkout del host no está montado en el runner, las fuentes se preparan en volumen Docker temporal y no hay puertos publicados. Se mantienen `--network` interno, capacidades retiradas, `no-new-privileges` y comparativa de contenedores DEV. El resto de contenedores del ensayo mantiene sus guardias. **Repetición pendiente**.
 
 Próximo paso: repetir `bash scripts/main_i8m_flutter_real_https_pg17_isolated.sh` desde el checkout de `main` actualizado, confirmar `MAIN_I8M_FLUTTER_TLS_REAL_CLIENT=PASS`, ambas comprobaciones SQL de revocación, `MAIN_I8M_FLUTTER_TLS_RECOVERY_GATE=PASS`, y `MAIN_I8M_FLUTTER_TLS_BOUNDARY_RESULT=0`. Si aparece otro error, registrar etapa y corregir causa sin declarar PASS.
+
+## AO. I8-M Flutter HTTPS + recuperación MFA + revocación en PG17: PASS (operador 08/11/2026)
+
+El operador ejecutó el gate corregido `scripts/main_i8m_flutter_real_https_pg17_isolated.sh` y aportó la siguiente salida:
+
+```text
+No issues found! (ran in 10.4s)
+MAIN_I8M_FLUTTER_TLS_ANALYZE=PASS
+MAIN_I8M_FLUTTER_TLS_FIXTURE_READY=PASS
+00:00 +0: I8-M verified IOClient TLS and recovery MFA committed
+MAIN_I8M_FLUTTER_TLS_CA_AND_HOSTNAME=PASS
+MAIN_I8M_FLUTTER_RECOVERY_MFA_TLS=PASS
+00:00 +1: I8-M failed storage write triggers remote revoke over real TLS
+MAIN_I8M_FLUTTER_FAILURE_LOCAL_FENCE=PASS
+00:01 +2: All tests passed!
+MAIN_I8M_FLUTTER_TLS_REAL_CLIENT=PASS
+MAIN_I8M_FLUTTER_TLS_ACCOUNT_RECOVERY_REVOCATION=PASS
+MAIN_I8M_FLUTTER_TLS_STORAGE_FAILURE_REMOTE_REVOKE=PASS
+MAIN_I8M_FLUTTER_TLS_RECOVERY_GATE=PASS
+MAIN_I8M_FLUTTER_TLS_DEV_CONTAINERS_UNCHANGED=OK
+MAIN_I8M_FLUTTER_TLS_DEPLOY_EXECUTED=NO
+MAIN_I8M_FLUTTER_TLS_LIVE_MIGRATIONS_EXECUTED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+MAIN_I8M_FLUTTER_TLS_BOUNDARY_RESULT=0
+```
+
+**Resultado acreditado:** `flutter analyze` PASS, pruebas Flutter con `IOClient` real **2/2 PASS**, CA/hostname verificados, recuperación password+TOTP sintético mediante HTTPS, rechazo de sesión antigua tras recuperación y revocación compensatoria tras fallo de escritura de refresh; última verificación de sesiones en PostgreSQL 17 **efímero** PASS. El gate completa la conexión Flutter–Django HTTPS de laboratorio, no activa rutas operativas, ni justifica un despliegue.
+
+**Limitaciones pendientes:** la `_Store` empleada en la prueba es un almacén sintético en memoria; **no prueba Android Keystore**, `FlutterSecureStorage` real, persistencia entre procesos en dispositivo o recuperación tras reinicio físico. La seguridad operativa, custodia de claves reales y despliegue siguen sujetos a autorizaciones distintas. No confundir `MAIN_I8M_FLUTTER_TLS_RECOVERY_GATE=PASS` con `MFA_RELEASE_AUTHORIZED=YES`.
+
+**Siguiente bloque recomendado:** integración Android física del almacenamiento nativo con los fences de recuperación y ensayos de kill/restart, sin publicar servicio ni migrar DEV. D1 despliegue permanece expresamente pospuesto por decisión del usuario.
