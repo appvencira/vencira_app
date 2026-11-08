@@ -17,7 +17,7 @@ for name in vencira_localcheck-api-1 vencira_localcheck-db-1 vencira_localcheck-
 done
 tmp="$(mktemp -d /tmp/vencira-i8m-tls.XXXXXXXX)"
 chmod 700 "$tmp"
-tag="vencira-i8m-flutter-$"
+tag="vencira-i8m-flutter-$$"
 network="$tag-net"
 database="$tag-db"
 server="$tag-server"
@@ -227,7 +227,5 @@ assert MobileDeviceSession.objects.filter(
 print('MAIN_I8M_FLUTTER_TLS_STORAGE_FAILURE_REMOTE_REVOKE=PASS')
 PY
 )"
-django shell -c "$postcheck" | grep -E '^MAIN_I8M_FLUTTER_TLS_(ACCOUNT_RECOVERY_REVOCATION|STORAGE_FAILURE_REMOTE_REVOKE)=PASS '^MAIN_I8M_' | grep -Fx '2' >/dev/null
-echo "MAIN_I8M_FLUTTER_TLS_RECOVERY_GATE=PASS"
- | grep -c '^MAIN_I8M_' | grep -Fx '2' >/dev/null
+django shell -c "$postcheck" | grep -E '^MAIN_I8M_FLUTTER_TLS_(ACCOUNT_RECOVERY_REVOCATION|STORAGE_FAILURE_REMOTE_REVOKE)=PASS$' | grep -c '^MAIN_I8M_' | grep -Fx '2' >/dev/null
 echo "MAIN_I8M_FLUTTER_TLS_RECOVERY_GATE=PASS"
