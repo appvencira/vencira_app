@@ -299,3 +299,18 @@ MAIN_I8L_RECHECK_RESULT=0
 **Límites:** el gate es de tests Dart/mock/adapter, **no** prueba una sesión HTTPS real contra Django/PG17, ni Android físico, ni publicación operativa. I8-K HTTP (42/42) y Flutter I8-L (46/46) están validados por separado. Falta prueba de integración completa I8-M y los negativos TLS, además de verificar cualquier runner adicional antes de promoverlo.
 
 **Estado operativo:** `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`. No se ha desplegado ni se han ejecutado migraciones persistentes.
+
+## S. I8-M: auditoría inicial de integración HTTPS Flutter–Django (08/11/2026)
+
+Tras el PASS del backend I8-K HTTP (42/42) y Flutter I8-L (46/46), se inició revisión del gate extremo a extremo I8-M, **sin afirmar pruebas HTTPS ejecutadas**.
+
+**Hallazgos de código comprobados:**
+1. `scripts/native_i8k_https_server.py` **ya está en main** y coincide por SHA con `feature/m3-android-local-notifications`. Usa `native_mobile_service.test_i8k_recovery_urls` solo con `VENCIRA_ENV=test`, servicio candidato, `VENCIRA_I8K_RECOVERY_LAB=1`, `VENCIRA_I8K_NETWORK_ISOLATED=1`, PG17 con `POSTGRES_DB=i8klab`. No habilita `config.urls`.
+2. `clients/flutter/lib/api/native_http_auth_port.dart` y `native_i8l_http_recovery_integration_test.dart` coinciden con su fuente histórica. El test I8-L es de adaptador con transporte simulado, no prueba el servidor TLS.
+3. El URLconf `backend/native_mobile_service/test_i8k_recovery_urls.py` expone únicamente `/api/v1/mobile/auth/recover/password/`, `/api/v1/mobile/auth/recover/mfa/` y `/api/v1/mobile/me/`. **No expone `/api/v1/mobile/token/revoke/`**, aunque `NativeHttpAuthPort.revoke()` requiere esa ruta para revocación compensatoria en ciertas condiciones. El gateway mantiene fence revocado y marker al fallar, pero el éxito de revocación HTTPS **no está probado ni se puede presumir**. Antes de ampliarlo, revisar controles de autorización/rate-limit, ownership y anti-replay en un laboratorio desechable.
+4. `scripts/native_i8k_https_probe.py` y `scripts/native_i8k_real_https_pg17_isolated.sh` están ausentes de main. El primero tuvo un bloqueo de publicación por controles de seguridad, **no intentar copiarlo por otra vía**. La rama histórica conserva código HTTPS I8-E/F y pruebas, pero no es sustituto directo de una prueba completa de recuperación I8-M.
+5. El cliente Flutter no está conectado al flujo operativo en `main.dart`. TLS CA/hostname, caducidad del challenge, reinicio y recuperación en Android siguen pendientes.
+
+**Artefacto publicado:** `scripts/main_i8m_recovery_readiness_static.py`, commit `2f965296`. Lee fuentes locales, revisa el aislamiento del servidor test-only y el bloqueo password-only, e informa expresamente `MAIN_I8M_HTTPS_REVOKE_CONTRACT=NOT_IMPLEMENTED_IN_LAB_URLCONF`, `MAIN_I8M_REAL_TLS_CLIENT_SERVER=NOT_TESTED` y `MAIN_I8M_ANDROID_PERSISTENCE=NOT_TESTED`. Un `MAIN_I8M_STATIC_GATE_RESULT=0` **solo certifica invariantes estáticas**, nunca un gate HTTPS real ni aprobación de release. Pendiente ejecutar el script sobre el nuevo SHA de main.
+
+**Orden de trabajo:** (1) comprobar el gate estático; (2) diseñar revisión aislada del contrato revocación y del endpoint HTTPS faltante, con negativos y sin publicar rutas en `config.urls`; (3) preparar fixture TLS con CA temporal y DNS/cert válido **sin desactivar la verificación**; (4) ejecutar Flutter Dart cliente HTTP real contra Django PG17 efímero, verificando rechazos de CA falsa/hostname inválido y recuperación tras MFA; (5) probar persistencia/reinicio real en APK Android. Conservar `NO_DEPLOY_NO_LIVE_MIGRATION=1` y `MFA_RELEASE_AUTHORIZED=NO`.
