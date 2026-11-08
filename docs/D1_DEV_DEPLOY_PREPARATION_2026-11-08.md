@@ -97,3 +97,21 @@ Los conteos se refieren a archivos de migración presentes en el checkout y al r
 **Interpretación:** se confirma 0 migraciones aplicadas cuyos nombres estén ausentes en `main` para las apps locales allí inventariadas, pero ello no certifica que coincidan modelos, operaciones SQL, datos y dependencias. Las dos aplicaciones de lab y la app de adjuntos separada son test-only; no convertirlas en carga DEV.
 
 **Puerta siguiente D1-B:** verificar vigencia/recuperabilidad O5, localizar el manifiesto real de los contenedores y restaurar un backup DEV en un PostgreSQL 17 temporal. Ejecutar `migrate --plan` y ensayo `0019–0027` solo allí, inspeccionar colisiones de tablas/índices y probar rollback con datos sintéticos o restaurados protegidos. Ninguna operación de despliegue ni migración persistente autorizada todavía. MFA nativa operativa sigue desactivada.
+
+## Paso D1-B1 — inventario de metadatos Compose y timers O5
+
+Integrado en `main`: `scripts/d1b_dev_compose_o5_metadata_readonly.py` (commit `d0733c2c`).
+
+Este ejecutor es de solo lectura y examina únicamente etiquetas Compose del contenedor API existente (`docker inspect`) y estados `is-active`/`is-enabled` de los timers/services `o5-backup` y `o5-health`. Solo comunica **nombres de archivo** de los manifiestos y nombre de directorio, sin revelar rutas completas ni consultar archivos de configuración, variables de entorno, contraseñas, OAuth, inventario Restic o contenido de backups. **El resultado `D1B_RESULT=0` no certifica que exista backup restaurable ni que las migraciones sean compatibles**.
+
+Ejecutar tras actualizar `main`:
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin main
+git merge --ff-only FETCH_HEAD
+python3 scripts/d1b_dev_compose_o5_metadata_readonly.py
+echo "D1B_SHELL_RESULT=$?"
+```
+
+**Siguiente gate:** tras conocer manifiesto y temporizadores, verificar un snapshot O5 y su restauración con herramientas operativas existentes y sin revelar secretos; después ensayar el grafo efectivo `reminders.0019–0027` en clon PG17. Solo la combinación de esas evidencias podrá habilitar una posterior decisión específica de despliegue.
