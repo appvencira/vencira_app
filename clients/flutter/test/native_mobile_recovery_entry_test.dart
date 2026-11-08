@@ -130,13 +130,35 @@ void main() {
     expect(route, NativeStartupDisposition.fullReauthentication);
     expect(await journal.requiresReauthentication(), isTrue);
     expect(fence.ticket, isNull);
+    port.requireMfa = true;
     expect(await entry.verifyPassword(username: 'u', password: 'p'),
-        NativePasswordDecision.authenticated);
+        NativePasswordDecision.mfaRequired);
     expect(port.passwordCalls, 1);
+    expect(await journal.requiresReauthentication(), isTrue);
+    expect(await vault.read(), oldRefresh);
+    expect(await entry.accessToken(), isNull);
+    expect(fence.ticket, isNull);
+    await entry.verifyTotp('123456');
+    expect(port.mfaCalls, 1);
     expect(await journal.requiresReauthentication(), isFalse);
     expect(await vault.read(), newRefresh);
     expect(await entry.accessToken(), newAccess);
     expect(fence.ticket, isNotNull);
+  });
+
+  test('password-only recovery cannot unlock an orphan refresh', () async {
+    await vault.replace(oldRefresh);
+    expect(await entry.inspect(), NativeStartupDisposition.fullReauthentication);
+    await expectLater(
+      entry.verifyPassword(username: 'u', password: 'p'),
+      throwsStateError,
+    );
+    expect(port.passwordCalls, 1);
+    expect(port.mfaCalls, 0);
+    expect(await journal.requiresReauthentication(), isTrue);
+    expect(await vault.read(), oldRefresh);
+    expect(await entry.accessToken(), isNull);
+    expect(fence.ticket, isNull);
   });
 
   test('existing marker requires recovery MFA; password alone keeps fence down',
