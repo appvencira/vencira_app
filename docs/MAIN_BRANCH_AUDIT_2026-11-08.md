@@ -641,3 +641,27 @@ echo "MAIN_I8M_FLUTTER_TLS_SHELL_RESULT=${PIPESTATUS[0]}"
 ```
 
 Exigir `MAIN_I8M_FLUTTER_TLS_ANALYZE=PASS`, `MAIN_I8M_FLUTTER_TLS_SERVER_READY=PASS`, `MAIN_I8M_FLUTTER_TLS_REAL_CLIENT=PASS`, `MAIN_I8M_FLUTTER_TLS_ACCOUNT_RECOVERY_REVOCATION=PASS`, `MAIN_I8M_FLUTTER_TLS_STORAGE_FAILURE_REMOTE_REVOKE=PASS`, `MAIN_I8M_FLUTTER_TLS_RECOVERY_GATE=PASS`, `MAIN_I8M_FLUTTER_TLS_DEV_CONTAINERS_UNCHANGED=OK` y `MAIN_I8M_FLUTTER_TLS_BOUNDARY_RESULT=0`. Sin esos marcadores no declarar I8-M Flutter HTTPS PASS.
+
+## AN. I8-M Flutter TLS: incidencia SDK de Flutter en filesystem RO (operador 08/11/2026)
+
+Primera ejecución del gate `scripts/main_i8m_flutter_real_https_pg17_isolated.sh` en VPS, reportada por el operador:
+
+```text
+No issues found! (ran in 10.5s)
+MAIN_I8M_FLUTTER_TLS_ANALYZE=PASS
+MAIN_I8M_FLUTTER_TLS_FIXTURE_READY=PASS
+/sdks/flutter/bin/internal/update_engine_version.sh: line 71: /sdks/flutter/bin/cache/engine.stamp.tmp.18: Read-only file system
+/sdks/flutter/bin/internal/update_engine_version.sh: line 78: /sdks/flutter/bin/cache/engine.realm: Read-only file system
+MAIN_I8M_FLUTTER_TLS_DEV_CONTAINERS_UNCHANGED=OK
+MAIN_I8M_FLUTTER_TLS_DEPLOY_EXECUTED=NO
+MAIN_I8M_FLUTTER_TLS_LIVE_MIGRATIONS_EXECUTED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+MAIN_I8M_FLUTTER_TLS_BOUNDARY_RESULT=1
+```
+
+**Diagnóstico preciso:** análisis estático Flutter PASS, fixture de usuarios MFA sintéticos creada en PG17 temporal. El contenedor del runner de `flutter test` usaba `--read-only` y el SDK `ghcr.io/cirruslabs/flutter:3.44.0` intenta actualizar el archivo `/sdks/flutter/bin/cache/engine.stamp` y `engine.realm` al iniciar. Se aborta antes de comprobar Flutter TLS, MFA o revocación. **No hay PASS extremo a extremo todavía.**
+
+**Corrección en `main`, commit `74fd920e`:** se retira exclusivamente `--read-only` del contenedor efímero que ejecuta `flutter test`. La capa escribible es descartable y se elimina con `--rm`; el checkout del host no está montado en el runner, las fuentes se preparan en volumen Docker temporal y no hay puertos publicados. Se mantienen `--network` interno, capacidades retiradas, `no-new-privileges` y comparativa de contenedores DEV. El resto de contenedores del ensayo mantiene sus guardias. **Repetición pendiente**.
+
+Próximo paso: repetir `bash scripts/main_i8m_flutter_real_https_pg17_isolated.sh` desde el checkout de `main` actualizado, confirmar `MAIN_I8M_FLUTTER_TLS_REAL_CLIENT=PASS`, ambas comprobaciones SQL de revocación, `MAIN_I8M_FLUTTER_TLS_RECOVERY_GATE=PASS`, y `MAIN_I8M_FLUTTER_TLS_BOUNDARY_RESULT=0`. Si aparece otro error, registrar etapa y corregir causa sin declarar PASS.
