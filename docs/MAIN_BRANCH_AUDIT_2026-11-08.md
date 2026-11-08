@@ -587,3 +587,33 @@ MAIN_I8M_TLS_BOUNDARY_RESULT=6
 **Diagnóstico:** el script del servidor Django está montado en `/opt/i8k_server.py` y Python ejecuta ese archivo desde `/opt`, sin incluir `/app` en `sys.path`. El WSGI no puede importar `config.settings`, aunque la imagen Django y las migraciones PG17 efímeras ya han funcionado. No se ha llegado al handshake TLS ni a ejecutar el cliente Python. El fallo no implica un problema de CA o de base de datos.
 
 **Corrección directa en `main`:** commit `d4580149`, añade `-e PYTHONPATH=/app` solo al contenedor efímero del servidor HTTPS; no modifica `backend/config/settings.py`, URLconf, DEV, Docker Compose o datos persistentes. El gate **sigue pendiente de reejecución**. Se espera `MAIN_I8M_TLS_SERVER_READY=PASS`, seguido de los marcadores positivos/negativos del handshake real. No afirmar `MAIN_I8M_TLS_BOUNDARY_GATE=PASS` hasta verlos.
+
+## AL. I8-M handshake TLS real Python–Django–PG17 validado (operador 08/11/2026)
+
+El operador volvió a ejecutar `scripts/main_i8m_tls_boundary_pg17_isolated.sh` tras el ajuste de importación `d4580149`, en el checkout de `main`. Evidencia exacta reportada:
+
+```text
+MAIN_I8M_TLS_DISPOSABLE_IMAGE=OK
+MAIN_I8M_TLS_DOCKER_NETWORK_INTERNAL=PASS
+MAIN_I8M_TLS_PG17_EPHEMERAL_READY=PASS
+MAIN_I8M_TLS_EPHEMERAL_MIGRATIONS=PASS
+MAIN_I8M_TLS_SERVER_READY=PASS
+MAIN_I8M_REAL_UNTRUSTED_CA_DENIED=PASS
+MAIN_I8M_REAL_HOSTNAME_MISMATCH_DENIED=PASS
+MAIN_I8M_REAL_HTTPS_DJANGO_BOUNDARY=PASS
+MAIN_I8M_REAL_TLS_PYTHON_CLIENT_SERVER=PASS
+MAIN_I8M_REAL_TLS_FLUTTER_CLIENT=NOT_TESTED
+MAIN_I8M_REAL_MFA_FLOW=NOT_TESTED
+MAIN_I8M_ANDROID_PERSISTENCE=NOT_TESTED
+MAIN_I8M_TLS_BOUNDARY_GATE=PASS
+MAIN_I8M_TLS_DEV_CONTAINERS_UNCHANGED=OK
+MAIN_I8M_TLS_DEPLOY_EXECUTED=NO
+MAIN_I8M_TLS_LIVE_MIGRATIONS_EXECUTED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+MAIN_I8M_TLS_BOUNDARY_RESULT=0
+```
+
+**Conclusión válida:** primer gate de transporte TLS **real** entre proceso cliente Python, Django WSGI y red Docker interna con PG17 temporal PASS. Handshake confía solo en CA temporal y hostname esperado; se deniegan una CA externa y hostname incorrecto. Las rutas sin credenciales del URLconf de recuperación responden con el contrato esperado y no hay exposición operativa. La corrección de `PYTHONPATH=/app` queda acreditada.
+
+**Límites:** la prueba GET no usa Flutter/Dart, password ni TOTP, no emite ni revoca sesiones, no prueba almacenamiento Keystore/Android y no publica el backend. No declarar I8-M completo hasta validar cliente Flutter HTTPS auténtico, recuperación MFA real y compensación de revocación bajo fallo de almacenamiento. Se mantienen las restricciones sin despliegue ni migraciones persistentes.
