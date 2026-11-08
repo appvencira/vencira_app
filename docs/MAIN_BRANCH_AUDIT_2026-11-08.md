@@ -181,3 +181,19 @@ Los scripts PG17 originales verifican el estado de contenedores DEV por identida
 **Directorio local:** no hay inventario recibido de `~/vencira-*`, `git worktree list`, contenedores, volumenes, `/opt`, copias de seguridad ni archivos sueltos. **No borrar directorios a ciegas.** Revisar primero con `git worktree list --porcelain`, `find "$HOME" -maxdepth 1 -type d -name 'vencira*' -print` y `du -sh` para cada candidato, comparar con rutas activas y confirmar que no albergan archivos no versionados, configuraciones, secretos ni logs necesarios. Preferir `git worktree remove` solo para worktrees realmente innecesarios y limpios; **nunca** usar `rm -rf ~/vencira*`, `git clean -fdx` ni `docker system prune --volumes`.
 
 **Secuencia:** ejecutar dry-run y revisión de carpetas primero; borrar referencias remotas por lote controlado con `--apply` después de revisar la salida; verificar `git ls-remote origin`, `git status` y dejar evidencia en este documento. Esto no es gate de release ni habilita MFA.
+
+## L. Limpieza GitHub efectuada y directorios inventariados (evidencia del operador, 08/11/2026)
+
+El operador ejecutó `scripts/main_merged_branch_cleanup_guarded.sh --apply` tras `--dry-run` con **15/15 `ELIGIBLE`** y cero rechazadas. Resultado de ejecución comunicado: `BRANCH_CLEANUP_DELETED=15`, `BRANCH_CLEANUP_SKIPPED=0`, `BRANCH_CLEANUP_DONE=YES`, `CLEANUP_APPLY_EXIT=0`. **Limpieza remota de las 15 ramas `integration/*` de PR #19–#33 completada según la salida del operador.** El comando `git fetch --prune` y la inspección posterior de ramas remotas no se han mostrado aún, por lo que la confirmación independiente del estado remoto sigue pendiente. No borrar ninguna rama adicional por el momento.
+
+**Worktrees observados:**
+- `/home/vencira/vencira-localcheck`, HEAD `64e936b9`, rama `feature/c-ficha-independent-attachments` (162 MiB): **conservar**, rama C-FICHA aún con auditoría pendiente.
+- `/home/vencira/vencira-m3-localcheck`, HEAD `f750bbbf`, detached (3.8 GiB): **conservar por ahora**, es la base de pruebas M3/Android y puede albergar artefactos/builds necesarios.
+- `/home/vencira/vencira-main-check-20261108`, HEAD `5a35e96e`, detached (4.4 MiB): **conservar**, worktree de consolidación de `main`.
+- `/tmp/vencira-suggestions.RIC9UU/source`, HEAD `e390130e`, marcado `prunable`: **candidato a `git worktree prune` tras dry-run**; la operación elimina registros administrativos de worktrees obsoletos, no directorios activos.
+
+**Directorios adicionales observados:** `vencira-m3-android-build` (2.1 GiB), `vencira-m3-clean` (1.1 GiB), `vencira-m3-results` (1.1 MiB), `vencira-preview` (1.3 MiB), `vencira-export` (8 KiB), `vencira-backups` (124 KiB), `vencira-db-backups` (904 KiB), `vencira-local-backups` (36 KiB) y `~/vencira-android-tree-detail.json` (132 KiB). **Ninguno de esos directorios se ha borrado.**
+
+**Clasificación provisional:** conservar `*-backups`, `*-db-backups`, `*-local-backups`, `*-export` y los tres worktrees funcionales. Revisar si `vencira-m3-android-build` y `vencira-m3-clean` son copias reconstruibles o incluyen scripts/artefactos únicos antes de borrar; podrían liberar hasta ~3.2 GiB según `du -sh`, pero no existe autorización técnica para eliminarlos sin inspección. `vencira-m3-results` puede contener evidencias de pruebas que deben archivarse.
+
+**Próximo gate de limpieza local — exclusivamente lectura:** inspeccionar `git worktree prune -n -v`, `git status --porcelain`/origen en cada directorio si es repo, `du -sh` de sus subcarpetas, antigüedad de archivos, actividad de procesos Docker/Termius y presencia de archivos no versionados o ignorados. Los tamaños por sí solos **no justifican** `rm -rf`. Para el registro `prunable` puede utilizarse `git worktree prune -v` después de confirmar que la ruta temporal no existe ni está montada.
