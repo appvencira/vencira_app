@@ -564,3 +564,26 @@ echo "MAIN_I8M_TLS_BOUNDARY_SHELL_RESULT=${PIPESTATUS[0]}"
 ```
 
 Exigir `MAIN_I8M_REAL_UNTRUSTED_CA_DENIED=PASS`, `MAIN_I8M_REAL_HOSTNAME_MISMATCH_DENIED=PASS`, `MAIN_I8M_REAL_HTTPS_DJANGO_BOUNDARY=PASS`, `MAIN_I8M_REAL_TLS_PYTHON_CLIENT_SERVER=PASS`, `MAIN_I8M_TLS_BOUNDARY_GATE=PASS`, `MAIN_I8M_TLS_DEV_CONTAINERS_UNCHANGED=OK` y resultado cero. `MAIN_I8M_REAL_TLS_FLUTTER_CLIENT=NOT_TESTED` continúa siendo el bloqueo siguiente.
+
+## AK. I8-M TLS boundary: primer ensayo fallido y corrección de importación (08/11/2026)
+
+El operador ejecutó `scripts/main_i8m_tls_boundary_pg17_isolated.sh` sobre `main`. Evidencia recibida:
+
+```text
+MAIN_I8M_TLS_DISPOSABLE_IMAGE=OK
+MAIN_I8M_TLS_DOCKER_NETWORK_INTERNAL=PASS
+MAIN_I8M_TLS_PG17_EPHEMERAL_READY=PASS
+MAIN_I8M_TLS_EPHEMERAL_MIGRATIONS=PASS
+MAIN_I8M_TLS_SERVER_READY=FAIL
+ModuleNotFoundError: No module named 'config'
+MAIN_I8M_TLS_DEV_CONTAINERS_UNCHANGED=OK
+MAIN_I8M_TLS_DEPLOY_EXECUTED=NO
+MAIN_I8M_TLS_LIVE_MIGRATIONS_EXECUTED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+MAIN_I8M_TLS_BOUNDARY_RESULT=6
+```
+
+**Diagnóstico:** el script del servidor Django está montado en `/opt/i8k_server.py` y Python ejecuta ese archivo desde `/opt`, sin incluir `/app` en `sys.path`. El WSGI no puede importar `config.settings`, aunque la imagen Django y las migraciones PG17 efímeras ya han funcionado. No se ha llegado al handshake TLS ni a ejecutar el cliente Python. El fallo no implica un problema de CA o de base de datos.
+
+**Corrección directa en `main`:** commit `d4580149`, añade `-e PYTHONPATH=/app` solo al contenedor efímero del servidor HTTPS; no modifica `backend/config/settings.py`, URLconf, DEV, Docker Compose o datos persistentes. El gate **sigue pendiente de reejecución**. Se espera `MAIN_I8M_TLS_SERVER_READY=PASS`, seguido de los marcadores positivos/negativos del handshake real. No afirmar `MAIN_I8M_TLS_BOUNDARY_GATE=PASS` hasta verlos.
