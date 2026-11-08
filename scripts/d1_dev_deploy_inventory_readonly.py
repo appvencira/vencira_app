@@ -92,9 +92,10 @@ def main():
     # django_migrations table. No migrate/check/DDL is performed.
     probe = (
         "import json;"
+        "from django.db import connection;"
         "from django.db.migrations.recorder import MigrationRecorder;"
         "rows=sorted([list(x) for x in "
-        "MigrationRecorder.Migration.objects.values_list('app','name')]);"
+        "MigrationRecorder(connection).applied_migrations()]);"
         "print('D1_MIGRATION_JSON='+json.dumps(rows,separators=(',',':')))"
     )
     output = command(docker + [
