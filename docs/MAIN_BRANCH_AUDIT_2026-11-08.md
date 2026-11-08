@@ -717,3 +717,18 @@ Primera ejecución local de `flutter analyze integration_test/native_i8n_android
 Corrección publicada en `main` commit `219ebe21`: se elimina únicamente la constante sin uso. No hay cambios en el flujo `seed/verify/cleanup`, la configuración debug ni el acceso a Keystore.
 
 **Próximo gate:** repetir `flutter analyze` sobre el SHA actualizado; después instrumentar el dispositivo Android real en tres procesos independientes, comprobando que el runner preserve los datos entre `seed` y `verify`. Ningún PASS físico declarado y ningún deploy autorizado.
+
+## AR. I8-N: revalidación estática Flutter PASS (08/11/2026)
+
+El operador repitió el análisis del test `integration_test/native_i8n_android_restart_secure_store_test.dart` después de la corrección `219ebe21` en `main` y aportó:
+
+```text
+Changed 97 dependencies!
+22 packages have newer versions incompatible with dependency constraints.
+Analyzing native_i8n_android_restart_secure_store_test.dart...
+No issues found! (ran in 11.0s)
+```
+
+**Evidencia acreditada:** `flutter analyze` finalizó sin advertencias ni errores para el archivo I8-N. El comando original utilizaba `flutter pub get && flutter analyze` en un contenedor de Flutter con copia del proyecto en `/tmp`: la actualización de paquetes observada pertenece a ese entorno temporal, no demuestra cambios en el repositorio, la aplicación desplegada o DEV. El fragmento no incluye la línea explícita `I8N_ANDROID_STATIC_RESULT=0`, pero la salida de `No issues found!` acredita el análisis estático satisfactorio.
+
+**No acreditado aún:** `flutter test` Android físico, instalación y persistencia entre tres procesos `seed/verify/cleanup`, conservación de datos del paquete debug `.i8nlab` entre invocaciones, y persistencia/recuperación después de terminación forzada. El ensayo real requiere un host con Android SDK y dispositivo ADB conectado; Termius sobre VPS sin ADB no equivale a ello. `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1` siguen vigentes.
