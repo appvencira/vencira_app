@@ -16,7 +16,7 @@ from .candidate_recovery_issuer import (
 from .g14_admission import CandidateAdmissionDenied
 from .g5_audit import MobileAuditDenied
 from .g5_throttle import CandidateThrottleDenied
-from .session_store import MobileTokenDenied, validate_candidate_access
+from .session_store import (MobileTokenDenied, revoke_candidate_device, validate_candidate_access)
 from .test_i8d_http_views import _deny, _payload, _response, _pair, _lab_keys
 
 
@@ -80,6 +80,22 @@ def recover_mfa(request):
         return _deny()
     return _pair(issued)
 
+
+
+@csrf_exempt
+def revoke(request):
+    """Revoke only the holder of the exact refresh token, in the test lab."""
+    denied = _guard(request, "POST")
+    if denied is not None:
+        return denied
+    fields = _payload(request, {"refresh"})
+    if fields is None:
+        return _deny(400)
+    try:
+        revoke_candidate_device(fields["refresh"])
+    except (MobileTokenDenied, ValueError):
+        return _deny()
+    return _response({"status": "revoked"})
 
 def me(request):
     denied = _guard(request, "GET")
