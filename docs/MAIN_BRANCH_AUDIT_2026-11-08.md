@@ -259,3 +259,18 @@ NATIVE_I8K_LOCAL_RESULT=0
 **No cubierto:** Flutter en esta ejecución (`NOT_RUN_SEPARATE`), TLS de recuperación I8-K HTTPS, cliente Flutter HTTPS real I8-M, Android físico ni autorización de despliegue. Mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
 
 **Siguiente puerta de calidad:** correr Flutter `analyze` y suite de recuperación/adapter aisladas, sin escribir en worktree ni crear volúmenes permanentes; después diseñar/verificar HTTPS I8-K sin reutilizar el probe cuya publicación quedó bloqueada.
+
+## Q. Regresión Flutter I8-L ampliada: 3 tests heredados desalineados (08/11/2026)
+
+El operador ejecutó una selección ampliada de tests Flutter sobre la copia temporal de `main`. Resultado `MAIN_I8L_FLUTTER_RESULT=1`: tres fallos del conjunto y `Some tests failed`. Los tests fallidos fueron:
+1. `native_mobile_recovery_entry_test.dart`: `orphan refresh routes exclusively through full recovery`.
+2. `native_recovery_login_gateway_test.dart`: `fresh password recovery persists new refresh before access`.
+3. `native_recovery_login_gateway_test.dart`: `storage write ignored after grant rejects session and attempts revoke`.
+
+**Causa técnica confirmada por revisión de tests/implementación:** esos tres tests aún daban por válido `NativePasswordGranted` (tokens entregados tras contraseña) para activar sesión recuperada. La versión I8-L de `NativeRecoveryLoginGateway.verifyPassword()` rechaza **intencionalmente** cualquier `NativePasswordGranted` y acepta exclusivamente `NativePasswordMfaRequired`; los tokens pasan por `_confirm()` solo tras `recoverMfa`. El control seguro es correcto; NO retirar la restricción por complacer las expectativas antiguas de los tests.
+
+**Correcciones directas en main:**
+- Commit `8532a639`: `native_mobile_recovery_entry_test.dart` se actualizó para exigir desafío MFA, verificar que no se desbloquea el acceso antes de TOTP y confirmar tokens solo después de `verifyTotp`; se añadió negativo explícito que exige rechazar `NativePasswordGranted`.
+- Commit `f3e9dfff`: `native_recovery_login_gateway_test.dart` ahora exige MFA antes de persistir nuevo refresh, y simula fallo de almacenamiento **después** del paso MFA para verificar revocación; añadido negativo explícito de password-only.
+
+**No se ha modificado el código de autenticación** para permitir emisiones tras solo contraseña. **Pendiente de verificación:** correr de nuevo `flutter analyze` y la selección de cinco suites en copia temporal de `main` y obtener `MAIN_I8L_FLUTTER_RESULT=0`; si falla, capturar error detallado. El gate 42/42 de backend I8-K continúa validado en su ejecución anterior; cambios de tests Flutter posteriores no prueban que el nuevo SHA haya sido validado por I8-K.
