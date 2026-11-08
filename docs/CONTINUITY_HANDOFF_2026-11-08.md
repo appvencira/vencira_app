@@ -1,3 +1,5 @@
+> **ACTUALIZACIÓN DE CONTINUIDAD — AUDITORÍA DE RAMAS 08/11/2026:** consultar primero [auditoría y plan de cierre](MAIN_BRANCH_AUDIT_2026-11-08.md) y [registro de integración](MAIN_CONSOLIDATION_2026-11-08.md). Tras el corte original de este handoff se integraron directamente en main I8-L (6/6 Flutter + analyze PASS reportado), desafío lc1 (6/6 unittest PASS), modelos/migración 0005 y núcleo I8-B/C/I/J/K de laboratorio. También se reparó la carga test-only de claves HMAC G5 (`b095531e`). El código backend nuevo y los gates PG17/HTTPS I8-K e I8-M **no tienen PASS sobre main**. Las estadísticas del handoff inferior son históricas y pueden haber cambiado. No hacer merge masivo ni activar servicios. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
 # VENCIRA — CONTINUIDAD MAESTRA PARA NUEVO CHAT
 
 **Fecha de corte: 8 de noviembre de 2026.** Documento publicado en la rama principal `main`. Este archivo es el punto de entrada para reanudar el trabajo. NO equivale a declarar que los cambios de ramas históricas estén fusionados o desplegados.
