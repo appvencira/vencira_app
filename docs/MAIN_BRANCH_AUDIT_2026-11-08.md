@@ -697,3 +697,15 @@ MAIN_I8M_FLUTTER_TLS_BOUNDARY_RESULT=0
 **Limitaciones pendientes:** la `_Store` empleada en la prueba es un almacén sintético en memoria; **no prueba Android Keystore**, `FlutterSecureStorage` real, persistencia entre procesos en dispositivo o recuperación tras reinicio físico. La seguridad operativa, custodia de claves reales y despliegue siguen sujetos a autorizaciones distintas. No confundir `MAIN_I8M_FLUTTER_TLS_RECOVERY_GATE=PASS` con `MFA_RELEASE_AUTHORIZED=YES`.
 
 **Siguiente bloque recomendado:** integración Android física del almacenamiento nativo con los fences de recuperación y ensayos de kill/restart, sin publicar servicio ni migrar DEV. D1 despliegue permanece expresamente pospuesto por decisión del usuario.
+
+## AP. I8-N Android Keystore real, persistencia entre procesos: gate preparado (08/11/2026)
+
+Después de `MAIN_I8M_FLUTTER_TLS_RECOVERY_GATE=PASS`, el foco pasa a Android físico sin desplegar. Se crean/actualizan **directamente en main**:
+
+- `clients/flutter/integration_test/native_i8n_android_restart_secure_store_test.dart` (commits `1d3c18f5`, `76fff440`): prueba `integration_test` habilitada solo para Android con `VENCIRA_I8N_ANDROID_LAB=true`, dividida en invocaciones separadas `seed`, `verify`, `cleanup`. Usa el plugin real `FlutterSecureStorage` mediante `FlutterNativeSecretStore`, `NativeRefreshCredentialVault`, `NativeRefreshRecoveryJournal` y `NativeMobileStartupGate`. Almacena exclusivamente un token sintético en el namespace `vencira_i8n_restart_lab_v1` y comprueba que el fence sigue cerrado tras reabrir el proceso. Nunca solicita red ni se conecta a DEV.
+- `clients/flutter/android/app/build.gradle.kts` (commit `44bf265d`): `VENCIRA_I8N_LAB_BUILD=1` genera exclusivamente un paquete debug separado `es.vencira.vencira.i8nlab`, mutuamente excluyente con G8/G12/G13/G15 y prohibido para release/profile.
+- `docs/I8N_ANDROID_KEYSTORE_RESTART_2026-11-08.md` (commit `e79223c9`): procedimiento de análisis Flutter en VPS, ejecución por fases con Android SDK/ADB en un host conectado, interpretación precisa de la persistencia, y limpieza de claves **solo del namespace de laboratorio**.
+
+**No hay aún resultado de `flutter analyze` del archivo I8-N ni ejecución en teléfono**. Tener el test en `main` no equivale a probar Android Keystore real. Para acreditar persistencia entre procesos se debe observar `seed=PASS`, `verify=PASS` y `cleanup=PASS` en ejecuciones independientes sin desinstalar ni borrar datos entre ellas. Si `flutter test` reinstala/limpia datos, se debe adaptar el runner antes de interpretar resultados. El VPS no dispone necesariamente de ADB al teléfono; no inferir acceso USB a partir de Termius.
+
+Mantener `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, sin cambio en Compose ni migración DEV.
