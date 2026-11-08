@@ -104,3 +104,28 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 - GitHub `main` es destino de código, no despliegue. Nada de `docker compose up` sobre proyectos DEV, `manage.py migrate` sobre DB persistentes, habilitación de MFA operativo ni rutas de emisión test-only.
 - No se han ejecutado tests de VPS ni migraciones en el curso de **esta auditoría documental**. La corrección de `settings.py` queda pendiente de gates sobre el nuevo SHA.
 - Ninguna de las ramas se ha eliminado ni fusionado masivamente.
+
+## H. Inventario reproducible de árboles (publicado en main)
+
+`scripts/main_branch_tree_inventory_readonly.py` compara todos los objetos de los árboles de `origin/main` y de las ramas `origin/*`, incluyendo modos, tipos y SHA de cada archivo. **No** invoca `fetch`, modifica refs, crea ramas, ejecuta Docker ni escribe archivos del repositorio. A diferencia del endpoint de GitHub, no limita la comparación a 300 rutas. Se comprobó su comportamiento con un repositorio sintético local (un archivo modificado y otro añadido); sigue **pendiente de ejecución sobre las ramas reales de VENCIRA**.
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin '+refs/heads/*:refs/remotes/origin/*'
+python3 scripts/main_branch_tree_inventory_readonly.py \
+  --summary-only > /tmp/vencira-main-branch-summary-20261108.json
+python3 scripts/main_branch_tree_inventory_readonly.py \
+  > /tmp/vencira-main-branch-full-20261108.json
+python3 - <<'PY'
+import json
+p = '/tmp/vencira-main-branch-summary-20261108.json'
+data = json.load(open(p, encoding='utf-8'))
+print('MAIN_AUDIT_BASE=' + data['base_commit'])
+for b in data['branches']:
+    print(b['ref'], b['counts'])
+print('MAIN_AUDIT_BRANCHES=' + str(len(data['branches'])))
+PY
+git status --short
+```
+
+Los JSON se crean en `/tmp` fuera del worktree. **Revisar antes de compartirlos** por si revelan nombres de archivos privados, aunque el informe no contiene su contenido. La auditoría completa permitirá priorizar diferencias restantes por árbol, no por conteo de commits.
