@@ -366,3 +366,13 @@ NATIVE_I8K_LOCAL_RESULT=0
 Junto con los marcadores completos registrados en sección U (`NATIVE_I8K_RECOVERY_HTTP_JSON=PASS`, `NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK` y ausencia de despliegue/migraciones), se declara **I8-K/I8-M backend HTTP con revocación 44/44 PASS**, en PostgreSQL 17 desechable. Se reemplaza la incertidumbre de conteo de la sección U con esta evidencia posterior.
 
 La revalidación no prueba por sí sola TLS, los negativos CA/hostname, el cliente Flutter en red real ni persistencia en Android; tales gates continúan pendientes. `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## W. I8-M: test Flutter de revocación compensatoria tras error de almacenamiento (08/11/2026)
+
+El backend I8-M post-revocación había quedado validado en 44/44 pruebas HTTP PG17, mientras que Flutter I8-L alcanzó 46/46 PASS **antes** de este cambio. Se ha incorporado directamente a `main` un test adicional en `clients/flutter/test/native_i8l_http_recovery_integration_test.dart`, commit `1619c488`.
+
+Nuevo test `I8-M failed protected write sends exact refresh to revoke endpoint`: mediante `MockClient` HTTP comprueba que (1) el login de recuperación obtiene un desafío MFA; (2) la respuesta MFA entrega tokens; (3) el almacén protegido falla al guardar el refresh; (4) el cliente envía exactamente el refresh nuevo a `/api/v1/mobile/token/revoke/` con POST HTTPS, sin cookies, autorización ni redirecciones; (5) el servidor simulado responde `{"status":"revoked"}` y pese a ello el gateway propaga el fallo de almacenamiento; (6) el bearer no queda disponible, la fence sigue cerrada, se mantiene el refresh anterior y permanece el marker duradero de recuperación.
+
+El test anterior de fallo de revocación/404 se conserva como regresión negativa; su comentario obsoleto se actualizó para reflejar que el endpoint I8-K **sí** está disponible en el URLconf test-only.
+
+**Pendiente:** ejecutar nueva suite Flutter en copia temporal de Docker. Se esperan **47 pruebas** en las cinco suites si no varía el descubrimiento (46 anteriores + 1 nuevo), más `flutter analyze`. **No atribuir PASS hasta salida del operador**. Este test usa `MockClient`, **NO equivale a una prueba TLS real ni de Android**. Los negativos TLS no deben deducirse de este resultado. Conservar `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
