@@ -6,7 +6,7 @@
 
 I8-N acreditó, mediante capturas y confirmación de reinicio físico del operador, la persistencia del refresh sintético y del marcador entre reinicios Android, el cierre del fence y la limpieza del laboratorio.
 
-I8-O aporta otro laboratorio **dentro de la misma APK debug independiente** `es.vencira.vencira.i8nlab`. La nueva acción **«I8-O · Comprobar fallos seguros»** usa el plugin real `flutter_secure_storage` (Android Keystore) bajo `storageNamespace=vencira_i8o_failure_lab_v1`. La credencial y el marcador son exclusivamente sintéticos y residen en un **namespace distinto** de I8-N. El wrapper `_FaultStore` simula fallos sobre el plugin mediante excepciones o confirmaciones de borrado falsas; el almacenamiento Android real sigue verificándose por lectura.
+I8-O aporta otro laboratorio **en una APK debug propia e independiente** `es.vencira.vencira.i8olab`. La nueva acción **«I8-O · Comprobar fallos seguros»** usa el plugin real `flutter_secure_storage` (Android Keystore) bajo `storageNamespace=vencira_i8o_failure_lab_v1`. La credencial y el marcador son exclusivamente sintéticos y residen en un **namespace distinto** de I8-N. El wrapper `_FaultStore` simula fallos sobre el plugin mediante excepciones o confirmaciones de borrado falsas; el almacenamiento Android real sigue verificándose por lectura.
 
 Se comprueban tres situaciones de riesgo, cada una sin red:
 1. **Marcador no escribible:** el inicio de una operación potencialmente ambigua falla antes de realizar solicitudes HTTP, el marcador no se considera persistido y el fence no está activo. `I8O_ANDROID_MARKER_WRITE_DENIED=PASS`.
@@ -24,18 +24,18 @@ cd ~/vencira-main-check-20261108
 git fetch origin main
 git merge --ff-only FETCH_HEAD
 set -o pipefail
-bash scripts/main_i8n_android_keystore_lab_apk_build.sh 2>&1 | tee ~/vencira-i8o-android-build.log
+bash scripts/main_i8o_android_failure_lab_apk_build.sh 2>&1 | tee ~/vencira-i8o-android-build.log
 echo "I8O_APK_BUILD_SHELL_RESULT=${PIPESTATUS[0]}"
 ```
 
-Exigir `No issues found!`, `I8N_APK_DEBUG_BUILD=PASS`, `I8O_APK_BUILD_SHELL_RESULT=0`. El script incluye análisis estático de la entrada Flutter y el nuevo archivo I8-O. **Ningún PASS hasta ejecutar.** El artefacto se escribe en `~/vencira-i8n-phone/VENCIRA-I8N-Keystore-debug.apk`.
+Exigir `No issues found!`, `I8O_APK_DEBUG_BUILD=PASS`, `I8O_APK_BUILD_SHELL_RESULT=0`. El script incluye análisis estático de la entrada Flutter y el nuevo archivo I8-O. **Ningún PASS hasta ejecutar.** El artefacto se escribe en `~/vencira-i8o-phone/VENCIRA-I8O-FailureLab-debug.apk`.
 
 ## Transferencia e instalación en Android sin ADB
 
 Ya existe un túnel/acceso SSH entre el móvil y el VPS (operador confirmado). Usar Termux/SFTP/SCP para recuperar la APK actualizada; ejemplo opcional desde Termux, adaptando el host a la conexión ya configurada:
 
 ```bash
-scp vencira@SERVIDOR_VPS:~/vencira-i8n-phone/VENCIRA-I8N-Keystore-debug.apk ~/storage/downloads/
+scp vencira@SERVIDOR_VPS:~/vencira-i8o-phone/VENCIRA-I8O-FailureLab-debug.apk ~/storage/downloads/
 ```
 
 Instalar como **actualización del MISMO paquete debug independiente** `es.vencira.vencira.i8nlab`, sin desinstalar ni borrar datos de otras apps, y sin tocar el paquete normal `es.vencira.vencira`. Conservar el método y certificado de firma debug del build anterior; si Android informa que la actualización tiene firma distinta, **no desinstalar ni forzar la sustitución** sin analizar antes la causa. El estado I8-N ya está validado y no necesita repetirse.
