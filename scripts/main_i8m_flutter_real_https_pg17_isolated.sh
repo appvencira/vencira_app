@@ -59,7 +59,7 @@ image_created=1
 echo "MAIN_I8M_FLUTTER_TLS_DISPOSABLE_IMAGE=OK"
 db_password="$(openssl rand -hex 24)"
 django_key="$(openssl rand -hex 36)"
-mfa_key="$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '\\n')"
+mfa_key="$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '\n')"
 cat > "$tmp/env" <<EOF
 VENCIRA_ENV=test
 DJANGO_DEBUG=0
@@ -227,5 +227,7 @@ assert MobileDeviceSession.objects.filter(
 print('MAIN_I8M_FLUTTER_TLS_STORAGE_FAILURE_REMOTE_REVOKE=PASS')
 PY
 )"
-django shell -c "$postcheck" | grep -E '^MAIN_I8M_FLUTTER_TLS_(ACCOUNT_RECOVERY_REVOCATION|STORAGE_FAILURE_REMOTE_REVOKE)=PASS | grep -c '^MAIN_I8M_' | grep -Fx '2' >/dev/null
+django shell -c "$postcheck" | grep -E '^MAIN_I8M_FLUTTER_TLS_(ACCOUNT_RECOVERY_REVOCATION|STORAGE_FAILURE_REMOTE_REVOKE)=PASS '^MAIN_I8M_' | grep -Fx '2' >/dev/null
+echo "MAIN_I8M_FLUTTER_TLS_RECOVERY_GATE=PASS"
+ | grep -c '^MAIN_I8M_' | grep -Fx '2' >/dev/null
 echo "MAIN_I8M_FLUTTER_TLS_RECOVERY_GATE=PASS"
