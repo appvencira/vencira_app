@@ -839,3 +839,23 @@ El aviso `22 packages have newer versions incompatible with dependency constrain
 Corrección directa en `main` commit `de18003c`: se elimina solamente `import 'dart:typed_data';` de la entrada I8-P; `ByteData` continúa disponible por `package:flutter/foundation.dart`. No hay cambios a TLS, autenticación, PostgreSQL, Keystore ni despliegue.
 
 **Pendiente:** reejecutar `scripts/main_i8p_android_ssh_https_pg17_lab.sh` y exigir una salida limpia de análisis, APK compilada, marcador Android de HTTPS/MFA/Keystore/revocación y comprobación SQL de PostgreSQL efímero antes de declarar PASS.
+
+## AZ. I8-P Android físico: interfaz HTTPS/MFA/Keystore/revocación 5/5 PASS (08/11/2026)
+
+El operador aportó captura del teléfono Android con la APK debug aislada `VENCIRA · Android I8-P`. La pantalla muestra:
+
+```text
+I8P_ANDROID_TLS_HOSTNAME=PASS
+I8P_ANDROID_RECOVERY_MFA_KEYSTORE=PASS
+I8P_ANDROID_REMOTE_REVOKE=PASS
+I8P_ANDROID_ACCESS_AFTER_REVOKE_401=PASS
+I8P_ANDROID_LAB_CLEANUP=PASS
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
+
+**Resultado acreditado:** gate del **cliente Android físico 5/5 PASS**, incluida la comunicación HTTPS con CA pública y hostname verificados mediante el túnel SSH, recuperación de cuenta sintética por contraseña+TOTP, escritura/lectura de refresh real en almacenamiento protegido Android, revocación remota y rechazo HTTP 401 del access después de revocar, seguido de limpieza del namespace I8-P.
+
+**No certificar todavía el gate global I8-P:** falta la salida de la sesión VPS después de pulsar INTRO que compruebe `I8P_PG17_OLD_AND_NEW_SESSION_REVOKED=PASS`, `I8P_ANDROID_TLS_MFA_KEYSTORE_GATE=PASS`, `I8P_DEV_CONTAINERS_UNCHANGED=OK`, `I8P_LAB_RESULT=0`. La captura del móvil no sustituye el postcheck SQL ni acredita por sí sola el teardown del laboratorio.
+
+No hubo activación de MFA operativa, publicación de endpoint ni autorización de despliegue; continúan `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
