@@ -9,6 +9,8 @@ python3 scripts/main_closure_source_inventory_readonly.py
 echo 'CLOSE_FUNCTIONAL_SOURCE_AUDIT=PASS'
 python3 scripts/d1b_dev_compose_o5_metadata_readonly.py
 echo 'CLOSE_D1B_COMPOSE_O5_METADATA=PASS'
+python3 scripts/d1c_o5_scope_units_readonly.py
+echo 'CLOSE_D1C_O5_SCOPE_DIAGNOSTIC=PASS'
 echo 'CLOSE_BACKUP_RESTORE=NOT_RUN'
 echo 'CLOSE_DEV_MIGRATIONS=NOT_RUN'
 echo 'CLOSE_DEPLOY_EXECUTED=NO'
