@@ -543,3 +543,24 @@ second process remains fenced after ambiguous MFA result
 **Resultado acreditado:** 27/27 tests Flutter PASS para `native_api_endpoint_test.dart`, `native_http_auth_port_test.dart` y `native_i8l_http_recovery_integration_test.dart`. La regresión introducida por las nuevas entradas adversarias queda resuelta según el recheck comunicado. El extracto no contiene `flutter analyze` ni `MAIN_FLUTTER_SECURITY_RECHECK=0`, así que estos dos marcadores no se dan por comprobados en esta ejecución (pueden confirmarse con el log completo).
 
 No se ha verificado HTTPS real Flutter–Django ni persistencia Android. No se realiza despliegue ni migración DEV; permanecen `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## AJ. I8-M primer handshake HTTPS real contra Django + PG17 efímero (08/11/2026)
+
+Nuevo bloque integrado en `main`, **pendiente de ejecución real**:
+
+- `scripts/main_i8m_tls_boundary_probe.py` (`e700855c`, corrección `ae953a80`): cliente Python de laboratorio sin credenciales que exige `VENCIRA_I8M_INTERNAL_TLS_PROBE=1`, `VENCIRA_ENV=test` y `POSTGRES_DB=i8klab`. Utiliza TLS con CA explícita y hostname `native-i8k.test`; verifica que otra CA y un hostname incorrecto son rechazados por un handshake real. Mediante HTTPS realiza únicamente GET sin contraseñas/tokens contra rutas del URLconf de recuperación: password/MFA/revoke GET→405, `me` sin token→401 y login normal ausente→404; bloquea cookies y exige JSON/cache no-store para respuestas nativas. El 404 de Django no está obligado a ser JSON.
+- `scripts/main_i8m_tls_boundary_pg17_isolated.sh` (`7ee4302e`): imagen Django desechable construida desde el `main` actual, red Docker `--internal`, PostgreSQL 17 `tmpfs`, secretos/certificado sintéticos en carpeta temporal 0700, esquema migrado **solo en PG17 temporal**, WSGI de test con HTTPS sin publicación de puertos, probe dentro de la red. El servidor se ejecuta read-only, sin capacidades Linux, con seguridad no-new-privileges y el contenedor probe igualmente restringido. Un trap elimina el laboratorio y compara IDs e imágenes de `vencira_localcheck-api-1`, `-db-1`, `-web_preview-1` antes/después. El key PEM sintético usa 0644 únicamente dentro de un directorio temporal privado 0700 para poder montarse en contenedor no-root, se elimina al finalizar; **esto no es un diseño de custodia de claves operativas**.
+
+**Importante:** el preflight **no** prueba autenticación MFA, emisión, revocación real, Flutter `IOClient`, almacenamiento Android o SSL de producción. No equiparar `MAIN_I8M_TLS_BOUNDARY_GATE=PASS` con `MAIN_I8M_REAL_TLS_FLUTTER_CLIENT=PASS`. Resultado esperado solo tras ejecutar el gate en VPS, sin declarar PASS por anticipado. Ningún despliegue DEV ni migraciones persistentes autorizados.
+
+Orden de validación:
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin main
+git merge --ff-only FETCH_HEAD
+set -o pipefail
+bash scripts/main_i8m_tls_boundary_pg17_isolated.sh 2>&1 | tee ~/vencira-i8m-tls-boundary.log
+echo "MAIN_I8M_TLS_BOUNDARY_SHELL_RESULT=${PIPESTATUS[0]}"
+```
+
+Exigir `MAIN_I8M_REAL_UNTRUSTED_CA_DENIED=PASS`, `MAIN_I8M_REAL_HOSTNAME_MISMATCH_DENIED=PASS`, `MAIN_I8M_REAL_HTTPS_DJANGO_BOUNDARY=PASS`, `MAIN_I8M_REAL_TLS_PYTHON_CLIENT_SERVER=PASS`, `MAIN_I8M_TLS_BOUNDARY_GATE=PASS`, `MAIN_I8M_TLS_DEV_CONTAINERS_UNCHANGED=OK` y resultado cero. `MAIN_I8M_REAL_TLS_FLUTTER_CLIENT=NOT_TESTED` continúa siendo el bloqueo siguiente.
