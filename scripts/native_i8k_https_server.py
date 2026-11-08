@@ -36,7 +36,10 @@ def app(environ, start_response):
     return django_application(environ, start_response)
 
 
-server = make_server("0.0.0.0", 8443, app)
+# Standard HTTPS port is enabled exclusively for the I8-M internal Flutter
+# lab. The legacy Python boundary continues to listen on 8443.
+port = 443 if os.getenv("VENCIRA_I8M_FLUTTER_INTERNAL_ONLY") == "1" else 8443
+server = make_server("0.0.0.0", port, app)
 ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 ctx.minimum_version = ssl.TLSVersion.TLSv1_2
 ctx.load_cert_chain("/tmp/i8k-cert.pem", "/tmp/i8k-key.pem")
