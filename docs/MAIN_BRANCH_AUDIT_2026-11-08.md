@@ -709,3 +709,11 @@ Después de `MAIN_I8M_FLUTTER_TLS_RECOVERY_GATE=PASS`, el foco pasa a Android f�
 **No hay aún resultado de `flutter analyze` del archivo I8-N ni ejecución en teléfono**. Tener el test en `main` no equivale a probar Android Keystore real. Para acreditar persistencia entre procesos se debe observar `seed=PASS`, `verify=PASS` y `cleanup=PASS` en ejecuciones independientes sin desinstalar ni borrar datos entre ellas. Si `flutter test` reinstala/limpia datos, se debe adaptar el runner antes de interpretar resultados. El VPS no dispone necesariamente de ADB al teléfono; no inferir acceso USB a partir de Termius.
 
 Mantener `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, sin cambio en Compose ni migración DEV.
+
+## AQ. I8-N Android: warning estático y corrección (08/11/2026)
+
+Primera ejecución local de `flutter analyze integration_test/native_i8n_android_restart_secure_store_test.dart` aportada por el operador: `1 issue found`, warning `unused_element` por constante `_refreshKey` no utilizada (línea 17). La salida de `flutter pub get` también indica 22 paquetes con versiones más nuevas incompatibles con los límites actuales; es aviso de versiones disponibles, no causa del warning. **No hay `I8N_ANDROID_STATIC_RESULT=0` acreditado en esta ejecución.**
+
+Corrección publicada en `main` commit `219ebe21`: se elimina únicamente la constante sin uso. No hay cambios en el flujo `seed/verify/cleanup`, la configuración debug ni el acceso a Keystore.
+
+**Próximo gate:** repetir `flutter analyze` sobre el SHA actualizado; después instrumentar el dispositivo Android real en tres procesos independientes, comprobando que el runner preserve los datos entre `seed` y `verify`. Ningún PASS físico declarado y ningún deploy autorizado.
