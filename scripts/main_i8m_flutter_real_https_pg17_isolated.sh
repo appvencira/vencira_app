@@ -227,5 +227,11 @@ assert MobileDeviceSession.objects.filter(
 print('MAIN_I8M_FLUTTER_TLS_STORAGE_FAILURE_REMOTE_REVOKE=PASS')
 PY
 )"
-django shell -c "$postcheck" | grep -E '^MAIN_I8M_FLUTTER_TLS_(ACCOUNT_RECOVERY_REVOCATION|STORAGE_FAILURE_REMOTE_REVOKE)=PASS$' | grep -c '^MAIN_I8M_' | grep -Fx '2' >/dev/null
+postcheck_output="$(django shell -c "$postcheck")"
+for expected in \
+  MAIN_I8M_FLUTTER_TLS_ACCOUNT_RECOVERY_REVOCATION=PASS \
+  MAIN_I8M_FLUTTER_TLS_STORAGE_FAILURE_REMOTE_REVOKE=PASS; do
+  grep -Fxq "$expected" <<< "$postcheck_output" || exit 7
+  echo "$expected"
+done
 echo "MAIN_I8M_FLUTTER_TLS_RECOVERY_GATE=PASS"
