@@ -207,3 +207,15 @@ Comprobaciones del operador (08/11/2026):
 - No consta todavía limpieza de archivos locales, ni resultado de `git worktree prune -n -v`, ni inventario de procesos que dependan de la carpeta `build/`.
 
 **Acción próxima:** revisar `find .../build -maxdepth 3 -type f`, APKs y procesos asociados y confirmar que no se necesitan los artefactos anteriores. Si son regenerables, limpiar solo `build/` y opcionalmente `.dart_tool/` usando `flutter clean` desde `vencira-m3-android-build`, cuando el proyecto Flutter sea válido; documentar el espacio recuperado. Los archivos fuente y los repositorios se conservan.
+
+## N. APK Android preservada y limpieza de build comunicada (08/11/2026)
+
+El operador confirmó SHA-256 idéntico para las dos APK de depuración originales y una tercera copia archivada:
+
+```text
+003adcad627c953df281e034a530795bca4ea8160f8c3e5d101818117167deb4
+```
+
+Copia conservada: `/home/vencira/vencira-m3-results/apk-conservadas/VENCIRA-Android-LAB-debug.apk`, tamaño ~155 MiB. No hay Flutter CLI en el host (`FLUTTER_NO_INSTALADO_EN_HOST`). Se propuso un borrado acotado de `/home/vencira/vencira-m3-android-build/build` tras verificar SHA-256 de la copia; el operador respondió **"Done"**. **Estado de la limpieza: comunicada como ejecutada, sin salida postoperación ni tamaño de directorio actualizado**; no declarar `ANDROID_BUILD_CLEANUP=PASS` hasta ver marcador o evidencia. La copia APK y los tres worktrees de desarrollo deben preservarse.
+
+Espacio libre antes de la limpieza: `/dev/vda1` 232 GiB total, 56 GiB usados, 176 GiB disponibles (25% uso). Recuperar ~2 GiB no era una operación urgente. Siguiente prioridad: comprobar salud de los contenedores DEV y lanzar únicamente I8-K HTTP en laboratorio PG17 efímero, registrando resultado en el SHA exacto de `main`.
