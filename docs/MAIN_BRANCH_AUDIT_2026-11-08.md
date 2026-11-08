@@ -760,3 +760,11 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 **Pendiente:** prueba controlada de fallos de Keystore/lectura y una integración Android HTTPS de recuperación bajo red aislada; ni MFA operativo ni despliegue DEV autorizados. No se solicitó ni usó ADB; SSH/Termux solo transfirió el artefacto.
 
 El resultado I8-M Flutter HTTPS Django PostgreSQL efímero se mantiene PASS de manera independiente; no confundir los dos gates como una única prueba móvil extremo a extremo.
+
+## AU. Confirmación del reinicio físico Android I8-N (operador 08/11/2026)
+
+Tras presentar capturas de `I8N_ANDROID_KEYSTORE_SEED=PASS`, `I8N_ANDROID_RESTART_RECOVERY_FENCED=PASS` e `I8N_ANDROID_KEYSTORE_CLEANUP=PASS`, el operador confirmó explícitamente que **sí hubo reinicio completo del teléfono** entre las fases «Guardar» y «Verificar». Conforme al procedimiento comunicado, la comprobación se realizó con la APK de laboratorio existente, sin necesidad de ADB.
+
+**Gate I8-N de persistencia de almacenamiento Android tras reinicio físico: PASS, basado en las capturas de los tres estados y la confirmación directa del operador.** Se acredita lectura del refresh sintético y marcador persistente tras reinicio y bloqueo de la sesión (`fullReauthentication` sin ticket activo), seguido de borrado verificado. No se ha probado un refresh real ni una sesión móvil operativa; no se certifica revocación HTTPS desde Android ni manejo de fallo de almacenamiento nativo durante una recuperación de red real.
+
+No se autoriza despliegue ni migración persistente: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
