@@ -768,3 +768,18 @@ Tras presentar capturas de `I8N_ANDROID_KEYSTORE_SEED=PASS`, `I8N_ANDROID_RESTAR
 **Gate I8-N de persistencia de almacenamiento Android tras reinicio físico: PASS, basado en las capturas de los tres estados y la confirmación directa del operador.** Se acredita lectura del refresh sintético y marcador persistente tras reinicio y bloqueo de la sesión (`fullReauthentication` sin ticket activo), seguido de borrado verificado. No se ha probado un refresh real ni una sesión móvil operativa; no se certifica revocación HTTPS desde Android ni manejo de fallo de almacenamiento nativo durante una recuperación de red real.
 
 No se autoriza despliegue ni migración persistente: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## AV. I8-O Android: laboratorio de fallos Keystore integrado en main, sin despliegue (08/11/2026)
+
+**Antecedente acreditado:** I8-N Android Keystore `seed`, `verify` tras reinicio físico confirmado, y `cleanup` PASS; I8-M Flutter `IOClient` HTTPS real + Django/PostgreSQL17 efímero, recuperación MFA y revocación PASS. Los dos gates han sido distintos; todavía no se ha probado la recuperación real conjunta desde Android.
+
+**Nuevo trabajo publicado exclusivamente en `main`:**
+- `clients/flutter/lib/i8o_android_keystore_failure_lab.dart` (commit `5cd3495e`): ejecuta tres fallos **inyectados** (marcador no escribible; refresh no escribible con marcador armado; borrado de marcador omitido) contra `FlutterNativeSecretStore` real bajo namespace Android exclusivo `vencira_i8o_failure_lab_v1`. Acreditaría, si pasa en móvil, el cierre del fence, retención de marcadores, reautenticación obligatoria en un controlador reconstruido y cleanup separado. No HTTP, no cuentas reales, ni claves operativas.
+- `clients/flutter/lib/main_i8n_keystore_lab.dart` (commit `2e764bd8`): agrega a la UI de laboratorio un botón `I8-O · Comprobar fallos seguros` sin alterar el arranque `clients/flutter/lib/main.dart`.
+- `clients/flutter/android/app/build.gradle.kts` (commit `2480f449`): añade variante debug `VENCIRA_I8O_LAB_BUILD=1` con paquete **distinto** `es.vencira.vencira.i8olab`, excluyente de G8/G12/G13/G15/I8N, sin release ni profile. Esta separación es intencional porque una firma debug regenerada en contenedores distintos puede impedir actualizar el paquete I8-N ya instalado.
+- `scripts/main_i8o_android_failure_lab_apk_build.sh` (commits `e248482d`, `722b2af7`): compila desde fuente `main` en imagen Flutter 3.44 y crea `~/vencira-i8o-phone/VENCIRA-I8O-FailureLab-debug.apk`, sin escritura en el checkout, deploy ni migración DEV. Incluye análisis estático del nuevo código I8-O.
+- `docs/I8O_ANDROID_SECURE_STORE_FAILURE_LAB_2026-11-08.md` (commits `e9552891`, `211ebd77`): procedimiento SSH/Termux, verificación de las cinco marcas y límites de la prueba.
+
+**Estado preciso:** código en `main`, **compilación Android I8-O no ejecutada aún**, sin evidencias de `flutter analyze`, sin ejecución física ni validación de fallos. El gate I8-O requiere `I8O_APK_DEBUG_BUILD=PASS` y las marcas `I8O_ANDROID_MARKER_WRITE_DENIED=PASS`, `I8O_ANDROID_REFRESH_WRITE_DENIED=PASS`, `I8O_ANDROID_MARKER_DELETE_DENIED=PASS`, `I8O_ANDROID_FAILURE_FENCE=PASS`, `I8O_ANDROID_FAILURE_LAB_CLEANUP=PASS`. En caso de fallo no inferir nada de una captura parcial.
+
+**No interpretar los fallos simulados como fallos de Keystore auténticos**; se prueba la capacidad del cliente para cerrarse correctamente al recibir errores del wrapper. Pendientes integración Android HTTPS real y ensayo operativo de custodia/revocación sin tocar DEV. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
