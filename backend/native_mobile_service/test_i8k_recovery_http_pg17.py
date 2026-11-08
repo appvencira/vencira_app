@@ -126,6 +126,72 @@ class I8KRecoveryHttpPG17(TransactionTestCase):
             "refresh": refresh,
         }).status_code, 401)
 
+    def test_revoke_only_own_device_preserves_other_account(self):
+        # The token itself selects the session; request JSON must never
+        # carry a user_id or an account-wide revocation capability.
+        second = get_user_model().objects.create_user(
+            username="i8k-second-account",
+            password="synthetic-second-account-password",
+        )
+        second_secret = generate_secret()
+        UserMfaState.objects.create(
+            user=second, enabled=True, session_epoch=1,
+            encrypted_totp_secret=encrypt_totp_secret(
+                second_secret, user_id=second.pk, keys=self.keys,
+            ),
+        )
+        second_challenge = candidate_password_to_challenge(
+            username=second.username,
+            password="synthetic-second-account-password",
+            request_meta={"REMOTE_ADDR": "198.51.100.89"},
+            event_id=uuid.uuid4(),
+        )
+        self.assertIsNotNone(second_challenge)
+        second_pair = candidate_mfa_challenge_to_session(
+            wire=second_challenge,
+            code=totp_at(second_secret, int(time.time()) - 30),
+            keys=self.keys, event_id=uuid.uuid4(),
+            timestamp=int(time.time()) - 30,
+        )
+        self.assertIsNotNone(second_pair)
+
+        own_challenge = self.password()
+        self.assertEqual(own_challenge.status_code, 200)
+        own_tokens = self.mfa(own_challenge.json()["challenge"])
+        self.assertEqual(own_tokens.status_code, 200)
+        self.assertEqual(self.post("/api/v1/mobile/token/revoke/", {
+            "refresh": own_tokens.json()["refresh"],
+        }).status_code, 200)
+        self.assertEqual(self.client.get(
+            "/api/v1/mobile/me/",
+            HTTP_AUTHORIZATION="Bearer " + own_tokens.json()["access"],
+        ).status_code, 401)
+        self.assertEqual(self.client.get(
+            "/api/v1/mobile/me/",
+            HTTP_AUTHORIZATION="Bearer " + second_pair[0],
+        ).status_code, 200)
+        self.assertEqual(MobileDeviceSession.objects.filter(
+            user=second, revoked_at__isnull=True,
+        ).count(), 1)
+
+    def test_revoked_old_refresh_cannot_revoke_new_recovery(self):
+        prior = self.initial_device()
+        self.assertIsNotNone(prior)
+        challenge = self.password()
+        self.assertEqual(challenge.status_code, 200)
+        issued = self.mfa(challenge.json()["challenge"])
+        self.assertEqual(issued.status_code, 200)
+        self.assertEqual(self.post("/api/v1/mobile/token/revoke/", {
+            "refresh": prior[1],
+        }).status_code, 401)
+        self.assertEqual(self.client.get(
+            "/api/v1/mobile/me/",
+            HTTP_AUTHORIZATION="Bearer " + issued.json()["access"],
+        ).status_code, 200)
+        self.assertEqual(MobileDeviceSession.objects.filter(
+            user=self.user, revoked_at__isnull=True,
+        ).count(), 1)
+
     def test_recovery_revoke_rejects_invalid_token_and_browser_metadata(self):
         route = "/api/v1/mobile/token/revoke/"
         self.assertEqual(self.post(route, {"refresh": "not-a-token"}).status_code, 401)
