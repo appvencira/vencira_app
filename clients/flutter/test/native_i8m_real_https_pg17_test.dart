@@ -40,7 +40,9 @@ class _Store implements NativeSecretStore {
   }
 
   @override
-  Future<void> delete(String key) async {\n    values.remove(key);\n  }
+  Future<void> delete(String key) async {
+    values.remove(key);
+  }
 }
 
 String _totp() {
