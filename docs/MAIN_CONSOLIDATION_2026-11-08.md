@@ -69,3 +69,21 @@ MAIN_I8L_GATE=PASS
 Las seis pruebas abarcan credencial huérfana, rechazo password-only hostil, respuesta MFA ambigua, fallo en escritura protegida, marcador de inicio corrupto y bloqueo después de reinicio. **I8-L Flutter en main = PASS en este alcance**, resultado reportado por el operador. No sustituye `flutter test` de toda la suite, gate backend PG17, I8-M HTTPS Flutter real ni recuperación en Android físico. No se verificó un segundo `git status` posterior al gate; el montaje del código fuente fue de solo lectura y el test utilizó una copia temporal.
 
 No hubo autorización de release, despliegue ni migración persistente. `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## Lote de integración backend I8-B / I8-C / I8-J / I8-K (8 de noviembre de 2026)
+
+Auditoría específica de `main`: el paquete `backend/native_mobile_service` ya contenía modelos y persistencia de sesiones candidatos, `g14_admission`, `g5_audit`, controles de abuso y migraciones `0001`–`0004`. No se sustituyeron esos archivos ni se hizo un merge de todo el árbol. La política existente en `backend/config/settings.py` solo registra el paquete con `VENCIRA_ENV=test` y `VENCIRA_NATIVE_SERVICE_CANDIDATE=1`; no se modificó `backend/config/urls.py` ni `clients/flutter/lib/main.dart`.
+
+Archivos agregados a `main` en lotes:
+
+- `candidate_challenge_wire.py` y `test_candidate_challenge_wire.py`: formato canónico `lc1` y prueba unitaria de rechazo seguro.
+- `models.py`: **únicamente se añadió** `MobilePendingChallenge`; se verificó que el modelo histórico era una extensión exacta del contenido anterior de main. Migración `0005_mobilependingchallenge.py` agregada, **no aplicada**.
+- `candidate_challenge_store.py`, `candidate_two_step_issuer.py`, `candidate_recovery_issuer.py`: flujo candidato desafío, contraseña/TOTP y recuperación MFA atómica; solo laboratorio, sin endpoints operativos.
+- Tests `test_i8b_pending_challenge_pg17.py`, `test_i8c_two_stage_pg17.py`, `test_i8i_non_mfa_recovery_policy_pg17.py`, `test_i8j_recovery_pg17.py`, `test_i8k_recovery_http_pg17.py`, `test_i8k_recovery_urls.py`, `test_i8k_recovery_views.py`, `test_i8d_http_views.py`, `test_i8d_urls.py`, `test_i8d_http_pg17.py`.
+- `scripts/native_i8k_https_server.py`: servidor WSGI TLS destinado a red de laboratorio, con comprobaciones explícitas de entorno; **no ejecutado**.
+
+**Importante:** la incorporación de `scripts/native_i8k_https_probe.py` fue bloqueada por una restricción de seguridad de la herramienta. Por tanto, el runner `scripts/native_i8k_real_https_pg17_isolated.sh` **no se publicó**, y no se debe intentar ejecutar un gate I8-K completo desde main hasta resolver documentalmente y revisar su implementación segura. No intentar eludir el bloqueo.
+
+Estado: **código integrado en main, gates de backend sobre main pendientes**. Los PASS históricos de la rama de referencia siguen sin trasladarse automáticamente. No se han ejecutado migraciones ni despliegues durante las publicaciones GitHub. La disponibilidad de `sudo docker` en el VPS y un `main` worktree independiente permiten realizar pruebas aisladas una vez preparado un procedimiento verificable.
+
+Próximo gate recomendado (solo en PostgreSQL17 desechable, sin servicios DEV conectados): primero comprobación de migraciones `--check --dry-run`, luego tests I8-B/C/I/J y contract HTTP JSON I8-K. Para HTTPS real I8-K e I8-M, revisar y completar un runner de laboratorio independiente, sin exponer puertos del host ni tocar BD persistente.
