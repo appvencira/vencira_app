@@ -177,11 +177,10 @@ class NativeRecoveryLoginGateway implements NativeLoginGateway {
         _challenge = response.challenge;
         return NativePasswordDecision.mfaRequired;
       }
-      if (response is NativePasswordGranted) {
-        await _confirm(response.tokens, epoch);
-        return NativePasswordDecision.authenticated;
-      }
-      throw StateError('Unexpected recovery result');
+      // I8-L: a password response is NEVER sufficient for full recovery.
+      // Even a future non-HTTP recovery port cannot bypass fresh MFA.
+      // Tokens may enter _confirm only from recoverMfa.
+      throw StateError('Recovery requires a separate MFA challenge');
     } finally {
       _end();
     }
