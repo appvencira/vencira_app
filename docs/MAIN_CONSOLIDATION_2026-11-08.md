@@ -50,3 +50,22 @@ LIVE_MIGRATIONS_EXECUTED=NO
 ```
 
 Las dos últimas líneas describen las acciones de **esta sesión**, no constituyen una medición independiente del estado del VPS.
+
+## Evidencia del operador: gate I8-L sobre main — 08/11/2026
+
+El operador verificó en el worktree independiente `~/vencira-main-check-20261108` el commit `d2015389`, con `git status --short` vacío antes de la ejecución. La prueba usó Docker `ghcr.io/cirruslabs/flutter:3.44.0` con copia temporal del cliente Flutter, `flutter pub get` en esa copia y test independiente; no se ejecutó contra backend ni dispositivo real.
+
+Salida aportada por el operador:
+
+```text
+MAIN_I8L_PUB_GET=PASS
+No issues found! (ran in 16.2s)
+MAIN_I8L_ANALYZE_RESULT=0
+00:00 +6: All tests passed!
+MAIN_I8L_TEST_RESULT=0
+MAIN_I8L_GATE=PASS
+```
+
+Las seis pruebas abarcan credencial huérfana, rechazo password-only hostil, respuesta MFA ambigua, fallo en escritura protegida, marcador de inicio corrupto y bloqueo después de reinicio. **I8-L Flutter en main = PASS en este alcance**, resultado reportado por el operador. No sustituye `flutter test` de toda la suite, gate backend PG17, I8-M HTTPS Flutter real ni recuperación en Android físico. No se verificó un segundo `git status` posterior al gate; el montaje del código fuente fue de solo lectura y el test utilizó una copia temporal.
+
+No hubo autorización de release, despliegue ni migración persistente. `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
