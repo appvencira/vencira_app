@@ -149,3 +149,23 @@ El operador ejecutó `scripts/main_branch_tree_inventory_readonly.py --summary-o
 **Semántica:** `added_in_branch`: archivo exclusivo de rama; `absent_in_branch`: exclusivo de main; `different`: existe en ambas revisiones pero difiere objeto/modo. Estos números NO representan automáticamente código necesario. Los JSON detallados permanecen en el VPS y no han sido compartidos.
 
 **Próxima auditoría:** obtener exactamente las 7 rutas diferentes de Android y agrupar sus 543 archivos exclusivos por carpeta/extensión. Clasificar su valor y dependencias antes de copiar. Después revisar MB1, C-FICHA y M3 por prioridad. No realizar merges masivos.
+
+## J. Reconciliación del listado I8 aportado por el operador — 08/11/2026
+
+El operador aportó los nombres de **17 scripts `native_i8*` exclusivos de `feature/m3-android-local-notifications`**. El 08/11 se integraron directamente en `main` **7 ejecutores**, en commits individuales:
+
+| Gate de laboratorio | Ruta | Alcance | Commit |
+| --- | --- | --- | --- |
+| Wire lc1 | `scripts/native_i8_challenge_wire_unit.sh` | Python, sin Docker ni DB. Marcador histórico `DURABLE_CHALLENGE_STORAGE=NOT_IMPLEMENTED` sustituido por `NOT_TESTED_BY_THIS_GATE` para no mentir sobre el estado I8-B. | `eea3c13a` |
+| I8-B | `scripts/native_i8b_pending_challenge_pg17_isolated.sh` | PG17 `--tmpfs`, red interna, pruebas de desafío | `bd361630` |
+| I8-C | `scripts/native_i8c_two_stage_pg17_isolated.sh` | PG17 aislado, contraseña->MFA | `424d8acf` |
+| I8-D | `scripts/native_i8d_http_contract_pg17_isolated.sh` | HTTP candidato test-only; no URL operacional | `33e88eea` |
+| I8-I | `scripts/native_i8i_negative_policy_pg17_isolated.sh` | Negativos MFA; eliminado subgate Flutter que escribía en source y creaba volumen persistente | `e1f10df1` |
+| I8-J | `scripts/native_i8j_atomic_recovery_pg17_isolated.sh` | Recuperación atómica PG17, **solo backend**; Flutter separado | `7591df20` |
+| I8-K HTTP | `scripts/native_i8k_recovery_http_pg17_isolated.sh` | Contrato HTTP PG17, **solo backend**, no HTTPS; Flutter separado | `e1a1fd4b` |
+
+Los scripts PG17 originales verifican el estado de contenedores DEV por identidad, construyen imagen de laboratorio, red Docker `--internal`, contenedor `postgres:17-alpine` con directorio de datos `--tmpfs`, migraciones exclusivamente allí y borrado al terminar. **Esta inspección estática no garantiza que todos los comandos se comporten correctamente al ejecutarlos; se requiere preflight y gate local.** No se han lanzado ni ejecutado migraciones reales durante esta integración GitHub.
+
+**10 scripts I8 pendientes:** `native_i8e_https_probe.py`, `native_i8e_https_server.py`, `native_i8e_real_https_pg17_isolated.sh`, `native_i8f_flutter_https_pg17_isolated.sh`, `native_i8g_android_batch.sh`, `native_i8g_android_vault_static_gate.sh`, `native_i8h_android_https_pg17_lab.sh`, `native_i8k_https_probe.py`, `native_i8k_real_https_pg17_isolated.sh`, `native_i8l_flutter_recovery_adapter_gate.sh`. **I8-K HTTPS sigue bloqueado por la publicación restringida del probe en la sesión anterior**: no sortear el bloqueo. El viejo I8-L puede ser reemplazado por gate aislado que ya dio PASS en el VPS, pero falta comprobar suites relacionadas. Android I8-G/H mantiene los gates históricos, no se consideran aprobados en la revisión nueva de main.
+
+**Nuevo punto de partida:** ejecutar primero `bash -n` para los seis shells PG17 integrados, confirmar `git status` limpio, verificar disponibilidad/identidad de `vencira_localcheck` y `postgres:17-alpine`, y solo después ejecutar **I8-K HTTP (subsumirá I8-I/J) sobre PG17 desechable** en una sesión `tmux` o mediante `nohup` con logging y retorno persistente, sin cerrar Termius. No considerar los marcadores de éxito hasta revisar resultado de los tests, el código de salida y la comprobación de contenedores DEV.
