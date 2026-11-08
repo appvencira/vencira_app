@@ -326,3 +326,30 @@ El operador ejecutó `scripts/main_i8m_recovery_readiness_static.py` sobre `main
 - `92894ea3`: `scripts/main_i8m_recovery_readiness_static.py` ahora exige ruta, handler y tests y reporta `MAIN_I8M_HTTPS_REVOKE_CONTRACT=IMPLEMENTED_TEST_ONLY_UNVERIFIED` (la existencia estática **no valida** HTTP ni HTTPS).
 
 **Estado exacto:** código incorporado, pero **todavía sin ejecutar** la nueva regresión PG17 ni el análisis estático actualizado. El PASS anterior de I8-K de **42 tests** corresponde a código previo; el nuevo gate incluirá **44 tests** si las dos pruebas añadidas se descubren y no hay otras modificaciones. No atribuir PASS a este SHA hasta recibir salida y `NATIVE_I8K_LOCAL_RESULT=0`. Tras eso seguirá faltando una prueba TLS extremo a extremo con Flutter real, negativos CA/hostname y reinicio Android. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## U. Revalidación I8-K tras añadir revocación de laboratorio (operador, 08/11/2026)
+
+Se repitió `scripts/native_i8k_recovery_http_pg17_isolated.sh` después de incorporar la ruta, vista y pruebas de revocación I8-M únicamente en `native_mobile_service.test_i8k_recovery_urls`. Evidencia aportada:
+
+```text
+NATIVE_I8K_DISPOSABLE_IMAGE=OK
+OK
+Destroying test database for alias 'default'...
+NATIVE_I8K_FLUTTER_GATE=NOT_RUN_SEPARATE
+NATIVE_I8K_NO_PUBLIC_ISSUER=PASS
+NATIVE_I8K_NO_MFA_DENIAL_POLICY=PASS
+NATIVE_I8K_ATOMIC_RECOVERY_CORE=PASS
+NATIVE_I8K_RECOVERY_HTTP_JSON=PASS
+NATIVE_I8K_RECOVERY_ENDPOINTS_ABSENT=PASS
+NATIVE_I8K_PG17_HTTP_RECOVERY_GATE=PASS
+NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK
+NATIVE_I8K_DEPLOY_EXECUTED=NO
+NATIVE_I8K_LIVE_MIGRATIONS_EXECUTED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+NATIVE_I8K_LOCAL_RESULT=0
+```
+
+**Interpretación:** la regresión I8-K HTTP/PG17 posterior a la implementación de revocación **PASS**; backend candidato permanece aislado y no altera DEV. El extracto no muestra la línea `Ran N tests`, por lo que **no atribuir 44/44 tests** hasta consultar el log de esta ejecución. Tampoco se muestra `MAIN_I8M_REVOKE_PG17_RESULT` ni SHA HEAD exacto de la ejecución. El marcador interno `NATIVE_I8K_LOCAL_RESULT=0` sí está confirmado.
+
+**Pendiente de I8-M:** ejecución real extremo a extremo Flutter cliente HTTPS vs Django I8-K PG17 efímero, CA/hostname negativos, revocación TLS efectiva, persistencia/reinicio y validación Android. No autorizar publicación.
