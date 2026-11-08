@@ -12,10 +12,11 @@ val g13LabBuild = System.getenv("VENCIRA_G13_LAB_BUILD") == "1"
 val g15LabBuild = System.getenv("VENCIRA_G15_LAB_BUILD") == "1"
 val i8nLabBuild = System.getenv("VENCIRA_I8N_LAB_BUILD") == "1"
 val i8oLabBuild = System.getenv("VENCIRA_I8O_LAB_BUILD") == "1"
-if (listOf(g8LabBuild, g12LabBuild, g13LabBuild, g15LabBuild, i8nLabBuild, i8oLabBuild).count { it } > 1) {
+val i8pLabBuild = System.getenv("VENCIRA_I8P_LAB_BUILD") == "1"
+if (listOf(g8LabBuild, g12LabBuild, g13LabBuild, g15LabBuild, i8nLabBuild, i8oLabBuild, i8pLabBuild).count { it } > 1) {
     throw GradleException("Physical Android labs are mutually exclusive")
 }
-if ((g8LabBuild || g12LabBuild || g13LabBuild || g15LabBuild || i8nLabBuild || i8oLabBuild) && gradle.startParameter.taskNames.any {
+if ((g8LabBuild || g12LabBuild || g13LabBuild || g15LabBuild || i8nLabBuild || i8oLabBuild || i8pLabBuild) && gradle.startParameter.taskNames.any {
     it.contains("Release", ignoreCase = true) || it.contains("Profile", ignoreCase = true)
 }) {
     throw GradleException("Physical Android labs must never build release/profile")
@@ -105,6 +106,10 @@ android {
             if (i8oLabBuild) {
                 applicationIdSuffix = ".i8olab"
                 manifestPlaceholders["venciraAppLabel"] = "VENCIRA I8O Fallos"
+            }
+            if (i8pLabBuild) {
+                applicationIdSuffix = ".i8plab"
+                manifestPlaceholders["venciraAppLabel"] = "VENCIRA I8P HTTPS"
             }
         }
         release {
