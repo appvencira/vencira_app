@@ -14,7 +14,6 @@ import 'package:vencira/api/native_session_fence.dart';
 
 const _enabled = bool.fromEnvironment('VENCIRA_I8N_ANDROID_LAB');
 const _phase = String.fromEnvironment('VENCIRA_I8N_PHASE');
-const _refreshKey = 'vencira.mobile.dev.refresh.v1';
 const _markerKey = 'vencira.mobile.dev.uncertain.v1';
 const _syntheticRefresh = 'v1.r.0123456789abcdef0123456789abcdef.'
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
