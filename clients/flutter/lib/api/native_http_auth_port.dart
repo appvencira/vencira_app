@@ -125,7 +125,9 @@ class NativeHttpAuthPort implements NativeAuthPort, NativeRecoveryAuthPort {
         body.length == 2 && body['challenge'] is String) {
       return NativePasswordMfaRequired(body['challenge'] as String);
     }
-    return NativePasswordGranted(_tokens(body));
+    // I8-L: account-wide recovery is NEVER password-only. Tokens are
+    // accepted exclusively from the separate post-TOTP recovery endpoint.
+    throw const NativeHttpAuthFailure();
   }
 
   Future<NativeIssuedTokens> recoverMfa({
