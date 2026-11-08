@@ -126,12 +126,15 @@ void main() {
 
   test('orphan refresh routes exclusively through full recovery', () async {
     await vault.replace(oldRefresh);
+    port.requireMfa = true;
     final route = await entry.inspect();
     expect(route, NativeStartupDisposition.fullReauthentication);
     expect(await journal.requiresReauthentication(), isTrue);
     expect(fence.ticket, isNull);
     expect(await entry.verifyPassword(username: 'u', password: 'p'),
-        NativePasswordDecision.authenticated);
+        NativePasswordDecision.mfaRequired);
+    expect(fence.ticket, isNull);
+    await entry.verifyTotp('123456');
     expect(port.passwordCalls, 1);
     expect(await journal.requiresReauthentication(), isFalse);
     expect(await vault.read(), newRefresh);
