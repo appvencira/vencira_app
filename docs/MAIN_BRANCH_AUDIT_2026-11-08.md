@@ -508,3 +508,17 @@ El usuario pidió preparar un despliegue de los nuevos cambios en `dev.vencira.e
 **Artefactos nuevos publicados en main:** `scripts/d1_dev_deploy_inventory_readonly.py`, commits `3d47df92` y ajuste `8dfe773f`; `docs/D1_DEV_DEPLOY_PREPARATION_2026-11-08.md`, commit `41b18415`. El script solo inspecciona Git, código fuente, estado e ID de imagen de los tres contenedores DEV y ejecuta un SELECT de `django_migrations` mediante la API Django en el contenedor API actual. No llama a `migrate`, `docker compose up`, backup, restart o alteraciones de base; no imprime contraseñas, tokens, variables de entorno ni filas personales.
 
 **Estado:** herramientas publicadas pero el preflight D1 no está ejecutado aún en el VPS. No anunciar compatibilidad con DEV ni promoción segura hasta recibir el resultado y validar restore O5 y rollback. Marcadores de protección: `D1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `MFA_RELEASE_AUTHORIZED=NO`.
+
+## AG. Endurecimiento de rutas API del cliente Flutter en main (08/11/2026)
+
+El usuario acordó continuar integrando en `main` y posponer cualquier despliegue hasta que todos los gates pertinentes estén completos. Se inspeccionaron `clients/flutter/lib/api/native_api_endpoint.dart`, su test y el adaptador de recuperación.
+
+**Hallazgo:** `NativeApiEndpoint.resolveApiPath` verificaba el esquema HTTPS del origen y que las rutas empezaran por `/api/v1/`, pero no exigía `parsed.hasQuery == false`. Una ruta interna con `?refresh=...` o un destino de redirección embebido podía admitirse y resolverse a la API autorizada, aunque el cliente actual usa rutas literales sin consultas. El cambio es defensa en profundidad y no se atribuye una explotación real.
+
+**Cambios directos en main:**
+- `2508914f` — el resolvedor rechaza rutas API con parámetros de consulta.
+- `29c07cbd` — se amplían los casos adversarios en `clients/flutter/test/native_api_endpoint_test.dart`: query de token, query vacía, parámetro de redirección, traversal codificado y barra invertida.
+
+**Estado:** revisión de código publicada; test nuevo **pendiente de ejecución**. Los `47/47` Flutter reportados antes corresponden al SHA anterior, y no verifican el endurecimiento recién añadido. Probar `native_api_endpoint_test.dart` junto con `native_http_auth_port_test.dart` y la regresión I8-L; ejecutar `flutter analyze` en la copia Docker temporal, nunca activar ruta operativa. Los controles `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1` siguen intactos.
+
+**Despliegue D1:** pospuesto por decisión explícita. Inventario D1-A con 24 migraciones de código no registradas en DEV; no tocar la DB. D1-B (backup/restore + ensayo de migración `reminders.0019–0027` en clon) permanece sin ejecutar.
