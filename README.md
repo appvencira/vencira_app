@@ -6,11 +6,11 @@ Aplicación de gestión de vencimientos, anotaciones y seguimiento de seguros. N
 
 ## Estado de desarrollo (8 de noviembre de 2026)
 
-El proyecto tiene backend Django, PostgreSQL 17 y cliente Flutter web/Android. Se han validado múltiples módulos y ensayos de seguridad en entornos aislados, incluido el flujo candidato de autenticación y recuperación nativa I8-H–I8-L. **Esos PASS corresponden a los entornos y revisiones históricas que los ejecutaron; no acreditan una integración completa en `main`.**
+VENCIRA utiliza Django 5, PostgreSQL 17 y Flutter web/Android. En `main` están documentados y validados los ensayos de seguridad **I8-M a I8-Q**, con límites diferentes: HTTPS Flutter–Django y MFA sintético sobre PG17 temporal; Keystore Android y persistencia tras reinicio físico; fallos sintéticos del almacenamiento; integración física Android por HTTPS, recuperación MFA y revocación; y matriz de regresión Flutter 30/30 PASS. Estos resultados **no equivalen** a autorización de MFA operativo, acceso normal integrado o despliegue.
 
-`main` está en consolidación progresiva y conserva cambios propios que no deben sobrescribirse. El 08/11/2026 se incorporó directamente a `main` el cierre seguro de recuperación I8-L (obligación de nuevo MFA después de contraseña, también ante respuestas hostiles del adaptador) y su test de regresión. **Los tests de esa nueva integración aún requieren ejecución sobre `main`.**
+El entorno DEV sigue separado y no modificado. D1-A confirmó 24 migraciones del código no registradas en DEV (9 de `reminders` por ensayar; 15 de aplicaciones laboratorio excluidas de DEV). La restauración O5, el ensayo de migraciones compatibles, el rollback y la validación operativa siguen pendientes.
 
-El entorno DEV existente y sus copias operativas son distintos del estado de integración GitHub. Ni los cambios actuales ni el historial de pruebas autorizan la publicación o el uso de datos personales reales.
+El trabajo restante se agrupa en [cuatro bloques de cierre](docs/REMAINING_WORK_GROUPED_2026-11-08.md): I8-R interrupciones controladas reales, integración funcional/visual de APK, D1 backup+schema+rollback y autorización/despliegue escalonado.
 
 ## Restricciones obligatorias
 
@@ -22,11 +22,13 @@ El entorno DEV existente y sus copias operativas son distintos del estado de int
 
 ## Próximos hitos
 
-1. Consolidación de `main`: inventario de módulos, comparación de dependencias y gates sobre la revisión integrada.
-2. I8-M: recuperación Flutter por HTTPS auténtico contra backend aislado PG17, con CA/hostname verificados.
-3. Recuperación en Android físico con almacenamiento protegido y túnel Termius; después APK funcional y revisión visual.
+1. I8-R, resiliencia Android con pérdida controlada de respuestas HTTPS en laboratorio y conciliación PG17.
+2. Integración de la APK funcional y validación visual de clientes, vencimientos, calendario y notificaciones.
+3. D1 backup/restore, ensayo de migraciones y rollback; checklist de despliegue cuando corresponda.
 
 ## Documentación de continuidad
+
+- [Plan agrupado de trabajo restante — I8-R a despliegue](docs/REMAINING_WORK_GROUPED_2026-11-08.md)
 
 - [Preparación del despliegue DEV — D1, solo lectura](docs/D1_DEV_DEPLOY_PREPARATION_2026-11-08.md)
 - [Continuidad maestra — 08/11/2026](docs/CONTINUITY_HANDOFF_2026-11-08.md)
