@@ -426,3 +426,26 @@ Se inspeccionaron los ejecutores históricos de `feature/m3-android-local-notifi
 Se incorpora directamente a main `scripts/main_i8m_tls_certificate_contract.sh` (commit `1b4b4f70`) como **preflight offline de material X.509**: genera dos certificados sintéticos temporales con OpenSSL, comprueba SAN `DNS:native-i8k.test`, verifica el certificado con su CA permitida y hostname correcto, exige rechazo con hostname incorrecto y con otra CA y mantiene las claves privadas en carpeta `0700` con archivos `0600`. El trap elimina solo los cuatro ficheros temporales del directorio exacto y preserva el código de salida, sin puertos, servidor HTTP, Docker, Flutter ni base de datos. Imprime `MAIN_I8M_TLS_CERT_CONTRACT=PASS` solo después de las comprobaciones.
 
 **Estado:** commit integrado; **no ejecutado en VPS todavía**. Su futuro PASS es solo un contrato criptográfico offline, **no** un handshake real Flutter–Django. Permanecen `MAIN_I8M_REAL_TLS_CLIENT_SERVER=NOT_TESTED`, `MAIN_I8M_ANDROID_PERSISTENCE=NOT_TESTED`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. La validación de TLS real deberá disponer de un ejecutor aprobado y aislado, con CA y hostname verificados sin bypass.
+
+## AB. I8-M: contrato offline X.509 verificado en VPS (operador, 08/11/2026)
+
+El operador ejecutó `bash scripts/main_i8m_tls_certificate_contract.sh` en `~/vencira-main-check-20261108` tras actualizar `main`. Reportó:
+
+```text
+MAIN_I8M_EPHEMERAL_PRIVATE_KEY_MODE=PASS
+MAIN_I8M_CERTIFICATE_SAN=PASS
+MAIN_I8M_CERTIFICATE_TRUSTED_HOST=PASS
+MAIN_I8M_CERTIFICATE_WRONG_HOST=DENIED
+MAIN_I8M_CERTIFICATE_WRONG_CA=DENIED
+MAIN_I8M_TLS_CERT_CONTRACT=PASS
+MAIN_I8M_TLS_CERT_CONTRACT_RESULT=0
+MAIN_I8M_REAL_TLS_CLIENT_SERVER=NOT_TESTED
+MAIN_I8M_ANDROID_PERSISTENCE=NOT_TESTED
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+MAIN_I8M_CERT_RESULT=0
+```
+
+**Conclusión estricta:** generación de certificado efímero, SAN, validación de cadena/hostname y denegaciones negativas por OpenSSL offline **PASS**. No se levantó servidor, no se hizo handshake entre procesos ni se verificó el cliente Flutter/Django; no se ha comprobado el almacenamiento Android. Se mantienen backend HTTP PG17 44/44 PASS, Flutter con MockClient 47/47 PASS y rechazo de arranque TLS PASS.
+
+**Siguiente puerta pendiente:** una prueba de integración de transporte HTTPS con verificación real de hostname y CA, red Docker interna y backend PG17 efímero. No reciclar el probe histórico cuya publicación quedó bloqueada; verificar la herramienta de ejecución y sus controles antes de ponerla en marcha.
