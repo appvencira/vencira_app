@@ -878,3 +878,13 @@ I8P_LAB_RESULT=0
 **Resultado acreditado:** I8-P **PASS extremo a extremo en laboratorio**, con Android físico, transporte HTTPS verificado a través de SSH, autenticación de recuperación contraseña+TOTP sintéticas, credencial refresh guardada/leída en Keystore, revocación remota y rechazo 401, más confirmación SQL en PostgreSQL17 efímero de que la sesión antigua y la nueva están revocadas. El proceso confirmó que las identidades de los contenedores DEV no cambiaron y no ejecutó despliegue/migraciones persistentes. El teardown corrió por el trap de salida; `I8P_LAB_RESULT=0` demuestra que el ejecutor finalizó correctamente, no por sí solo una auditoría independiente de inexistencia de recursos Docker residuales.
 
 **No sustituye autorización de publicación ni pruebas operativas:** continúan pendientes la recuperación ante fallos reales de red y/o almacenamiento durante el flujo Android, custodia de claves de servicio, backup/restauración y compatibilidad de migraciones para DEV. Restricciones: `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`. No incluir `native_mobile_service` en apps operativas ni publicar sus URLconf test-only.
+
+## BB. I8-Q regresión agrupada de ambigüedad y fallos de recuperación (08/11/2026)
+
+Tras cierre I8-P Android físico+PostgreSQL17 temporal **PASS**, se integran directamente en `main` tres regresiones de fallo `clients/flutter/test/native_i8q_recovery_fault_matrix_test.dart` (commit `84c3a5f4`): timeout de contraseña; respuesta MFA posiblemente comprometida pero perdida sin reintento; y fallo de almacenamiento tras emisión con revocación compensatoria también sin confirmación. La prueba exige que el checkpoint durable sobreviva, no se active bearer, y un nuevo controlador exija reautenticación.
+
+Se añade gate agrupado `scripts/main_i8q_android_recovery_fault_matrix_local.sh` (commit `06ba985b`) que ejecuta `flutter analyze` y **cuatro** suites de regresión HTTP/recuperación en Docker de solo lectura respecto al código del VPS, sin endpoints vivos. Incluye comprobaciones DEV y trap final. Procedimiento y limitaciones en `docs/I8Q_NATIVE_RECOVERY_FAULT_MATRIX_2026-11-08.md` (commit `04121ca5`).
+
+**Estado: publicado en main, PENDIENTE ejecución de gate.** La matriz de errores I8-Q usa HTTP/almacenamiento sintéticos; no es prueba física de pérdida de red de Android ni sustituye I8-P. Nunca declarar I8-Q PASS sin `All tests passed!`, `I8Q_FLUTTER_FAULT_MATRIX_GATE=PASS`, `I8Q_DEV_CONTAINERS_UNCHANGED=OK`, y resultado cero.
+
+`MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1` siguen intactos; despliegue pospuesto expresamente.
