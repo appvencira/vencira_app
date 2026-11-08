@@ -74,7 +74,9 @@ class I8MBridgeDenial(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=1)
+    outcome = unittest.main(verbosity=1, exit=False)
+    if not outcome.result.wasSuccessful():
+        raise SystemExit(1)
     print("MAIN_I8M_TLS_BRIDGE_NEGATIVE_GUARD=PASS")
     print("MAIN_I8M_REAL_TLS_CLIENT_SERVER=NOT_TESTED")
     print("MAIN_I8M_ANDROID_PERSISTENCE=NOT_TESTED")
