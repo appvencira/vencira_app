@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/io_client.dart';
+import 'package:http/http.dart' as http;
 
 import 'api/native_api_endpoint.dart';
 import 'api/native_http_auth_port.dart';
@@ -218,6 +219,17 @@ class _ScreenState extends State<_Screen> {
       // Remote revoke is explicit. Never log bearer/refresh credentials.
       lab.fence.revoke();
       await port.revoke(refresh: newRefresh);
+      // Verify the same bearer is rejected after remote revocation.
+      final probe = http.Request(
+          'GET', lab.endpoint.resolveApiPath('/api/v1/mobile/me/'))
+        ..followRedirects = false
+        ..headers['Authorization'] = 'Bearer $access';
+      final denial = await client.send(probe);
+      await denial.stream.drain<void>();
+      if (denial.statusCode != 401 ||
+          denial.headers.containsKey('set-cookie')) {
+        throw StateError('Remote access token survived revocation');
+      }
       await lab.vault.clear();
       if (lab.fence.ticket != null ||
           await lab.vault.read() != null) {
@@ -226,6 +238,7 @@ class _ScreenState extends State<_Screen> {
       _emit('I8P_ANDROID_TLS_HOSTNAME=PASS\n'
           'I8P_ANDROID_RECOVERY_MFA_KEYSTORE=PASS\n'
           'I8P_ANDROID_REMOTE_REVOKE=PASS\n'
+          'I8P_ANDROID_ACCESS_AFTER_REVOKE_401=PASS\n'
           'I8P_ANDROID_LAB_CLEANUP=PASS');
     } catch (_) {
       lab.fence.revoke();
