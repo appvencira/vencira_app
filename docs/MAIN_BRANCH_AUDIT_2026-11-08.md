@@ -803,3 +803,18 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 **Evidencias anteriores vigentes:** I8-N Android persistencia tras reinicio físico PASS; I8-M cliente Flutter `IOClient` + Django HTTPS + PG17 efímero, recuperación password/TOTP y revocación compensatoria PASS. **Falta aún un único ensayo móvil end-to-end por HTTPS con almacenamiento seguro real**, usando solo backend temporal y tráfico tunelizado/verificado, no DEV. No confundir tres gates separados con integración operativa completa.
 
 **Observación de presentación:** la cabecera sigue mostrando `Keystore I8-N` en la APK que contiene el botón I8-O; conviene corregirla en un build futuro, sin bloquear la certificación de seguridad. No despliegue ni migración persistente; `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## AX. I8-P paquete integrado Android físico HTTPS/MFA/Keystore/PG17 por SSH (08/11/2026)
+
+Antecedentes comprobados: I8-M Flutter HTTPS + Django/PG17 sintéticos PASS; I8-N Android Keystore con reinicio físico PASS; I8-O fallos simulados sobre Keystore físico 5/5 PASS. El usuario solicitó **agrupar y acelerar** el cierre Android sin desplegar.
+
+El nuevo I8-P agrupa en una prueba Android física integrada, con contrato de validación explícito:
+- `clients/flutter/lib/main_i8p_android_https_lab.dart` (`8aefcff3`, endurecimiento de 401 `a7339ec2`): app Flutter debug exclusiva y sin entrada operativa, conecta únicamente a loopback Android puerto 18743, túnel SSH hacia relay VPS, TLS con contexto de confianza solo para CA pública temporal e identidad `dev.vencira.es`, verificación de mismatch, recuperación password→TOTP **sintéticos**, refresh realmente confirmado en `FlutterSecureStorage`, revocación HTTP y 401 para access antiguo, cleanup local. Marcadores Android **pendientes de ejecutar**.
+- `clients/flutter/android/app/build.gradle.kts` (`e6893778`): `VENCIRA_I8P_LAB_BUILD=1` añade paquete separado `es.vencira.vencira.i8plab` para debug, mutuamente excluyente con G8/G12/G13/G15/I8N/I8O; prohibido release/profile. `clients/flutter/pubspec.yaml` (`7f10e736`) mueve `crypto` a dependencies para la generación TOTP sintética del target Flutter; **sin migración de datos ni cambios de backend operativo**.
+- `scripts/main_i8p_ssh_tls_loopback_relay.py` (`5722edeb`, comentario `58014943`): traslado de bytes TLS cifrados en localhost VPS 18743 a servidor Docker privado 443, sin publicar puerto.
+- `scripts/main_i8p_android_ssh_https_pg17_lab.sh` (`2fb7b8b7`): contenedores desechables Django + PG17 tmpfs en red `--internal`, test URLconf de recuperación, CA pública temporal compilada en APK, claves privadas nunca en Android, usuario/sesiones sintéticas, verificación SQL final de ambas sesiones revocadas, trap de limpieza y comprobación DEV intacto. Mantiene tmux y relay hasta que operador recopile resultado en teléfono.
+- `docs/I8P_ANDROID_HTTPS_KEYSTORE_SSH_LAB_2026-11-08.md` (`b22e3a75`): instrucciones completas paso único de VPS, copia SCP con SSH existente, túnel local 18743 y resultados esperados de cliente y PG17.
+
+**Estado de publicación:** integrados en `main`, **ninguna prueba I8-P ejecutada ni certificada**. Exigir `bash -n`, compilación Flutter, gate TLS/MFA/Keystore sobre dispositivo Android, respuesta 401 tras revocación y `I8P_PG17_OLD_AND_NEW_SESSION_REVOKED=PASS`, `I8P_DEV_CONTAINERS_UNCHANGED=OK` y resultado final 0. Los gates anteriores I8-M/I8-N/I8-O no sustituyen esta evidencia. El cliente I8-P no tiene contraseña configurable, usa solo fixtures sintéticas, y nunca se entrega como release.
+
+**Deploy/DEV:** intocados por diseño. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` y `I8P_RELEASE_AUTHORIZED=NO`. I8-P no prueba custodia real ni autorización de despliegue.
