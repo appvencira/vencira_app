@@ -390,3 +390,13 @@ MAIN_I8M_FLUTTER_GATE=PASS
 **Conclusión:** suite Flutter seleccionada de recuperación MFA y revocación compensatoria **47/47 PASS**, `flutter analyze` PASS. Se cubren el envío HTTP JSON simulado de revocación ante fallo de almacenamiento, el fail-closed, el marker durable y reinicio simulado, pero **no** un enlace TLS real. El texto de terminal muestra repeticiones visuales del mismo resultado en `tmux`; no se cuentan como ejecuciones adicionales. No se incluyó una línea `MAIN_I8M_FLUTTER_RESULT` en el fragmento entregado, pero el marcador interno `MAIN_I8M_FLUTTER_GATE=PASS` sí está presente. El checkout se actualizó previamente desde `origin/main`; no se imprimió SHA exacto en este extracto.
 
 **Resumen de gates disponibles:** backend I8-M PG17 HTTP con revocación 44/44 PASS; Flutter seleccionado I8-M 47/47 PASS; TLS extremo a extremo Flutter–Django PG17 todavía **NOT_TESTED** y Android físico todavía **NOT_TESTED**. Mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Priorizar gate con CA temporal verificable, denegación explícita para CA desconocida/hostname erróneo, sin puertos host públicos, y ausencia de cookies; no convertir tests aislados en autorización de despliegue.
+
+## Y. I8-M TLS bridge: prueba de rechazo de arranque (08/11/2026)
+
+Después del gate Flutter I8-M 47/47 PASS, el paso previo al TLS real es comprobar que el puente `scripts/native_i8k_https_server.py` **no puede arrancar** con variables de laboratorio ausentes o alteradas, sin intentar conexiones reales ni datos operativos.
+
+**Integración directa en main:**
+- `fb365af3`: se añade `scripts/main_i8m_tls_bridge_denial_test.py` con un proceso Python aislado en entorno mínimo. Rechaza la omisión de cada una de las seis condiciones `VENCIRA_ENV=test`, `VENCIRA_NATIVE_SERVICE_CANDIDATE=1`, `VENCIRA_I8K_RECOVERY_LAB=1`, `VENCIRA_I8K_NETWORK_ISOLATED=1`, `VENCIRA_DB_ENGINE=postgresql`, `POSTGRES_DB=i8klab`. También comprueba siete combinaciones con valores prohibidos. Los subprocesos no deberían llegar a Django, claves TLS ni escucha TCP.
+- `f79b4645`: se ajusta el entrypoint para emitir `MAIN_I8M_TLS_BRIDGE_NEGATIVE_GUARD=PASS` **únicamente** si `unittest` termina sin fallos.
+
+**No ejecutado aún:** el operador debe actualizar `main` y lanzar `python3 scripts/main_i8m_tls_bridge_denial_test.py`; se esperan dos tests unittest que internamente verifican 13 escenarios negativos. No asociar su PASS a TLS verificado. Los marcadores `MAIN_I8M_REAL_TLS_CLIENT_SERVER=NOT_TESTED` y `MAIN_I8M_ANDROID_PERSISTENCE=NOT_TESTED` siguen vigentes. No se ha creado ni ejecutado un probe de autenticación HTTPS real ni se ha publicado ninguna ruta de recuperación. Se mantienen `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
