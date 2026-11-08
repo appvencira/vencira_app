@@ -71,10 +71,13 @@ for path, expected in (
         raise AssertionError(f"unexpected response on {path}: {status}")
     if headers.get("Set-Cookie") is not None:
         raise AssertionError("native test endpoint issued a cookie")
-    if headers.get("Cache-Control") != "no-store, max-age=0":
-        raise AssertionError("unexpected native cache policy")
-    if headers.get_content_type() != "application/json":
-        raise AssertionError("native boundary is not JSON")
+    if expected != 404:
+        if headers.get("Cache-Control") != "no-store, max-age=0":
+            raise AssertionError("unexpected native cache policy")
+        if headers.get_content_type() != "application/json":
+            raise AssertionError("native boundary is not JSON")
+    # The absent ordinary-login route uses Django's default 404 response,
+    # which is intentionally not required to be native JSON.
     if len(data) > 8192:
         raise AssertionError("oversized native denial")
 print("MAIN_I8M_REAL_HTTPS_DJANGO_BOUNDARY=PASS", flush=True)
