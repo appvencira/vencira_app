@@ -28,6 +28,7 @@ El entorno DEV existente y sus copias operativas son distintos del estado de int
 
 ## Documentación de continuidad
 
+- [Preparación del despliegue DEV — D1, solo lectura](docs/D1_DEV_DEPLOY_PREPARATION_2026-11-08.md)
 - [Continuidad maestra — 08/11/2026](docs/CONTINUITY_HANDOFF_2026-11-08.md)
 - [Política de integración de main](docs/MAIN_INTEGRATION_POLICY_2026-11-08.md)
 - [Auditoría de ramas y plan de cierre de main](docs/MAIN_BRANCH_AUDIT_2026-11-08.md)
