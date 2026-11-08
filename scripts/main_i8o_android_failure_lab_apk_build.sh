@@ -35,12 +35,12 @@ D run --rm \
       --dart-define=VENCIRA_I8N_ANDROID_LAB=true
     cp build/app/outputs/flutter-apk/app-debug.apk \
       /output/VENCIRA-I8O-FailureLab-debug.apk
-    chmod 644 /output/VENCIRA-I8N-Keystore-debug.apk
+    chmod 644 /output/VENCIRA-I8O-FailureLab-debug.apk
   '
-test -s "$output/VENCIRA-I8N-Keystore-debug.apk"
+test -s "$output/VENCIRA-I8O-FailureLab-debug.apk"
 echo "I8O_APK_DEBUG_BUILD=PASS"
 echo "I8O_APK_PACKAGE=es.vencira.vencira.i8olab"
-echo "I8O_APK_PATH=$output/VENCIRA-I8N-Keystore-debug.apk"
+echo "I8O_APK_PATH=$output/VENCIRA-I8O-FailureLab-debug.apk"
 echo "I8O_APK_DEVICE_TEST=NOT_RUN"
 echo "I8O_ANDROID_FAULT_TEST=NOT_RUN"
 echo "I8O_APK_DEPLOY_EXECUTED=NO"
