@@ -46,9 +46,8 @@ class LabRecoveryAuthPort implements NativeRecoveryAuthPort {
   String? lastCode;
   Completer<NativePasswordResponse>? passwordDelay;
   Completer<NativeIssuedTokens>? mfaDelay;
-  NativePasswordResponse passwordResponse = const NativePasswordGranted(
-    NativeIssuedTokens(access: freshAccess, refresh: freshRefresh),
-  );
+  NativePasswordResponse passwordResponse =
+      const NativePasswordMfaRequired(challenge);
   NativeIssuedTokens mfaResponse = const NativeIssuedTokens(
     access: freshAccess, refresh: freshRefresh,
   );
@@ -124,12 +123,31 @@ void main() {
     final decision = await gateway.verifyPassword(
       username: 'agent', password: 'synthetic',
     );
-    expect(decision, NativePasswordDecision.authenticated);
+    expect(decision, NativePasswordDecision.mfaRequired);
+    expect(fence.ticket, isNull);
+    await gateway.verifyTotp('123456');
     expect(await vault.read(), freshRefresh);
     expect(await journal.requiresReauthentication(), isFalse);
     expect(fence.ticket, isNotNull);
     expect(await gateway.accessToken(), freshAccess);
     expect(port.passwordCalls, 1);
+  });
+
+  test('even a trusted mock port cannot grant recovery after password only',
+      () async {
+    await initUncertain();
+    port.passwordResponse = const NativePasswordGranted(
+      NativeIssuedTokens(access: freshAccess, refresh: freshRefresh),
+    );
+    await expectLater(
+      gateway.verifyPassword(username: 'agent', password: 'synthetic'),
+      throwsStateError,
+    );
+    expect(fence.ticket, isNull);
+    expect(await gateway.accessToken(), isNull);
+    expect(await vault.read(), oldRefresh);
+    expect(await journal.requiresReauthentication(), isTrue);
+    expect(port.mfaCalls, 0);
   });
 
   test('MFA challenge never unlocks until separate recovery TOTP succeeds',
@@ -180,10 +198,10 @@ void main() {
       () async {
     await initUncertain();
     store.ignoreWrite = true;
-    await expectLater(
-      gateway.verifyPassword(username: 'agent', password: 'synthetic'),
-      throwsStateError,
-    );
+    expect(await gateway.verifyPassword(
+      username: 'agent', password: 'synthetic',
+    ), NativePasswordDecision.mfaRequired);
+    await expectLater(gateway.verifyTotp('123456'), throwsStateError);
     expect(fence.ticket, isNull);
     expect(await gateway.accessToken(), isNull);
     expect(await journal.requiresReauthentication(), isTrue);
