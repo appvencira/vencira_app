@@ -449,3 +449,12 @@ MAIN_I8M_CERT_RESULT=0
 **Conclusión estricta:** generación de certificado efímero, SAN, validación de cadena/hostname y denegaciones negativas por OpenSSL offline **PASS**. No se levantó servidor, no se hizo handshake entre procesos ni se verificó el cliente Flutter/Django; no se ha comprobado el almacenamiento Android. Se mantienen backend HTTP PG17 44/44 PASS, Flutter con MockClient 47/47 PASS y rechazo de arranque TLS PASS.
 
 **Siguiente puerta pendiente:** una prueba de integración de transporte HTTPS con verificación real de hostname y CA, red Docker interna y backend PG17 efímero. No reciclar el probe histórico cuya publicación quedó bloqueada; verificar la herramienta de ejecución y sus controles antes de ponerla en marcha.
+
+## AC. I8-M: aislamiento entre cuentas en revocación y rechazo de refresh antiguo (08/11/2026)
+
+Se amplía en `main` `backend/native_mobile_service/test_i8k_recovery_http_pg17.py`, commit `cf0060e6`, con dos regresiones transaccionales:
+
+1. `test_revoke_only_own_device_preserves_other_account`: crea dos usuarios MFA completamente sintéticos en PG17 desechable, emite tokens para ambas cuentas, revoca el refresh del primero y comprueba que su access queda inválido, mientras la otra cuenta conserva una sesión accesible y no revocada. Esto comprueba la separación entre identidades.
+2. `test_revoked_old_refresh_cannot_revoke_new_recovery`: inicia sesión previa, completa recuperación MFA que revoca todas las sesiones antiguas y emite otra, intenta revocar con el refresh anterior, exige HTTP 401 y verifica que el access nuevo permanece válido.
+
+**Estado:** código y tests añadidos, no ejecutados todavía. El último PASS comprobado es **44/44** sobre el SHA previo; si solo se incorporan estas dos pruebas, se esperan **46 tests** en el gate `scripts/native_i8k_recovery_http_pg17_isolated.sh`. No reportar 46/46 PASS sin la salida real. El script incluye controles de contenedores sin cambios, sin despliegue y sin migraciones persistentes. Estas pruebas complementan, pero no sustituyen, el HTTPS real Flutter–Django ni Android. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
