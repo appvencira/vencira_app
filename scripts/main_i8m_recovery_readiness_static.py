@@ -63,14 +63,26 @@ require("throw const NativeHttpAuthFailure();" in http_port
 print("MAIN_I8M_LAB_ISOLATION_STATIC=PASS")
 print("MAIN_I8M_PASSWORD_ONLY_FENCE_STATIC=PASS")
 
-# A deliberately non-PASS report for known uncovered integration properties:
-# The app uses an auth adapter that can request revoke, but the restricted
-# I8-K recovery-only URLconf does not register the revocation endpoint.
-revoke_path = "/api/v1/mobile/token/revoke/"
-if revoke_path in http_port and revoke_path not in recovery_urls:
-    print("MAIN_I8M_HTTPS_REVOKE_CONTRACT=NOT_IMPLEMENTED_IN_LAB_URLCONF")
-else:
-    print("MAIN_I8M_HTTPS_REVOKE_CONTRACT=REVIEW_REQUIRED")
+# The lab route now exists; static presence does NOT validate PG17 or TLS.
+revoke_path = "api/v1/mobile/token/revoke/"
+recovery_views = source(
+    "backend/native_mobile_service/test_i8k_recovery_views.py")
+recovery_tests = source(
+    "backend/native_mobile_service/test_i8k_recovery_http_pg17.py")
+require(
+    revoke_path in recovery_urls
+    and "def revoke(request):" in recovery_views
+    and "revoke_candidate_device(fields[\"refresh\"])" in recovery_views,
+    "test-only exact-refresh revocation route missing",
+)
+require(
+    "test_recovery_issued_refresh_can_revoke_and_access_is_denied"
+    in recovery_tests
+    and "test_recovery_revoke_rejects_invalid_token_and_browser_metadata"
+    in recovery_tests,
+    "revoke contract regression tests missing",
+)
+print("MAIN_I8M_HTTPS_REVOKE_CONTRACT=IMPLEMENTED_TEST_ONLY_UNVERIFIED")
 
 print("MAIN_I8M_REAL_TLS_CLIENT_SERVER=NOT_TESTED")
 print("MAIN_I8M_ANDROID_PERSISTENCE=NOT_TESTED")
