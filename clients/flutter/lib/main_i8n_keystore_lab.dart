@@ -10,6 +10,7 @@ import 'api/native_mobile_startup_gate.dart';
 import 'api/native_refresh_credential_vault.dart';
 import 'api/native_refresh_recovery_journal.dart';
 import 'api/native_session_fence.dart';
+import 'i8o_android_keystore_failure_lab.dart';
 
 const _labBuild = bool.fromEnvironment('VENCIRA_I8N_ANDROID_LAB');
 const _markerKey = 'vencira.mobile.dev.uncertain.v1';
@@ -102,6 +103,8 @@ class _LabScreenState extends State<_LabScreen> {
         _report('I8N_ANDROID_RESTART_RECOVERY_FENCED=PASS\n'
             'El estado protegido persiste y la sesión sigue bloqueada. '
             'Pulsa Limpiar.');
+      } else if (phase == 'faults') {
+        _report(await runI8OAndroidStorageFaults());
       } else if (phase == 'cleanup') {
         await lab.vault.clear();
         await lab.store.delete(_markerKey);
@@ -123,7 +126,9 @@ class _LabScreenState extends State<_LabScreen> {
       }
     } catch (_) {
       // Do not log exceptions, platform secrets or credential values.
-      _report('I8N_ANDROID_' + phase.toUpperCase() + '=FAIL\n'
+      _report((phase == 'faults' ? 'I8O' : 'I8N_ANDROID_') +
+          (phase == 'faults' ? '_ANDROID_FAILURE_LAB=FAIL\n' :
+              phase.toUpperCase() + '=FAIL\n') +
           'Comprobación fallida. No se ha activado ninguna sesión.');
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -175,6 +180,16 @@ class _LabScreenState extends State<_LabScreen> {
                 onPressed: _busy ? null : () => _execute('cleanup'),
                 child: const Text('3 · Limpiar laboratorio'),
               ),
+              const SizedBox(height: 18),
+              OutlinedButton.icon(
+                onPressed: _busy ? null : () => _execute('faults'),
+                icon: const Icon(Icons.report_gmailerrorred_outlined),
+                label: const Text('I8-O · Comprobar fallos seguros'),
+              ),
+              const SizedBox(height: 10),
+              const Text('Prueba separada: simula fallos de escritura y '
+                  'borrado del almacén seguro, sin acceder a la red.',
+                  textAlign: TextAlign.center),
               const SizedBox(height: 28),
               SelectableText(_result, textAlign: TextAlign.center,
                   style: const TextStyle(fontWeight: FontWeight.w600)),
