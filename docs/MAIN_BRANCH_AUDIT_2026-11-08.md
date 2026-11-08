@@ -376,3 +376,17 @@ Nuevo test `I8-M failed protected write sends exact refresh to revoke endpoint`:
 El test anterior de fallo de revocación/404 se conserva como regresión negativa; su comentario obsoleto se actualizó para reflejar que el endpoint I8-K **sí** está disponible en el URLconf test-only.
 
 **Pendiente:** ejecutar nueva suite Flutter en copia temporal de Docker. Se esperan **47 pruebas** en las cinco suites si no varía el descubrimiento (46 anteriores + 1 nuevo), más `flutter analyze`. **No atribuir PASS hasta salida del operador**. Este test usa `MockClient`, **NO equivale a una prueba TLS real ni de Android**. Los negativos TLS no deben deducirse de este resultado. Conservar `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## X. I8-M Flutter 47/47 PASS tras test de revocación compensatoria (operador 08/11/2026)
+
+El operador volvió a ejecutar el gate sobre una copia temporal del frontend Flutter de `main`, después del commit `1619c488`. Se seleccionaron las cinco suites I8-L/I8-M y se realizó el análisis estático:
+
+```text
+No issues found! (ran in 14.9s)
+00:02 +47: All tests passed!
+MAIN_I8M_FLUTTER_GATE=PASS
+```
+
+**Conclusión:** suite Flutter seleccionada de recuperación MFA y revocación compensatoria **47/47 PASS**, `flutter analyze` PASS. Se cubren el envío HTTP JSON simulado de revocación ante fallo de almacenamiento, el fail-closed, el marker durable y reinicio simulado, pero **no** un enlace TLS real. El texto de terminal muestra repeticiones visuales del mismo resultado en `tmux`; no se cuentan como ejecuciones adicionales. No se incluyó una línea `MAIN_I8M_FLUTTER_RESULT` en el fragmento entregado, pero el marcador interno `MAIN_I8M_FLUTTER_GATE=PASS` sí está presente. El checkout se actualizó previamente desde `origin/main`; no se imprimió SHA exacto en este extracto.
+
+**Resumen de gates disponibles:** backend I8-M PG17 HTTP con revocación 44/44 PASS; Flutter seleccionado I8-M 47/47 PASS; TLS extremo a extremo Flutter–Django PG17 todavía **NOT_TESTED** y Android físico todavía **NOT_TESTED**. Mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Priorizar gate con CA temporal verificable, denegación explícita para CA desconocida/hostname erróneo, sin puertos host públicos, y ausencia de cookies; no convertir tests aislados en autorización de despliegue.
