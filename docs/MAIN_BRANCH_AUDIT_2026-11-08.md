@@ -495,3 +495,16 @@ NATIVE_I8K_LOCAL_RESULT=0
 ```
 
 Con los marcadores ya documentados en sección AD (`NATIVE_I8K_RECOVERY_HTTP_JSON=PASS`, `NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK`, `NATIVE_I8K_DEPLOY_EXECUTED=NO`, `NATIVE_I8K_LIVE_MIGRATIONS_EXECUTED=NO`), se cierra la incertidumbre: **46/46 pruebas PG17 aisladas PASS** sobre el backend ampliado con revocación entre cuentas y denegación de refresh antiguo. Esto no verifica red TLS real ni Android. Mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## AF. D1 — Preparación de despliegue controlado DEV sin ejecutar cambios (08/11/2026)
+
+El usuario pidió preparar un despliegue de los nuevos cambios en `dev.vencira.es`. **No hay todavía autorización para desplegar la totalidad de `main` ni aplicar migraciones persistentes.** Se abrió el bloque de auditoría D1 y se revisaron las fuentes actuales:
+
+- `backend/config/urls.py` continúa sin vistas candidatas de autenticación/recuperación nativa.
+- `backend/config/settings.py` conserva `VENCIRA_NATIVE_BEARER_ENABLED = False` y el registro de `native_mobile_service` limitado al entorno `test`.
+- Los paths históricos de documentación operativa O5/runbook y nombres frecuentes de Compose **no aparecen en `main`** en las ubicaciones consultadas; pueden existir en otros worktrees o rutas del VPS. No se afirma que falten en el servidor actual.
+- El inventario de migraciones del **checkout main** debe contrastarse con el registro de la **base persistente actualmente conectada**. La coincidencia de nombres por sí sola no demuestra compatibilidad; es obligatorio ensayar con un clon restaurado.
+
+**Artefactos nuevos publicados en main:** `scripts/d1_dev_deploy_inventory_readonly.py`, commits `3d47df92` y ajuste `8dfe773f`; `docs/D1_DEV_DEPLOY_PREPARATION_2026-11-08.md`, commit `41b18415`. El script solo inspecciona Git, código fuente, estado e ID de imagen de los tres contenedores DEV y ejecuta un SELECT de `django_migrations` mediante la API Django en el contenedor API actual. No llama a `migrate`, `docker compose up`, backup, restart o alteraciones de base; no imprime contraseñas, tokens, variables de entorno ni filas personales.
+
+**Estado:** herramientas publicadas pero el preflight D1 no está ejecutado aún en el VPS. No anunciar compatibilidad con DEV ni promoción segura hasta recibir el resultado y validar restore O5 y rollback. Marcadores de protección: `D1_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `MFA_RELEASE_AUTHORIZED=NO`.
