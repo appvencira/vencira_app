@@ -32,7 +32,8 @@ class NativeApiEndpoint {
       throw const FormatException('Invalid API path');
     }
     final parsed = Uri.tryParse(path);
-    if (parsed == null || parsed.hasAuthority || parsed.hasFragment ||
+    if (parsed == null || parsed.hasAuthority || parsed.hasQuery ||
+        parsed.hasFragment ||
         parsed.pathSegments.any((segment) => segment == '..' || segment == '.')) {
       throw const FormatException('Invalid API path');
     }
