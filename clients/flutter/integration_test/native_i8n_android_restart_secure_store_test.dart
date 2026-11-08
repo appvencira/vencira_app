@@ -100,15 +100,14 @@ void main() {
       const {'seed', 'verify', 'cleanup'}.contains(_phase);
   testWidgets('I8-N Android protected refresh and journal: $_phase',
       (tester) async {
-    switch (_phase) {
-      case 'seed':
-        await _seed();
-      case 'verify':
-        await _verify();
-      case 'cleanup':
-        await _cleanup();
-      default:
-        fail('Unrecognized Android lab phase');
+    if (_phase == 'seed') {
+      await _seed();
+    } else if (_phase == 'verify') {
+      await _verify();
+    } else if (_phase == 'cleanup') {
+      await _cleanup();
+    } else {
+      fail('Unrecognized Android lab phase');
     }
   }, skip: !supported);
 }
