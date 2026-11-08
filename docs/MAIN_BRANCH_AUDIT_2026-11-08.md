@@ -197,3 +197,13 @@ El operador ejecutó `scripts/main_merged_branch_cleanup_guarded.sh --apply` tra
 **Clasificación provisional:** conservar `*-backups`, `*-db-backups`, `*-local-backups`, `*-export` y los tres worktrees funcionales. Revisar si `vencira-m3-android-build` y `vencira-m3-clean` son copias reconstruibles o incluyen scripts/artefactos únicos antes de borrar; podrían liberar hasta ~3.2 GiB según `du -sh`, pero no existe autorización técnica para eliminarlos sin inspección. `vencira-m3-results` puede contener evidencias de pruebas que deben archivarse.
 
 **Próximo gate de limpieza local — exclusivamente lectura:** inspeccionar `git worktree prune -n -v`, `git status --porcelain`/origen en cada directorio si es repo, `du -sh` de sus subcarpetas, antigüedad de archivos, actividad de procesos Docker/Termius y presencia de archivos no versionados o ignorados. Los tamaños por sí solos **no justifican** `rm -rf`. Para el registro `prunable` puede utilizarse `git worktree prune -v` después de confirmar que la ruta temporal no existe ni está montada.
+
+## M. Auditoría adicional de copias Android locales (evidencia del operador)
+
+Comprobaciones del operador (08/11/2026):
+- `/home/vencira/vencira-m3-android-build`: **2.1 GiB**, no se reconoce como worktree/repositorio Git. Distribución: `build/` ~2.0 GiB; `.dart_tool/` ~108 MiB; `android/` 4.7 MiB; `lib/` 724 KiB; `test/` 336 KiB; `.idea/` 32 KiB y `web/` 12 KiB. **Candidato a limpiar únicamente artefactos generados** después de confirmar que no hay builds/APK de laboratorio en uso ni archivos no reproducibles. No eliminar el directorio completo de entrada.
+- `/home/vencira/vencira-m3-clean`: **1.1 GiB**, repositorio Git independiente en `feature/m3-android-local-notifications` HEAD `73fb358`; `clients/flutter/pubspec.lock` está **sin seguimiento** (`??`). `clients/` ocupa 1.1 GiB. **Conservar** hasta comparar archivos no versionados, fuentes y utilidad como clon de reconstrucción. No ejecutar `git clean -fdx` ni `rm -rf` sobre este repositorio.
+- `vencira-m3-localcheck` ~3.8 GiB: worktree registrado, conservar mientras se prueban I8-K/Android; `vencira-main-check-20261108` ~4.4 MiB: worktree de `main`, conservar.
+- No consta todavía limpieza de archivos locales, ni resultado de `git worktree prune -n -v`, ni inventario de procesos que dependan de la carpeta `build/`.
+
+**Acción próxima:** revisar `find .../build -maxdepth 3 -type f`, APKs y procesos asociados y confirmar que no se necesitan los artefactos anteriores. Si son regenerables, limpiar solo `build/` y opcionalmente `.dart_tool/` usando `flutter clean` desde `vencira-m3-android-build`, cuando el proyecto Flutter sea válido; documentar el espacio recuperado. Los archivos fuente y los repositorios se conservan.
