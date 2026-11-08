@@ -35,6 +35,11 @@ void main() {
       '/accounts/login/',
       '/api/v1/../../admin/',
       '/api/v1/me/#fragment',
+      '/api/v1/mobile/me/?refresh=synthetic',
+      '/api/v1/mobile/me/?',
+      '/api/v1/mobile/me/?next=https://evil.example',
+      '/api/v1/mobile/me/%2e%2e/admin/',
+      '/api/v1/mobile/me/\\\\outside',
     ]) {
       expect(() => endpoint.resolveApiPath(bad), throwsFormatException,
           reason: bad);
