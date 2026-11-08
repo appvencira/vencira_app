@@ -30,6 +30,7 @@ El entorno DEV existente y sus copias operativas son distintos del estado de int
 
 - [Continuidad maestra — 08/11/2026](docs/CONTINUITY_HANDOFF_2026-11-08.md)
 - [Política de integración de main](docs/MAIN_INTEGRATION_POLICY_2026-11-08.md)
+- [Auditoría de ramas y plan de cierre de main](docs/MAIN_BRANCH_AUDIT_2026-11-08.md)
 - [Registro de consolidación](docs/MAIN_CONSOLIDATION_2026-11-08.md)
 
 No confundir código integrado, test ejecutado, despliegue y autorización de publicación.
