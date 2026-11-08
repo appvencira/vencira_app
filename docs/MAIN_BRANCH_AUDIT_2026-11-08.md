@@ -818,3 +818,24 @@ El nuevo I8-P agrupa en una prueba Android física integrada, con contrato de va
 **Estado de publicación:** integrados en `main`, **ninguna prueba I8-P ejecutada ni certificada**. Exigir `bash -n`, compilación Flutter, gate TLS/MFA/Keystore sobre dispositivo Android, respuesta 401 tras revocación y `I8P_PG17_OLD_AND_NEW_SESSION_REVOKED=PASS`, `I8P_DEV_CONTAINERS_UNCHANGED=OK` y resultado final 0. Los gates anteriores I8-M/I8-N/I8-O no sustituyen esta evidencia. El cliente I8-P no tiene contraseña configurable, usa solo fixtures sintéticas, y nunca se entrega como release.
 
 **Deploy/DEV:** intocados por diseño. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` y `I8P_RELEASE_AUTHORIZED=NO`. I8-P no prueba custodia real ni autorización de despliegue.
+
+## AY. I8-P primer intento: warning Flutter de importación (08/11/2026)
+
+El operador ejecutó `scripts/main_i8p_android_ssh_https_pg17_lab.sh` en VPS y el proceso se detuvo al analizar `clients/flutter/lib/main_i8p_android_https_lab.dart`:
+
+```text
+info • The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/foundation.dart'
+1 issue found. (ran in 10.1s)
+I8P_DEV_CONTAINERS_UNCHANGED=OK
+I8P_DEPLOY_EXECUTED=NO
+I8P_LIVE_MIGRATIONS_EXECUTED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+I8P_LAB_RESULT=1
+```
+
+El aviso `22 packages have newer versions incompatible with dependency constraints` corresponde a dependencias disponibles fuera de los constraints actuales, **no** al error de análisis. El gate `flutter analyze` de Flutter considera esta información como issue y abortó la compilación. **No hay APK I8-P acreditada ni gate Android ejecutado.** El trap desmontó el laboratorio y confirmó DEV intacto.
+
+Corrección directa en `main` commit `de18003c`: se elimina solamente `import 'dart:typed_data';` de la entrada I8-P; `ByteData` continúa disponible por `package:flutter/foundation.dart`. No hay cambios a TLS, autenticación, PostgreSQL, Keystore ni despliegue.
+
+**Pendiente:** reejecutar `scripts/main_i8p_android_ssh_https_pg17_lab.sh` y exigir una salida limpia de análisis, APK compilada, marcador Android de HTTPS/MFA/Keystore/revocación y comprobación SQL de PostgreSQL efímero antes de declarar PASS.
