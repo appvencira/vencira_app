@@ -617,3 +617,27 @@ MAIN_I8M_TLS_BOUNDARY_RESULT=0
 **Conclusión válida:** primer gate de transporte TLS **real** entre proceso cliente Python, Django WSGI y red Docker interna con PG17 temporal PASS. Handshake confía solo en CA temporal y hostname esperado; se deniegan una CA externa y hostname incorrecto. Las rutas sin credenciales del URLconf de recuperación responden con el contrato esperado y no hay exposición operativa. La corrección de `PYTHONPATH=/app` queda acreditada.
 
 **Límites:** la prueba GET no usa Flutter/Dart, password ni TOTP, no emite ni revoca sesiones, no prueba almacenamiento Keystore/Android y no publica el backend. No declarar I8-M completo hasta validar cliente Flutter HTTPS auténtico, recuperación MFA real y compensación de revocación bajo fallo de almacenamiento. Se mantienen las restricciones sin despliegue ni migraciones persistentes.
+
+## AM. I8-M Flutter cliente real por HTTPS + MFA y revocación PG17 (08/11/2026)
+
+Tras el gate verificado **Python HTTPS–Django–PG17 PASS**, se integra en `main` un ensayo de extremo a extremo con cliente **Flutter `IOClient` real**, **sin activar `main.dart`** y **sin tocar DEV**.
+
+**Archivos y commits principales:**
+- `clients/flutter/test/native_i8m_real_https_pg17_test.dart`, commits `dcdf6332`, `7fa3126a`, `bd2e54a4`, `7b79f1ae`: dos pruebas Flutter con `HttpClient` verificado y `SecurityContext(withTrustedRoots:false)` que carga solo una CA de laboratorio. Binding de test explícito `overrideHttpClient=false` habilitado únicamente con los marcadores `VENCIRA_I8M_FLUTTER_INTERNAL_ONLY=1`, `VENCIRA_ENV=test`, `POSTGRES_DB=i8klab`; la ejecución normal de `flutter test` fuera de lab **salta** este archivo, sin conexiones reales. Primera prueba: rechazo de CA ajena y hostname incorrecto, handshake verificado, autenticación de recuperación contraseña→MFA TOTP sintético→HTTP bearer `me`, sustitución de refresh y marcador. Segunda prueba: escritura protegida sintéticamente fallida (almacén temporal en memoria), fence local cerrado y compensación de revocación HTTP; la revocación se confirma en PG17 después de terminar las pruebas.
+- `scripts/native_i8k_https_server.py`, commit `dceff18f`: habilita puerto 443 **solo** si se cumplen los seis guards test-only originales y `VENCIRA_I8M_FLUTTER_INTERNAL_ONLY=1`; en otros casos conserva 8443. El usuario no está conectado a este servidor.
+- `scripts/main_i8m_flutter_real_https_pg17_isolated.sh`, commits `498bdcab`, `a5fb1e55`, `f08d2f8a`: imagen Django de `main` desechable, red Docker `--internal`, PG17 `tmpfs`, certificado autofirmado SAN dev.vencira.es **solo en DNS alias del Docker interno**, 443 interno sin publicación en host, dos cuentas MFA sintéticas y una sesión vieja, Flutter 3.44.0 en volúmenes temporales, adquisición de dependencias públicas *antes* de ejecutar el test en red aislada; después de los tests se comprueba en PG17 que la recuperación invalida la sesión anterior y que el fallo de persistencia revoca la nueva. Los contenedores DEV se comparan antes/después y el trap elimina contenedores, imagen y volúmenes efímeros. No usa ni lee datos operativos.
+- El test Flutter emplea `crypto` como dependencia de **test** ya presente en pubspec, solo para TOTP RFC 6238 sintético.
+
+**Estado crítico: no ejecutado aún.** El diseño agrega una puerta sustancial, pero no se acreditan análisis Flutter, dos tests TLS ni comprobación transaccional hasta que el operador ejecute el runner. La prueba de almacén es **en memoria**, no `FlutterSecureStorage` ni Keystore Android; el siguiente gate físico permanece pendiente. No se despliega, no se migran datos persistentes, MFA release sigue denegado.
+
+Comando de ensayo desde `~/vencira-main-check-20261108`:
+
+```bash
+git fetch origin main
+git merge --ff-only FETCH_HEAD
+set -o pipefail
+bash scripts/main_i8m_flutter_real_https_pg17_isolated.sh 2>&1 | tee ~/vencira-i8m-flutter-real-https.log
+echo "MAIN_I8M_FLUTTER_TLS_SHELL_RESULT=${PIPESTATUS[0]}"
+```
+
+Exigir `MAIN_I8M_FLUTTER_TLS_ANALYZE=PASS`, `MAIN_I8M_FLUTTER_TLS_SERVER_READY=PASS`, `MAIN_I8M_FLUTTER_TLS_REAL_CLIENT=PASS`, `MAIN_I8M_FLUTTER_TLS_ACCOUNT_RECOVERY_REVOCATION=PASS`, `MAIN_I8M_FLUTTER_TLS_STORAGE_FAILURE_REMOTE_REVOKE=PASS`, `MAIN_I8M_FLUTTER_TLS_RECOVERY_GATE=PASS`, `MAIN_I8M_FLUTTER_TLS_DEV_CONTAINERS_UNCHANGED=OK` y `MAIN_I8M_FLUTTER_TLS_BOUNDARY_RESULT=0`. Sin esos marcadores no declarar I8-M Flutter HTTPS PASS.
