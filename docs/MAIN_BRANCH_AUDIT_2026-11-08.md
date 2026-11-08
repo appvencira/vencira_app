@@ -888,3 +888,24 @@ Se añade gate agrupado `scripts/main_i8q_android_recovery_fault_matrix_local.sh
 **Estado: publicado en main, PENDIENTE ejecución de gate.** La matriz de errores I8-Q usa HTTP/almacenamiento sintéticos; no es prueba física de pérdida de red de Android ni sustituye I8-P. Nunca declarar I8-Q PASS sin `All tests passed!`, `I8Q_FLUTTER_FAULT_MATRIX_GATE=PASS`, `I8Q_DEV_CONTAINERS_UNCHANGED=OK`, y resultado cero.
 
 `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1` siguen intactos; despliegue pospuesto expresamente.
+
+## BC. I8-Q matriz agrupada Flutter de ambigüedad: 30/30 PASS (operador 08/11/2026)
+
+El operador ejecutó `scripts/main_i8q_android_recovery_fault_matrix_local.sh` y aportó la salida final:
+
+```text
+00:01 +30: All tests passed!
+I8Q_FLUTTER_FAULT_MATRIX_GATE=PASS
+I8Q_DEV_CONTAINERS_UNCHANGED=OK
+I8Q_DEPLOY_EXECUTED=NO
+I8Q_LIVE_MIGRATIONS_EXECUTED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+I8Q_LOCAL_RESULT=0
+```
+
+**Resultado acreditado:** cuatro suites de regresión Flutter completadas, **30/30 PASS**, con fallo cero y sin cambios de identidades de los contenedores DEV. Incluyen `native_i8q_recovery_fault_matrix_test.dart` (timeout de contraseña, resultado MFA ambiguo sin reintento, fallo de escritura y revocación sin respuesta), además de las suites de recuperación HTTP, contrato de transporte y endpoint. La salida final no reproduce de manera individual los tres `I8Q_...=PASS`, pero `All tests passed!` y el gate conjunto PASS confirman la ejecución satisfactoria de la matriz incluida por el script.
+
+**Límites:** los fallos I8-Q son inyectados con MockClient y almacén sintético, no cortes reales del túnel Android ni fallos auténticos Keystore. Los gates previos I8-M, I8-N, I8-O e I8-P permanecen acreditados de manera independiente; no confundir sus alcances. El próximo bloque integra interrupciones controladas en el flujo de red real Android↔Django efímero y reconciliación PG17, sin habilitar infraestructura operativa.
+
+**Restricciones:** `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1` sin cambios; ninguna migración persistente ni despliegue.
