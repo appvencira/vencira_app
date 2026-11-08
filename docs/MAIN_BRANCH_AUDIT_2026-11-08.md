@@ -129,3 +129,23 @@ git status --short
 ```
 
 Los JSON se crean en `/tmp` fuera del worktree. **Revisar antes de compartirlos** por si revelan nombres de archivos privados, aunque el informe no contiene su contenido. La auditoría completa permitirá priorizar diferencias restantes por árbol, no por conteo de commits.
+
+## I. Evidencia del operador — inventario completo de 30 ramas (08/11/2026)
+
+El operador ejecutó `scripts/main_branch_tree_inventory_readonly.py --summary-only` en el worktree independiente. Reportó `MAIN_AUDIT_BASE=2a23873c697ec41c6b6c4dec02e91c9842043cca`, `MAIN_AUDIT_BRANCHES=30` y `git status --short` sin salida. El inventario de objetos completo se ejecutó satisfactoriamente sobre las ramas remotas.
+
+| Origen comparado con main | `added_in_branch` | `absent_in_branch` | `different` |
+| --- | ---: | ---: | ---: |
+| `feature/m3-android-local-notifications` | 543 | 38 | 7 |
+| `feature/mb1-m104-transition-contract-batch` | 409 | 197 | 23 |
+| `feature/c-ficha-independent-attachments` | 356 | 237 | 37 |
+| `feature/m3-02-agenda-operational-validation` | 402 | 223 | 27 |
+| `feature/m3-device-notice-preview-ci` | 404 | 220 | 24 |
+| `integration/local-e2e-prep` | 197 | 371 | 48 |
+| `integration/main-web-attachments-failclosed-20261107` | 0 | 25 | 5 |
+| `integration/native-auth-lab-gates-20261107` | 0 | 23 | 5 |
+| `integration/i7b-mfa-atomic-candidate-20261106` | 0 | 25 | 7 |
+
+**Semántica:** `added_in_branch`: archivo exclusivo de rama; `absent_in_branch`: exclusivo de main; `different`: existe en ambas revisiones pero difiere objeto/modo. Estos números NO representan automáticamente código necesario. Los JSON detallados permanecen en el VPS y no han sido compartidos.
+
+**Próxima auditoría:** obtener exactamente las 7 rutas diferentes de Android y agrupar sus 543 archivos exclusivos por carpeta/extensión. Clasificar su valor y dependencias antes de copiar. Después revisar MB1, C-FICHA y M3 por prioridad. No realizar merges masivos.
