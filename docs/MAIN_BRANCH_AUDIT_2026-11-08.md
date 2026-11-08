@@ -530,3 +530,16 @@ Tras los commits `2508914f` y `29c07cbd`, el operador ejecutó tres suites Flutt
 La primera implementación rechazaba `parsed.hasQuery`, pero las cadenas de rutas son procesadas y potencialmente normalizadas por `Uri.tryParse`. El caso adversario incluye separadores de query vacía y traversal percent-encoded. Se añade una barrera **sobre la ruta de entrada sin parsear**: rechazar cualquier `?` y las codificaciones `%2e`, `%2f`, `%5c` sin distinguir mayúsculas (commit `8c81219d`). Se mantienen además la validación de host, HTTPS y controles posteriores de `Uri`.
 
 **Diagnóstico provisional:** no se recibió el `Expected/Actual` del test fallido, por lo que no está demostrado cuál de los vectores de la lista causó el fallo; el cambio cubre el traversal codificado y query vacía de forma directa. Es imprescindible repetir `native_api_endpoint_test.dart`, `native_http_auth_port_test.dart`, `native_i8l_http_recovery_integration_test.dart` y `flutter analyze` sobre el nuevo SHA. No despliegue ni migración persistente. `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## AI. Recheck de rutas Flutter tras la corrección raw-path (08/11/2026)
+
+El operador volvió a ejecutar las tres suites de Flutter después de incorporar `8c81219d` en `main` y comunicó:
+
+```text
+second process remains fenced after ambiguous MFA result
+00:01 +27: All tests passed!
+```
+
+**Resultado acreditado:** 27/27 tests Flutter PASS para `native_api_endpoint_test.dart`, `native_http_auth_port_test.dart` y `native_i8l_http_recovery_integration_test.dart`. La regresión introducida por las nuevas entradas adversarias queda resuelta según el recheck comunicado. El extracto no contiene `flutter analyze` ni `MAIN_FLUTTER_SECURITY_RECHECK=0`, así que estos dos marcadores no se dan por comprobados en esta ejecución (pueden confirmarse con el log completo).
+
+No se ha verificado HTTPS real Flutter–Django ni persistencia Android. No se realiza despliegue ni migración DEV; permanecen `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
