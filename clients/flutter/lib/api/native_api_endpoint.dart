@@ -25,7 +25,11 @@ class NativeApiEndpoint {
   }
 
   Uri resolveApiPath(String path) {
+    // Reject raw query delimiters (including an empty '?') and encoded
+    // path separators/dot segments before Uri parsing can normalize them.
     if (!path.startsWith('/api/v1/') ||
+        path.contains('?') ||
+        RegExp(r'%(2e|2f|5c)', caseSensitive: false).hasMatch(path) ||
         path.contains('\\') ||
         path.startsWith('//') ||
         path.split('/').any((part) => part == '..' || part == '.')) {
