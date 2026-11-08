@@ -1,0 +1,52 @@
+# VENCIRA — consolidación progresiva de main (08/11/2026)
+
+## Estado verificado y alcance
+
+Fuente de verdad: GitHub `appvencira/vencira_app`, rama `main`. Comparación `main...feature/m3-android-local-notifications` realizada el 08/11/2026: `diverged`, 3946 commits en el histórico candidato no incorporados por genealogía y 21 exclusivos de `main` en el momento de la consulta. Los recuentos de commits no equivalen a número de módulos ausentes.
+
+No se ha hecho merge masivo, cambio de ref ni force-push. Ningún despliegue o migración persistente ha sido ordenado durante este lote.
+
+## Integración directa de lote I8-L / seguridad
+
+Se verificó contenido preexistente de `main` antes de cada modificación:
+
+- `clients/flutter/lib/api/native_http_auth_port.dart`: la ruta `recoverPassword` podía transformar un JSON `authenticated` en `NativePasswordGranted` sin TOTP. Corregido en `main`, commit `15ea182d72d4180f08cac94ec70f15fa968b6676`. Ahora solamente puede devolver `NativePasswordMfaRequired` y rechaza la respuesta con tokens en esa ruta.
+- `clients/flutter/lib/api/native_recovery_login_gateway.dart`: el gateway podía confirmar credenciales devueltas directamente por `recoverPassword`. Corregido en `main`, commit `a9bd1d88565d98642f4d2e7922ffd4eb75a8cf3d`. Solo la ruta `recoverMfa` puede llegar al método de confirmación de tokens. El cambio no altera `main.dart` ni `backend/config/urls.py`.
+- `clients/flutter/test/native_i8l_http_recovery_integration_test.dart`: incorporado el fichero de seis pruebas históricas, commit `31c1617bea0a6fa78321537cf120fe64a058c05e`. Se verificó en `main` la existencia de módulos importados por ese fichero y de `http` y `flutter_test` en `pubspec.yaml`. No se ha ejecutado todavía el test en `main`.
+- `README.md` actualizado para eliminar la descripción obsoleta de fase de arranque y distinguir laboratorios, GitHub y despliegue, commit `3b6ac5c066ecc8a4cc08e51ff8d8d5d782a1d6c4`.
+
+En `main` falta `backend/native_mobile_service/candidate_recovery_issuer.py`. No deben conectarse endpoints de recovery ni declararse I8-K o I8-M integrados sobre esa base.
+
+## Validación pendiente en la propia main
+
+En un entorno de desarrollo de confianza con Flutter/Dart instalado:
+
+```bash
+git fetch origin main
+git switch main
+git pull --ff-only origin main
+git status --short
+cd clients/flutter
+flutter pub get
+flutter analyze
+flutter test test/native_i8l_http_recovery_integration_test.dart
+```
+
+El operador debe confirmar que el árbol está limpio antes de ejecutar `git pull --ff-only`. El comando `flutter pub get` puede alterar el lockfile local; examinarlo, no sobreescribir ni descartarlo ciegamente. A continuación ejecutar la suite Flutter de regresión completa si el primer lote pasa. Registrar SHA exacto, resultado real, entorno y cualquier dependencia ausente.
+
+En este chat no hay Flutter/Dart instalado para ejecutar los tests. La API GitHub no proporcionó estados ni ejecuciones Actions asociadas al commit del README. **No declarar PASS de tests, I8-M, Android o publicación**.
+
+## Próximo lote
+
+Reconciliar dependencias de `backend/native_mobile_service` con el código actual de `main` en incrementos autocontenidos. Revalidar cada bloque en PG17 desechable, sin usar DEV persistente. Tras cerrar la consolidación necesaria, abordar I8-M Flutter HTTPS (CA y hostname verificados) y recuperación física Android (Keystore, Termius). Los gates históricos I8-H–I8-L no sustituyen esos ensayos.
+
+## Prohibiciones
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+DEPLOY_EXECUTED=NO
+LIVE_MIGRATIONS_EXECUTED=NO
+```
+
+Las dos últimas líneas describen las acciones de **esta sesión**, no constituyen una medición independiente del estado del VPS.
