@@ -196,8 +196,8 @@ void main() {
           'refresh': newRefresh,
         });
       }
-      // I8-K deliberately has no single-device revoke endpoint. Marker
-      // MUST remain until full account recovery is completed again.
+      // Simulate a failed revocation acknowledgement. Even if the server
+      // may have issued credentials, the local fence must remain closed.
       return jsonResponse({'error': 'native_auth_unavailable'}, status: 404);
     });
     final harness = _Harness(store, client);
@@ -217,6 +217,57 @@ void main() {
       '/api/v1/mobile/auth/recover/mfa/',
       '/api/v1/mobile/token/revoke/',
     ]);
+    client.close();
+  });
+
+  test('I8-M failed protected write sends exact refresh to revoke endpoint',
+      () async {
+    final store = _DurableStore()..values[refreshKey] = oldRefresh;
+    final paths = <String>[];
+    final revoked = <String>[];
+    final client = MockClient((request) async {
+      paths.add(request.url.path);
+      expect(request.url.scheme, 'https');
+      expect(request.followRedirects, isFalse);
+      expect(request.headers['Authorization'], isNull);
+      expect(request.headers['Cookie'], isNull);
+      if (request.url.path == '/api/v1/mobile/auth/recover/password/') {
+        return jsonResponse({
+          'status': 'mfa_required', 'challenge': recoveryChallenge,
+        });
+      }
+      if (request.url.path == '/api/v1/mobile/auth/recover/mfa/') {
+        return jsonResponse({
+          'status': 'authenticated', 'access': newAccess,
+          'refresh': newRefresh,
+        });
+      }
+      if (request.url.path == '/api/v1/mobile/token/revoke/') {
+        final body = jsonDecode(request.body);
+        expect(body, {'refresh': newRefresh});
+        revoked.add(body['refresh'] as String);
+        return jsonResponse({'status': 'revoked'});
+      }
+      return jsonResponse({'error': 'native_auth_unavailable'}, status: 404);
+    });
+    final harness = _Harness(store, client);
+    expect(await harness.entry.inspect(),
+        NativeStartupDisposition.fullReauthentication);
+    expect(await harness.entry.verifyPassword(
+      username: 'synthetic', password: 'synthetic-password',
+    ), NativePasswordDecision.mfaRequired);
+    store.failFreshWrite = true;
+    await expectLater(harness.entry.verifyTotp('123456'), throwsStateError);
+    expect(paths, [
+      '/api/v1/mobile/auth/recover/password/',
+      '/api/v1/mobile/auth/recover/mfa/',
+      '/api/v1/mobile/token/revoke/',
+    ]);
+    expect(revoked, [newRefresh]);
+    expect(harness.fence.ticket, isNull);
+    expect(await harness.entry.accessToken(), isNull);
+    expect(await harness.vault.read(), oldRefresh);
+    expect(await harness.journal.requiresReauthentication(), isTrue);
     client.close();
   });
 
