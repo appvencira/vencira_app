@@ -458,3 +458,29 @@ Se amplía en `main` `backend/native_mobile_service/test_i8k_recovery_http_pg17.
 2. `test_revoked_old_refresh_cannot_revoke_new_recovery`: inicia sesión previa, completa recuperación MFA que revoca todas las sesiones antiguas y emite otra, intenta revocar con el refresh anterior, exige HTTP 401 y verifica que el access nuevo permanece válido.
 
 **Estado:** código y tests añadidos, no ejecutados todavía. El último PASS comprobado es **44/44** sobre el SHA previo; si solo se incorporan estas dos pruebas, se esperan **46 tests** en el gate `scripts/native_i8k_recovery_http_pg17_isolated.sh`. No reportar 46/46 PASS sin la salida real. El script incluye controles de contenedores sin cambios, sin despliegue y sin migraciones persistentes. Estas pruebas complementan, pero no sustituyen, el HTTPS real Flutter–Django ni Android. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## AD. Revalidación I8-M aislamiento de revocación PG17 (operador 08/11/2026)
+
+Después del commit `cf0060e6` que añade dos pruebas de separación entre cuentas y rechazo de refresh revocado, el operador repitió el gate `scripts/native_i8k_recovery_http_pg17_isolated.sh` y comunicó:
+
+```text
+OK
+Destroying test database for alias 'default'...
+NATIVE_I8K_FLUTTER_GATE=NOT_RUN_SEPARATE
+NATIVE_I8K_NO_PUBLIC_ISSUER=PASS
+NATIVE_I8K_NO_MFA_DENIAL_POLICY=PASS
+NATIVE_I8K_ATOMIC_RECOVERY_CORE=PASS
+NATIVE_I8K_RECOVERY_HTTP_JSON=PASS
+NATIVE_I8K_RECOVERY_ENDPOINTS_ABSENT=PASS
+NATIVE_I8K_PG17_HTTP_RECOVERY_GATE=PASS
+NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK
+NATIVE_I8K_DEPLOY_EXECUTED=NO
+NATIVE_I8K_LIVE_MIGRATIONS_EXECUTED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+NATIVE_I8K_LOCAL_RESULT=0
+```
+
+**Conclusión:** gate HTTP PG17 posterior a añadir las dos pruebas **PASS**; no hay despliegue ni migración persistente y los contenedores de DEV permanecen idénticos según el guard. **El extracto no incluye `Ran N tests`**, por lo que no se afirma 46/46 hasta examinar `~/vencira-i8m-isolation-pg17.log`. Tampoco aparece el marcador externo `MAIN_I8M_ISOLATION_RESULT`; la salida interna sí confirma código cero.
+
+Siguen pendientes la ejecución real de HTTPS Flutter-Django, negativos de validación TLS sobre red, y APK Android física.
