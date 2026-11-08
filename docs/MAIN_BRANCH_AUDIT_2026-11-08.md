@@ -859,3 +859,22 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 **No certificar todavía el gate global I8-P:** falta la salida de la sesión VPS después de pulsar INTRO que compruebe `I8P_PG17_OLD_AND_NEW_SESSION_REVOKED=PASS`, `I8P_ANDROID_TLS_MFA_KEYSTORE_GATE=PASS`, `I8P_DEV_CONTAINERS_UNCHANGED=OK`, `I8P_LAB_RESULT=0`. La captura del móvil no sustituye el postcheck SQL ni acredita por sí sola el teardown del laboratorio.
 
 No hubo activación de MFA operativa, publicación de endpoint ni autorización de despliegue; continúan `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## BA. I8-P Android físico + SQL de PG17 temporal: gate completo PASS (08/11/2026)
+
+Tras la captura Android que acredita los cinco marcadores TLS/MFA/Keystore/revocación/401/cleanup, el operador cerró la sesión del laboratorio I8-P en el VPS y compartió:
+
+```text
+I8P_PG17_OLD_AND_NEW_SESSION_REVOKED=PASS
+I8P_ANDROID_TLS_MFA_KEYSTORE_GATE=PASS
+I8P_DEV_CONTAINERS_UNCHANGED=OK
+I8P_DEPLOY_EXECUTED=NO
+I8P_LIVE_MIGRATIONS_EXECUTED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+I8P_LAB_RESULT=0
+```
+
+**Resultado acreditado:** I8-P **PASS extremo a extremo en laboratorio**, con Android físico, transporte HTTPS verificado a través de SSH, autenticación de recuperación contraseña+TOTP sintéticas, credencial refresh guardada/leída en Keystore, revocación remota y rechazo 401, más confirmación SQL en PostgreSQL17 efímero de que la sesión antigua y la nueva están revocadas. El proceso confirmó que las identidades de los contenedores DEV no cambiaron y no ejecutó despliegue/migraciones persistentes. El teardown corrió por el trap de salida; `I8P_LAB_RESULT=0` demuestra que el ejecutor finalizó correctamente, no por sí solo una auditoría independiente de inexistencia de recursos Docker residuales.
+
+**No sustituye autorización de publicación ni pruebas operativas:** continúan pendientes la recuperación ante fallos reales de red y/o almacenamiento durante el flujo Android, custodia de claves de servicio, backup/restauración y compatibilidad de migraciones para DEV. Restricciones: `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`. No incluir `native_mobile_service` en apps operativas ni publicar sus URLconf test-only.
