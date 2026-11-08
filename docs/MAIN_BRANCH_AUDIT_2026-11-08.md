@@ -219,3 +219,15 @@ El operador confirmó SHA-256 idéntico para las dos APK de depuración original
 Copia conservada: `/home/vencira/vencira-m3-results/apk-conservadas/VENCIRA-Android-LAB-debug.apk`, tamaño ~155 MiB. No hay Flutter CLI en el host (`FLUTTER_NO_INSTALADO_EN_HOST`). Se propuso un borrado acotado de `/home/vencira/vencira-m3-android-build/build` tras verificar SHA-256 de la copia; el operador respondió **"Done"**. **Estado de la limpieza: comunicada como ejecutada, sin salida postoperación ni tamaño de directorio actualizado**; no declarar `ANDROID_BUILD_CLEANUP=PASS` hasta ver marcador o evidencia. La copia APK y los tres worktrees de desarrollo deben preservarse.
 
 Espacio libre antes de la limpieza: `/dev/vda1` 232 GiB total, 56 GiB usados, 176 GiB disponibles (25% uso). Recuperar ~2 GiB no era una operación urgente. Siguiente prioridad: comprobar salud de los contenedores DEV y lanzar únicamente I8-K HTTP en laboratorio PG17 efímero, registrando resultado en el SHA exacto de `main`.
+
+## O. Corrección de bloqueo I8-K en construcción Docker (08/11/2026)
+
+**Evidencia del operador:** tras comprobar los 3 contenedores `vencira_localcheck` en estado `running/healthy`, el laboratorio `scripts/native_i8k_recovery_http_pg17_isolated.sh` terminó con `NATIVE_I8K_LOCAL_RESULT=1`, manteniendo `NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK`, `NATIVE_I8K_DEPLOY_EXECUTED=NO`, `NATIVE_I8K_LIVE_MIGRATIONS_EXECUTED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Mensaje causal real: `ERROR: failed to build: failed to solve: failed to read dockerfile: open Dockerfile: no such file or directory`.
+
+**Diagnóstico confirmado con GitHub:** el script invoca `docker build -t ... ./backend`; en `main` faltaba `backend/Dockerfile`, aunque sí estaba `backend/requirements.txt` y en `feature/m3-android-local-notifications` existía el Dockerfile. El fallo se produjo **antes** de ejecutar migraciones o tests de Django; no es un fallo de recuperación, HTTPS ni PostgreSQL.
+
+**Corrección publicada directamente en main:**
+- `backend/Dockerfile`, copia fiel del Dockerfile histórico de laboratorio/Django: commit `2ce7943cf29aae2c72302fd57a7e669fb8099eff`.
+- `backend/.dockerignore`, nuevo, para excluir secretos locales `*.pem`, `*.key`, `.env`, bases de datos, logs y cachés del contexto Docker: commit `b80e09abf0f845adb055debbc846974a713c8165`.
+
+**Estado:** corrección de fuentes y contexto **integrada, todavía no verificada con Docker build**. No confundir con un PASS de I8-K. Repetir el script tras `git fetch` y `git merge --ff-only` de `origin/main`; con `tmux` y `set -o pipefail` guardar el error real si persiste. Comprobar `NATIVE_I8K_LOCAL_RESULT=0`, `MAIN_I8K_HTTP_RESULT=0` y marcadores de aislamiento. No se ha hecho ningún despliegue ni migración persistente desde esta integración GitHub.
