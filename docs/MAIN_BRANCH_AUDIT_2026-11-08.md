@@ -909,3 +909,14 @@ I8Q_LOCAL_RESULT=0
 **Límites:** los fallos I8-Q son inyectados con MockClient y almacén sintético, no cortes reales del túnel Android ni fallos auténticos Keystore. Los gates previos I8-M, I8-N, I8-O e I8-P permanecen acreditados de manera independiente; no confundir sus alcances. El próximo bloque integra interrupciones controladas en el flujo de red real Android↔Django efímero y reconciliación PG17, sin habilitar infraestructura operativa.
 
 **Restricciones:** `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1` sin cambios; ninguna migración persistente ni despliegue.
+
+## BD. Inicio paralelo B2+B3 con un solo gate de solo lectura (08/11/2026)
+
+Se confirmó por inspección de `main` que la **APK normal Android aún abre el sistema web externo** mediante `AndroidWebAccessScreen` y `LaunchMode.externalApplication`. No utiliza directamente los clientes `NativeHttpAuthPort` / `NativeMobileRecoveryEntry` validados en I8-P. Los PASS I8-M–I8-Q son reales **en sus respectivos laboratorios**, pero no equivalen a una APK nativa funcional autorizada. Esto es un bloqueo B2 verificable y se evita describir el trabajo restante como meros retoques visuales.
+
+Commits de trabajo directo sobre `main`:
+- `725a3bbb`: `scripts/main_closure_source_inventory_readonly.py` — inventario de entrypoint Android/web, aislamiento de rutas móviles candidatas, pantallas Flutter de dominio presentes y dependencias estáticas de `reminders.0019–0027`. Los archivos presentes se rotulan `SOURCE_PRESENT_NOT_VISUALLY_TESTED`, no PASS funcional. No consulta datos ni ejecuta migraciones.
+- `2c0bf8e6`: `scripts/main_closure_grouped_readonly_gate.sh` — una invocación de B2 fuente + `d1b_dev_compose_o5_metadata_readonly.py` para B3 metadatos Docker Compose y servicios O5. Sin backup/restauración real, sin claves, sin SQL ni cambios en DEV.
+- `157995b8`: detalle de operación, criterios y límites añadido a `docs/REMAINING_WORK_GROUPED_2026-11-08.md`.
+
+**Estado:** publicados pero **todavía sin ejecutar** en VPS. Se requiere `CLOSE_COMBINED_SHELL_RESULT=0`, `CLOSE_DJANGO_OPERATIONAL_NATIVE_ROUTE_FENCE=PASS` y `D1B_COMPOSE_PROJECT=vencira_localcheck`; cualquier mismatch se debe investigar, no corregir alterando servicios. I8-R Android HTTPS con interrupciones controladas permanece pendiente. Los backup/restore/migration rehearsal D1 continúan no verificados. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
