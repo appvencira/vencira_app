@@ -353,3 +353,16 @@ NATIVE_I8K_LOCAL_RESULT=0
 **Interpretación:** la regresión I8-K HTTP/PG17 posterior a la implementación de revocación **PASS**; backend candidato permanece aislado y no altera DEV. El extracto no muestra la línea `Ran N tests`, por lo que **no atribuir 44/44 tests** hasta consultar el log de esta ejecución. Tampoco se muestra `MAIN_I8M_REVOKE_PG17_RESULT` ni SHA HEAD exacto de la ejecución. El marcador interno `NATIVE_I8K_LOCAL_RESULT=0` sí está confirmado.
 
 **Pendiente de I8-M:** ejecución real extremo a extremo Flutter cliente HTTPS vs Django I8-K PG17 efímero, CA/hostname negativos, revocación TLS efectiva, persistencia/reinicio y validación Android. No autorizar publicación.
+
+## V. Conteo confirmado de regresión PG17 I8-M post-revocación (operador, 08/11/2026)
+
+El operador consultó el log `~/vencira-i8m-revoke-pg17.log` y confirmó:
+
+```text
+Ran 44 tests in 27.657s
+NATIVE_I8K_LOCAL_RESULT=0
+```
+
+Junto con los marcadores completos registrados en sección U (`NATIVE_I8K_RECOVERY_HTTP_JSON=PASS`, `NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK` y ausencia de despliegue/migraciones), se declara **I8-K/I8-M backend HTTP con revocación 44/44 PASS**, en PostgreSQL 17 desechable. Se reemplaza la incertidumbre de conteo de la sección U con esta evidencia posterior.
+
+La revalidación no prueba por sí sola TLS, los negativos CA/hostname, el cliente Flutter en red real ni persistencia en Android; tales gates continúan pendientes. `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
