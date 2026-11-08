@@ -783,3 +783,23 @@ No se autoriza despliegue ni migración persistente: `MFA_RELEASE_AUTHORIZED=NO`
 **Estado preciso:** código en `main`, **compilación Android I8-O no ejecutada aún**, sin evidencias de `flutter analyze`, sin ejecución física ni validación de fallos. El gate I8-O requiere `I8O_APK_DEBUG_BUILD=PASS` y las marcas `I8O_ANDROID_MARKER_WRITE_DENIED=PASS`, `I8O_ANDROID_REFRESH_WRITE_DENIED=PASS`, `I8O_ANDROID_MARKER_DELETE_DENIED=PASS`, `I8O_ANDROID_FAILURE_FENCE=PASS`, `I8O_ANDROID_FAILURE_LAB_CLEANUP=PASS`. En caso de fallo no inferir nada de una captura parcial.
 
 **No interpretar los fallos simulados como fallos de Keystore auténticos**; se prueba la capacidad del cliente para cerrarse correctamente al recibir errores del wrapper. Pendientes integración Android HTTPS real y ensayo operativo de custodia/revocación sin tocar DEV. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## AW. I8-O: prueba física de fallos sintéticos Android PASS (operador 08/11/2026)
+
+El operador aportó captura del teléfono Android ejecutando el laboratorio `VENCIRA · Keystore I8-N` con el botón `I8-O · Comprobar fallos seguros`. La pantalla confirma íntegramente los cinco marcadores:
+
+```text
+I8O_ANDROID_MARKER_WRITE_DENIED=PASS
+I8O_ANDROID_REFRESH_WRITE_DENIED=PASS
+I8O_ANDROID_MARKER_DELETE_DENIED=PASS
+I8O_ANDROID_FAILURE_FENCE=PASS
+I8O_ANDROID_FAILURE_LAB_CLEANUP=PASS
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
+
+**Resultado:** gate de inyección de errores I8-O en Android físico **5/5 PASS** según evidencia visual. Se verificó la gestión *fail-closed* de fallos simulados de escritura del marcador/refresh, omisión de borrado del marcador, fence de sesión y limpieza de claves sintéticas en el namespace de prueba. **No son fallos espontáneos/reales del Android Keystore**, sino situaciones provocadas por el wrapper `_FaultStore` delante del plugin real. No se ha producido autenticación, emisión de credenciales ni revocación remota en este ensayo.
+
+**Evidencias anteriores vigentes:** I8-N Android persistencia tras reinicio físico PASS; I8-M cliente Flutter `IOClient` + Django HTTPS + PG17 efímero, recuperación password/TOTP y revocación compensatoria PASS. **Falta aún un único ensayo móvil end-to-end por HTTPS con almacenamiento seguro real**, usando solo backend temporal y tráfico tunelizado/verificado, no DEV. No confundir tres gates separados con integración operativa completa.
+
+**Observación de presentación:** la cabecera sigue mostrando `Keystore I8-N` en la APK que contiene el botón I8-O; conviene corregirla en un build futuro, sin bloquear la certificación de seguridad. No despliegue ni migración persistente; `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
