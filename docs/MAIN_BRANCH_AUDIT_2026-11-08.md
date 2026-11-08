@@ -231,3 +231,31 @@ Espacio libre antes de la limpieza: `/dev/vda1` 232 GiB total, 56 GiB usados, 17
 - `backend/.dockerignore`, nuevo, para excluir secretos locales `*.pem`, `*.key`, `.env`, bases de datos, logs y cachés del contexto Docker: commit `b80e09abf0f845adb055debbc846974a713c8165`.
 
 **Estado:** corrección de fuentes y contexto **integrada, todavía no verificada con Docker build**. No confundir con un PASS de I8-K. Repetir el script tras `git fetch` y `git merge --ff-only` de `origin/main`; con `tmux` y `set -o pipefail` guardar el error real si persiste. Comprobar `NATIVE_I8K_LOCAL_RESULT=0`, `MAIN_I8K_HTTP_RESULT=0` y marcadores de aislamiento. No se ha hecho ningún despliegue ni migración persistente desde esta integración GitHub.
+
+## P. Gate I8-K HTTP en PostgreSQL 17 — VALIDADO (evidencia operador 08/11/2026)
+
+Tras restaurar `backend/Dockerfile` y añadir `backend/.dockerignore`, el operador repitió `scripts/native_i8k_recovery_http_pg17_isolated.sh` en el checkout `~/vencira-main-check-20261108`. Salida comunicada:
+
+```text
+Ran 42 tests in 26.444s
+OK
+NATIVE_I8K_FLUTTER_GATE=NOT_RUN_SEPARATE
+NATIVE_I8K_NO_PUBLIC_ISSUER=PASS
+NATIVE_I8K_NO_MFA_DENIAL_POLICY=PASS
+NATIVE_I8K_ATOMIC_RECOVERY_CORE=PASS
+NATIVE_I8K_RECOVERY_HTTP_JSON=PASS
+NATIVE_I8K_RECOVERY_ENDPOINTS_ABSENT=PASS
+NATIVE_I8K_PG17_HTTP_RECOVERY_GATE=PASS
+NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK
+NATIVE_I8K_DEPLOY_EXECUTED=NO
+NATIVE_I8K_LIVE_MIGRATIONS_EXECUTED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+NATIVE_I8K_LOCAL_RESULT=0
+```
+
+**Interpretación:** backend test-only I8-K HTTP, I8-I e I8-J y regresiones asociadas validados en PG17 desechable; 42/42 tests PASS. Los tres contenedores DEV quedaron sin cambios según el guard del script. El usuario no adjuntó el SHA exacto ejecutado tras el último `git fetch`, aunque el gate se realizó después de los commits de corrección `2ce7943c` y `b80e09ab`. El marcador externo `MAIN_I8K_RECHECK_RESULT` no figura en la salida, pero el propio `NATIVE_I8K_LOCAL_RESULT=0` sí.
+
+**No cubierto:** Flutter en esta ejecución (`NOT_RUN_SEPARATE`), TLS de recuperación I8-K HTTPS, cliente Flutter HTTPS real I8-M, Android físico ni autorización de despliegue. Mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+**Siguiente puerta de calidad:** correr Flutter `analyze` y suite de recuperación/adapter aisladas, sin escribir en worktree ni crear volúmenes permanentes; después diseñar/verificar HTTPS I8-K sin reutilizar el probe cuya publicación quedó bloqueada.
