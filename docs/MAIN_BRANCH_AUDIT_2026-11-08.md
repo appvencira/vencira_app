@@ -742,3 +742,21 @@ La interfaz manual ofrece `seed` (refresh sintético + marker verificados en el 
 `scripts/main_i8n_android_keystore_lab_apk_build.sh` (commit `e35ff5f0`) prepara la APK en Docker Flutter 3.44, copia del repo solo lectura, y deposita exclusivamente `~/vencira-i8n-phone/VENCIRA-I8N-Keystore-debug.apk` para descarga desde Termux mediante SCP/SFTP en la conexión SSH disponible. **La conexión SSH es transporte del artefacto**, no el canal HTTP de la prueba Keystore. Un reinicio completo cerrará Termux y no afecta al resultado del test de almacenamiento.
 
 Se documentó el procedimiento en `docs/I8N_ANDROID_KEYSTORE_RESTART_2026-11-08.md` (commit `281f2bd6`). **Estado:** código integrado y analizadores de la prueba instrumentada previa PASS; la **nueva entrada UI APK no tiene análisis ni compilación ejecutada** y el teléfono todavía no ha probado `seed/verify/cleanup`. Exigir `I8N_APK_DEBUG_BUILD=PASS`, código shell 0, resultados 3/3 en pantallas y persistencia tras reinicio sin desinstalación. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` intactos.
+
+## AT. I8-N APK Android física: tres pantallas PASS (operador 08/11/2026)
+
+El operador aportó **cuatro capturas de pantalla de un dispositivo Android** ejecutando la APK aislada `VENCIRA · Keystore I8-N` (identidad de paquete prevista `es.vencira.vencira.i8nlab`). Los marcadores visibles, en secuencia temporal de interfaz, son:
+
+```text
+I8N_ANDROID_KEYSTORE_SEED=PASS
+I8N_ANDROID_RESTART_RECOVERY_FENCED=PASS
+I8N_ANDROID_KEYSTORE_CLEANUP=PASS
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
+
+**Interpretación probatoria:** `seed` demuestra escritura/lectura verificada de refresh sintético y marcador en el namespace de laboratorio; `verify` demuestra lectura válida del estado protegido por una nueva instancia del controlador y `NativeMobileStartupGate.fullReauthentication` con fence sin sesión activa; `cleanup` demuestra borrado verificado, retorno a `cleanLogin` no autenticado y ausencia de sesión. Los estados PASS son emitidos por la APK local y no implican conexión de red ni autenticación real. El hecho de que el marcador `verify` diga `RESTART` **no demuestra visualmente** que Android fue reiniciado, que murió el proceso anterior ni que no se reinstaló la APK: para certificar estrictamente persistencia **tras reinicio físico**, confirmar con el operador la secuencia completa sin borrado de datos. Las capturas sí acreditan éxito funcional de las tres operaciones reales de `FlutterSecureStorage` sobre Android.
+
+**Pendiente:** prueba controlada de fallos de Keystore/lectura y una integración Android HTTPS de recuperación bajo red aislada; ni MFA operativo ni despliegue DEV autorizados. No se solicitó ni usó ADB; SSH/Termux solo transfirió el artefacto.
+
+El resultado I8-M Flutter HTTPS Django PostgreSQL efímero se mantiene PASS de manera independiente; no confundir los dos gates como una única prueba móvil extremo a extremo.
