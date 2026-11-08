@@ -124,12 +124,23 @@ Future<void> _negativeTlsChecks(SecurityContext trusted) async {
   print('MAIN_I8M_FLUTTER_TLS_CA_AND_HOSTNAME=PASS');
 }
 
+// Real sockets are allowed only in this gated integration test. Other
+// Flutter tests retain the default no-network HttpClient override.
+class _I8MNetworkBinding extends AutomatedTestWidgetsFlutterBinding {
+  @override
+  bool get overrideHttpClient => false;
+}
+
 void main() {
-  if (Platform.environment['VENCIRA_I8M_FLUTTER_INTERNAL_ONLY'] != '1' ||
-      Platform.environment['VENCIRA_ENV'] != 'test' ||
-      Platform.environment['POSTGRES_DB'] != 'i8klab') {
-    throw StateError('I8-M Flutter HTTPS is restricted to disposable lab');
+  final isolated = Platform.environment['VENCIRA_I8M_FLUTTER_INTERNAL_ONLY'] == '1' &&
+      Platform.environment['VENCIRA_ENV'] == 'test' &&
+      Platform.environment['POSTGRES_DB'] == 'i8klab';
+  if (!isolated) {
+    test('I8-M real HTTPS requires isolated Docker lab', () {},
+        skip: 'No lab-only network or disposable PG17 context');
+    return;
   }
+  _I8MNetworkBinding();
 
   test('I8-M verified IOClient TLS and recovery MFA committed', () async {
     final trusted = _trustContext();
