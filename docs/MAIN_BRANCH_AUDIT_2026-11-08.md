@@ -274,3 +274,28 @@ El operador ejecutó una selección ampliada de tests Flutter sobre la copia tem
 - Commit `f3e9dfff`: `native_recovery_login_gateway_test.dart` ahora exige MFA antes de persistir nuevo refresh, y simula fallo de almacenamiento **después** del paso MFA para verificar revocación; añadido negativo explícito de password-only.
 
 **No se ha modificado el código de autenticación** para permitir emisiones tras solo contraseña. **Pendiente de verificación:** correr de nuevo `flutter analyze` y la selección de cinco suites en copia temporal de `main` y obtener `MAIN_I8L_FLUTTER_RESULT=0`; si falla, capturar error detallado. El gate 42/42 de backend I8-K continúa validado en su ejecución anterior; cambios de tests Flutter posteriores no prueban que el nuevo SHA haya sido validado por I8-K.
+
+## R. Revalidación Flutter I8-L — 46/46 PASS (operador, 08/11/2026)
+
+Después de corregir únicamente los tests heredados desalineados con la exigencia de MFA en los commits `8532a639` y `f3e9dfff`, el operador ejecutó sobre copia temporal de `main` en contenedor Flutter el análisis estático y cinco suites:
+
+- `test/native_i8l_http_recovery_integration_test.dart`
+- `test/native_recovery_login_gateway_test.dart`
+- `test/native_mobile_recovery_entry_test.dart`
+- `test/native_mobile_startup_gate_test.dart`
+- `test/native_refresh_recovery_journal_test.dart`
+
+Resultados explícitos:
+
+```text
+No issues found! (ran in 15.2s)
+00:01 +46: All tests passed!
+MAIN_I8L_FLUTTER_GATE=PASS
+MAIN_I8L_RECHECK_RESULT=0
+```
+
+**Conclusión:** regresión seleccionada Flutter I8-L 46/46 PASS, `flutter analyze` PASS. La implementación mantiene el rechazo a recuperación solo con contraseña. Es una ejecución real comunicada por el operador y coherente con el código ahora integrado en `main`. La salida de terminal incluye repeticiones visuales de `tmux`, no se suman como ejecuciones independientes. El hash HEAD exacto del recheck no se imprimió; el operador realizó `git fetch` y `merge --ff-only` antes de ejecutarlo.
+
+**Límites:** el gate es de tests Dart/mock/adapter, **no** prueba una sesión HTTPS real contra Django/PG17, ni Android físico, ni publicación operativa. I8-K HTTP (42/42) y Flutter I8-L (46/46) están validados por separado. Falta prueba de integración completa I8-M y los negativos TLS, además de verificar cualquier runner adicional antes de promoverlo.
+
+**Estado operativo:** `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`. No se ha desplegado ni se han ejecutado migraciones persistentes.
