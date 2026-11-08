@@ -47,6 +47,14 @@ VENCIRA_NATIVE_SERVICE_CANDIDATE = (
     os.getenv("VENCIRA_NATIVE_SERVICE_CANDIDATE", "0") == "1"
 )
 VENCIRA_NATIVE_BEARER_ENABLED = False
+# Synthetic G5 admission/audit HMAC keys for the explicitly isolated native
+# service candidate. Never import these from environment in DEV/production.
+# Real key custody, rotation and deployment are NOT provided by this test gate.
+VENCIRA_G5_ABUSE_KEY = None
+VENCIRA_G5_AUDIT_KEY = None
+if VENCIRA_ENV == "test" and VENCIRA_NATIVE_SERVICE_CANDIDATE:
+    VENCIRA_G5_ABUSE_KEY = os.getenv("VENCIRA_G5_ABUSE_KEY") or None
+    VENCIRA_G5_AUDIT_KEY = os.getenv("VENCIRA_G5_AUDIT_KEY") or None
 if VENCIRA_NATIVE_SERVICE_CANDIDATE:
     if VENCIRA_ENV != "test":
         raise ImproperlyConfigured(
