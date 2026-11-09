@@ -1373,3 +1373,23 @@ echo "B2_SHELL_RESULT=$?"
 ```
 
 Cierre requerido: `+7: All tests passed!`, `B2_UI_SMOKE_RESULT=0`, `B2_SHELL_RESULT=0`. O5 real aún no restaurado; cualquier despliegue o migración persistente continúa prohibido.
+
+## BY. B2 Flutter dashboard + ficha: cierre 7/7 PASS (09/11/2026)
+
+El operador reejecutó `scripts/main_b2_dashboard_viewport_smoke.sh` tras corregir el retorno de la navegación Material y aportó:
+
+```text
+00:02 +7: All tests passed!
+B2_DASHBOARD_VIEWPORTS_320_390=PASS
+B2_DEV_CONTAINERS_TOUCHED=NO
+B2_VISUAL_PHONE_REVIEW=NOT_RUN
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+B2_UI_SMOKE_RESULT=0
+```
+
+**Cierre B2-UI-SMOKE=PASS para alcance testado**: dashboard vacío, error de backend simulado, espacio de trabajo y vencimiento sintéticos en 320/390 px, navegación a ficha de detalle en 390 px, regreso al dashboard y recarga de vencimientos mediante una API de pruebas sin red. El `flutter analyze` de la ejecución anterior había resultado sin incidencias; el extracto más reciente confirma los siete tests. No se tocó DEV.
+
+**Límite de certificación:** la navegación solo se probó con datos sintéticos, no con API real, sesión nativa ni Android físico; `B2_VISUAL_PHONE_REVIEW=NOT_RUN`. Este subgate se considera cerrado; no añadir tests menores sin nuevo defecto observado.
+
+**Prioridad siguiente de lanzamiento:** obtener evidencia de un snapshot O5 real y restaurarlo en destino aislado para comprobar integridad y compatibilidad de migraciones PG17 con datos históricos; luego gate regresión y despliegue DEV controlado si se autoriza. En paralelo sigue pendiente APK nativa real. No inferir eficacia del backup de `systemd Result=success`; D1J/D1K fueron solo clasificaciones estáticas. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
