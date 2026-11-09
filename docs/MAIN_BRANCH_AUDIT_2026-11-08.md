@@ -1056,3 +1056,22 @@ Se incorporó a `main` `scripts/d1f_o5_service_topology_readonly.py` (commit `8b
 **Pendiente de validación VPS:** `python3 scripts/d1f_o5_service_topology_readonly.py`, `D1F_RESULT=0`; si no identifica scripts, no implica ausencia de ellos, podrían ser invocados por wrappers, drop-ins o unidades auxiliares. No se ha implementado ni ejecutado todavía un restore/clon a partir de O5 porque aún falta identificar con certeza el contrato de ejecución y el repositorio seguro. El trabajo I8-R y la integración funcional de la APK permanecen pendientes y no se marcan PASS.
 
 Siguen `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## BJ. 09/11/2026 — D1-F PASS; clasificación segura del objetivo de ejecución D1-G
+
+El operador envió resultado `D1F_RESULT=0` del diagnóstico de solo lectura D1-F. Ambas unidades `vencira-o5-backup.service` y `vencira-o5-health.service` se encuentran cargadas, sus archivos de unidad se pueden leer y hay **una directiva de ejecución en cada servicio**. El inventario no encontró ninguna directiva `EnvironmentFile` ni `Environment` en el cuerpo principal de los archivos consultados; **esto no descarta configuración externa mediante drop-ins, scripts, variables de entorno de proceso o mecanismos alternativos**. El identificador de helper devolvió `NO` para ambos servicios, pero esa búsqueda D1-F solo cubre nombres `.sh` o `.py` con patrones de ruta determinados. Por tanto no se concluye que no existan scripts, solo que no fueron identificados con esa heurística.
+
+**Permanecen explícitamente SIN VERIFICAR:** repositorio y frescura del snapshot Restic; restauración real; grafo `reminders.0019–0027` sobre clon PostgreSQL 17; APK funcional nativa. D1-F no ejecutó backup ni restore y no cambió DEV; `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+Para evitar repetir la búsqueda anterior, se incorporó a `main` el script `scripts/d1g_o5_exec_target_readonly.py` (commit `5dc9f828`), que **clasifica** el primer ejecutable de la directiva `ExecStart` como intérprete, herramienta, wrapper del proyecto u otro, indica si tiene argumentos y si existe un helper local detectado, **sin imprimir comandos, rutas, nombres arbitrarios, argumentos, contenidos auxiliares, credenciales, logs ni repositorios**. En ningún momento lanza las directivas encontradas. Su revisión en VPS aún está pendiente.
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin main
+git merge --ff-only FETCH_HEAD
+python3 -m py_compile scripts/d1g_o5_exec_target_readonly.py
+python3 scripts/d1g_o5_exec_target_readonly.py
+echo "D1G_SHELL_RESULT=$?"
+```
+
+**Criterio:** `D1G_RESULT=0` con salida acotada `D1G_BACKUP_EXEC_CLASS`, `D1G_BACKUP_HELPER_TARGET` y equivalentes para HEALTH. D1G no confirma que la copia exista: el siguiente gate será la lectura controlada de metadatos del repositorio respaldado por el procedimiento operativo realmente identificado y, después, ensayo de restauración aislada, no restauración en DEV. D1-G no es una autorización de despliegue.
