@@ -1393,3 +1393,13 @@ B2_UI_SMOKE_RESULT=0
 **Límite de certificación:** la navegación solo se probó con datos sintéticos, no con API real, sesión nativa ni Android físico; `B2_VISUAL_PHONE_REVIEW=NOT_RUN`. Este subgate se considera cerrado; no añadir tests menores sin nuevo defecto observado.
 
 **Prioridad siguiente de lanzamiento:** obtener evidencia de un snapshot O5 real y restaurarlo en destino aislado para comprobar integridad y compatibilidad de migraciones PG17 con datos históricos; luego gate regresión y despliegue DEV controlado si se autoriza. En paralelo sigue pendiente APK nativa real. No inferir eficacia del backup de `systemd Result=success`; D1J/D1K fueron solo clasificaciones estáticas. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## BZ. D1-L: verificación real de snapshots y metadatos Restic preparada (09/11/2026)
+
+Tras B2 **7/7 PASS** y D1-I **PASS sintético**, la principal puerta de despliegue web DEV sigue siendo la prueba de restauración desde la copia O5 auténtica. Los clasificadores D1-J/D1-K no identificaron llamadas directas Restic/Rclone en wrappers protegidos, lo que **no** demuestra ni funcionamiento ni fallo de backup.
+
+Se ha integrado directamente en `main` el gate `scripts/main_d1l_o5_restic_metadata_gate.py` (commit `204fe233`) y su procedimiento de ejecución custodiado `docs/D1L_O5_REAL_RESTIC_GATE_2026-11-09.md` (commit `4585a04c`). A diferencia de D1-J/K, D1-L **consulta un repositorio Restic real** usando el entorno autenticado preexistente del operador: `restic --no-lock snapshots --json`, cuenta snapshots y calcula frescura; `restic --no-lock check` revisa los metadatos del repositorio. Aborta si el operador no confirma explícitamente el alcance DEV, falta `RESTIC_REPOSITORY` o un proveedor de contraseña basado en fichero/comando. No ejecuta backup, restauración, borrado, cambios de locks, migraciones ni despliegue. No vuelca stdout/stderr de Restic, identificadores, paths o secretos.
+
+**Estado D1-L: publicado, todavía NO ejecutado ni validado en VPS.** Necesita entorno Restic real cuya ubicación/custodia **no está incluida en el checkout `main`**; no inventar variables ni importar scripts privilegiados no auditados. `D1L_RESULT=0` + `D1L_RESTIC_METADATA_CHECK=PASS` prueban solo disponibilidad de snapshots y consistencia de metadatos, **NO** completitud del payload, copia de PostgreSQL real ni restaurabilidad. Exigir `D1L_SNAPSHOT_FRESHNESS_48H=YES` como puerta independiente. La restauración real a destino efímero y ensayo de migraciones sobre copia histórica corresponden al bloque posterior D1-M, no autorizado aún.
+
+`MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`; `D1_RELEASE_AUTHORIZED=NO`.
