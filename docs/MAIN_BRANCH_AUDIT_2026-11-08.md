@@ -1106,3 +1106,31 @@ echo "D1G_SHELL_RESULT=$?"
 ```
 
 Conservar las restricciones `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`. No utilizar `sudo` para intentar abrir el contenido de wrappers, certificados o archivos de entorno como parte de este preflight.
+
+## BL. D1-G segundo ensayo de clasificación O5 PASS — 09/11/2026
+
+El operador reejecutó el script corregido (a partir de `22eb9a96`) y aportó:
+```text
+D1G_BACKUP_EXEC_CLASS=PROJECT_WRAPPER
+D1G_BACKUP_ARGS_PRESENT=NO
+D1G_BACKUP_EXEC_PATH_ABSOLUTE=YES
+D1G_BACKUP_HELPER_TARGET=DETECTED
+D1G_BACKUP_HELPER_EXISTS=PERMISSION_DENIED
+D1G_BACKUP_HELPER_EXTENSION=SHELL
+D1G_HEALTH_EXEC_CLASS=PROJECT_WRAPPER
+D1G_HEALTH_ARGS_PRESENT=NO
+D1G_HEALTH_EXEC_PATH_ABSOLUTE=YES
+D1G_HEALTH_HELPER_TARGET=DETECTED
+D1G_HEALTH_HELPER_EXISTS=PERMISSION_DENIED
+D1G_HEALTH_HELPER_EXTENSION=SHELL
+D1G_SNAPSHOT_VERIFIED=NO
+D1G_RESTORE_VERIFIED=NO
+D1G_RESULT=0
+D1G_SHELL_RESULT=0
+```
+
+**D1-G PASS en alcance de clasificación:** los dos servicios usan un wrapper shell del proyecto, con ruta absoluta, sin argumentos directos. El usuario de Termius no puede comprobar metadatos de su archivo porque el acceso al directorio está denegado. Esto es una limitación correcta de permisos, no prueba de error de las copias y no autoriza saltar permisos.
+
+**Decisión de cierre:** no repetir diagnósticos de nombres, unidades o heurísticas de scripts. La evidencia previa D1-E muestra temporizadores `active/enabled`, última activación registrada y `Result=success, ExecMainStatus=0` de los servicios. Sigue faltando acreditar que existe un snapshot reciente íntegro y poder restaurarlo de forma segura. Para completar D1, un procedimiento aprobado por el operador debe consultar Restic con los permisos del servicio sin imprimir credenciales/configuración/PII y restaurar solo en un destino efímero, aislado de DEV. Si no hay interfaz de verificación que no exponga secretos, detener D1 backup gate, no inventar un PASS.
+
+**Pendientes en paralelo:** grafo/migraciones `reminders.0019–0027` en PG17 temporal y rollback, I8-R Android/HTTPS frente a desconexiones y entrada funcional de APK; ninguna actividad cambia `MFA_RELEASE_AUTHORIZED=NO` ni `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
