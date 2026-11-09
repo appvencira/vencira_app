@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vencira/api/vencira_api.dart';
 import 'package:vencira/main.dart';
 import 'package:vencira/ui/dashboard_screen.dart';
+import 'package:vencira/ui/renewal_detail_screen.dart';
 
 /// B2 isolated UI smoke. No HTTP client or credentials are ever constructed.
 /// Missing API operations fail closed rather than silently simulating success.
@@ -58,6 +59,22 @@ class _SyntheticWorkspaceApi extends VenciraApi {
           modality: 'auto',
         ),
       ],
+    );
+  }
+
+  @override
+  Future<VenciraRenewal> fetchRenewalDetail(
+      String workspaceId, String renewalId) async {
+    if (workspaceId != 'fixture-ws' || renewalId != 'fixture-renewal') {
+      throw const VenciraApiException();
+    }
+    return VenciraRenewal(
+      id: 'fixture-renewal',
+      reference: 'REF-DEMO-001',
+      fullName: 'Caso sintético',
+      expiresOn: DateTime(2027, 3, 15),
+      status: 'pending',
+      modality: 'auto',
     );
   }
 
@@ -139,5 +156,39 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('B2 synthetic renewal opens details and returns', (tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final api = _SyntheticWorkspaceApi();
+    await tester.pumpWidget(VenciraApp(api: api));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Caso sintético'),
+      220,
+      scrollable: find.descendant(
+        of: find.byType(VenciraDashboardScreen),
+        matching: find.byType(Scrollable),
+      ).first,
+      maxScrolls: 25,
+    );
+    await tester.tap(find.text('Caso sintético'));
+    await tester.pumpAndSettle();
+    expect(find.byType(VenciraRenewalDetailScreen), findsOneWidget);
+    expect(find.text('REF-DEMO-001'), findsWidgets);
+    expect(tester.takeException(), isNull);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.byType(VenciraDashboardScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
 }
