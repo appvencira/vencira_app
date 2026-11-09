@@ -1181,3 +1181,19 @@ Después de **D1-I PASS** (subida y rollback `reminders.0018↔0027`, restauraci
 Se ha integrado `scripts/d1j_o5_privileged_contract_readonly.py` (commit `bbf4c62a`) para **leer, sin ejecutar**, solo los dos unit fragments y los wrappers directos de `ExecStart` con privilegios del operador. Emite únicamente clasificaciones booleanas del texto (presencia de Restic/Rclone/pg_dump/restore, etc.) y nunca salida de los scripts, argumentos, rutas ni claves. Rechaza contratos inesperados en vez de ejecutarlos. Procedimiento `docs/D1J_O5_PROTECTED_CONTRACT_2026-11-09.md` (commit `b3086fce`).
 
 **Todavía sin ejecutar en VPS**: resultado y contrato O5 no verificados. El clasificador `D1J_RESULT=0` confirmará únicamente que los wrappers han podido leerse y clasificarse estáticamente; **no** confirma backup reciente ni restorable. Una vez revisado el contrato real, preparar gate Restic y restauración a destino *temporal y aislado*, seguido de migración de esa copia. Prohibido ejecutar automáticamente scripts privilegiados, alterar permisos o escribir en bases persistentes. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## BP. D1-J lectura O5 PASS con incertidumbre operativa sustancial (09/11/2026)
+
+El operador ejecutó el clasificador privilegiado D1-J y obtuvo `D1J_RESULT=0`. Ambos wrappers están presentes, son legibles y no vacíos, pero **NO** hay coincidencias directas en ninguno para `restic`, `rclone`, `pg_dump`, `pg_restore`, `docker`, `restic snapshots/check/backup/restore/forget/prune`, ni aprovisionamiento de variables de entorno. Esta revisión de texto no prueba que no realicen backups; pueden delegar en otras herramientas, invocar un auxiliar sin esas palabras o constituir stubs. Pero systemd `Result=success` por sí solo **no acredita backup**.
+
+Se publica `scripts/d1k_o5_wrapper_structure_readonly.py` (commit `cf615eeb`) para una **última** clasificación estructural de ambos wrappers protegidos, con una lectura limitada y sin ejecución de comandos ni salida de archivos o argumentos. Identifica señales genéricas de delegación, estructuras Shell y declaraciones de salida exitosa; sus heurísticas no demuestran la efectividad del backup. Se pide **solo**:
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin main
+git merge --ff-only FETCH_HEAD
+sudo python3 scripts/d1k_o5_wrapper_structure_readonly.py
+echo "D1K_SHELL_RESULT=$?"
+```
+El informe imprime marcadores fijos `D1K_*`, sin valores ni rutas privadas. `D1K_RESULT=0` es **clasificación satisfactoria**, no snapshot PASS. Si no se identifica claramente el mecanismo, detener la cadena de clasificación y recurrir a la evidencia operativa de un snapshot en repositorio Restic mediante procedimiento revisado, nunca dar por cubierta O5 solo por los metadatos systemd.
+
+Persisten D1-I **PASS sintético**, D1-J **PASS clasificación** y **NO** evidencia de recuperación del PostgreSQL histórico DEV. Por tanto no desplegar ni aplicar migraciones persistentes. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
