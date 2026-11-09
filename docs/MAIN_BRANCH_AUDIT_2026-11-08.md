@@ -1197,3 +1197,37 @@ echo "D1K_SHELL_RESULT=$?"
 El informe imprime marcadores fijos `D1K_*`, sin valores ni rutas privadas. `D1K_RESULT=0` es **clasificación satisfactoria**, no snapshot PASS. Si no se identifica claramente el mecanismo, detener la cadena de clasificación y recurrir a la evidencia operativa de un snapshot en repositorio Restic mediante procedimiento revisado, nunca dar por cubierta O5 solo por los metadatos systemd.
 
 Persisten D1-I **PASS sintético**, D1-J **PASS clasificación** y **NO** evidencia de recuperación del PostgreSQL histórico DEV. Por tanto no desplegar ni aplicar migraciones persistentes. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## BQ. D1-K estructura O5 analizada: sin evidencia de snapshot (09/11/2026)
+
+El operador ejecutó `scripts/d1k_o5_wrapper_structure_readonly.py` y aportó `D1K_RESULT=0`. La revisión de solo lectura comunicó:
+
+```text
+D1K_BACKUP_SOURCE_NONEMPTY_LINES=36
+D1K_BACKUP_SOURCE_SIZE_CLASS=MEDIUM
+D1K_BACKUP_SHEBANG_PRESENT=YES
+D1K_BACKUP_SHELL_CONTROL_FLOW=NO
+D1K_BACKUP_EXIT_SUCCESS_STATEMENT_PRESENT=NO
+D1K_BACKUP_DELEGATION_INDICATOR=NO
+D1K_BACKUP_NETWORK_TRANSFER_KEYWORD=NO
+D1K_BACKUP_BACKUP_TOOL_KEYWORD=NO
+D1K_BACKUP_ACTUAL_BACKUP_ACTIVITY=NOT_VERIFIED
+D1K_HEALTH_SOURCE_NONEMPTY_LINES=27
+D1K_HEALTH_SOURCE_SIZE_CLASS=MEDIUM
+D1K_HEALTH_SHEBANG_PRESENT=YES
+D1K_HEALTH_SHELL_CONTROL_FLOW=NO
+D1K_HEALTH_EXIT_SUCCESS_STATEMENT_PRESENT=NO
+D1K_HEALTH_DELEGATION_INDICATOR=NO
+D1K_HEALTH_NETWORK_TRANSFER_KEYWORD=NO
+D1K_HEALTH_BACKUP_TOOL_KEYWORD=NO
+D1K_HEALTH_ACTUAL_BACKUP_ACTIVITY=NOT_VERIFIED
+D1K_SNAPSHOT_VERIFIED=NO
+D1K_RESTORE_VERIFIED=NO
+D1K_RESULT=0
+```
+
+**Interpretación y decisión:** D1-K completó su **clasificación estática**, no la verificación del backup. La ausencia de coincidencias con expresiones regulares no demuestra inactividad de los wrappers: podrían emplear variables, expansiones, comandos indirectos o dependencias externas. No hay prueba de snapshot Restic existente, reciente, íntegro o restaurable. Aunque D1-E estableció que los timers están activos y los servicios reportan último resultado `success`, no debe elevarse ese hecho a una certificación de recuperación.
+
+**Se detiene la cadena D1-B…D1-K de inventarios de nombres/keywords.** El siguiente gate operacional solo podrá cerrar con evidencia tangible de un snapshot O5 identificado en el repositorio configurado y una restauración completa a un directorio nuevo, vacío y **aislado**, sin publicar datos personales ni secretos y sin escribir sobre DEV. No inferir comandos ni ubicaciones de Restic a partir de heurísticas; el procedimiento debe ser revisado a partir de la configuración efectiva bajo permisos autorizados, sin enviar su contenido sensible al chat. Después, sobre un clon PG17 temporal de ese backup, se reensayarán migraciones `0019–0027`, coherencia y rollback. No autorizar deployment sin estos cierres.
+
+**Otros avances:** D1-I PG17 sintético/rollback PASS. Integración funcional y visual de Android sigue pendiente. Sin deploy, sin migraciones persistentes, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
