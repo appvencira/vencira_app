@@ -13,6 +13,8 @@ python3 scripts/d1c_o5_scope_units_readonly.py
 echo 'CLOSE_D1C_O5_SCOPE_DIAGNOSTIC=PASS'
 python3 scripts/d1e_o5_actual_units_health_readonly.py
 echo 'CLOSE_D1E_O5_ACTUAL_HEALTH_DIAGNOSTIC=PASS'
+python3 scripts/d1f_o5_service_topology_readonly.py
+echo 'CLOSE_D1F_O5_SERVICE_TOPOLOGY=PASS'
 echo 'CLOSE_BACKUP_RESTORE=NOT_RUN'
 echo 'CLOSE_DEV_MIGRATIONS=NOT_RUN'
 echo 'CLOSE_DEPLOY_EXECUTED=NO'
