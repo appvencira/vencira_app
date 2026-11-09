@@ -1046,3 +1046,13 @@ D1E_O5_RESTORE=NOT_VERIFIED
 **Siguiente paso controlado:** localizar el procedimiento operativo O5 real fuera del checkout actual (la documentación histórica `docs/OPERATION_O5_DRIVE_BACKUPS.md` no aparece en la rama `main` de este repositorio), inspeccionar los metadatos de snapshots mediante el mecanismo ya configurado sin mostrar rutas privadas ni contraseñas; restaurar únicamente sobre PostgreSQL 17 temporal siguiendo un plan de aislamiento explícito. No ejecutar `systemctl start`, `restic restore` o migraciones contra DEV sin procedimiento verificado.
 
 **Seguridad:** `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` siguen vigentes.
+
+## BI. 09/11/2026 — D1-F: topología operativa O5 integrada sin acceder a secretos
+
+Se confirma el resultado del operador en D1-E: `D1E_ACTIVE_TIMERS=2/2`, `vencira-o5-backup.timer` y `vencira-o5-health.timer` activos/habilitados, última activación y próxima elapse presentes; sus servicios informan `Result=success` y `ExecMainStatus=0`. El gate de inventario terminó en `CLOSE_SHELL_RESULT=0`, sin cambios de DEV ni migraciones. Esto **no acredita** integridad/frescura del repositorio Restic ni recuperación de un snapshot.
+
+Se incorporó a `main` `scripts/d1f_o5_service_topology_readonly.py` (commit `8b49bfb5`): inspección *local* y sin elevación de archivos de las unidades systemd instaladas, con salida limitada a nombres de fichero auxiliares sanitizados y cantidades de directivas de ejecución/configuración. **No ejecuta restic/rclone, no imprime argumentos, rutas absolutas ni secretos, y no lee EnvironmentFile.** Se incorporó al gate agrupado (commit `ae31d854`). El plan general se actualizó (commit `9dd13c33`).
+
+**Pendiente de validación VPS:** `python3 scripts/d1f_o5_service_topology_readonly.py`, `D1F_RESULT=0`; si no identifica scripts, no implica ausencia de ellos, podrían ser invocados por wrappers, drop-ins o unidades auxiliares. No se ha implementado ni ejecutado todavía un restore/clon a partir de O5 porque aún falta identificar con certeza el contrato de ejecución y el repositorio seguro. El trabajo I8-R y la integración funcional de la APK permanecen pendientes y no se marcan PASS.
+
+Siguen `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
