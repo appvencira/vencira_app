@@ -1321,3 +1321,21 @@ echo "B2_SHELL_RESULT=$?"
 Esperar `00:.. +6: All tests passed!`, `B2_UI_SMOKE_RESULT=0` y `B2_SHELL_RESULT=0`. Si falla, investigar el resultado real de `fetchFilteredRenewals` o estado de la lista; no repetir cambios en UI sin evidencia. El aviso de dependencias Flutter actualizables no fue la causa del TestFailure.
 
 Permanece `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`; O5 restore real aún pendiente.
+
+## BV. B2: segunda falla de fixture; causa identificada en contrato Dart (09/11/2026)
+
+El operador informó `flutter analyze` sin incidencias, cuatro pruebas de vacío/API-no-disponible PASS, y dos pruebas de workspace/vencimiento todavía FAIL. El nuevo error es `StateError: Bad state: No element` desde `tester.scrollUntilVisible`: el vencimiento no llega a encontrarse después de desplazarse, por lo que la primera hipótesis de visibilidad **no explicaba el fallo íntegro**.
+
+**Causa localizada en el test:** `_SyntheticWorkspaceApi implements VenciraApi` no hereda las implementaciones de métodos de la clase abstracta. El dashboard llama a `fetchFilteredRenewals()`, cuya implementación por defecto en `VenciraApi` delega en `fetchRenewals()`. Con `implements`, la llamada entra en el `noSuchMethod` del fake y lanza `UnsupportedError`; el dashboard lo absorbe mostrando el estado de error, sin la tarjeta. El flujo del widget, por tanto, **no estaba siendo ejercitado correctamente**.
+
+**Corrección directa en main:** `6209e35a` cambia `_SyntheticWorkspaceApi` a `extends VenciraApi` para heredar la delegación de filtros y añade `renewalRequests` y una aserción `greaterThan(0)` antes de buscar el texto. Mantiene el desplazamiento sobre `ListView` para la tarjeta fuera de viewport. No modifica la UI, backend ni ningún contrato de autenticación.
+
+**Pendiente de repetir solo B2**:
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin main
+git merge --ff-only FETCH_HEAD
+bash scripts/main_b2_dashboard_viewport_smoke.sh
+echo "B2_SHELL_RESULT=$?"
+```
+Requiere `6/6 All tests passed!` y `B2_UI_SMOKE_RESULT=0` antes de certificar la ampliación. Continúan `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, O5 real sin restaurar.
