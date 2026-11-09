@@ -1144,3 +1144,32 @@ Para progresar hacia DEV sin esperar al acceso protegido del servicio O5 se ha i
 El resultado D1-G previo del operador queda `D1G_RESULT=0`, sin acceso a wrappers protegidos. Sigue pendiente verificar snapshot Restic y restauración de DEV sobre un clon antes de cualquier deployment; I8-R Android y APK nativa real también pendientes.
 
 Se mantienen `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## BN. 09/11/2026 — D1-I migraciones PG17 sintéticas y rollback: PASS
+
+El operador ejecutó `scripts/main_d1i_pg17_synthetic_migrations_rollback.sh`, con evidencia:
+
+```text
+D1I_CANDIDATE_IMAGE=PASS
+D1I_PG17_INTERNAL_TMPFS_READY=PASS
+D1I_MODEL_MIGRATION_PARITY=PASS
+D1I_BASELINE_0018=PASS
+D1I_SYNTHETIC_BASELINE_DUMP=PASS
+D1I_0019_0027_PLAN=PASS
+D1I_0019_0027_APPLIED=PASS
+D1I_ROLLBACK_TO_0018=PASS
+D1I_SYNTHETIC_DUMP_RESTORED=PASS
+D1I_0019_0027_REAPPLY=PASS
+D1I_SCHEMA_ONLY_GATE=PASS
+D1I_DEV_CONTAINERS_UNCHANGED=OK
+D1I_O5_BACKUP_RESTORED=NO
+D1I_LIVE_MIGRATIONS_EXECUTED=NO
+D1I_DEPLOY_EXECUTED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D1I_RESULT=0
+```
+
+**Cierre D1-I PASS en su alcance:** el backend actual genera imagen de laboratorio; paridad modelo/migración, planificación, subida `reminders.0018 → 0027`, rollback `0027 → 0018`, restauración del dump `0018` **sintético** a otra base PG17 efímera y nueva subida a `0027` son satisfactorios. Se preservaron los contenedores DEV; el test no desplegó ni migró la base persistente.
+
+**Riesgo aún sin cerrar:** el dump restaurado no provenía de O5 ni del estado histórico de DEV. Falta confirmar snapshot Restic auténtico y restaurarlo sin sobrescritura en un destino aislado; solo después ensayar la migración sobre esa copia y verificar integridad de datos/rollback antes de considerar despliegue web en DEV. Los flags `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` siguen vigentes. La APK funcional nativa e I8-R siguen pendientes.
