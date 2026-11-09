@@ -11,10 +11,10 @@ import subprocess
 import sys
 
 UNITS = (
-    "o5-backup.timer",
-    "o5-health.timer",
-    "o5-backup.service",
-    "o5-health.service",
+    "vencira-o5-backup.timer",
+    "vencira-o5-health.timer",
+    "vencira-o5-backup.service",
+    "vencira-o5-health.service",
 )
 SCOPES = ("system", "user")
 
