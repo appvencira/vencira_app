@@ -78,3 +78,56 @@ D1_LIVE_MIGRATIONS_EXECUTED=NO
 ```
 
 **Después de D1-N PASS:** aún se requiere regresión de Django + web con datos y preparación de rollback/ventana de despliegue, con autorización explícita para cualquier cambio en DEV.
+
+## Resultado real del operador — 09/11/2026: D1-N PASS
+
+El operador ejecutó el gate y comunicó:
+
+```text
+D1N_READ_ONLY_SOURCE_REPOSITORY=YES
+D1N_BACKUP_EXECUTED=NO
+D1N_LIVE_RESTORE_EXECUTED=NO
+D1N_LIVE_MIGRATIONS_EXECUTED=NO
+D1N_DEPLOY_EXECUTED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D1N_CONFIG_MATCH=PASS
+D1N_DEV_IDENTITY=PASS
+D1N_RECENT_POSTGRESQL_SNAPSHOT=PASS
+D1N_LAB_NETWORK_INTERNAL=PASS
+D1N_PG17_NETWORK_ISOLATED=PASS
+D1N_PG17_TMPFS_READY=PASS
+D1N_RESTORE_REAL_O5_PG17=PASS
+D1N_HISTORICAL_0018=PASS
+D1N_BACKUP_PAYLOAD_PG_RESTORE_VERIFIED=YES
+D1N_REAL_BACKUP_RESTORED=PASS
+D1N_CANDIDATE_DJANGO_IMAGE=PASS
+D1N_BASELINE_COUNTS=PASS
+D1N_MODEL_MIGRATION_PARITY=PASS
+D1N_MIGRATION_PLAN=PASS
+D1N_MIGRATIONS_0019_0027=PASS
+D1N_CORE_COUNTS_UP=PASS
+D1N_ROLLBACK_TO_0018=PASS
+D1N_CORE_COUNTS_DOWN=PASS
+D1N_REAL_DATA_CONTENT_PRINTED=NO
+D1N_HISTORICAL_MIGRATION_GATE=PASS
+D1N_DEV_CONTAINERS_UNCHANGED=OK
+D1N_LAB_CONTAINER_REMOVED=YES
+D1N_LIVE_RESTORE_EXECUTED=NO
+D1N_LIVE_MIGRATIONS_EXECUTED=NO
+D1N_DEPLOY_EXECUTED=NO
+D1N_RESULT=0
+```
+
+**Decisión:** D1-N **PASS para el ensayo histórico**. Se recuperó otro snapshot real O5 en PG17 temporal, se comprobó el modelo, se aplicaron migraciones `reminders.0019–0027` sobre esa copia, se conservaron los conteos de tres tablas base y se realizó rollback a `0018`, preservando los mismos conteos. Los contenedores DEV mantuvieron su identidad y el contenedor temporal fue eliminado. No se ejecutaron migraciones contra DEV.
+
+**Matices de evidencia:** en el mensaje aportado no aparecen `D1N_EPHEMERAL_NETWORK_REMOVED` ni `D1N_SHELL_RESULT` (aunque sí `D1N_RESULT=0`). El script contiene lógica de limpieza de la red, pero **no afirmamos su eliminación a partir de una marca ausente**. Si el cierre operativo exige confirmación, puede realizarse inventario de redes temporales sin repetir toda la restauración. La igualdad de conteos de usuarios, workspaces y vencimientos **no prueba igualdad de cada campo ni todas las tablas**. El ensayo no sustituye regresión funcional/HTTPS, plan de recuperación operacional ni autorización de despliegue.
+
+**Próximo bloque recomendado:** D1-O, una regresión integral sobre imagen candidata y entorno desechable, más comprobación de rutas web, CSRF, MFA fail-closed, adjuntos, permisos y continuidad. No añadir más pruebas pequeñas del mismo flujo sin un defecto observado. Posteriormente, preparar una propuesta de despliegue web DEV con rollback y solicitar autorización expresa; mantener acceso nativo y MFA real fuera del release.
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D1_DEPLOY_EXECUTED=NO
+D1_LIVE_MIGRATIONS_EXECUTED=NO
+```
