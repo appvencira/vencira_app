@@ -119,7 +119,7 @@ void main() {
       await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
       expect(find.byType(VenciraDashboardScreen), findsOneWidget);
-      expect(find.text('REF-DEMO-001'), findsWidgets);
+      expect(find.text('Caso sintético'), findsWidgets);
       expect(tester.takeException(), isNull);
     });
   }
