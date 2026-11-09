@@ -86,7 +86,15 @@ def classify(unit):
         mark(prefix + "_HELPER_TARGET", "NOT_DETERMINED")
         return
     mark(prefix + "_HELPER_TARGET", "DETECTED")
-    mark(prefix + "_HELPER_EXISTS", "YES" if script.is_file() else "NO")
+    # Protected parent directories can raise PermissionError during stat().
+    # This is an operator visibility limit, NOT evidence the backup failed.
+    # Do not escalate privileges or turn inaccessible into missing.
+    try:
+        exists = script.is_file()
+    except PermissionError:
+        mark(prefix + "_HELPER_EXISTS", "PERMISSION_DENIED")
+    else:
+        mark(prefix + "_HELPER_EXISTS", "YES" if exists else "NO")
     # No file content, no access to target directory listings.
     mark(prefix + "_HELPER_EXTENSION",
          "SHELL" if script.suffix == ".sh" else
