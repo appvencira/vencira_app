@@ -1490,3 +1490,21 @@ D1M_RESULT=0
 **D1-N integrado directamente en `main`**, `scripts/main_d1n_o5_historical_migrations_pg17.sh` (commit `44f35f25`), documentado en `docs/D1N_O5_HISTORICAL_PG17_MIGRATIONS_2026-11-09.md` (commit `f4c1307a`). Realiza una **nueva** recuperación de snapshot O5 real con Restic a PostgreSQL17 `tmpfs` en red Docker `--internal` nueva y sin puertos ni mounts persistentes. Construye imagen Django desechable del checkout `main`, prueba `makemigrations --check`, planifica y aplica `reminders.0019–0027` **únicamente en el clon**, compara conteos de usuarios/espacios/vencimientos antes y después, ensaya vuelta a `0018` y comprueba conservación de esos conteos tras el rollback. Limita memoria y limpia contenedor, red, imagen y credenciales sintéticas de laboratorio. No imprime filas de usuarios.
 
 **D1-N publicado, aún NO ejecutado en VPS.** Criterio de cierre: `D1N_MIGRATIONS_0019_0027=PASS`, `D1N_ROLLBACK_TO_0018=PASS`, `D1N_CORE_COUNTS_UP=PASS`, `D1N_CORE_COUNTS_DOWN=PASS`, `D1N_DEV_CONTAINERS_UNCHANGED=OK`, `D1N_RESULT=0`. Sin esos resultados no atribuir compatibilidad histórica. La igualdad de tres contadores no prueba toda la semántica de datos. Aun con PASS persisten regresión integral web/HTTPS y autorización expresa para despliegue DEV; Android nativo sigue sin integrarse en entrada normal. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## CF. 09/11/2026 — D1-N PASS sobre datos O5 reales y traspaso a nuevo chat
+
+**Resultado local confirmado por el operador:** `D1N_RESULT=0`, `D1N_RESTORE_REAL_O5_PG17=PASS`, `D1N_HISTORICAL_0018=PASS`, `D1N_MODEL_MIGRATION_PARITY=PASS`, `D1N_MIGRATION_PLAN=PASS`, `D1N_MIGRATIONS_0019_0027=PASS`, `D1N_CORE_COUNTS_UP=PASS`, `D1N_ROLLBACK_TO_0018=PASS`, `D1N_CORE_COUNTS_DOWN=PASS`, `D1N_HISTORICAL_MIGRATION_GATE=PASS`, `D1N_DEV_CONTAINERS_UNCHANGED=OK`, `D1N_LAB_CONTAINER_REMOVED=YES`, `D1N_REAL_DATA_CONTENT_PRINTED=NO`. Restauración de un **segundo backup O5 auténtico** en PG17 `tmpfs` aislado, migraciones sobre esa copia, vuelta a `0018` y preservación de conteos base; no se migró la BD persistente.
+
+**D1-N CERRADO PASS para alcance histórico**. El mensaje del operador no incluye `D1N_SHELL_RESULT` ni `D1N_EPHEMERAL_NETWORK_REMOVED`: no inventar esos valores. La igualdad de conteos de 3 tablas no garantiza invariancia de todas las filas/campos. **No equivale a autorizar un despliegue.**
+
+Documento de traspaso completo: **`docs/HANDOFF_2026-11-09_D1N_PASS_NEXT_D1O.md`**, publicado en `main` (commit `bf892ce7`). El protocolo D1-N también contiene el resultado real (commit `18b25dd4`). Conservar este documento maestro como historial; el nuevo chat debe cargar el handoff y este último apartado antes de continuar.
+
+**Siguiente bloque recomendado: D1-O, regresión integral Django+web+seguridad**, seguido de plan de rollback y autorización expresa para una eventual actualización web DEV. B2 UI 7/7 PASS, D1-I sintético PASS, D1-L snapshot/metadatos PASS y D1-M recuperación PG17 real PASS. Login Android nativo de APK operativa pendiente. Prohibido deploy, migración persistente o activación MFA nativa:
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D1_RELEASE_AUTHORIZED=NO
+D1_DEPLOY_EXECUTED=NO
+D1_LIVE_MIGRATIONS_EXECUTED=NO
+```
