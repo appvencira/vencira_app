@@ -1273,3 +1273,31 @@ B2_UI_SMOKE_RESULT=0
 Para elevar la utilidad del mismo gate sin nuevos laboratorios, se añadió en `main` la prueba de API no disponible (commit `1a9f3ec8`): dos casos adicionales, 320 y 390 píxeles, en los que `fetchWorkspaces` lanza `VenciraApiException` deliberadamente. Verifica que el dashboard permanece montado sin excepciones de widget. El backend sigue simulado, sin solicitudes HTTP; **todavía pendiente la ejecución VPS de la ampliación**. Reutilizar el mismo comando `bash scripts/main_b2_dashboard_viewport_smoke.sh`. Se esperan cuatro tests PASS; no elevar hasta comprobarlo.
 
 O5 continúa con temporizadores activos y resultados systemd correctos, pero snapshot real y restore no verificados. D1-I migraciones sintéticas PASS. Despliegue DEV bloqueado, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## BT. B2 Flutter 4/4 PASS y ampliación a workspace/vencimiento sintético (09/11/2026)
+
+El operador reejecutó el gate del dashboard tras añadir el estado de API no disponible. Evidencia:
+
+```text
+00:01 +4: All tests passed!
+B2_DASHBOARD_VIEWPORTS_320_390=PASS
+B2_DEV_CONTAINERS_TOUCHED=NO
+B2_VISUAL_PHONE_REVIEW=NOT_RUN
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+B2_UI_SMOKE_RESULT=0
+```
+
+**Aceptado B2-UI-EMPTY/OFFLINE=PASS 4/4** para 320/390 px con API simulada; no es una prueba nativa Android ni con API operativa.
+
+Para aumentar cobertura de flujo funcional real de **widget**, se incorporó `_SyntheticWorkspaceApi` a `clients/flutter/test/b2_dashboard_viewport_smoke_test.dart` (commits `13e67d54` y `67095299`): suministra un workspace de pruebas y un vencimiento no personal, comprueba que aparece el título `Caso sintético` en anchuras 320/390 px y que no hay excepción Flutter. El cliente implementa `VenciraApi` simulado sin red; métodos no cubiertos fallan cerrados. **Pendiente ejecución VPS de esta ampliación**: se esperan 6/6 tests. Se reutiliza `scripts/main_b2_dashboard_viewport_smoke.sh`; el marcador final `B2_DASHBOARD_VIEWPORTS_320_390=PASS` es de cobertura de viewport y no equivale a una revisión visual física.
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin main
+git merge --ff-only FETCH_HEAD
+bash scripts/main_b2_dashboard_viewport_smoke.sh
+echo "B2_SHELL_RESULT=$?"
+```
+
+El cambio **no habilita** autenticación nativa ni las rutas de laboratorio en producción, no toca DEV. D1-I sigue PASS sintético; restauración de un snapshot O5 real sigue pendiente y bloquea el despliegue web de DEV. No repetir investigaciones de nombres/keywords O5; próxima intervención O5 debe demostrar snapshot/recovery.
