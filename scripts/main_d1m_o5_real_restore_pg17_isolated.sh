@@ -1,0 +1,167 @@
+#!/usr/bin/env bash
+# D1-M: restore a REAL O5 snapshot into a brand-new network-isolated,
+# tmpfs-only PostgreSQL 17 container. No persistent mounts, no DEV DB access.
+# Privileged operator MUST review this script before running with sudo.
+set -Eeuo pipefail
+set +x
+umask 077
+
+mark(){ printf 'D1M_%s=%s\n' "$1" "$2"; }
+mark READ_ONLY_SOURCE_REPOSITORY YES
+mark BACKUP_EXECUTED NO
+mark LIVE_RESTORE_EXECUTED NO
+mark LIVE_MIGRATIONS_EXECUTED NO
+mark DEPLOY_EXECUTED NO
+echo 'MFA_RELEASE_AUTHORIZED=NO'
+echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
+
+if [[ "$(id -u)" != 0 ]]; then mark ROOT_REQUIRED YES; exit 2; fi
+for tool in restic rclone docker openssl python3 stat; do
+  if ! command -v "$tool" >/dev/null; then mark PREREQUISITE_MISSING YES; exit 2; fi
+done
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ ! -f "$root/backend/Dockerfile" ]]; then
+  mark CHECKOUT_UNEXPECTED YES; exit 2
+fi
+cfgdir=/etc/vencira-backup
+cfg="$cfgdir/config.env"
+for p in "$cfgdir" "$cfg"; do
+  if [[ -L "$p" || ! -e "$p" ]]; then mark CONFIG_SECURE NO; exit 2; fi
+done
+if [[ "$(stat -c '%u:%a' "$cfgdir")" != '0:700' ||
+      "$(stat -c '%u:%a' "$cfg")" != '0:600' ]]; then
+  mark CONFIG_SECURE NO; exit 2
+fi
+set -a
+# shellcheck disable=SC1091
+source "$cfg"
+set +a
+if [[ "${RESTIC_REPOSITORY:-}" != 'rclone:vencira_google:VENCIRA-Backups/PostgreSQL' ||
+      "${RESTIC_PASSWORD_FILE:-}" != '/etc/vencira-backup/restic-password' ||
+      "${RCLONE_CONFIG:-}" != '/etc/vencira-backup/rclone.conf' ||
+      -n "${RESTIC_PASSWORD:-}" ]]; then
+  mark CONFIG_MATCH NO; exit 2
+fi
+for p in "$RESTIC_PASSWORD_FILE" "$RCLONE_CONFIG"; do
+  if [[ -L "$p" || ! -s "$p" || "$(stat -c '%u:%a' "$p")" != '0:600' ]]; then
+    mark CREDENTIAL_FILE_PERMISSIONS NO; exit 2
+  fi
+done
+mark CONFIG_MATCH PASS
+
+# Verify live service identity without using it as an input or destination.
+declare -A dev_id
+for name in vencira_localcheck-api-1 vencira_localcheck-db-1 vencira_localcheck-web_preview-1; do
+  if [[ "$(docker inspect -f '{{index .Config.Labels "com.docker.compose.project"}}' "$name")" != 'vencira_localcheck' ]]; then
+    mark DEV_IDENTITY FAIL; exit 3
+  fi
+  dev_id["$name"]="$(docker inspect -f '{{.Id}}:{{.Image}}' "$name")"
+done
+mark DEV_IDENTITY PASS
+
+lab="vencira-d1m-$(openssl rand -hex 8)"
+db_user=d1mrestore
+db_name=d1mrestore
+password="$(openssl rand -hex 24)"
+created=NO
+cleanup(){
+  local rc=$?
+  trap - EXIT
+  if [[ "$created" == YES ]]; then
+    docker rm -f "$lab" >/dev/null 2>&1 || rc=9
+  fi
+  local intact=YES
+  for name in vencira_localcheck-api-1 vencira_localcheck-db-1 vencira_localcheck-web_preview-1; do
+    if [[ "$(docker inspect -f '{{.Id}}:{{.Image}}' "$name" 2>/dev/null || true)" != "${dev_id[$name]}" ]]; then
+      intact=NO
+    fi
+  done
+  mark DEV_CONTAINERS_UNCHANGED "$([[ "$intact" == YES ]] && echo OK || echo FAIL)"
+  if [[ "$intact" != YES ]]; then rc=9; fi
+  mark LAB_CONTAINER_REMOVED "$([[ "$created" == YES ]] && echo YES || echo NOT_CREATED)"
+  mark LIVE_RESTORE_EXECUTED NO
+  mark LIVE_MIGRATIONS_EXECUTED NO
+  mark DEPLOY_EXECUTED NO
+  mark RESULT "$rc"
+  exit "$rc"
+}
+trap cleanup EXIT
+
+# Select the newest *matching* O5 PostgreSQL dump metadata. Snapshot IDs
+# remain private and are not printed. Reject stale, ambiguous or malformed
+# metadata; never use arbitrary 'latest' from a different backup family.
+selector='
+import datetime, json, re, sys
+records=json.load(sys.stdin)
+now=datetime.datetime.now(datetime.timezone.utc)
+valid=[]
+for x in records:
+    if not isinstance(x,dict): continue
+    ident=x.get("id","")
+    if not isinstance(ident,str) or not re.fullmatch("[0-9a-f]{64}",ident): continue
+    if "vencira-postgresql" not in x.get("tags",[]): continue
+    if not any(isinstance(p,str) and p.rsplit("/",1)[-1]=="vencira-postgres.dump"
+               for p in x.get("paths",[])): continue
+    try: when=datetime.datetime.fromisoformat(x["time"].replace("Z","+00:00"))
+    except (KeyError,TypeError,ValueError,AttributeError): continue
+    if when.tzinfo is None or when>now+datetime.timedelta(minutes=10): continue
+    valid.append((when,ident))
+if not valid: sys.exit(21)
+valid.sort(reverse=True)
+if now-valid[0][0]>datetime.timedelta(hours=48): sys.exit(22)
+print(valid[0][1])
+'
+snapshot="$(restic --no-lock snapshots --tag vencira-postgresql --json 2>/dev/null | python3 -c "$selector")" || {
+  mark RECENT_POSTGRESQL_SNAPSHOT NO; exit 4;
+}
+mark RECENT_POSTGRESQL_SNAPSHOT PASS
+
+# PGDATA never touches a bind-mounted or named volume. No network, ports,
+# shared Docker network, host directories or DEV environment are provided.
+docker run -d --name "$lab" \
+  --network none --security-opt no-new-privileges --pids-limit 256 \
+  --memory 2g \
+  --tmpfs /var/lib/postgresql/data:rw,size=1536m,mode=0700 \
+  --tmpfs /tmp:rw,size=256m,mode=1777 \
+  -e POSTGRES_DB="$db_name" -e POSTGRES_USER="$db_user" \
+  -e POSTGRES_PASSWORD="$password" \
+  postgres:17-alpine >/dev/null
+created=YES
+if [[ "$(docker inspect -f '{{.HostConfig.NetworkMode}}' "$lab")" != 'none' ]]; then
+  mark PG17_NETWORK_ISOLATED NO; exit 5
+fi
+if [[ -n "$(docker inspect -f '{{range .Mounts}}{{.Destination}} {{end}}' "$lab")" ]]; then
+  mark PG17_PERSISTENT_MOUNT_PRESENT YES; exit 5
+fi
+ready=NO
+for _ in $(seq 1 60); do
+  if docker exec "$lab" pg_isready -U "$db_user" -d "$db_name" >/dev/null 2>&1; then
+    ready=YES; break
+  fi
+  sleep 1
+done
+if [[ "$ready" != YES ]]; then mark PG17_READY FAIL; exit 5; fi
+mark PG17_NETWORK_ISOLATED PASS
+mark PG17_TMPFS_READY PASS
+
+# Stream decrypted data directly into disposable PostgreSQL. No plaintext
+# dump files. pipefail catches Restic and pg_restore failures. Suppress both
+# commands' raw errors: names/paths inside them may be private.
+if ! restic --no-lock dump "$snapshot" /vencira-postgres.dump 2>/dev/null |
+     docker exec -i "$lab" pg_restore -U "$db_user" -d "$db_name" \
+       --no-owner --no-privileges --exit-on-error >/dev/null 2>&1; then
+  mark RESTORE_REAL_O5_PG17 FAIL; exit 6
+fi
+mark RESTORE_REAL_O5_PG17 PASS
+
+# Report only a boolean for historical migration baseline, not user data.
+# This intentionally stops BEFORE migrations on actual recovered data.
+sql="SELECT CASE WHEN EXISTS (SELECT 1 FROM django_migrations WHERE app='reminders' AND name LIKE '0018_%') THEN 'PASS' ELSE 'FAIL' END;"
+baseline="$(docker exec "$lab" psql -U "$db_user" -d "$db_name" -Atqc "$sql" 2>/dev/null)" || {
+  mark HISTORICAL_0018 FAIL; exit 7;
+}
+if [[ "$baseline" != PASS ]]; then mark HISTORICAL_0018 FAIL; exit 7; fi
+mark HISTORICAL_0018 PASS
+mark BACKUP_PAYLOAD_PG_RESTORE_VERIFIED YES
+mark MIGRATIONS_0019_0027_ON_REAL_DATA NOT_RUN
+mark REAL_DATA_CONTENT_PRINTED NO
