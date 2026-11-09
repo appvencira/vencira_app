@@ -1,0 +1,80 @@
+# D1-N — Migraciones 0019–0027 sobre un backup O5 real (09/11/2026)
+
+## Situación inicial
+
+**D1-L PASS:** 25 snapshots PostgreSQL etiquetados, último de 19 horas y `restic check` PASS.
+
+**D1-M PASS:** el operador restauró un snapshot O5 auténtico a PostgreSQL 17 efímero con `pg_restore`; verificó `reminders.0018`, confirmó que no se tocó DEV y que se eliminó el contenedor temporal. El dump de D1-M ya se destruyó: D1-N realiza otra restauración independiente y no modifica aquella prueba.
+
+## Objetivo de D1-N
+
+Ensayar **migraciones Django reales sobre datos históricos auténticos**, seguidas por un rollback de esquema, antes de considerar el despliegue web de DEV.
+
+Código: `scripts/main_d1n_o5_historical_migrations_pg17.sh` (integrado directamente en `main`).
+
+Este script:
+1. Usa la **configuración real protegida de O5** y el snapshot reciente etiquetado como PostgreSQL. No ejecuta un nuevo backup.
+2. Crea una red Docker interna nueva, **no conectada a la red de DEV**, y un PostgreSQL 17 con datos en `tmpfs`, sin bind mounts ni puertos publicados.
+3. Restaura los datos por streaming Restic→`pg_restore`, sin archivo de dump descifrado en el host.
+4. Construye una **imagen candidata Django** desde el checkout de `main` (sin desplegarla) y arranca sus comandos de gestión como procesos temporales dentro de la red interna.
+5. Verifica que `manage.py check` y `makemigrations reminders --check --dry-run` pasan, comprueba `migrate reminders 0027 --plan` y **aplica `reminders.0019–0027` exclusivamente en esta copia**.
+6. Verifica el estado de `django_migrations`, exige que los conteos de tres tablas base (`auth_user`, `reminders_workspace` y `reminders_renewal`) no cambien; compara solo valores numéricos sin imprimirlos.
+7. Ensaya `migrate reminders 0018` sobre **esta misma copia efímera** y confirma la desaparición de las migraciones 0019–0027 y conservación de esos conteos.
+8. Elimina al salir la instancia PG17, red Docker, imagen candidata y archivo temporal de credenciales de laboratorio, y coteja IDs de los tres contenedores DEV antes/después.
+
+**Límites de alcance:** igualdad de tres conteos no equivale a verificar todos los datos ni el valor de cada campo. El rollback del esquema no sustituye la restauración de backup ante migraciones destructivas o escrituras operativas posteriores. Esta prueba sí debe revelar si las migraciones se pueden aplicar/retroceder sobre el esquema histórico de DEV sin errores, dentro de los límites de esta copia concreta.
+
+## Ejecución desde Termius
+
+Revisar primero el script root que se va a ejecutar. Usar el checkout oficial de `main`, nunca la ruta de despliegue persistente.
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin main
+git merge --ff-only FETCH_HEAD
+
+bash -n scripts/main_d1n_o5_historical_migrations_pg17.sh
+
+sudo bash scripts/main_d1n_o5_historical_migrations_pg17.sh
+echo "D1N_SHELL_RESULT=$?"
+```
+
+**No ejecutar dentro de un backup activo**; el programa selecciona snapshots por metadatos y lee de Restic, pero no modifica el repositorio. No editar `/etc/vencira-backup`, ni enviar claves/variables al chat. Durante la prueba el sistema puede consumir CPU/RAM, datos transferidos por red y construir una imagen Docker temporal. `tmpfs` está limitado y provocará fallo si el dump crece más de lo disponible, sin recurrir a almacenamiento persistente.
+
+### Condiciones de cierre
+
+```text
+D1N_CONFIG_MATCH=PASS
+D1N_DEV_IDENTITY=PASS
+D1N_RECENT_POSTGRESQL_SNAPSHOT=PASS
+D1N_LAB_NETWORK_INTERNAL=PASS
+D1N_PG17_NETWORK_ISOLATED=PASS
+D1N_PG17_TMPFS_READY=PASS
+D1N_RESTORE_REAL_O5_PG17=PASS
+D1N_HISTORICAL_0018=PASS
+D1N_CANDIDATE_DJANGO_IMAGE=PASS
+D1N_BASELINE_COUNTS=PASS
+D1N_MODEL_MIGRATION_PARITY=PASS
+D1N_MIGRATION_PLAN=PASS
+D1N_MIGRATIONS_0019_0027=PASS
+D1N_CORE_COUNTS_UP=PASS
+D1N_ROLLBACK_TO_0018=PASS
+D1N_CORE_COUNTS_DOWN=PASS
+D1N_HISTORICAL_MIGRATION_GATE=PASS
+D1N_DEV_CONTAINERS_UNCHANGED=OK
+D1N_LAB_CONTAINER_REMOVED=YES
+D1N_EPHEMERAL_NETWORK_REMOVED=YES
+D1N_RESULT=0
+D1N_SHELL_RESULT=0
+```
+
+Si falla, **no** ejecutar el mismo `migrate` contra DEV, ni aplicar `--fake`, ni modificar tablas reales. Conservar únicamente los marcadores que no contienen información privada para diagnosticar la incompatibilidad.
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D1_DEPLOY_EXECUTED=NO
+D1_LIVE_MIGRATIONS_EXECUTED=NO
+```
+
+**Después de D1-N PASS:** aún se requiere regresión de Django + web con datos y preparación de rollback/ventana de despliegue, con autorización explícita para cualquier cambio en DEV.
