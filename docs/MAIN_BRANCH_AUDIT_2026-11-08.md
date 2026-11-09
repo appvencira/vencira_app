@@ -1456,3 +1456,29 @@ D1L_RESULT=0
 **D1-M preparado en `main`:** `scripts/main_d1m_o5_real_restore_pg17_isolated.sh` (commit `07f1480e`) usa la configuración original root protegida, selecciona snapshot etiquetado `vencira-postgresql` reciente y canaliza `restic dump` hacia `pg_restore` en un contenedor `postgres:17-alpine` **sin red, puertos, mounts persistentes ni intervención sobre DEV**, PostgreSQL en `tmpfs` y limpieza al finalizar. Verifica la presencia de `reminders.0018` en el historial Django restaurado y no muestra datos personales ni dump descifrado. Procedimiento `docs/D1M_REAL_O5_PG17_RESTORE_2026-11-09.md` (commit `7e83de29`).
 
 **D1-M PENDIENTE EJECUCIÓN VPS.** No convertir en PASS sin `D1M_RESTORE_REAL_O5_PG17=PASS`, `D1M_HISTORICAL_0018=PASS`, `D1M_DEV_CONTAINERS_UNCHANGED=OK`, `D1M_LAB_CONTAINER_REMOVED=YES` y `D1M_RESULT=0`. D1-M **NO** aplica migraciones sobre los datos restaurados; ese ensayo histórico se asigna a D1-N. Flags `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, sin deployment ni migraciones DEV.
+
+## CD. D1-M: restauración real de O5 sobre PostgreSQL17 aislado PASS (09/11/2026)
+
+El operador ejecutó `scripts/main_d1m_o5_real_restore_pg17_isolated.sh` en el VPS y aportó:
+
+```text
+D1M_CONFIG_MATCH=PASS
+D1M_DEV_IDENTITY=PASS
+D1M_RECENT_POSTGRESQL_SNAPSHOT=PASS
+D1M_PG17_NETWORK_ISOLATED=PASS
+D1M_PG17_TMPFS_READY=PASS
+D1M_RESTORE_REAL_O5_PG17=PASS
+D1M_HISTORICAL_0018=PASS
+D1M_BACKUP_PAYLOAD_PG_RESTORE_VERIFIED=YES
+D1M_MIGRATIONS_0019_0027_ON_REAL_DATA=NOT_RUN
+D1M_DEV_CONTAINERS_UNCHANGED=OK
+D1M_LAB_CONTAINER_REMOVED=YES
+D1M_LIVE_RESTORE_EXECUTED=NO
+D1M_LIVE_MIGRATIONS_EXECUTED=NO
+D1M_DEPLOY_EXECUTED=NO
+D1M_RESULT=0
+```
+
+**D1-M PASS:** el backup Restic O5 real se ha descifrado por streaming y restaurado correctamente con `pg_restore` en un PostgreSQL 17 `tmpfs` sin red; se confirmó el historial `reminders.0018` y la eliminación del laboratorio, sin alterar los tres contenedores persistentes DEV. Es una prueba de recuperación PostgreSQL real, no solo metadatos.
+
+**Siguiente gate:** D1-N migraciones `0019–0027` sobre **una segunda copia aislada de este backup real**; observar conservación de datos clave y viabilidad de rollback de esquema. No elevar a autorización de deployment hasta validación y regresión. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
