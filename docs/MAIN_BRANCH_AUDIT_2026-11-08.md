@@ -1075,3 +1075,34 @@ echo "D1G_SHELL_RESULT=$?"
 ```
 
 **Criterio:** `D1G_RESULT=0` con salida acotada `D1G_BACKUP_EXEC_CLASS`, `D1G_BACKUP_HELPER_TARGET` y equivalentes para HEALTH. D1G no confirma que la copia exista: el siguiente gate será la lectura controlada de metadatos del repositorio respaldado por el procedimiento operativo realmente identificado y, después, ensayo de restauración aislada, no restauración en DEV. D1-G no es una autorización de despliegue.
+
+## BK. D1-G primera ejecución: `PermissionError` en metadatos del wrapper O5 — 09/11/2026
+
+El operador devolvió:
+```text
+D1G_READ_ONLY=YES
+D1G_NO_SECRET_OR_HELPER_CONTENT_READ=YES
+D1G_NO_BACKUP_OR_RESTORE=YES
+D1G_BACKUP_EXECSTART_COUNT=1
+D1G_BACKUP_EXEC_CLASS=PROJECT_WRAPPER
+D1G_BACKUP_ARGS_PRESENT=NO
+D1G_BACKUP_EXEC_PATH_ABSOLUTE=YES
+D1G_BACKUP_HELPER_TARGET=DETECTED
+D1G_ERROR_TYPE=PermissionError
+D1G_RESULT=1
+D1G_SHELL_RESULT=1
+```
+
+**Interpretación precisa:** D1-G detectó que el servicio de backup usa un ejecutable/wrapper del proyecto con ruta absoluta y sin argumentos directos. Falló **al consultar metadatos del archivo auxiliar como usuario sin permisos**, antes de examinar HEALTH. El script no ejecutó el comando y no intentó leer su contenido. Esto **no demuestra ningún fallo del temporizador ni de Restic**. El intento de consultar `is_file()` puede generar `PermissionError` cuando el directorio padre es privado.
+
+**Corrección integrada directamente en main:** `22eb9a96` modifica solo la sonda `D1G_*_HELPER_EXISTS`: si el sistema deniega el `stat`, informa `PERMISSION_DENIED` sin escalada de privilegios, sin inferir `NO` ni detener la clasificación del servicio HEALTH. `D1G_RESULT=0` tras esto solo significará que se completó la **clasificación parcial permitida**, nunca que se accedió al wrapper, al backup ni al repositorio. La comprobación corregida todavía está pendiente de repetir.
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin main
+git merge --ff-only FETCH_HEAD
+python3 scripts/d1g_o5_exec_target_readonly.py
+echo "D1G_SHELL_RESULT=$?"
+```
+
+Conservar las restricciones `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`. No utilizar `sudo` para intentar abrir el contenido de wrappers, certificados o archivos de entorno como parte de este preflight.
