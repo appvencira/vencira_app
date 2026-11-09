@@ -1417,3 +1417,18 @@ Solo si la ejecución delegada termina sin error (por `set -Eeuo pipefail`) avan
 **Estado verificado:** delegación explícita, estructura de marca de estado, no ejecución de backup manual. **No verificado:** contenido del script delegado, repositorio Restic, credenciales OAuth efectivas, snapshots, integridad de datos ni restauración. No inferir de `systemd Result=success` o `last-success.epoch` que el respaldo contiene un dump PostgreSQL recuperable.
 
 **Siguiente acción:** inspección local protegida y exclusivamente de lectura de `/usr/local/libexec/vencira/o5_backup_to_drive.sh` (no compartir contraseñas, tokens, claves, rutas privadas de datos ni contenido íntegro del script); identificar cómo adquiere la configuración Restic y comprobar snapshots reales con el mecanismo autorizado. No ejecutar el backup a mano, no editar unidades o permisos ni copiar secretos al repositorio público. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## CB. O5: contrato Restic/Google Drive completo localizado; gate real D1-L listo (09/11/2026)
+
+El operador consultó el script delegado protegido `/usr/local/libexec/vencira/o5_backup_to_drive.sh`. **Ya conocemos la ejecución real**, no solo el wrapper systemd:
+- Solo root; `flock` evita duplicidad; carga `/etc/vencira-backup/config.env` bajo permisos root; comprueba proveedor de contraseña Restic y `rclone.conf` con permisos `600`.
+- Restic se conecta a Google Drive mediante backend Rclone y directorio O5 PostgreSQL; confirma acceso mediante `restic snapshots --quiet`.
+- Verifica contenedor `vencira_localcheck-db-1` saludable con etiqueta de proyecto correcta.
+- Ejecuta `restic backup --tag vencira-postgresql --stdin-filename vencira-postgres.dump --stdin-from-command -- docker exec ... pg_dump -Fc`. El dump sin cifrar se envía por stdin y no se almacena como archivo temporal local.
+- Ejecuta `restic check` y emite marcadores de éxito solo al terminar; el scheduler root actualiza marcas de control posteriormente.
+
+**Todavía NO se ha validado acceso Restic en esta sesión ni se ha recuperado un dump**. La ausencia de variables RESTIC en shells interactivas es esperable: están cargadas desde `config.env` durante la ejecución protegida.
+
+Se publica en `main` `scripts/main_d1l_o5_authenticated_readonly.sh` (commit `c0e888a4`), que comprueba los permisos y el repositorio O5 exactos, carga el `config.env` protegido y ejecuta **solo lectura** el gate Python D1-L. Este último ahora restringe los snapshots a la etiqueta `vencira-postgresql` y al archivo `vencira-postgres.dump` (commit `2b97e82d`). Instrucciones en `docs/D1L_O5_REAL_RESTIC_GATE_2026-11-09.md` (commit `86d306c0`).
+
+**Pendiente ejecución VPS:** `sudo bash scripts/main_d1l_o5_authenticated_readonly.sh` desde checkout `main` actualizado. Requiere conteo positivo, frescura 48h YES, `restic check` PASS y `D1L_RESULT=0`; esto sigue siendo solo prueba de metadatos, no `--read-data`, ni recuperación integral. D1-M real necesita restaurar a un PostgreSQL17 separado y comprobar migraciones `0019–0027`. Las restricciones `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` siguen activas.
