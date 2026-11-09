@@ -1432,3 +1432,27 @@ El operador consultó el script delegado protegido `/usr/local/libexec/vencira/o
 Se publica en `main` `scripts/main_d1l_o5_authenticated_readonly.sh` (commit `c0e888a4`), que comprueba los permisos y el repositorio O5 exactos, carga el `config.env` protegido y ejecuta **solo lectura** el gate Python D1-L. Este último ahora restringe los snapshots a la etiqueta `vencira-postgresql` y al archivo `vencira-postgres.dump` (commit `2b97e82d`). Instrucciones en `docs/D1L_O5_REAL_RESTIC_GATE_2026-11-09.md` (commit `86d306c0`).
 
 **Pendiente ejecución VPS:** `sudo bash scripts/main_d1l_o5_authenticated_readonly.sh` desde checkout `main` actualizado. Requiere conteo positivo, frescura 48h YES, `restic check` PASS y `D1L_RESULT=0`; esto sigue siendo solo prueba de metadatos, no `--read-data`, ni recuperación integral. D1-M real necesita restaurar a un PostgreSQL17 separado y comprobar migraciones `0019–0027`. Las restricciones `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` siguen activas.
+
+## CC. D1-L O5 REAL PASS; D1-M PG17 restauración auténtica preparada (09/11/2026)
+
+**Evidencia aportada por operador tras ejecutar D1-L con la configuración protegida original:**
+
+```text
+D1L_SECURE_CONFIG=PASS
+D1L_O5_CONFIG_MATCH=PASS
+D1L_CREDENTIAL_FILE_PERMISSIONS=PASS
+D1L_POSTGRESQL_TAGGED_SNAPSHOT_COUNT=25
+D1L_NEWEST_POSTGRESQL_SNAPSHOT_AGE_HOURS=19
+D1L_SNAPSHOT_FRESHNESS_48H=YES
+D1L_RESTIC_METADATA_CHECK=PASS
+D1L_BACKUP_SCOPE=OPERATOR_CONFIRMED_NOT_INDEPENDENTLY_VERIFIED
+D1L_SNAPSHOT_PAYLOAD_FULL_READ=NOT_RUN
+D1L_RESTORE_VERIFIED=NO
+D1L_RESULT=0
+```
+
+**D1-L PASS (metadatos reales, alcance limitado):** el repositorio PostgreSQL O5 es accesible y contiene **25 snapshots etiquetados**, el más reciente de **19 horas** al ejecutarse, y supera `restic check` de metadatos. Aún no acredita la lectura completa de datos ni su restauración.
+
+**D1-M preparado en `main`:** `scripts/main_d1m_o5_real_restore_pg17_isolated.sh` (commit `07f1480e`) usa la configuración original root protegida, selecciona snapshot etiquetado `vencira-postgresql` reciente y canaliza `restic dump` hacia `pg_restore` en un contenedor `postgres:17-alpine` **sin red, puertos, mounts persistentes ni intervención sobre DEV**, PostgreSQL en `tmpfs` y limpieza al finalizar. Verifica la presencia de `reminders.0018` en el historial Django restaurado y no muestra datos personales ni dump descifrado. Procedimiento `docs/D1M_REAL_O5_PG17_RESTORE_2026-11-09.md` (commit `7e83de29`).
+
+**D1-M PENDIENTE EJECUCIÓN VPS.** No convertir en PASS sin `D1M_RESTORE_REAL_O5_PG17=PASS`, `D1M_HISTORICAL_0018=PASS`, `D1M_DEV_CONTAINERS_UNCHANGED=OK`, `D1M_LAB_CONTAINER_REMOVED=YES` y `D1M_RESULT=0`. D1-M **NO** aplica migraciones sobre los datos restaurados; ese ensayo histórico se asigna a D1-N. Flags `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, sin deployment ni migraciones DEV.
