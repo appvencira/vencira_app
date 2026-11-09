@@ -44,16 +44,23 @@ def main():
         raise RuntimeError("inline_password_not_allowed")
     if not shutil.which("restic"):
         raise RuntimeError("restic_not_installed")
-    raw=invoke("snapshots","--json")
+    raw=invoke("snapshots","--tag","vencira-postgresql","--json")
     records=json.loads(raw)
     if not isinstance(records,list):
         raise RuntimeError("snapshot_metadata_invalid")
-    flag("SNAPSHOT_COUNT",len(records))
+    flag("POSTGRESQL_TAGGED_SNAPSHOT_COUNT",len(records))
     if not records: raise RuntimeError("no_snapshots")
     dates=[]
     for item in records:
         if not isinstance(item,dict):
             raise RuntimeError("snapshot_record_invalid")
+        if "vencira-postgresql" not in item.get("tags", []):
+            raise RuntimeError("postgres_tag_missing")
+        paths=item.get("paths",[])
+        if not isinstance(paths,list) or not any(
+            isinstance(path,str) and path.rsplit("/",1)[-1] == "vencira-postgres.dump"
+            for path in paths):
+            raise RuntimeError("postgres_dump_filename_missing")
         stamp=item.get("time")
         if not isinstance(stamp,str):
             raise RuntimeError("snapshot_time_missing")
@@ -64,7 +71,7 @@ def main():
     now=dt.datetime.now(dt.timezone.utc)
     recent=max(dates)
     age=max(0,int((now-recent).total_seconds()//3600))
-    flag("NEWEST_SNAPSHOT_AGE_HOURS",age)
+    flag("NEWEST_POSTGRESQL_SNAPSHOT_AGE_HOURS",age)
     if recent>now+dt.timedelta(minutes=10):
         raise RuntimeError("snapshot_time_in_future")
     flag("SNAPSHOT_FRESHNESS_48H","YES" if age<=48 else "NO")
