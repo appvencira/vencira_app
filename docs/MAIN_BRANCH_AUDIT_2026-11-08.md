@@ -1339,3 +1339,13 @@ bash scripts/main_b2_dashboard_viewport_smoke.sh
 echo "B2_SHELL_RESULT=$?"
 ```
 Requiere `6/6 All tests passed!` y `B2_UI_SMOKE_RESULT=0` antes de certificar la ampliación. Continúan `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, O5 real sin restaurar.
+
+## BW. 09/11/2026 — B2 dashboard sintético 6/6 PASS y navegación a detalle preparada
+
+El operador validó el script B2, con `No issues found!`, seis pruebas Flutter correctas y `B2_UI_SMOKE_RESULT=0`. Cuatro escenarios de dashboard vacío/API simulada no disponible (320/390 px) y dos de workspace con vencimiento sintético en 320/390 px. `B2_DEV_CONTAINERS_TOUCHED=NO`, `B2_VISUAL_PHONE_REVIEW=NOT_RUN`; no se habilitaron accesos nativos ni rutas experimentales.
+
+**Cierre B2 dashboard base:** PASS 6/6; el fallo de `implements VenciraApi` quedó resuelto con `extends VenciraApi`.
+
+**Siguiente prueba integrada directamente en main**, commit `3f3ce252`: se amplía el mismo fichero `clients/flutter/test/b2_dashboard_viewport_smoke_test.dart` para comprobar navegación `dashboard → ficha detalle → dashboard` con la misma API sintética. El fixture implementa `fetchRenewalDetail` sin HTTP y la nueva prueba pulsa el vencimiento simulado, comprueba ficha y referencia, vuelve atrás y verifica que dashboard se mantiene. **Pendiente de ejecutar en VPS**; no atribuir PASS todavía. Reutilizar `bash scripts/main_b2_dashboard_viewport_smoke.sh`; nuevo objetivo 7/7 tests. Un fallo debe inspeccionarse sin alterar la interfaz ni el backend de forma especulativa.
+
+**Pendientes fuera del test:** restauración O5 real aislada, migraciones sobre copia histórica de DEV y integración nativa Android. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`; prohibido deploy/migración persistente.
