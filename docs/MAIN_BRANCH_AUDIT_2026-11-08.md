@@ -1403,3 +1403,17 @@ Se ha integrado directamente en `main` el gate `scripts/main_d1l_o5_restic_metad
 **Estado D1-L: publicado, todavía NO ejecutado ni validado en VPS.** Necesita entorno Restic real cuya ubicación/custodia **no está incluida en el checkout `main`**; no inventar variables ni importar scripts privilegiados no auditados. `D1L_RESULT=0` + `D1L_RESTIC_METADATA_CHECK=PASS` prueban solo disponibilidad de snapshots y consistencia de metadatos, **NO** completitud del payload, copia de PostgreSQL real ni restaurabilidad. Exigir `D1L_SNAPSHOT_FRESHNESS_48H=YES` como puerta independiente. La restauración real a destino efímero y ensayo de migraciones sobre copia histórica corresponden al bloque posterior D1-M, no autorizado aún.
 
 `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`; `D1_RELEASE_AUTHORIZED=NO`.
+
+## CA. 09/11/2026 — O5 delegado REAL IDENTIFICADO; snapshots aún pendientes
+
+El operador inspeccionó localmente el `ExecStart` de `vencira-o5-backup.service`. El script real es un **wrapper de estado**, `/usr/local/libexec/vencira/o5_schedule_backup.sh`, que comprueba ejecución root, propiedad/permisos del directorio `/var/lib/vencira-o5` y un marcador de OAuth, y luego ejecuta explícitamente:
+
+```bash
+bash /usr/local/libexec/vencira/o5_backup_to_drive.sh
+```
+
+Solo si la ejecución delegada termina sin error (por `set -Eeuo pipefail`) avanza a `PHASE=MARCADOR_EXITO`, escribe de forma atómica `last-success.epoch`, borra `last-failure.epoch` y comunica `O5_BACKUP_DIARIO=OK`. La trampa `EXIT` registra fallo y código si se produce un error. **La ausencia de menciones Restic/Rclone en D1-J/D1-K es esperable en este wrapper**: ambas inspecciones cubrían solo el envoltorio, no el ejecutable delegado.
+
+**Estado verificado:** delegación explícita, estructura de marca de estado, no ejecución de backup manual. **No verificado:** contenido del script delegado, repositorio Restic, credenciales OAuth efectivas, snapshots, integridad de datos ni restauración. No inferir de `systemd Result=success` o `last-success.epoch` que el respaldo contiene un dump PostgreSQL recuperable.
+
+**Siguiente acción:** inspección local protegida y exclusivamente de lectura de `/usr/local/libexec/vencira/o5_backup_to_drive.sh` (no compartir contraseñas, tokens, claves, rutas privadas de datos ni contenido íntegro del script); identificar cómo adquiere la configuración Restic y comprobar snapshots reales con el mecanismo autorizado. No ejecutar el backup a mano, no editar unidades o permisos ni copiar secretos al repositorio público. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
