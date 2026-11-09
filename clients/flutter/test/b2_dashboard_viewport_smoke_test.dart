@@ -185,9 +185,13 @@ void main() {
     expect(find.text('REF-DEMO-001'), findsWidgets);
     expect(tester.takeException(), isNull);
 
-    await tester.pageBack();
+    // pageBack() only locates Cupertino back buttons. VENCIRA uses Material
+    // routes, so pop the actual Navigator instead of assuming an iOS control.
+    tester.state<NavigatorState>(find.byType(Navigator).first).pop();
     await tester.pumpAndSettle();
+    expect(find.byType(VenciraRenewalDetailScreen), findsNothing);
     expect(find.byType(VenciraDashboardScreen), findsOneWidget);
+    expect(api.renewalRequests, greaterThan(1));
     expect(tester.takeException(), isNull);
   });
 
