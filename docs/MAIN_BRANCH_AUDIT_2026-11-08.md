@@ -1134,3 +1134,13 @@ D1G_SHELL_RESULT=0
 **Decisión de cierre:** no repetir diagnósticos de nombres, unidades o heurísticas de scripts. La evidencia previa D1-E muestra temporizadores `active/enabled`, última activación registrada y `Result=success, ExecMainStatus=0` de los servicios. Sigue faltando acreditar que existe un snapshot reciente íntegro y poder restaurarlo de forma segura. Para completar D1, un procedimiento aprobado por el operador debe consultar Restic con los permisos del servicio sin imprimir credenciales/configuración/PII y restaurar solo en un destino efímero, aislado de DEV. Si no hay interfaz de verificación que no exponga secretos, detener D1 backup gate, no inventar un PASS.
 
 **Pendientes en paralelo:** grafo/migraciones `reminders.0019–0027` en PG17 temporal y rollback, I8-R Android/HTTPS frente a desconexiones y entrada funcional de APK; ninguna actividad cambia `MFA_RELEASE_AUTHORIZED=NO` ni `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## BM. D1-I — ensayo agrupado de migraciones y rollback PostgreSQL17 sintético (09/11/2026)
+
+Para progresar hacia DEV sin esperar al acceso protegido del servicio O5 se ha integrado en `main` el script `scripts/main_d1i_pg17_synthetic_migrations_rollback.sh` (commit `5d3f85f6`). Crea PostgreSQL17 efímero con datos sintéticos en red Docker `--internal`, construye imagen Django candidata temporal y recorre `reminders.0018 → 0027 → 0018 → 0027`, comprobando el registro SQL de las nueve migraciones. Antes de la subida genera un dump de la base sintética en el contenedor temporal y posteriormente lo restaura con `pg_restore` a **otra base temporal**. Dispone de `trap EXIT` y comprobación de identidad de los contenedores DEV. No reutiliza credenciales ni bases persistentes y no publica puertos. Protocolo en `docs/D1I_PG17_SYNTHETIC_MIGRATION_REHEARSAL_2026-11-09.md` (commit `1dc95708`).
+
+**Estado:** código publicado en `main`, **pendiente de validación VPS**. No declarar PASS hasta `D1I_0019_0027_APPLIED=PASS`, `D1I_ROLLBACK_TO_0018=PASS`, `D1I_SYNTHETIC_DUMP_RESTORED=PASS`, `D1I_DEV_CONTAINERS_UNCHANGED=OK` y `D1I_RESULT=0`. Esta restauración es de un esquema `main` **sintético**, **NO** la copia real O5, de modo que incluso un PASS no cierra compatibilidad/DR sobre los datos reales del entorno DEV.
+
+El resultado D1-G previo del operador queda `D1G_RESULT=0`, sin acceso a wrappers protegidos. Sigue pendiente verificar snapshot Restic y restauración de DEV sobre un clon antes de cualquier deployment; I8-R Android y APK nativa real también pendientes.
+
+Se mantienen `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
