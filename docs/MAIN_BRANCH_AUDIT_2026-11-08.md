@@ -933,3 +933,43 @@ Para eliminar ambigüedad:
 - `scripts/main_closure_grouped_readonly_gate.sh` (`84b65363`): agrupa inventario B2, metadatos D1B y diagnóstico D1C en un solo comando.
 
 **Estado:** correcciones en `main`, validación VPS de D1C y nuevo parser pendiente. Comando: `bash scripts/main_closure_grouped_readonly_gate.sh` tras `git fetch origin main && git merge --ff-only FETCH_HEAD`. Exigir `CLOSE_D1C_O5_SCOPE_DIAGNOSTIC=PASS` y `CLOSE_COMBINED_PREFLIGHT=PASS`; además evaluar la **clasificación** `D1C_O5_UNIT_REGISTRATION` en vez de interpretarla como salud. Restauración O5 y migración real en clon PG17 **todavía pendientes**. I8-R Android HTTPS corte de transporte también pendiente. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## BF. D1-C resultado real: migraciones estáticas claras, O5 no localizado (operador 09/11/2026)
+
+El operador ejecutó el gate combinado sobre el SHA `8d4f3c916ab314adfdb620fbc6edc1826992cd75`. Evidencias:
+
+```text
+CLOSE_REMINDERS_0019_0027_FILES=9
+CLOSE_REMINDERS_UNKNOWN_STATIC_DEPENDENCIES=0
+CLOSE_REMINDERS_DJANGO_SWAPPABLE_AUTH_DEPENDENCIES=3
+CLOSE_DJANGO_OPERATIONAL_NATIVE_ROUTE_FENCE=PASS
+CLOSE_ANDROID_NORMAL_ENTRY=EXTERNAL_BROWSER_ONLY
+CLOSE_NATIVE_RECOVERY_WIRED_TO_MAIN=NO
+CLOSE_FLUTTER_SCREENS_SOURCE_PRESENT=10/10
+D1B_COMPOSE_PROJECT=vencira_localcheck
+D1C_SYSTEM_UNITS_LOADED=0
+D1C_USER_UNITS_LOADED=0
+D1C_O5_UNIT_REGISTRATION=NOT_VERIFIED
+D1C_O5_SNAPSHOT_VALID=NOT_VERIFIED
+D1C_O5_RESTORE_VALID=NOT_VERIFIED
+CLOSE_COMBINED_PREFLIGHT=PASS
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
+
+**Conclusiones limitadas:** parser corregido confirma la cadena literal anterior en las nueve migraciones y reconoce correctamente las tres dependencias `migrations.swappable_dependency(settings.AUTH_USER_MODEL)`. **No demuestra aplicación ni rollback en DEV.** La APK normal continúa abriendo el navegador, sin acceso nativo integrado. Diez archivos de interfaz presentes no son diez pantallas funcionalmente probadas.
+
+La búsqueda D1-C de **cuatro nombres exactos** O5 en ambos ámbitos systemd devuelve `not-found`; no hay unidades O5 cargadas con esos nombres en el ámbito consultado. **No permite afirmar que no existan backups ni que hayan fallado:** podrían tener otros nombres, estar registrados en otro usuario o estar gestionados de otra manera. No hay backup restaurado ni continuidad O5 acreditada en esta revisión. Hubo errores iniciales de contraseña sudo antes de que el inventario Compose continuara, sin modificación de servicios.
+
+Se publica `scripts/d1d_backup_scheduler_names_readonly.py` (commit `5a708f2b`), diagnóstico siguiente **sin sudo**: lista exclusivamente nombres filtrados de archivos de unidades systemd, sus directorios *.wants y entradas cron habituales, y nombres de unidades de systemd reconocidas (scope de sistema y usuario). No lee contenidos, credenciales, registros ni archivos de backup. Tampoco inicia servicios. Si no encuentra coincidencias, el resultado **no acredita la inexistencia de backups**; queda pendiente identificar el usuario/canal real y verificar Restic mediante un ensayo controlado.
+
+**Ejecución VPS:**
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin main
+git merge --ff-only FETCH_HEAD
+python3 scripts/d1d_backup_scheduler_names_readonly.py
+echo "D1D_SHELL_RESULT=$?"
+```
+
+Prioridad: resolver la evidencia de backups/restore antes de cualquier ensayo que se proponga sobre la base persistente. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
