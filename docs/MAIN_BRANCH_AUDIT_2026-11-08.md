@@ -1349,3 +1349,27 @@ El operador validó el script B2, con `No issues found!`, seis pruebas Flutter c
 **Siguiente prueba integrada directamente en main**, commit `3f3ce252`: se amplía el mismo fichero `clients/flutter/test/b2_dashboard_viewport_smoke_test.dart` para comprobar navegación `dashboard → ficha detalle → dashboard` con la misma API sintética. El fixture implementa `fetchRenewalDetail` sin HTTP y la nueva prueba pulsa el vencimiento simulado, comprueba ficha y referencia, vuelve atrás y verifica que dashboard se mantiene. **Pendiente de ejecutar en VPS**; no atribuir PASS todavía. Reutilizar `bash scripts/main_b2_dashboard_viewport_smoke.sh`; nuevo objetivo 7/7 tests. Un fallo debe inspeccionarse sin alterar la interfaz ni el backend de forma especulativa.
 
 **Pendientes fuera del test:** restauración O5 real aislada, migraciones sobre copia histórica de DEV y integración nativa Android. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`; prohibido deploy/migración persistente.
+
+## BX. B2 navegación sintética 6/7: fallo al volver por API de test Cupertino (09/11/2026)
+
+El operador volvió a ejecutar el smoke Flutter; `flutter analyze` no encontró errores, los seis escenarios ya establecidos volvieron a pasar y el séptimo completó el acceso al detalle de vencimiento (tanto el finder de la pantalla como el de la referencia superaron sus aserciones). El fallo registrado fue:
+```text
+00:03 +6 -1: B2 synthetic renewal opens details and returns [E]
+Expected: exactly one CupertinoNavigationBarBackButton
+Actual: Found 0 widgets
+# WidgetTester.pageBack (.../widget_tester.dart:1177)
+```
+
+**Diagnóstico:** `tester.pageBack()` exige un botón de retroceso `CupertinoNavigationBarBackButton`, pero el cliente usa navegación Material. El error no es evidencia de avería de datos ni de navegación de entrada. La salida de Flutter sigue siendo **6/7, NO PASS**.
+
+**Corrección en main `c24b2c55`:** reemplazar la llamada de test a `pageBack()` por `tester.state<NavigatorState>(find.byType(Navigator).first).pop()`; después del `pumpAndSettle` exigir desaparición de la ruta detalle, presencia del dashboard y una segunda solicitud a la API sintética de vencimientos como prueba de recarga. No se modifican interfaces de producción, backend ni seguridad. Aún está **pendiente la validación en VPS**.
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin main
+git merge --ff-only FETCH_HEAD
+bash scripts/main_b2_dashboard_viewport_smoke.sh
+echo "B2_SHELL_RESULT=$?"
+```
+
+Cierre requerido: `+7: All tests passed!`, `B2_UI_SMOKE_RESULT=0`, `B2_SHELL_RESULT=0`. O5 real aún no restaurado; cualquier despliegue o migración persistente continúa prohibido.
