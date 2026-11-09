@@ -60,3 +60,26 @@ D1_RELEASE_AUTHORIZED=NO
 D1_LIVE_MIGRATIONS_EXECUTED=NO
 D1_DEPLOY_EXECUTED=NO
 ```
+
+## Actualización 09/11/2026 — contrato real O5 descubierto
+
+El operador ha inspeccionado localmente `/usr/local/libexec/vencira/o5_backup_to_drive.sh` sin ejecutarlo: utiliza `/etc/vencira-backup/config.env` con permisos `root:600`, requiere variables `RESTIC_REPOSITORY`, `RESTIC_PASSWORD_FILE` y `RCLONE_CONFIG`, y valida sus valores frente al repositorio O5 de PostgreSQL y ficheros de contraseña/configuración ubicados en `/etc/vencira-backup/`. El backup inserta un dump `pg_dump -Fc` cifrado con Restic mediante `--stdin-from-command`, y aplica la etiqueta `vencira-postgresql` al fichero `vencira-postgres.dump`.
+
+**La instrucción genérica anterior de cargar variables manualmente se sustituye por un ejecutor restringido**: `scripts/main_d1l_o5_authenticated_readonly.sh` (commit `c0e888a4`). Este wrapper, ejecutado como root, valida permisos y valores esperados **sin imprimirlos**, importa el entorno igual que el servicio O5 e invoca el comprobador D1-L. **No inicia la copia programada**, no modifica el repo y no restaura datos.
+
+El gate Python fue corregido (commit `2b97e82d`): usa `restic snapshots --tag vencira-postgresql --json`, exige etiqueta y nombre esperado `vencira-postgres.dump` en cada snapshot seleccionado, e informa la edad del último de estos snapshots, no la de cualquier otro backup.
+
+### Ejecución en Termius
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin main && git merge --ff-only FETCH_HEAD
+python3 -m py_compile scripts/main_d1l_o5_restic_metadata_gate.py
+bash -n scripts/main_d1l_o5_authenticated_readonly.sh
+sudo bash scripts/main_d1l_o5_authenticated_readonly.sh
+echo "D1L_SHELL_RESULT=$?"
+```
+
+Esperar `D1L_SECURE_CONFIG=PASS`, `D1L_O5_CONFIG_MATCH=PASS`, `D1L_CREDENTIAL_FILE_PERMISSIONS=PASS`, `D1L_POSTGRESQL_TAGGED_SNAPSHOT_COUNT` positivo, `D1L_SNAPSHOT_FRESHNESS_48H=YES`, `D1L_RESTIC_METADATA_CHECK=PASS`, `D1L_RESULT=0`, `D1L_SHELL_RESULT=0`. `D1L_RESTORE_VERIFIED=NO` permanece correcto. El proceso puede consumir red/tiempo y omite los mensajes no redactados de Restic por seguridad. Si falla, no compartir archivos config.env, contraseñas, repositorio ni salida sin censurar.
+
+**NO declarar restauración PASS:** para recuperación completa todavía falta un ensayo explícito sobre destino aislado, comprobar dump y restaurarlo en PostgreSQL 17 efímero, sin modificar DB persistente de DEV.
