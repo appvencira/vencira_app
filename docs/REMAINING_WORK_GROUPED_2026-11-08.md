@@ -87,3 +87,27 @@ echo "CLOSE_COMBINED_SHELL_RESULT=${PIPESTATUS[0]}"
 **Criterio:** `CLOSE_DJANGO_OPERATIONAL_NATIVE_ROUTE_FENCE=PASS`, `CLOSE_ANDROID_NORMAL_ENTRY=EXTERNAL_BROWSER_ONLY`, `CLOSE_REMINDERS_0019_0027_FILES=9`, `D1B_COMPOSE_PROJECT=vencira_localcheck`, `CLOSE_COMBINED_PREFLIGHT=PASS`, `CLOSE_COMBINED_SHELL_RESULT=0`. Si el informe señala un hallazgo de compatibilidad o un temporizador inactivo, **no se modifica DEV para que el gate pase**: investigar la causa y diseñar un ensayo aislado.
 
 **Importante:** este preflight no certifica que los backups O5 sean restaurables ni que `reminders.0019–0027` puedan migrarse. Los gates de restore y rollback siguen pendientes y requieren un ensayo de PG17 aislado. I8-R de pérdida controlada de respuestas HTTPS Android permanece pendiente; no se finge completado por esta publicación. Las 15 migraciones de aplicaciones lab siguen excluidas de DEV.
+
+## Lote D1-E superado + D1-F preparado (09/11/2026)
+
+**Evidencia del operador, SHA `c486d2e0`:** los dos timers reales `vencira-o5-backup.timer` y `vencira-o5-health.timer` están `loaded/active/enabled`, con última activación y próxima ejecución presentes. Las correspondientes unidades `.service` están `loaded`, `Result=success` y `ExecMainStatus=0`. `D1E_ACTIVE_TIMERS=2/2`, `D1E_RESULT=0`, `CLOSE_SHELL_RESULT=0`. El falso negativo de D1B/D1C se debió a la omisión del prefijo `vencira-`.
+
+**Estado limitado:** planificador verificado por metadatos; no hay comprobación nueva de snapshots, retención ni restauración Restic. La última ejecución exitosa de `systemd` no garantiza que el snapshot que se necesita para migrar DEV sea reciente o restaurable.
+
+Para acelerar B3 sin exponer secretos se integraron:
+- `scripts/d1f_o5_service_topology_readonly.py` (commit `8b49bfb5`): inspecciona solo los archivos de unidades `vencira-o5-backup.service` y `vencira-o5-health.service`, registra únicamente nombres **filtrados** de scripts auxiliares y presencia/cantidad de directivas `ExecStart`, `EnvironmentFile` y `Environment`. No lee el contenido de envfiles, no imprime argumentos, rutas absolutas, contraseñas, configuración de repositorio Restic o secretos; no ejecuta ni activa el backup.
+- `scripts/main_closure_grouped_readonly_gate.sh` (commit `ae31d854`): integra D1-F al diagnóstico combinado ya validado de seguridad/rutas, inventario funcional, esquema y estados O5.
+
+**Validación pendiente:** `CLOSE_D1F_O5_SERVICE_TOPOLOGY=PASS` y `D1F_RESULT=0`. El preflight **no certifica** backup. Si los helpers no se reconocen por ser shell envolvente, ruta dinámica o una unidad drop-in, se debe revisar el procedimiento del VPS sin publicar el contenido sensible, no inventar un comando Restic.
+
+Ejecutar en Termius:
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin main
+git merge --ff-only FETCH_HEAD
+python3 -m py_compile scripts/d1f_o5_service_topology_readonly.py
+python3 scripts/d1f_o5_service_topology_readonly.py
+echo "D1F_SHELL_RESULT=$?"
+```
+
+**Próximos cierres agrupados:** (i) localizar y validar snapshot O5/Restic de solo lectura, (ii) restauración en PG17 temporal y `reminders.0019–0027` sobre clon con rollback, (iii) I8-R interrupciones de red HTTPS móvil y (iv) APK funcional/autenticación operativa, sin desplegar hasta autorización específica. Evitar repetir los gates ya acreditados salvo regresión de código relevante.
