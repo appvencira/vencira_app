@@ -115,7 +115,7 @@ django migrate --noinput >/dev/null 2>&1 || { mark SYNTHETIC_MIGRATIONS FAIL; ex
 mark SYNTHETIC_MIGRATIONS PASS
 
 # These are real Django client/URL resolver checks against the synthetic database.
-django test reminders.tests.test_d1o_release_contract --noinput --verbosity 1 >/dev/null 2>&1 || {
+django test reminders.test_d1o_release_contract --noinput --verbosity 1 >/dev/null 2>&1 || {
   mark SECURITY_HTTP_CONTRACT FAIL; exit 6;
 }
 mark SECURITY_HTTP_CONTRACT PASS
