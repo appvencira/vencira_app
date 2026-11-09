@@ -973,3 +973,40 @@ echo "D1D_SHELL_RESULT=$?"
 ```
 
 Prioridad: resolver la evidencia de backups/restore antes de cualquier ensayo que se proponga sobre la base persistente. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## BG. D1-D descubrió los nombres reales de las tareas O5 — 09/11/2026
+
+El operador ejecutó el script `scripts/d1d_backup_scheduler_names_readonly.py` y compartió:
+
+```text
+D1D_MATCH=system:timers.target.wants_vencira-o5-backup.timer
+D1D_MATCH=system:timers.target.wants_vencira-o5-health.timer
+D1D_MATCH=system:vencira-o5-backup.service
+D1D_MATCH=system:vencira-o5-backup.timer
+D1D_MATCH=system:vencira-o5-health.service
+D1D_MATCH=system:vencira-o5-health.timer
+D1D_UNIT_OR_CRON_NAMES_FOUND=6
+D1D_SYSTEM_UNIT_NAME=vencira-o5-backup.service
+D1D_SYSTEM_UNIT_NAME=vencira-o5-backup.timer
+D1D_SYSTEM_UNIT_NAME=vencira-o5-health.service
+D1D_SYSTEM_UNIT_NAME=vencira-o5-health.timer
+D1D_SYSTEM_UNIT_NAMES_FOUND=4
+D1D_USER_UNIT_NAMES_FOUND=0
+D1D_BACKUP_EXISTS=NOT_VERIFIED
+D1D_BACKUP_RESTORE=NOT_VERIFIED
+D1D_BACKUP_SCHEDULE_ACTIVE=NOT_VERIFIED
+D1D_RESULT=0
+D1D_SHELL_RESULT=0
+```
+
+**Corrección de diagnóstico:** D1-B y D1-C preguntaban por `o5-backup.*`/`o5-health.*` y por tanto devolvían `not-found`, pero **las unidades registradas llevan el prefijo `vencira-`**. Es una diferencia de nombre, no prueba de fallo del backup. Existen asimismo enlaces bajo `timers.target.wants`, pero su presencia por sí sola no demuestra activación actual o ejecuciones satisfactorias.
+
+Cambios integrados directamente en `main`:
+- `48cec940`: D1-C consulta las cuatro unidades systemd con nombres correctos.
+- `3e6f2cd1`: D1-B consulta las unidades correctas y preserva la comprobación de Compose.
+- `ec8e4c31`: nuevo `scripts/d1e_o5_actual_units_health_readonly.py` consulta estados de carga, actividad, habilitación, resultados y presencia de última/próxima ejecución con `systemctl show` **sin contenido de unidades, logs ni secretos**. Un servicio `.service` `inactive` entre ejecuciones puede ser normal; no se confunde con fallo.
+- `4554bc38`: añade D1-E al comando combinado de solo lectura.
+
+**PENDIENTE de ejecución** de D1-E. Ejecutar el gate agrupado tras actualizar `main`; comprobar `D1E_ACTIVE_TIMERS`, estado `vencira-o5-backup.timer` y resultado del servicio. Cualquier `D1E_RESULT=0` solo indica éxito de consulta: **no certifica snapshot Restic ni restauración**. No ejecutar jobs de backup ni tocar servicios automáticamente. La fase posterior debe examinar de forma acotada la existencia y restauración de un snapshot O5, sin revelar credenciales y sobre clon temporal.
+
+`MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`; ninguna migración ni despliegue.
