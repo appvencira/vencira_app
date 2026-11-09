@@ -1508,3 +1508,20 @@ D1_RELEASE_AUTHORIZED=NO
 D1_DEPLOY_EXECUTED=NO
 D1_LIVE_MIGRATIONS_EXECUTED=NO
 ```
+
+
+## CG. 09/11/2026 — D1-O publicado directamente en main; validación pendiente
+
+Se incorporó el runner `scripts/main_d1o_candidate_integral_gate.sh` (commit `d9565c14`, correcciones `9a363898`, `c57578f8`) y el módulo `backend/reminders/test_d1o_release_contract.py` (commit `c914f832`). Documento de procedimiento y aceptación: `docs/D1O_CANDIDATE_INTEGRAL_GATE_2026-11-09.md` (commit `6041d23d`).
+
+El ejecutor, **todavía sin evidencia de ejecución**, usa PostgreSQL 17 sintético en `tmpfs` y red interna, imagen Django de `main`, verificaciones de migraciones, Django test client para sesión/CSRF/fail-closed y suite `reminders`; prueba Flutter analyze/test/build web en copia temporal. Exige identidad y conservación de contenedores persistentes DEV; limpia recursos de laboratorio al salir. No repite el ensayo histórico D1-N ni ejecuta migraciones DEV.
+
+**Estado D1-O: RUNNER PUBLICADO / GATE PENDIENTE.** No afirmar PASS sin `D1O_RESULT=0`, `D1O_SHELL_RESULT=0` y marcadores detallados. Tampoco equivale a un ensayo HTTP TLS real de Caddy o validación de adjuntos binarios. Próxima intervención del operador: ejecutar una única vez el procedimiento D1-O en Termius. No introducir ramas ni modificar contenedores DEV.
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D1_RELEASE_AUTHORIZED=NO
+D1_DEPLOY_EXECUTED=NO
+D1_LIVE_MIGRATIONS_EXECUTED=NO
+```
