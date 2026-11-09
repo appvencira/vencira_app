@@ -15,7 +15,7 @@ mark LIVE_RESTORE_EXECUTED NO
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
 for tool in docker openssl git; do command -v "$tool" >/dev/null || { mark MISSING_TOOL "$tool"; exit 2; }; done
-[[ "$(git branch --show-current)" == main ]] || { mark MAIN_REQUIRED FAIL; exit 2; }
+[[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/main)" ]] || { mark MAIN_HEAD_REQUIRED FAIL; exit 2; }
 [[ -z "$(git status --porcelain)" ]] || { mark CLEAN_TREE_REQUIRED FAIL; exit 2; }
 command -v sudo >/dev/null || { mark SUDO_REQUIRED YES; exit 2; }
 if [[ "$(id -u)" == 0 ]]; then
