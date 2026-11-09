@@ -28,7 +28,8 @@ class _UnavailableWorkspaceApi implements VenciraApi {
 }
 
 /// Non-identifying fixture that exercises a real workspace and one renewal.
-class _SyntheticWorkspaceApi implements VenciraApi {
+class _SyntheticWorkspaceApi extends VenciraApi {
+  int renewalRequests = 0;
   @override
   Future<List<VenciraWorkspace>> fetchWorkspaces() async =>
       const <VenciraWorkspace>[
@@ -40,6 +41,7 @@ class _SyntheticWorkspaceApi implements VenciraApi {
   Future<VenciraRenewalPage> fetchRenewals(
       String workspaceId, {int page = 1, String search = '',
       String status = ''}) async {
+    renewalRequests++;
     if (workspaceId != 'fixture-ws') {
       throw const VenciraApiException();
     }
@@ -115,10 +117,12 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(VenciraApp(api: _SyntheticWorkspaceApi()));
+      final api = _SyntheticWorkspaceApi();
+      await tester.pumpWidget(VenciraApp(api: api));
       await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
       expect(find.byType(VenciraDashboardScreen), findsOneWidget);
+      expect(api.renewalRequests, greaterThan(0));
       // The dashboard uses a lazy-scrolling ListView. On narrow viewports
       // the renewal card is below the filters and does not exist in the
       // element tree until it enters the visible viewport.
