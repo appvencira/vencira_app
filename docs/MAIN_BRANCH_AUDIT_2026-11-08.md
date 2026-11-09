@@ -1251,3 +1251,25 @@ echo "B2_SHELL_RESULT=$?"
 Requeridos: `B2_DASHBOARD_VIEWPORTS_320_390=PASS`, `B2_UI_SMOKE_RESULT=0`, `B2_SHELL_RESULT=0`. Si hay overflow/fallo, corregir pantalla y verificar de nuevo. Esto solo prueba la UI inicial sin workspace real; otras pantallas y autenticación nativa permanecen sin probar.
 
 **No autorizaciones:** `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. No ejecutar Restic manualmente sin destino aislado y contrato real verificado.
+
+## BS. B2 dashboard Flutter 320/390 smoke PASS; error-state extension pending (09/11/2026)
+
+El operador ejecutó `scripts/main_b2_dashboard_viewport_smoke.sh` sobre el test con API simulada, aportando:
+```text
+No issues found! (ran in 14.2s)
+00:00 +0: B2 dashboard empty state renders at 320px
+00:01 +1: B2 dashboard empty state renders at 390px
+00:01 +2: All tests passed!
+B2_DASHBOARD_VIEWPORTS_320_390=PASS
+B2_DEV_CONTAINERS_TOUCHED=NO
+B2_VISUAL_PHONE_REVIEW=NOT_RUN
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+B2_UI_SMOKE_RESULT=0
+```
+
+**B2 subgate aprobado:** dos renderizados iniciales del dashboard en 320 y 390 píxeles con `VenciraApi` falsa y `flutter analyze` sin incidencias. No prueba acceso Android real, sesión nativa operativa, carga de workspaces ni resto de pantallas, y tampoco acredita revisión visual física.
+
+Para elevar la utilidad del mismo gate sin nuevos laboratorios, se añadió en `main` la prueba de API no disponible (commit `1a9f3ec8`): dos casos adicionales, 320 y 390 píxeles, en los que `fetchWorkspaces` lanza `VenciraApiException` deliberadamente. Verifica que el dashboard permanece montado sin excepciones de widget. El backend sigue simulado, sin solicitudes HTTP; **todavía pendiente la ejecución VPS de la ampliación**. Reutilizar el mismo comando `bash scripts/main_b2_dashboard_viewport_smoke.sh`. Se esperan cuatro tests PASS; no elevar hasta comprobarlo.
+
+O5 continúa con temporizadores activos y resultados systemd correctos, pero snapshot real y restore no verificados. D1-I migraciones sintéticas PASS. Despliegue DEV bloqueado, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
