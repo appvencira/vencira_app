@@ -1231,3 +1231,23 @@ D1K_RESULT=0
 **Se detiene la cadena D1-B…D1-K de inventarios de nombres/keywords.** El siguiente gate operacional solo podrá cerrar con evidencia tangible de un snapshot O5 identificado en el repositorio configurado y una restauración completa a un directorio nuevo, vacío y **aislado**, sin publicar datos personales ni secretos y sin escribir sobre DEV. No inferir comandos ni ubicaciones de Restic a partir de heurísticas; el procedimiento debe ser revisado a partir de la configuración efectiva bajo permisos autorizados, sin enviar su contenido sensible al chat. Después, sobre un clon PG17 temporal de ese backup, se reensayarán migraciones `0019–0027`, coherencia y rollback. No autorizar deployment sin estos cierres.
 
 **Otros avances:** D1-I PG17 sintético/rollback PASS. Integración funcional y visual de Android sigue pendiente. Sin deploy, sin migraciones persistentes, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## BR. 09/11/2026 — D1-K cierre y B2 Flutter viewport smoke aislado
+
+**D1-K ejecutado por operador:** `D1K_RESULT=0`, wrappers Shell O5 con 36 y 27 líneas no vacías respectivamente, shebang en ambos, sin coincidencias de delegación, Restic/Rclone/pg_dump, transferencia de red ni salida de éxito inmediata. `D1K_SNAPSHOT_VERIFIED=NO`, `D1K_RESTORE_VERIFIED=NO`. D1-K **solo clasifica texto**: no autoriza concluir que no hay backup; el siguiente paso O5 es obtener **evidencia real de snapshot y restauración aislada** mediante el procedimiento custodiado, no más regex.
+
+**B2 avance paralelo integrado directamente a main:**
+- `clients/flutter/test/b2_dashboard_viewport_smoke_test.dart` (commit `429dbb88`): arranque de `VenciraApp(api: fake)` con `VenciraApi` simulado **sin HTTP ni credenciales**, workspaces vacíos, viewport físico de 320 y 390 puntos lógicos, verifica que el dashboard se construye y no registra excepción de widget; no prueba las otras diez pantallas ni una APK real.
+- `scripts/main_b2_dashboard_viewport_smoke.sh` (commit `42d3b6e2`): contenedor de Flutter SDK independiente; copia el código desde volumen solo lectura a directorio temporal, ejecuta `flutter pub get`, `flutter analyze` del test y `flutter test`, sin crear ni tocar contenedores DEV. El contenedor Flutter podrá acceder a los repositorios públicos para instalar paquetes; el test simulado no se conecta a DEV.
+
+**Pendiente de ejecutar en VPS** (no proclamar PASS hasta ver resultados):
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin main
+git merge --ff-only FETCH_HEAD
+bash scripts/main_b2_dashboard_viewport_smoke.sh
+echo "B2_SHELL_RESULT=$?"
+```
+Requeridos: `B2_DASHBOARD_VIEWPORTS_320_390=PASS`, `B2_UI_SMOKE_RESULT=0`, `B2_SHELL_RESULT=0`. Si hay overflow/fallo, corregir pantalla y verificar de nuevo. Esto solo prueba la UI inicial sin workspace real; otras pantallas y autenticación nativa permanecen sin probar.
+
+**No autorizaciones:** `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. No ejecutar Restic manualmente sin destino aislado y contrato real verificado.
