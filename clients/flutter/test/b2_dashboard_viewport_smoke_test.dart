@@ -16,6 +16,17 @@ class _EmptyWorkspaceApi implements VenciraApi {
       throw UnsupportedError('B2 UI smoke: API operation disabled');
 }
 
+/// Simulates an unavailable backend without constructing an HTTP client.
+class _UnavailableWorkspaceApi implements VenciraApi {
+  @override
+  Future<List<VenciraWorkspace>> fetchWorkspaces() async =>
+      throw const VenciraApiException();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnsupportedError('B2 UI smoke: API operation disabled');
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -37,4 +48,23 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+  for (final width in <double>[320, 390]) {
+    testWidgets('B2 dashboard unavailable backend at ${width.toInt()}px',
+        (tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      tester.view.devicePixelRatio = 1.0;
+      tester.view.physicalSize = Size(width, 844);
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(VenciraApp(api: _UnavailableWorkspaceApi()));
+      await tester.pumpAndSettle(const Duration(milliseconds: 100));
+
+      expect(find.byType(VenciraDashboardScreen), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
 }
