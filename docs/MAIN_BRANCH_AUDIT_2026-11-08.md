@@ -1301,3 +1301,23 @@ echo "B2_SHELL_RESULT=$?"
 ```
 
 El cambio **no habilita** autenticación nativa ni las rutas de laboratorio en producción, no toca DEV. D1-I sigue PASS sintético; restauración de un snapshot O5 real sigue pendiente y bloquea el despliegue web de DEV. No repetir investigaciones de nombres/keywords O5; próxima intervención O5 debe demostrar snapshot/recovery.
+
+## BU. B2 test de workspace sintético: 4 PASS + 2 FAIL; corrección de visibilidad de ListView (09/11/2026)
+
+El operador ejecutó la ampliación de `clients/flutter/test/b2_dashboard_viewport_smoke_test.dart` sobre `main`: `flutter analyze` sin incidencias; los cuatro tests existentes (vacío y API caída, 320/390 px) siguen pasando, pero los dos nuevos de workspace/vencimiento fallaron por `find.text('Caso sintético')` con `Found 0 widgets`. **El subgate ampliado no pasa; no atribuir PASS a los seis tests.**
+
+Inspección de fuente: el dashboard usa `ListView(children: ..._workspaceContent(...))`, donde la tarjeta de vencimiento aparece **después de** los filtros y controles. En un viewport de 320/390 px puede quedar fuera del área construida por el scroll perezoso. El test comprobaba el texto **sin desplazarse**, por lo que el fallo no prueba por sí solo una avería de la API o de la UI.
+
+**Cambio de test únicamente**, commit `b97bfa25`: antes del `expect`, `tester.scrollUntilVisible(..., 220, maxScrolls:25)` sobre el `Scrollable` descendiente del dashboard. No se modifican modelo de autenticación, dashboard ni backend; no se inventa un PASS.
+
+Ejecutar solo el mismo gate B2:
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin main
+git merge --ff-only FETCH_HEAD
+bash scripts/main_b2_dashboard_viewport_smoke.sh
+echo "B2_SHELL_RESULT=$?"
+```
+Esperar `00:.. +6: All tests passed!`, `B2_UI_SMOKE_RESULT=0` y `B2_SHELL_RESULT=0`. Si falla, investigar el resultado real de `fetchFilteredRenewals` o estado de la lista; no repetir cambios en UI sin evidencia. El aviso de dependencias Flutter actualizables no fue la causa del TestFailure.
+
+Permanece `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`; O5 restore real aún pendiente.
