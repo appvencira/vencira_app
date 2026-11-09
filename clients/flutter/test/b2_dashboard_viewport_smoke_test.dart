@@ -119,7 +119,19 @@ void main() {
       await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
       expect(find.byType(VenciraDashboardScreen), findsOneWidget);
-      expect(find.text('Caso sintético'), findsWidgets);
+      // The dashboard uses a lazy-scrolling ListView. On narrow viewports
+      // the renewal card is below the filters and does not exist in the
+      // element tree until it enters the visible viewport.
+      await tester.scrollUntilVisible(
+        find.text('Caso sintético'),
+        220,
+        scrollable: find.descendant(
+          of: find.byType(VenciraDashboardScreen),
+          matching: find.byType(Scrollable),
+        ).first,
+        maxScrolls: 25,
+      );
+      expect(find.text('Caso sintético'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }
