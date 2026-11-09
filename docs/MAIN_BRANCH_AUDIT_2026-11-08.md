@@ -1010,3 +1010,39 @@ Cambios integrados directamente en `main`:
 **PENDIENTE de ejecución** de D1-E. Ejecutar el gate agrupado tras actualizar `main`; comprobar `D1E_ACTIVE_TIMERS`, estado `vencira-o5-backup.timer` y resultado del servicio. Cualquier `D1E_RESULT=0` solo indica éxito de consulta: **no certifica snapshot Restic ni restauración**. No ejecutar jobs de backup ni tocar servicios automáticamente. La fase posterior debe examinar de forma acotada la existencia y restauración de un snapshot O5, sin revelar credenciales y sobre clon temporal.
 
 `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`; ninguna migración ni despliegue.
+
+## BH. D1-E O5: ambos temporizadores activos, últimas unidades con éxito (09/11/2026)
+
+El operador ejecutó `scripts/main_closure_grouped_readonly_gate.sh` en el commit `c486d2e04b4336273dce3536e43300e29c003f1d`. Registró `CLOSE_SHELL_RESULT=0`, `CLOSE_COMBINED_PREFLIGHT=PASS`, `D1E_RESULT=0`, `D1C_SYSTEM_UNITS_LOADED=4`, `D1C_USER_UNITS_LOADED=0`.
+
+Evidencias específicas:
+```text
+D1B_VENCIRA_O5_BACKUP_TIMER_ACTIVE=active
+D1B_VENCIRA_O5_BACKUP_TIMER_ENABLED=enabled
+D1B_VENCIRA_O5_HEALTH_TIMER_ACTIVE=active
+D1B_VENCIRA_O5_HEALTH_TIMER_ENABLED=enabled
+D1E_O5_BACKUP_TIMER_LOAD=loaded
+D1E_O5_BACKUP_TIMER_ACTIVE=active
+D1E_O5_BACKUP_TIMER_UNIT_FILE_STATE=enabled
+D1E_O5_BACKUP_TIMER_LAST_TRIGGER_PRESENT=YES
+D1E_O5_BACKUP_TIMER_NEXT_ELAPSE_PRESENT=YES
+D1E_O5_HEALTH_TIMER_LOAD=loaded
+D1E_O5_HEALTH_TIMER_ACTIVE=active
+D1E_O5_HEALTH_TIMER_UNIT_FILE_STATE=enabled
+D1E_O5_HEALTH_TIMER_LAST_TRIGGER_PRESENT=YES
+D1E_O5_HEALTH_TIMER_NEXT_ELAPSE_PRESENT=YES
+D1E_O5_BACKUP_SERVICE_RESULT=success
+D1E_O5_BACKUP_SERVICE_EXEC_MAIN_STATUS=0
+D1E_O5_HEALTH_SERVICE_RESULT=success
+D1E_O5_HEALTH_SERVICE_EXEC_MAIN_STATUS=0
+D1E_ACTIVE_TIMERS=2/2
+D1E_O5_BACKUP_SUCCESS=NOT_VERIFIED
+D1E_O5_RESTIC_SNAPSHOT=NOT_VERIFIED
+D1E_O5_RESTORE=NOT_VERIFIED
+```
+
+**Interpretación:** el planificador O5 está instalado/activo en systemd del sistema y ambos timers muestran última activación y próxima programación. Los servicios finalizaron con `Result=success` y código 0 en sus ejecuciones registradas; `inactive` entre ejecuciones es normal. **No** está comprobada la fecha/frescura concreta del snapshot ni su existencia/integridad/restauración real. No confundir `Result=success` con recuperación ante desastre probada. Se mantiene D1-B/D1-C como solo lectura.
+
+**Siguiente paso controlado:** localizar el procedimiento operativo O5 real fuera del checkout actual (la documentación histórica `docs/OPERATION_O5_DRIVE_BACKUPS.md` no aparece en la rama `main` de este repositorio), inspeccionar los metadatos de snapshots mediante el mecanismo ya configurado sin mostrar rutas privadas ni contraseñas; restaurar únicamente sobre PostgreSQL 17 temporal siguiendo un plan de aislamiento explícito. No ejecutar `systemctl start`, `restic restore` o migraciones contra DEV sin procedimiento verificado.
+
+**Seguridad:** `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` siguen vigentes.
