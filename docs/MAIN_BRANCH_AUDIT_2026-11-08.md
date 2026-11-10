@@ -1549,3 +1549,18 @@ D1_LIVE_MIGRATIONS_EXECUTED=NO
 ## CI. 10/11/2026 — D1-P HTTPS read-only del DEV existente publicado
 
 El script `scripts/main_d1p_existing_dev_https_readonly.sh` (commit `8dd88d3f`) verifica TLS con CA confiable, rutas health/ready/login/CSRF y ausencia por HTTP 404 de cuatro rutas nativas de muestra **solo del DEV actualmente desplegado**, mediante peticiones GET sin cookies ni credenciales. Procedimiento `docs/D1P_EXISTING_DEV_HTTPS_READONLY_2026-11-10.md` (commit `076b9d09`). **D1-P NO EJECUTADO: no declarar PASS.** No sustituye HTTPS del candidato `main`, inspección Caddy/Compose, test de permisos de adjuntos ni validación Android. Se exige evidencia futura del operador antes de cerrar. Se mantienen `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## CJ. 10/11/2026 — D1-P PASS y D1-Q promoción/rollback preparado
+
+El operador ejecutó `scripts/main_d1p_existing_dev_https_readonly.sh` y comunicó `D1P_TLS_TRUSTED_CA_AND_HEALTH=PASS`, `D1P_READY_HTTP=PASS`, `D1P_LOGIN_GET=PASS`, `D1P_CSRF_GET=PASS`, `D1P_SAMPLED_NATIVE_ROUTES_404=PASS`, `D1P_EXTERNAL_HTTPS_EXISTING_DEV=PASS`, `D1P_RESULT=0` y `D1P_SHELL_RESULT=0`. Confirmó explícitamente `D1P_CANDIDATE_DEPLOYED=NO`, `D1P_CANDIDATE_HTTPS_TESTED=NO`, `D1P_COMPOSE_CONFIG_CONTENT_INSPECTED=NO`, `D1P_LOGIN_ATTEMPTED=NO`, `D1P_MUTATING_HTTP_REQUESTS=NO`. **D1-P cerrado PASS únicamente para DEV existente.** Documento actualizado en commit `ed00b3d0`.
+
+Preparado D1-Q en `docs/D1Q_COMPOSE_ROLLBACK_READINESS_2026-11-10.md` (commit `767cb29a`): matriz de bloqueos para futura promoción, advertencia sobre rollback de datos y procedimiento de inventario Compose/O5 de solo lectura reutilizando `scripts/d1b_dev_compose_o5_metadata_readonly.py`. D1-Q **no ejecutado**; pedir solo su resultado de Termius. No actualizar ni migrar DEV sin autorización posterior.
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D1_RELEASE_AUTHORIZED=NO
+D1_DEPLOY_EXECUTED=NO
+D1_LIVE_MIGRATIONS_EXECUTED=NO
+```
