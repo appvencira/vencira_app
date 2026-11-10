@@ -1,0 +1,4 @@
+FROM mcr.microsoft.com/playwright:v1.56.1-noble
+WORKDIR /opt/d1z
+RUN npm install --no-audit --no-fund --ignore-scripts playwright@1.56.1
+CMD ["node", "/opt/d1z/smoke.js"]
