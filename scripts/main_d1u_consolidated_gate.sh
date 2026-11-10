@@ -17,6 +17,15 @@ git fetch --quiet origin refs/heads/main:refs/remotes/origin/main
 [[ -z "$(git status --porcelain)" ]] || {
   echo 'D1U_CLEAN_TREE_REQUIRED=FAIL'; exit 2;
 }
+python3 - <<'PY'
+import ast
+from pathlib import Path
+for name in ("scripts/main_d1u_https_candidate_lab.py", "scripts/main_d1u_compose_semantics_readonly.py"):
+    ast.parse(Path(name).read_text(encoding="utf-8"), filename=name)
+print("D1U_PYTHON_SYNTAX_PREFLIGHT=PASS")
+PY
+bash -n scripts/main_d1u_consolidated_gate.sh scripts/main_d1u_candidate_https_pg17_isolated.sh
+echo "D1U_BASH_SYNTAX_PREFLIGHT=PASS"
 python3 scripts/main_d1u_compose_semantics_readonly.py || {
   echo 'D1U_COMPOSE_SEMANTICS_GATE=FAIL'; exit 3;
 }
