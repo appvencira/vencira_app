@@ -66,7 +66,16 @@ cleanup(){
   if [[ "$network_created" == YES ]]; then D network rm "$net" >/dev/null 2>&1 || rc=9; fi
   if [[ "$image_created" == YES ]]; then D image rm "$img" >/dev/null 2>&1 || rc=9; fi
   rm -f "$work"/env "$work"/lab.pem "$work"/lab.key "$work"/Caddyfile || rc=9
-  rm -rf "$work/web" || rc=9
+  # Flutter build containers may export root-owned assets. Remove those from
+  # a disposable root container, mounting ONLY this mktemp web subdirectory.
+  if [[ -d "$work/web" && ! -L "$work/web" && "$work" == /tmp/vencira-d1w.* ]]; then
+    D run --rm --network none --user 0 --security-opt no-new-privileges \
+      --entrypoint sh -v "$work/web:/cleanup" nginx:1.27-alpine \
+      -c 'rm -rf /cleanup/* /cleanup/.[!.]* /cleanup/..?*' >/dev/null 2>&1 || rc=9
+    rmdir "$work/web" >/dev/null 2>&1 || rc=9
+  else
+    rc=9
+  fi
   rmdir "$work" >/dev/null 2>&1 || rc=9
   local intact=YES
   for service in vencira_localcheck-api-1 vencira_localcheck-db-1 vencira_localcheck-web_preview-1; do
