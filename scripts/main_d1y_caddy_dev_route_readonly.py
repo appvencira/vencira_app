@@ -26,14 +26,10 @@ def proxy_in_handlers(handlers, depth=0):
             continue
         if handler.get("handler") == "reverse_proxy":
             return True
-        for key in ("routes", "handlers"):
-            nested = handler.get(key)
-            if key == "routes" and isinstance(nested, list):
-                if any(proxy_in_handlers(r.get("handle"), depth + 1)
-                       for r in nested if isinstance(r, dict)):
-                    return True
-            if key == "handlers" and proxy_in_handlers(nested, depth + 1):
-                return True
+        # A subroute's matchers must be evaluated by visit_routes().
+        # Traversing nested routes here would misattribute unrelated hosts.
+        if proxy_in_handlers(handler.get("handlers"), depth + 1):
+            return True
     return False
 
 
@@ -55,7 +51,7 @@ def visit_routes(routes, *, inherited_host=False, depth=0):
             if not isinstance(hosts, list):
                 raise ValueError("invalid hosts")
             explicit_hosts.extend(hosts)
-        host_scope = inherited_host or HOST in explicit_hosts
+        host_scope = (inherited_host or HOST in explicit_hosts) and (\n            not explicit_hosts or HOST in explicit_hosts\n        )
         if host_scope:
             seen_host = True
         if host_scope and proxy_in_handlers(route.get("handle", [])):
