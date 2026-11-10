@@ -47,3 +47,10 @@ D1_LIVE_RESTORE_EXECUTED=NO
 ## Defensa de interpretación de hosts
 
 Antes de consultar Caddy, `main_d1y_consolidated_readonly.sh` ejecuta `python3 -m unittest discover -s scripts -p 'test_main_d1y_caddy_dev_route.py' -q`. El módulo `scripts/test_main_d1y_caddy_dev_route.py` comprueba una ruta explícita DEV, una ruta ajena, una subruta DEV y un matcher anidado de dominio ajeno que no debe heredarse como ruta DEV. Marcador previsto `D1Y_ROUTE_UNIT_TESTS=PASS`. Publicado en `main`, **todavía no ejecutado**; no atribuir PASS previo.
+
+
+## Incidencia de preflight (11/11/2026)
+
+La primera ejecución en Termius se detuvo **antes de inspeccionar Caddy o Docker**: `SyntaxError: unexpected character after line continuation character` en `scripts/main_d1y_caddy_dev_route_readonly.py`, línea 54. El código fuente tenía secuencias literales `\\n` dentro de la expresión de `host_scope`. `D1Y_SHELL_RESULT=1`; no hay prueba de ruta ni inventario en esta ejecución. Corrección publicada directamente en `main`: commit `220e712e`, sustituyendo los caracteres escapados por saltos de línea reales.
+
+La guardia AST detectó el problema antes de cualquier consulta o mutación. Tras sincronizar `main` repetir únicamente `bash scripts/main_d1y_consolidated_readonly.sh`. **D1-Y sigue sin validar.**
