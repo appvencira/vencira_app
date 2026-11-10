@@ -222,6 +222,27 @@ D run --rm --network "$net" --security-opt no-new-privileges \
   }
 mark CADDY_HTTPS_PROBE PASS
 mark CADDY_PROXY_CANDIDATE_LAB PASS
+# Recovery exercise in a dedicated synthetic schema, never in DEV and never
+# against existing reminders/authorized business tables.
+D exec "$db" psql -U d1w -d d1w -v ON_ERROR_STOP=1 \
+  -c "CREATE SCHEMA d1w_rollback_fixture; CREATE TABLE d1w_rollback_fixture.marker (id integer PRIMARY KEY, state text NOT NULL); INSERT INTO d1w_rollback_fixture.marker VALUES (1, 'before');" >/dev/null || {
+  mark SYNTHETIC_ROLLBACK_FIXTURE FAIL; exit 8;
+}
+D exec "$db" pg_dump -U d1w -d d1w -Fc \
+  --schema=d1w_rollback_fixture -f /tmp/d1w-rollback.dump >/dev/null || {
+  mark SYNTHETIC_BACKUP FAIL; exit 8;
+}
+D exec "$db" psql -U d1w -d d1w -v ON_ERROR_STOP=1 \
+  -c "UPDATE d1w_rollback_fixture.marker SET state='after'; DROP SCHEMA d1w_rollback_fixture CASCADE;" >/dev/null 2>&1 || {
+  mark SYNTHETIC_MUTATION FAIL; exit 8;
+}
+D exec "$db" pg_restore -U d1w -d d1w --exit-on-error /tmp/d1w-rollback.dump >/dev/null || {
+  mark SYNTHETIC_SCHEMA_RESTORE FAIL; exit 8;
+}
+recovered="$(D exec "$db" psql -U d1w -d d1w -At -v ON_ERROR_STOP=1 -c "SELECT state FROM d1w_rollback_fixture.marker WHERE id=1;")"
+[[ "$recovered" == before ]] || { mark SYNTHETIC_SCHEMA_RESTORE FAIL; exit 8; }
+mark SYNTHETIC_SCHEMA_BACKUP_RESTORE PASS
+mark OPERATIONAL_IMAGE_AND_DB_ROLLBACK_VERIFIED NO
 mark FLUTTER_ARTIFACT_BEHIND_CADDY_TESTED YES
 mark CADDY_PRODUCTION_CONFIG_VERIFIED NO
 mark ROLLBACK_EXECUTED NO
