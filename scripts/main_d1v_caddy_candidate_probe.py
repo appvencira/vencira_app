@@ -1,0 +1,81 @@
+"""D1-V: external-client HTTPS probes against isolated Caddy/Gunicorn/PG17.
+
+Only synthesized infrastructure; do not print response bodies or credentials.
+"""
+import argparse
+import ssl
+import urllib.error
+import urllib.request
+
+
+def request(url, context, *, method="GET", headers=None, data=None):
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPSHandler(context=context),
+        urllib.request.ProxyHandler({}),
+        urllib.request.HTTPRedirectHandler(),
+    )
+    req = urllib.request.Request(url, method=method, headers=headers or {}, data=data)
+    try:
+        with opener.open(req, timeout=7) as response:
+            return response.status, response.headers
+    except urllib.error.HTTPError as exc:
+        return exc.code, exc.headers
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cert", required=True)
+    args = parser.parse_args()
+    host = "https://d1v-proxy"
+    context = ssl.create_default_context(cafile=args.cert)
+    routes = (
+        ("/api/health/", 200),
+        ("/api/ready/", 200),
+        ("/accounts/login/", 200),
+        ("/api/v1/csrf/", 200),
+        ("/api/v1/me/", 403),
+        ("/api/v1/native/issue/", 404),
+    )
+    for index, (path, expected) in enumerate(routes, 1):
+        actual, headers = request(host + path, context)
+        if path == "/api/v1/me/" and actual in (401, 403):
+            pass
+        elif actual != expected:
+            print(f"D1V_FAILED_ROUTE_INDEX={index}")
+            print(f"D1V_FAILED_HTTP_STATUS={actual}")
+            raise RuntimeError("unexpected HTTP response")
+        if path == "/api/v1/csrf/":
+            cookies = headers.get_all("Set-Cookie", [])
+            if not any("Secure" in x and "vencira_csrftoken=" in x for x in cookies):
+                raise RuntimeError("CSRF cookie must have secure flag")
+    print("D1V_CADDY_TLS_HTTP_CONTRACT=PASS")
+    print("D1V_CSRF_SECURE_COOKIE=PASS")
+    code, _ = request(host + "/accounts/login/", context,
+                      method="POST", headers={"Content-Type": "application/x-www-form-urlencoded"},
+                      data=b"username=synthetic&password=invalid")
+    if code != 403:
+        raise RuntimeError("CSRF POST unexpectedly admitted")
+    print("D1V_CSRF_POST_DENIED=PASS")
+    try:
+        request(host + "/api/health/", ssl.create_default_context())
+    except urllib.error.URLError as exc:
+        if not isinstance(exc.reason, ssl.SSLCertVerificationError):
+            raise
+    else:
+        raise RuntimeError("untrusted CA unexpectedly accepted")
+    print("D1V_UNTRUSTED_CA_DENIED=PASS")
+    try:
+        request("https://127.0.0.1/api/health/", context)
+    except urllib.error.URLError:
+        # Wrong target cannot resolve remotely: this is NOT proof of hostname denial.
+        print("D1V_HOSTNAME_NEGATIVE_NOT_TESTED=YES")
+    else:
+        raise RuntimeError("unexpected alternative host admission")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception:
+        print("D1V_PROXY_PROBE=FAIL")
+        raise SystemExit(1)
