@@ -140,3 +140,53 @@ echo "D1W_SHELL_RESULT=$?"
 ```
 
 Solo cerrar D1-W con `D1W_EPHEMERAL_CLEANUP=DONE` **y** `D1W_RESULT=0`. Ni siquiera con PASS equivaldría a rollback real de imágenes y BD DEV: el esquema restaurado es sintético y la configuración Caddy usada es de laboratorio.
+
+
+## Reejecución del operador: D1-W PASS, 10/11/2026
+
+El operador informó del resultado tras corregir los permisos de limpieza:
+
+```text
+D1W_PROBE_SYNTAX=PASS
+D1W_DEV_IDENTITY=PASS
+D1W_INTERNAL_NETWORK=PASS
+D1W_PG17_TMPFS=PASS
+D1W_CANDIDATE_IMAGE=PASS
+D1W_SYNTHETIC_MIGRATIONS=PASS
+D1W_GUNICORN_STARTED=YES
+D1W_FLUTTER_RELEASE_BUILD=PASS
+D1W_NGINX_WEB_CONTAINER_STARTED=YES
+D1W_CADDY_LAB_CONFIG_VALID=PASS
+D1W_NO_HOST_PORTS=PASS
+D1W_CADDY_SOCKET_READY=PASS
+D1W_FLUTTER_WEB_ROOT_AND_ASSETS=PASS
+D1W_CADDY_TLS_HTTP_CONTRACT=PASS
+D1W_CSRF_SECURE_COOKIE=PASS
+D1W_CSRF_POST_DENIED=PASS
+D1W_UNTRUSTED_CA_DENIED=PASS
+D1W_CADDY_HTTPS_PROBE=PASS
+D1W_CADDY_PROXY_CANDIDATE_LAB=PASS
+D1W_SYNTHETIC_SCHEMA_BACKUP_RESTORE=PASS
+D1W_FLUTTER_ARTIFACT_BEHIND_CADDY_TESTED=YES
+D1W_FLUTTER_CADDY_POSTGRES_AND_SYNTHETIC_RESTORE_GATE=PASS
+D1W_DEV_CONTAINERS_UNCHANGED=OK
+D1W_EPHEMERAL_CLEANUP=DONE
+D1W_RESULT=0
+```
+
+La salida independiente `D1W_SHELL_RESULT` no está presente, aunque sí el resultado `D1W_RESULT=0` del propio gate. El aviso Flutter de `Wasm dry run succeeded` no es un error. La retirada del residuo anterior `/tmp/vencira-d1w.dNWV8mh2` no aparece acreditada por un marcador separado y no debe afirmarse como completada solo por este nuevo ensayo.
+
+**D1-W cerrado como PASS para integración de artefactos Flutter→Nginx→Caddy TLS→Gunicorn/Django→PostgreSQL sintético y recuperación de esquema de prueba.** No extrapolar a recuperación completa de DEV, a configuración operativa de Caddy o a pruebas visuales del navegador.
+
+```text
+D1W_OPERATIONAL_IMAGE_AND_DB_ROLLBACK_VERIFIED=NO
+D1W_CADDY_PRODUCTION_CONFIG_VERIFIED=NO
+D1W_ROLLBACK_EXECUTED=NO
+D1W_ROLLBACK_VERIFIED=NO
+D1W_DEPLOY_EXECUTED=NO
+D1W_LIVE_MIGRATIONS_EXECUTED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
+
+Próxima prioridad: inventario confidencial de la configuración efectiva de proxy/SPA, simulación de reemplazo y reversión de imágenes/volumen sintético sin DEV, comprobación visual navegador y autorización expresa futura.
