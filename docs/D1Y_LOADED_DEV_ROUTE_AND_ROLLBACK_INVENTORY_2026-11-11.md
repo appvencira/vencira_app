@@ -54,3 +54,32 @@ Antes de consultar Caddy, `main_d1y_consolidated_readonly.sh` ejecuta `python3 -
 La primera ejecución en Termius se detuvo **antes de inspeccionar Caddy o Docker**: `SyntaxError: unexpected character after line continuation character` en `scripts/main_d1y_caddy_dev_route_readonly.py`, línea 54. El código fuente tenía secuencias literales `\\n` dentro de la expresión de `host_scope`. `D1Y_SHELL_RESULT=1`; no hay prueba de ruta ni inventario en esta ejecución. Corrección publicada directamente en `main`: commit `220e712e`, sustituyendo los caracteres escapados por saltos de línea reales.
 
 La guardia AST detectó el problema antes de cualquier consulta o mutación. Tras sincronizar `main` repetir únicamente `bash scripts/main_d1y_consolidated_readonly.sh`. **D1-Y sigue sin validar.**
+
+
+## Validación del operador — 11/11/2026: D1-Y PASS
+
+Tras corregir el error sintáctico de preflight, el operador confirmó:
+
+```text
+D1Y_SOURCE_AST=PASS
+D1Y_ROUTE_UNIT_TESTS=PASS
+D1Y_CADDY_READ_ONLY=YES
+D1Y_CADDY_CONFIG_CONTENT_PRINTED=NO
+D1Y_CADDY_MUTATIONS_EXECUTED=NO
+D1Y_CADDY_LOADED_CONFIG_AVAILABLE=YES
+D1Y_CADDY_DEV_HOST_MATCH_PRESENT=YES
+D1Y_CADDY_DEV_HOST_SCOPED_PROXY_PRESENT=YES
+D1Y_CADDY_RESULT=0
+D1Y_DEV_ROUTE_GATE=PASS
+D1Y_ROLLBACK_API_RUNNING_IMAGE_PRESENT=PASS
+D1Y_ROLLBACK_DB_RUNNING_IMAGE_PRESENT=PASS
+D1Y_ROLLBACK_WEB_PREVIEW_RUNNING_IMAGE_PRESENT=PASS
+D1Y_ROLLBACK_DB_NAMED_VOLUME_PRESENT=PASS
+D1Y_ROLLBACK_INVENTORY_GATE=PASS
+D1Y_READONLY_GATE=PASS
+D1Y_RESULT=0
+```
+
+Conclusión: **D1-Y PASS en estructura de reglas Caddy cargadas para `dev.vencira.es` y disponibilidad local de imágenes actualmente en ejecución**, con el volumen persistente PostgreSQL presente. No consta marcador independiente `D1Y_SHELL_RESULT` numérico. Una línea del log concatena `D1Y_ROLLBACK_OPERATIONAL_ROLLBACK_VERIFIED=NO` con `D1Y_ROLLBACK_RESULT=0`; las barreras expresas `D1Y_OPS_ROLLBACK_VERIFIED=NO` y `D1Y_READONLY_GATE=PASS` son inequívocas.
+
+**NO verificado y no autorizado:** upstreams reales de cada ruta, certificado TLS host en este gate, navegación visual, imágenes de releases anteriores, conjunto completo de artefactos de reversión, política de escrituras posactualización o rollback operativo. El operador informó de dos solicitudes de contraseña sudo con errores iniciales, pero terminó los inspect correctamente y sin cambios operativos. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
