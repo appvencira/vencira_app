@@ -1621,3 +1621,17 @@ Se integra en `main` el comprobador de solo lectura `scripts/main_d1t_compose_ca
 El operador confirmó `D1T_COMPOSE_TWO_FILES_PRESENT=PASS`, existencia de `compose.yaml` y `compose.preview.yaml`, `D1T_CADDY_UNIT_ACTIVE=PASS`, `D1T_READ_ONLY=YES`, `D1T_RESULT=0`. No se adjuntó resultado independiente de shell. Persisten `D1T_CADDY_ACTIVE_CONFIG_VERIFIED=NO`, `D1T_COMPOSE_INTERPOLATION_REVIEWED=NO`, `D1T_HTTPS_CANDIDATE_TESTED=NO`, `D1T_ROLLBACK_TESTED=NO`. Resultado incorporado a `docs/D1T_COMPOSE_CADDY_METADATA_2026-11-10.md` (commit `8bb56ef5`).
 
 **D1-T cerrado en alcance de presencia/estado de servicio.** Evitar más gates menores de mera existencia: el siguiente bloque debe revisar semántica efectiva de Compose/Caddy confidencialmente y probar el nuevo candidato con proxy HTTPS en un laboratorio sin DEV, junto con procedimiento de rollback, antes de solicitar autorización de despliegue. Sigue `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`; ni deploy ni migraciones persistentes ejecutados.
+
+
+## CP. 10/11/2026 — D1-U gate consolidado publicado en main, PENDIENTE de Termius
+
+Sin crear ramas se han integrado cuatro piezas para un solo bloque:
+- `scripts/main_d1u_https_candidate_lab.py`, commit `b8606461`: WSGI HTTPS candidato, pruebas CA/SAN y endpoints de muestra en lab.
+- `scripts/main_d1u_candidate_https_pg17_isolated.sh`, commit `ca20c8c3` y corrección `30a6d10b`: imagen backend desde main, PostgreSQL17 sintético en `tmpfs`, red interna, no publicación de puertos, limpieza de laboratorio y custodia de certificados sintéticos.
+- `scripts/main_d1u_compose_semantics_readonly.py`, commit `49468b93`: revisión de la configuración Compose interpolación/entorno deshabilitada, toda salida sensible capturada solo en memoria.
+- `scripts/main_d1u_consolidated_gate.sh`, commit `90ee744b`: un solo comando para las dos subpruebas.
+- Documento operativo `docs/D1U_CONSOLIDATED_CANDIDATE_TLS_AND_COMPOSE_2026-11-10.md`, commit `7556ea07`.
+
+**D1-U todavía NO ejecutado en el VPS; sin PASS.** Alcance HTTPS Django sintético con servidor WSGI TLS propio, *no* equivalente a Caddy operativo ni a proxy Nginx/Flutter. Aun con resultado PASS persistirán HTTPS proxy-equivalente, revisión de configuración Caddy cargada, recuperación real de imágenes + datos y aprobación expresa. A diferencia de D1-O, D1-U no repite Flutter/analyze/test/build. A diferencia de D1-P, no toca HTTPS público DEV.
+
+Se mantiene `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D1_RELEASE_AUTHORIZED=NO`.
