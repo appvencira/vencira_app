@@ -1642,3 +1642,10 @@ Se mantiene `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D1_RE
 Resultado local comunicado: `D1U_COMPOSE_SEMANTICS_GATE=PASS`, `D1U_COMPOSE_RESULT=0`; el laboratorio inició red interna y PostgreSQL17 tmpfs y construyó imagen candidata, pero una línea `chmod` contenía literalmente `\\n#`, descomponiendo el comentario en argumentos y fallando antes de arrancar HTTPS. `D1U_RESULT=1`, `D1U_CANDIDATE_TLS_GATE=FAIL`; limpieza `D1U_EPHEMERAL_CLEANUP=DONE` y contenedores DEV `D1U_DEV_CONTAINERS_UNCHANGED=OK`. **No hay evidencia de TLS candidato PASS.**
 
 Se corrigió el salto de línea y se añadió `DJANGO_SETTINGS_MODULE=config.settings` para la ejecución WSGI standalone (commit `e0a902c6`). Documento D1-U ampliado en `93673e19` con fallo y reintento. No hubo despliegue ni migración DEV. El nuevo gate sigue pendiente de validación; mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## CR. 10/11/2026 — D1-U segundo intento: PostgreSQL/candidato PASS, HTTPS FAIL (rc=6)
+
+El operador confirmó Compose PASS, PG17 sintético tmpfs PASS, migraciones PASS, imagen candidata PASS y contenedor aislado PASS. El probe HTTPS no confirmó resultado: `D1U_HTTPS_CANDIDATE=FAIL`, `D1U_RESULT=6`, `D1U_CANDIDATE_TLS_GATE=FAIL`. `D1U_DEV_CONTAINERS_UNCHANGED=OK`, `D1U_EPHEMERAL_CLEANUP=DONE`. TLS sigue **PENDIENTE**, sin deploy ni migraciones DEV.
+
+Hipótesis respaldada por Dockerfile: el entrypoint `/opt/d1u.py` no encontraba los módulos del backend bajo `/app`; no afirmar causa confirmada sin logs. Se publicó corrección de búsqueda de módulos Django en el servidor `scripts/main_d1u_https_candidate_lab.py`, commit `c4a80922`, y diagnósticos por etapas (servidor vivo/socket/probe) en `scripts/main_d1u_candidate_https_pg17_isolated.sh`, commit `da10e784`. Documento actualizado commit `34358cec`. Pendiente reejecución única D1-U; conservar `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
