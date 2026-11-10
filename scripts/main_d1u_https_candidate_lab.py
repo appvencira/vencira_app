@@ -23,7 +23,10 @@ class SecureWSGIHandler(WSGIRequestHandler):
 
 
 def serve(cert, key):
-    # The entrypoint is mounted at /opt, while Django lives under /app.\n    # Direct python /opt/d1u.py does not add /app to sys.path automatically.\n    sys.path.insert(0, "/app")\n    from django.core.wsgi import get_wsgi_application
+    # The entrypoint is mounted at /opt, while Django lives under /app.
+    # Direct python /opt/d1u.py does not add /app to sys.path automatically.
+    sys.path.insert(0, "/app")
+    from django.core.wsgi import get_wsgi_application
     server = make_server("127.0.0.1", 18443, get_wsgi_application(),
                          server_class=WSGIServer, handler_class=SecureWSGIHandler)
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
