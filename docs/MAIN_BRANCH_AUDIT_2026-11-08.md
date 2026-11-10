@@ -1649,3 +1649,10 @@ Se corrigió el salto de línea y se añadió `DJANGO_SETTINGS_MODULE=config.set
 El operador confirmó Compose PASS, PG17 sintético tmpfs PASS, migraciones PASS, imagen candidata PASS y contenedor aislado PASS. El probe HTTPS no confirmó resultado: `D1U_HTTPS_CANDIDATE=FAIL`, `D1U_RESULT=6`, `D1U_CANDIDATE_TLS_GATE=FAIL`. `D1U_DEV_CONTAINERS_UNCHANGED=OK`, `D1U_EPHEMERAL_CLEANUP=DONE`. TLS sigue **PENDIENTE**, sin deploy ni migraciones DEV.
 
 Hipótesis respaldada por Dockerfile: el entrypoint `/opt/d1u.py` no encontraba los módulos del backend bajo `/app`; no afirmar causa confirmada sin logs. Se publicó corrección de búsqueda de módulos Django en el servidor `scripts/main_d1u_https_candidate_lab.py`, commit `c4a80922`, y diagnósticos por etapas (servidor vivo/socket/probe) en `scripts/main_d1u_candidate_https_pg17_isolated.sh`, commit `da10e784`. Documento actualizado commit `34358cec`. Pendiente reejecución única D1-U; conservar `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## CS. 10/11/2026 — D1-U tercer intento y SyntaxError del laboratorio corregido
+
+El operador aportó `D1U_COMPOSE_SEMANTICS_GATE=PASS`, `D1U_PG17_TMPFS=PASS`, `D1U_SYNTHETIC_MIGRATIONS=PASS`, `D1U_CANDIDATE_CONTAINER_INTERNAL=PASS`, pero `D1U_HTTPS_SERVER_RUNNING=FAIL`, `D1U_RESULT=6` y `D1U_CANDIDATE_TLS_GATE=FAIL`. Confirmó `D1U_EPHEMERAL_CLEANUP=DONE` y `D1U_DEV_CONTAINERS_UNCHANGED=OK`. No despliegue ni migraciones persistentes.
+
+Revisión de fuente encontró secuencias literales `\\n` entre sentencias Python fuera de strings en `scripts/main_d1u_https_candidate_lab.py`, error sintáctico suficiente para terminar el servidor al arrancar. Corregido en `9f0019dd`. Preflight AST Python + `bash -n` al inicio del gate, commit `d9e4eb49`, para impedir repetir esta clase de fallo después de construir imagen. Documento `docs/D1U_CONSOLIDATED_CANDIDATE_TLS_AND_COMPOSE_2026-11-10.md` actualizado en `fe6bbee0`. **TLS candidato todavía PENDIENTE de nueva ejecución, no PASS.** Mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
