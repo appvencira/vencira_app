@@ -1635,3 +1635,10 @@ Sin crear ramas se han integrado cuatro piezas para un solo bloque:
 **D1-U todavía NO ejecutado en el VPS; sin PASS.** Alcance HTTPS Django sintético con servidor WSGI TLS propio, *no* equivalente a Caddy operativo ni a proxy Nginx/Flutter. Aun con resultado PASS persistirán HTTPS proxy-equivalente, revisión de configuración Caddy cargada, recuperación real de imágenes + datos y aprobación expresa. A diferencia de D1-O, D1-U no repite Flutter/analyze/test/build. A diferencia de D1-P, no toca HTTPS público DEV.
 
 Se mantiene `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D1_RELEASE_AUTHORIZED=NO`.
+
+
+## CQ. 10/11/2026 — D1-U primer intento: Compose PASS, TLS no ejecutado por typo
+
+Resultado local comunicado: `D1U_COMPOSE_SEMANTICS_GATE=PASS`, `D1U_COMPOSE_RESULT=0`; el laboratorio inició red interna y PostgreSQL17 tmpfs y construyó imagen candidata, pero una línea `chmod` contenía literalmente `\\n#`, descomponiendo el comentario en argumentos y fallando antes de arrancar HTTPS. `D1U_RESULT=1`, `D1U_CANDIDATE_TLS_GATE=FAIL`; limpieza `D1U_EPHEMERAL_CLEANUP=DONE` y contenedores DEV `D1U_DEV_CONTAINERS_UNCHANGED=OK`. **No hay evidencia de TLS candidato PASS.**
+
+Se corrigió el salto de línea y se añadió `DJANGO_SETTINGS_MODULE=config.settings` para la ejecución WSGI standalone (commit `e0a902c6`). Documento D1-U ampliado en `93673e19` con fallo y reintento. No hubo despliegue ni migración DEV. El nuevo gate sigue pendiente de validación; mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
