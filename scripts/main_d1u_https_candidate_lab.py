@@ -23,7 +23,7 @@ class SecureWSGIHandler(WSGIRequestHandler):
 
 
 def serve(cert, key):
-    from django.core.wsgi import get_wsgi_application
+    # The entrypoint is mounted at /opt, while Django lives under /app.\n    # Direct python /opt/d1u.py does not add /app to sys.path automatically.\n    sys.path.insert(0, "/app")\n    from django.core.wsgi import get_wsgi_application
     server = make_server("127.0.0.1", 18443, get_wsgi_application(),
                          server_class=WSGIServer, handler_class=SecureWSGIHandler)
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -54,8 +54,15 @@ def probe(cert):
         ("/api/v1/native/issue/", (404,)),
         ("/api/v1/native/refresh/", (404,)),
     )
-    for path, expected in cases:
-        if get_code("https://localhost:18443" + path, valid) not in expected:
+    for idx, (path, expected) in enumerate(cases, 1):
+        try:
+            actual = get_code("https://localhost:18443" + path, valid)
+        except (OSError, urllib.error.URLError, ssl.SSLError):
+            print(f"D1U_PROBE_FAILED_CASE={idx}")
+            raise
+        if actual not in expected:
+            print(f"D1U_PROBE_FAILED_CASE={idx}")
+            print(f"D1U_PROBE_FAILED_HTTP_STATUS={actual}")
             raise RuntimeError("expected HTTPS status not returned")
     print("D1U_CANDIDATE_TLS_VERIFIED=PASS")
     print("D1U_CANDIDATE_HTTPS_HTTP_CONTRACT=PASS")
