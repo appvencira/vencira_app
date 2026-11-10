@@ -51,7 +51,9 @@ def visit_routes(routes, *, inherited_host=False, depth=0):
             if not isinstance(hosts, list):
                 raise ValueError("invalid hosts")
             explicit_hosts.extend(hosts)
-        host_scope = (inherited_host or HOST in explicit_hosts) and (\n            not explicit_hosts or HOST in explicit_hosts\n        )
+        host_scope = (inherited_host or HOST in explicit_hosts) and ( 
+            not explicit_hosts or HOST in explicit_hosts
+        )
         if host_scope:
             seen_host = True
         if host_scope and proxy_in_handlers(route.get("handle", [])):
