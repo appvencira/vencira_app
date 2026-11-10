@@ -240,6 +240,12 @@ D build -q -t "$browser_img" -f "$root/scripts/Dockerfile.d1z-playwright" \
   "$root/scripts" >/dev/null || { mark CHROMIUM_IMAGE_BUILD FAIL; exit 8; }
 browser_image_created=YES
 mark CHROMIUM_IMAGE_BUILD PASS
+D run --rm --network none --security-opt no-new-privileges \
+  -v "$root/scripts/main_d1z_chromium_smoke.js:/opt/d1z/smoke.js:ro" \
+  "$browser_img" node --check /opt/d1z/smoke.js >/dev/null || {
+    mark CHROMIUM_SMOKE_SYNTAX FAIL; exit 8;
+  }
+mark CHROMIUM_SMOKE_SYNTAX PASS
 D run --rm --network "$net" --security-opt no-new-privileges \
   --pids-limit 512 --memory 2g --shm-size=512m \
   -v "$root/scripts/main_d1z_chromium_smoke.js:/opt/d1z/smoke.js:ro" \
