@@ -55,3 +55,17 @@ D1_RELEASE_AUTHORIZED=NO
 D1_DEPLOY_EXECUTED=NO
 D1_LIVE_MIGRATIONS_EXECUTED=NO
 ```
+
+
+## Primer resultado y corrección de routing — 10/11/2026
+
+El operador ejecutó el gate y obtuvo `D1V_PROBE_SYNTAX=PASS`, `D1V_DEV_IDENTITY=PASS`, `D1V_INTERNAL_NETWORK=PASS`, `D1V_PG17_TMPFS=PASS`, `D1V_CANDIDATE_IMAGE=PASS`, `D1V_SYNTHETIC_MIGRATIONS=PASS`, `D1V_GUNICORN_STARTED=YES` y `D1V_NO_HOST_PORTS=PASS`, pero `D1V_CADDY_HTTPS_PROBE=FAIL`, `D1V_PROXY_PROBE=FAIL`, `D1V_RESULT=7`. `D1V_DEV_CONTAINERS_UNCHANGED=OK` y `D1V_EPHEMERAL_CLEANUP=DONE`; no hubo cambios DEV.
+
+**Causa probable verificada en Caddyfile sintético:** se mezclaron `respond` sin matcher y `reverse_proxy @django` en el mismo nivel. Caddy reordena directivas y da prioridad a `respond`, pudiendo devolver 200 de fixture incluso en rutas `/api/*` en lugar de llamar a Django. La fuente oficial indica usar bloques `handle` mutuamente exclusivos para enrutamiento con fallback. La salida original no contenía código HTTP de la petición, así que ese fallo de routing es un defecto comprobado en la configuración y una explicación fundada, no diagnóstico retrospectivo del estado interno del contenedor.
+
+Correcciones publicadas en `main`:
+- `6bbbad2f`: `handle @django { reverse_proxy d1v-api:8000 }` y `handle { respond fixture }`, mutuamente excluyentes.
+- `a2e71b16`: probe imprime solo índice de ruta, estatus HTTP o tipo de excepción; nunca cuerpos ni cabeceras sensibles.
+- `0b1934a9`: comprobar sintaxis del Caddyfile dentro del contenedor con `caddy validate`; esperar primero socket interno de Caddy y ejecutar **una sola** vez el contrato HTTPS íntegro, evitando repetir solicitudes negativas 35 veces durante startup.
+
+**D1-V sigue pendiente de volver a ejecutar; no afirmar PASS.** El laboratorio continúa sin exponer puertos al host y elimina recursos al salir. Tras actualizar main, volver a ejecutar únicamente el gate D1-V y registrar los marcadores. No repetir D1-N a D1-U.
