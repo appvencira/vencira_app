@@ -1579,3 +1579,18 @@ D1_RELEASE_AUTHORIZED=NO
 D1_DEPLOY_EXECUTED=NO
 D1_LIVE_MIGRATIONS_EXECUTED=NO
 ```
+
+
+## CL. 10/11/2026 — D1-R PASS; dependencia persistente PostgreSQL identificada
+
+Termius confirmó `D1R_API_PROJECT=PASS`, `D1R_DB_PROJECT=PASS`, `D1R_WEB_PROJECT=PASS`, `D1R_THREE_DISTINCT_LIVE_CONTAINERS=PASS`, `D1R_RESULT=0`. Las tres imágenes tienen digest presente y política de reinicio; API y WEB tienen puertos publicados, DB ninguno. Recuentos Docker: API 0 binds/0 volumes/0 tmpfs; DB 0 binds/**1 volumen**/0 tmpfs; WEB 0 binds/0 volumes/0 tmpfs. Ninguno de los rootfs está configurado como readonly. Evidencia incorporada a `docs/D1R_DOCKER_DEPENDENCY_INVENTORY_2026-11-10.md` en commit `08b21a82`.
+
+El inventario **no leyó** contenido Compose/Caddy, no ejecutó rollback ni modificó DEV. `D1R_ROLLBACK_VERIFIED=NO` sigue vigente. El volumen PostgreSQL es la dependencia persistente principal observada; no manipularlo ni asumir que rollback de imagen equivale a rollback de datos. Siguiente tramo: contrastar manifiestos reales, plan de conmutación/rollback y contrato HTTPS del candidato en laboratorio, sin tocar DEV.
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D1_RELEASE_AUTHORIZED=NO
+D1_DEPLOY_EXECUTED=NO
+D1_LIVE_MIGRATIONS_EXECUTED=NO
+```
