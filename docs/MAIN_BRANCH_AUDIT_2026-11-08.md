@@ -1751,3 +1751,8 @@ El control Caddy consulta configuración efectivamente cargada por API loopback 
 ## DD. 11/11/2026 — D1-Y regression sobre match.host antes del inventario efectivo
 
 Se añadieron cinco tests unitarios de alcance de rutas en `scripts/test_main_d1y_caddy_dev_route.py` (commit `42fd74ba`) y se integró su ejecución obligatoria antes de consultar la configuración cargada de Caddy, en `scripts/main_d1y_consolidated_readonly.sh` (commit `f730915a`). Defienden de falsos positivos por `reverse_proxy` de un host ajeno, especialmente anidado bajo una ruta general. Procedimiento actualizado en `docs/D1Y_LOADED_DEV_ROUTE_AND_ROLLBACK_INVENTORY_2026-11-11.md` (commit `8c9331fe`). **Tests todavía sin ejecución; D1-Y pendiente.**
+
+
+## DE. 11/11/2026 — D1-Y preflight detecta SyntaxError; corregido, pendiente
+
+Primera ejecución Termius D1-Y: `SyntaxError` línea 54 de `scripts/main_d1y_caddy_dev_route_readonly.py` causado por secuencias literales `\\n` en expresión Python, `D1Y_SHELL_RESULT=1`. La compilación AST detuvo el gate **antes de consultar Caddy o Docker**; no se declara ningún resultado de ruta ni inventario. Corregido en `main`, commit `220e712e`. Documento D1-Y ampliado con evidencia y alcance, commit `b75b15e6`. Repetir solo D1-Y; no aumentar progreso ni asumir PASS hasta recibir evidencias. Barreras de release inalteradas.
