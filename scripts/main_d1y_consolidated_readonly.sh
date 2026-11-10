@@ -24,6 +24,10 @@ for name in ("scripts/main_d1y_caddy_dev_route_readonly.py",
     ast.parse(Path(name).read_text(encoding="utf-8"), filename=name)
 print("D1Y_SOURCE_AST=PASS")
 PY
+python3 -m unittest discover -s scripts -p 'test_main_d1y_caddy_dev_route.py' -q >/dev/null 2>&1 || {
+  echo 'D1Y_ROUTE_UNIT_TESTS=FAIL'; exit 3;
+}
+echo 'D1Y_ROUTE_UNIT_TESTS=PASS'
 caddy_rc=0
 python3 scripts/main_d1y_caddy_dev_route_readonly.py || caddy_rc=$?
 if [[ "$caddy_rc" == 0 ]]; then
