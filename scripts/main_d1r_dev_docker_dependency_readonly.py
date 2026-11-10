@@ -79,7 +79,7 @@ def main():
         mark(f"{label}_RESTART_POLICY_PRESENT",
              "YES" if (host.get("RestartPolicy") or {}).get("Name") not in (None, "", "no") else "NO")
         mark(f"{label}_PUBLISHED_PORTS_PRESENT",
-             "YES" if any(host.get("PortBindings", {}).values()) else "NO")
+             "YES" if any((host.get("PortBindings") or {}).values()) else "NO")
         mark(f"{label}_READONLY_ROOTFS", "YES" if host.get("ReadonlyRootfs") is True else "NO")
     mark("THREE_DISTINCT_LIVE_CONTAINERS", "PASS")
     mark("COMPOSE_MANIFEST_CONTENT_READ", "NO")
