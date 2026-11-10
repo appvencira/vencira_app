@@ -74,3 +74,39 @@ D1_LIVE_MIGRATIONS_EXECUTED=NO
 ```
 
 D1-N/O/P/Q/R/S/T acreditan su alcance previo, no una certificación única de release. No habilitar bearer nativo, endpoints candidatos ni MFA operativa.
+
+
+## Primer ensayo del operador y corrección — 10/11/2026
+
+El primer ensayo del ejecutor consolidado terminó **FAIL**, sin tocar DEV:
+
+```text
+D1U_COMPOSE_SERVICE_NAMES=PASS
+D1U_COMPOSE_API_STATIC_POLICY=PASS
+D1U_COMPOSE_DB_STATIC_POLICY=PASS
+D1U_COMPOSE_WEB_PREVIEW_STATIC_POLICY=PASS
+D1U_COMPOSE_SEMANTICS_GATE=PASS
+D1U_DEV_IDENTITY=PASS
+D1U_INTERNAL_NETWORK=PASS
+D1U_PG17_TMPFS=PASS
+D1U_CANDIDATE_IMAGE=PASS
+D1U_DEV_CONTAINERS_UNCHANGED=OK
+D1U_EPHEMERAL_CLEANUP=DONE
+D1U_RESULT=1
+D1U_CANDIDATE_TLS_GATE=FAIL
+```
+
+**Causa exacta:** el ejecutor `main_d1u_candidate_https_pg17_isolated.sh` contenía el texto literal `\\n#` al final de la línea `chmod`, por lo que Bash interpretaba `server.pemn#` y las palabras del comentario como argumentos de `chmod`. El primer ensayo se abortó antes de arrancar el servidor TLS. El script tampoco exportaba explícitamente `DJANGO_SETTINGS_MODULE` al ejecutar la aplicación WSGI independiente. El commit **`e0a902c6`** corrige ambos defectos sin alterar la configuración de DEV.
+
+**Estado actual D1-U: COMPOSE PASS / HTTPS todavía pendiente de validación.** No repetir D1-N/O/P/Q/R/S/T. Repetir el bloque D1-U únicamente tras sincronizar `main`, con preflight `bash -n`:
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+bash -n scripts/main_d1u_consolidated_gate.sh scripts/main_d1u_candidate_https_pg17_isolated.sh
+bash scripts/main_d1u_consolidated_gate.sh
+echo "D1U_SHELL_RESULT=$?"
+```
+
+No afirmar `D1U_RESULT=0` ni `D1U_CANDIDATE_TLS_GATE=PASS` hasta disponer de su salida real. El marcador `D1U_SHELL_RESULT` no consta en el primer ensayo. El comando vuelve a comprobar el subgate Compose porque es parte del ejecutor consolidado; no representa trabajo nuevo.
