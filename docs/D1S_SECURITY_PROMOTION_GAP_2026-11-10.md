@@ -41,3 +41,27 @@ D1_RELEASE_AUTHORIZED=NO
 D1_DEPLOY_EXECUTED=NO
 D1_LIVE_MIGRATIONS_EXECUTED=NO
 ```
+
+
+## Resultado de regresión recibido el 10/11/2026
+
+El operador reejecutó el gate D1-O contra el checkout de `main` después de publicar el módulo D1-S. Informó:
+
+```text
+D1O_DEV_IDENTITY=PASS
+D1O_INTERNAL_NETWORK=PASS
+D1O_PG17_SYNTHETIC_TMPFS=PASS
+D1O_CANDIDATE_IMAGE_BUILD=PASS
+D1O_DJANGO_DEPLOY_CHECK=PASS
+D1O_MODEL_PARITY=PASS
+D1O_SYNTHETIC_MIGRATIONS=PASS
+D1O_SECURITY_HTTP_CONTRACT=PASS
+D1O_DJANGO_REMINDERS_SUITE=PASS
+D1O_FLUTTER_ANALYZE_TEST_WEB_BUILD=PASS
+D1O_CANDIDATE_INTEGRAL_GATE=PASS
+D1O_DEV_CONTAINERS_UNCHANGED=OK
+D1O_EPHEMERAL_CLEANUP=DONE
+D1O_RESULT=0
+```
+
+La orden `echo "D1S_BACKEND_SHELL_RESULT=$?"` aparece intercalada en la salida, sin valor final visible, por lo que ese marcador **no se da por observado**. La suite `django test reminders` es la que descubre los módulos `test_*.py` del paquete, incluyendo `test_d1s_workspace_attachment_access.py`; no se informó del número individual de tests. **D1-S PASS en alcance automatizado de la suite, condicionado a que el checkout incluyera el commit publicado; no extrapolar a validación binaria real ni HTTPS de candidato.** No se tocó DEV.
