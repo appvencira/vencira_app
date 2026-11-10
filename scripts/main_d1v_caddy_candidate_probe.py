@@ -37,7 +37,12 @@ def main():
         ("/api/v1/native/issue/", 404),
     )
     for index, (path, expected) in enumerate(routes, 1):
-        actual, headers = request(host + path, context)
+        try:
+            actual, headers = request(host + path, context)
+        except (urllib.error.URLError, OSError, ssl.SSLError) as exc:
+            print(f"D1V_FAILED_ROUTE_INDEX={index}")
+            print(f"D1V_FAILED_EXCEPTION={type(exc).__name__}")
+            raise
         if path == "/api/v1/me/" and actual in (401, 403):
             pass
         elif actual != expected:
@@ -47,6 +52,7 @@ def main():
         if path == "/api/v1/csrf/":
             cookies = headers.get_all("Set-Cookie", [])
             if not any("Secure" in x and "vencira_csrftoken=" in x for x in cookies):
+                print("D1V_CSRF_COOKIE_FLAG=FAIL")
                 raise RuntimeError("CSRF cookie must have secure flag")
     print("D1V_CADDY_TLS_HTTP_CONTRACT=PASS")
     print("D1V_CSRF_SECURE_COOKIE=PASS")
@@ -54,6 +60,7 @@ def main():
                       method="POST", headers={"Content-Type": "application/x-www-form-urlencoded"},
                       data=b"username=synthetic&password=invalid")
     if code != 403:
+        print(f"D1V_CSRF_POST_STATUS={code}")
         raise RuntimeError("CSRF POST unexpectedly admitted")
     print("D1V_CSRF_POST_DENIED=PASS")
     try:
