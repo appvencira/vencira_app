@@ -110,3 +110,14 @@ echo "D1U_SHELL_RESULT=$?"
 ```
 
 No afirmar `D1U_RESULT=0` ni `D1U_CANDIDATE_TLS_GATE=PASS` hasta disponer de su salida real. El marcador `D1U_SHELL_RESULT` no consta en el primer ensayo. El comando vuelve a comprobar el subgate Compose porque es parte del ejecutor consolidado; no representa trabajo nuevo.
+
+
+## Segundo ensayo del operador y corrección de arranque WSGI — 10/11/2026
+
+Tras corregir el `chmod`, el operador comunicó `D1U_COMPOSE_SEMANTICS_GATE=PASS`, `D1U_DEV_IDENTITY=PASS`, `D1U_INTERNAL_NETWORK=PASS`, `D1U_PG17_TMPFS=PASS`, `D1U_CANDIDATE_IMAGE=PASS`, `D1U_SYNTHETIC_MIGRATIONS=PASS` y `D1U_CANDIDATE_CONTAINER_INTERNAL=PASS`, pero `D1U_HTTPS_CANDIDATE=FAIL`, `D1U_RESULT=6`, `D1U_CANDIDATE_TLS_GATE=FAIL`. La limpieza quedó `DONE` y los contenedores DEV `UNCHANGED=OK`.
+
+**Defecto probable identificado en código:** el servidor WSGI se iniciaba ejecutando `python /opt/d1u.py` mientras los módulos Django están en `/app` dentro de la imagen (`WORKDIR /app`). Python ante un script de `/opt` no garantiza que añada `/app` a `sys.path`, por lo que `from django.core.wsgi import get_wsgi_application` podía fallar al importar `config.settings`. No hay logs del contenedor que demuestren inequívocamente esta causa, así que se califica como **hipótesis fundada**, no diagnóstico confirmado.
+
+Corrección publicada en `main`: `scripts/main_d1u_https_candidate_lab.py` inserta `/app` en el path de importación del servidor y ahora registra solo el índice del caso fallido y su código HTTP si procede (commit `c4a80922`). El orquestador separa la comprobación de que el contenedor siga vivo, la apertura del socket TLS y una única prueba completa posterior, con marcadores sanitizados `D1U_HTTPS_SERVER_RUNNING`, `D1U_HTTPS_SERVER_READY` y `D1U_HTTPS_CONTRACT_PROBE` (commit `da10e784`). No imprime cuerpos de respuestas ni logs del servidor.
+
+**Resultado actual:** COMPOSE PASS / TLS pendiente de nuevo ensayo. No afirmar `D1U_CANDIDATE_TLS_GATE=PASS` hasta disponer de evidencia. Para reejecutar, sincronizar `main` y usar el comando D1-U documentado anteriormente. No requiere repetir gates D1-N a D1-T.
