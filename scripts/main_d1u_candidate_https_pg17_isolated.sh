@@ -88,9 +88,11 @@ openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 1 \
   -keyout "$work/server.key" -out "$work/server.pem" \
   -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost' \
   >/dev/null 2>&1
-chmod 644 "$work/server.key" "$work/server.pem"\n# Synthetic one-day key, held inside a 0700 temporary directory on host.
+chmod 644 "$work/server.key" "$work/server.pem"
+# Synthetic one-day key, held inside a 0700 temporary directory on host.
 cat > "$work/env" <<EOF
 VENCIRA_ENV=test
+DJANGO_SETTINGS_MODULE=config.settings
 DJANGO_DEBUG=0
 DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,testserver
 DJANGO_SECRET_KEY=$(openssl rand -hex 32)
