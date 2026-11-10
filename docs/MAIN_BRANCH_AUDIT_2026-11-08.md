@@ -1564,3 +1564,18 @@ D1_RELEASE_AUTHORIZED=NO
 D1_DEPLOY_EXECUTED=NO
 D1_LIVE_MIGRATIONS_EXECUTED=NO
 ```
+
+
+## CK. 10/11/2026 — D1-Q metadatos PASS, D1-R inventario de dependencias preparado
+
+El operador aportó `D1B_RESULT=0`: proyecto `vencira_localcheck`, manifiestos `compose.yaml` y `compose.preview.yaml`, directorio `vencira-localcheck`, ambos timers O5 `active/enabled` y servicios `inactive/static`. La salida se registró en `docs/D1Q_COMPOSE_ROLLBACK_READINESS_2026-11-10.md` (commit `ca3aba86`). No interpretar los marcadores `D1B_BACKUP_RESTORE_VERIFIED=NO` y `D1B_MIGRATION_COMPATIBILITY_VERIFIED=NO` como reversión de los PASS de D1-M/N: esos atributos no son verificados por D1B.
+
+Nuevo `scripts/main_d1r_dev_docker_dependency_readonly.py` (commits `fbbe2b70`, `bce1ab0e`) y procedimiento `docs/D1R_DOCKER_DEPENDENCY_INVENTORY_2026-11-10.md` (commit `8c27db2c`). El nuevo paso publica únicamente clasificaciones de metadatos Docker (no valores secretos ni rutas), sin cambios persistentes. **D1-R no ejecutado, pendiente de evidencia Termius.** El rollback real y el HTTPS del candidato `main` permanecen pendientes.
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D1_RELEASE_AUTHORIZED=NO
+D1_DEPLOY_EXECUTED=NO
+D1_LIVE_MIGRATIONS_EXECUTED=NO
+```
