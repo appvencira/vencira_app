@@ -1544,3 +1544,8 @@ D1_RELEASE_AUTHORIZED=NO
 D1_DEPLOY_EXECUTED=NO
 D1_LIVE_MIGRATIONS_EXECUTED=NO
 ```
+
+
+## CI. 10/11/2026 — D1-P HTTPS read-only del DEV existente publicado
+
+El script `scripts/main_d1p_existing_dev_https_readonly.sh` (commit `8dd88d3f`) verifica TLS con CA confiable, rutas health/ready/login/CSRF y ausencia por HTTP 404 de cuatro rutas nativas de muestra **solo del DEV actualmente desplegado**, mediante peticiones GET sin cookies ni credenciales. Procedimiento `docs/D1P_EXISTING_DEV_HTTPS_READONLY_2026-11-10.md` (commit `076b9d09`). **D1-P NO EJECUTADO: no declarar PASS.** No sustituye HTTPS del candidato `main`, inspección Caddy/Compose, test de permisos de adjuntos ni validación Android. Se exige evidencia futura del operador antes de cerrar. Se mantienen `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
