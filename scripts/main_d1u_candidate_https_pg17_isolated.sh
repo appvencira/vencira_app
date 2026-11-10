@@ -88,7 +88,7 @@ openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 1 \
   -keyout "$work/server.key" -out "$work/server.pem" \
   -subj '/CN=localhost' -addext 'subjectAltName=DNS:localhost' \
   >/dev/null 2>&1
-chmod 600 "$work/server.key" "$work/server.pem"
+chmod 644 "$work/server.key" "$work/server.pem"\n# Synthetic one-day key, held inside a 0700 temporary directory on host.
 cat > "$work/env" <<EOF
 VENCIRA_ENV=test
 DJANGO_DEBUG=0
@@ -114,17 +114,17 @@ mark SYNTHETIC_MIGRATIONS PASS
 D run -d --name "$api" --network "$net" --env-file "$work/env" \
   --security-opt no-new-privileges --pids-limit 256 --memory 2g \
   --read-only --tmpfs /tmp:rw,size=128m,mode=1777 \
-  -v "$root/scripts/main_d1u_https_candidate_lab.py:/tmp/d1u.py:ro" \
-  -v "$work/server.pem:/tmp/server.pem:ro" \
-  -v "$work/server.key:/tmp/server.key:ro" \
-  "$img" python /tmp/d1u.py serve --cert /tmp/server.pem --key /tmp/server.key >/dev/null
+  -v "$root/scripts/main_d1u_https_candidate_lab.py:/opt/d1u.py:ro" \
+  -v "$work/server.pem:/opt/server.pem:ro" \
+  -v "$work/server.key:/opt/server.key:ro" \
+  "$img" python /opt/d1u.py serve --cert /opt/server.pem --key /opt/server.key >/dev/null
 api_created=YES
 [[ "$(D inspect -f '{{.HostConfig.NetworkMode}}' "$api")" == "$net" ]] || exit 5
 [[ -z "$(D inspect -f '{{.HostConfig.PortBindings}}' "$api")" || "$(D inspect -f '{{.HostConfig.PortBindings}}' "$api")" == 'map[]' ]] || exit 5
 mark CANDIDATE_CONTAINER_INTERNAL PASS
 started=NO
 for _ in $(seq 1 40); do
-  if D exec "$api" python /tmp/d1u.py probe --cert /tmp/server.pem >/dev/null 2>&1; then
+  if D exec "$api" python /opt/d1u.py probe --cert /opt/server.pem >/dev/null 2>&1; then
     started=YES
     break
   fi
