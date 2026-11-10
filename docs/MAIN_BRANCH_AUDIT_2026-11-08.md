@@ -1525,3 +1525,22 @@ D1_RELEASE_AUTHORIZED=NO
 D1_DEPLOY_EXECUTED=NO
 D1_LIVE_MIGRATIONS_EXECUTED=NO
 ```
+
+
+## CH. 10/11/2026 — D1-O regresión integral PASS (evidencia Termius)
+
+El operador comunicó `D1O_DEV_IDENTITY=PASS`, `D1O_INTERNAL_NETWORK=PASS`, `D1O_PG17_SYNTHETIC_TMPFS=PASS`, `D1O_CANDIDATE_IMAGE_BUILD=PASS`, `D1O_DJANGO_DEPLOY_CHECK=PASS`, `D1O_MODEL_PARITY=PASS`, `D1O_SYNTHETIC_MIGRATIONS=PASS`, `D1O_SECURITY_HTTP_CONTRACT=PASS`, `D1O_DJANGO_REMINDERS_SUITE=PASS`, `D1O_FLUTTER_ANALYZE_TEST_WEB_BUILD=PASS`, `D1O_CANDIDATE_INTEGRAL_GATE=PASS`, `D1O_DEV_CONTAINERS_UNCHANGED=OK`, `D1O_EPHEMERAL_CLEANUP=DONE` y `D1O_RESULT=0`. El marcador `D1O_SHELL_RESULT` no consta en la salida recibida; no atribuirlo.
+
+**D1-O PASS para base PG17 sintética, contratos Django HTTP de test, suite reminders y compilación Flutter web.** Las contraseñas `sudo` tuvieron un intento fallido previo, pero la ejecución completó el gate. El aviso WASM dry-run de Flutter no cambia el resultado.
+
+Se solucionaron los bloqueos preflight: la referencia local `origin/main` no se había actualizado pese a `FETCH_HEAD`, y los archivos `scripts/__pycache__/` no versionados impedían el checkout limpio; commit `f246bae3` introduce `.gitignore`. No se autorizó ni realizó migración ni despliegue DEV.
+
+**Pendientes reales:** `D1O_COMPOSE_CADDY_RUNTIME_INSPECTION=NOT_RUN`, `D1O_ANDROID_PHYSICAL=NOT_RUN`, pruebas HTTPS reales y autorizaciones de adjuntos. Prioridad siguiente: D1-P inspección/contrato HTTPS y plan de rollback Compose; después revisión de riesgos para solicitar autorización explícita de una futura promoción DEV, nunca MFA nativa.
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D1_RELEASE_AUTHORIZED=NO
+D1_DEPLOY_EXECUTED=NO
+D1_LIVE_MIGRATIONS_EXECUTED=NO
+```
