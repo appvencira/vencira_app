@@ -69,3 +69,12 @@ Correcciones publicadas en `main`:
 - `0b1934a9`: comprobar sintaxis del Caddyfile dentro del contenedor con `caddy validate`; esperar primero socket interno de Caddy y ejecutar **una sola** vez el contrato HTTPS íntegro, evitando repetir solicitudes negativas 35 veces durante startup.
 
 **D1-V sigue pendiente de volver a ejecutar; no afirmar PASS.** El laboratorio continúa sin exponer puertos al host y elimina recursos al salir. Tras actualizar main, volver a ejecutar únicamente el gate D1-V y registrar los marcadores. No repetir D1-N a D1-U.
+
+
+## Ejecución confirmada — 10/11/2026
+
+**D1-V PASS en laboratorio aislado:** el operador comunicó `D1V_PROBE_SYNTAX=PASS`, `D1V_DEV_IDENTITY=PASS`, `D1V_INTERNAL_NETWORK=PASS`, `D1V_PG17_TMPFS=PASS`, `D1V_CANDIDATE_IMAGE=PASS`, `D1V_SYNTHETIC_MIGRATIONS=PASS`, `D1V_GUNICORN_STARTED=YES`, `D1V_CADDY_LAB_CONFIG_VALID=PASS`, `D1V_NO_HOST_PORTS=PASS`, `D1V_CADDY_SOCKET_READY=PASS`, `D1V_CADDY_TLS_HTTP_CONTRACT=PASS`, `D1V_CSRF_SECURE_COOKIE=PASS`, `D1V_CSRF_POST_DENIED=PASS`, `D1V_UNTRUSTED_CA_DENIED=PASS`, `D1V_CADDY_HTTPS_PROBE=PASS`, `D1V_CADDY_PROXY_CANDIDATE_LAB=PASS`, `D1V_PROXY_AND_BACKEND_GATE=PASS`, `D1V_DEV_CONTAINERS_UNCHANGED=OK`, `D1V_EPHEMERAL_CLEANUP=DONE` y `D1V_RESULT=0`.
+
+El valor separado de `D1V_SHELL_RESULT` no consta en el extracto; no atribuirlo. No se ejecutó deploy, restauración ni migración DEV.
+
+Las limitaciones explícitas son `D1V_CADDY_PRODUCTION_CONFIG_VERIFIED=NO`, `D1V_FLUTTER_ARTIFACT_BEHIND_CADDY_TESTED=NO`, `D1V_ROLLBACK_EXECUTED=NO` y `D1V_ROLLBACK_VERIFIED=NO`. El PASS **no** valida la configuración activa de Caddy, Nginx/Flutter o el rollback operativo. Próximo trabajo: ensayo del frontend web real y recuperación operativa aislada antes de evaluar promoción.
