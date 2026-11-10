@@ -153,6 +153,11 @@ D run -d --name "$proxy" --network "$net" --network-alias d1v-proxy \
   -v "$work/lab.key:/etc/caddy/lab.key:ro" \
   caddy:2.11.7 >/dev/null
 proxy_created=YES
+D exec "$proxy" caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1 || {
+  mark CADDY_LAB_CONFIG_VALID FAIL
+  exit 6
+}
+mark CADDY_LAB_CONFIG_VALID PASS
 for service in "$api" "$proxy"; do
   [[ "$(D inspect -f '{{.HostConfig.PortBindings}}' "$service")" == 'map[]' ]] || {
     mark NO_HOST_PORTS FAIL; exit 6;
@@ -167,23 +172,22 @@ for _ in $(seq 1 35); do
   [[ "$(D inspect -f '{{.State.Running}}' "$api" 2>/dev/null || true)" == true ]] || {
     mark GUNICORN_PROCESS_RUNNING FAIL; exit 6;
   }
-  if D run --rm --network "$net" --security-opt no-new-privileges \
-    -v "$root/scripts/main_d1v_caddy_candidate_probe.py:/opt/probe.py:ro" \
-    -v "$work/lab.pem:/opt/lab.pem:ro" "$img" \
-    python /opt/probe.py --cert /opt/lab.pem >/dev/null 2>&1; then
+  if D run --rm --network "$net" --security-opt no-new-privileges "$img" \
+    python -c 'import socket; socket.create_connection(("d1v-proxy",443),2).close()' >/dev/null 2>&1; then
     started=YES; break
   fi
   sleep 1
 done
-[[ "$started" == YES ]] || {
-  mark CADDY_HTTPS_PROBE FAIL
-  # Run final probe once without response bodies; logs sanitized by probe.
-  D run --rm --network "$net" --security-opt no-new-privileges \
-    -v "$root/scripts/main_d1v_caddy_candidate_probe.py:/opt/probe.py:ro" \
-    -v "$work/lab.pem:/opt/lab.pem:ro" "$img" \
-    python /opt/probe.py --cert /opt/lab.pem || true
-  exit 7
-}
+[[ "$started" == YES ]] || { mark CADDY_SOCKET_READY FAIL; exit 7; }
+mark CADDY_SOCKET_READY PASS
+# Only one full request contract run after socket readiness.
+D run --rm --network "$net" --security-opt no-new-privileges \
+  -v "$root/scripts/main_d1v_caddy_candidate_probe.py:/opt/probe.py:ro" \
+  -v "$work/lab.pem:/opt/lab.pem:ro" "$img" \
+  python /opt/probe.py --cert /opt/lab.pem || {
+    mark CADDY_HTTPS_PROBE FAIL
+    exit 7
+  }
 mark CADDY_HTTPS_PROBE PASS
 mark CADDY_PROXY_CANDIDATE_LAB PASS
 mark CADDY_PRODUCTION_CONFIG_VERIFIED NO
