@@ -1746,3 +1746,8 @@ Sobre D1-X PASS se publicaron directamente en `main` los scripts `scripts/main_d
 El control Caddy consulta configuración efectivamente cargada por API loopback y exige coincidencia estructural explícita de `dev.vencira.es` con `reverse_proxy` en el alcance de la ruta; no publica JSON, destinos, certificados, secretos ni detalles de configuración. El inventario Docker exige disponibilidad local de imágenes en ejecución y volumen PostgreSQL nombrado. Ambos son **read-only**. Documento operativo `docs/D1Y_LOADED_DEV_ROUTE_AND_ROLLBACK_INVENTORY_2026-11-11.md` (commit `1b518d0a`).
 
 **D1-Y no ejecutado; ningún PASS declarado.** Aun si pasara, no certifica navegador real, rutas/upstreams completos, artefactos anteriores para rollback, gestión de escrituras ni restauración de datos DEV. Conservadas las barreras `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D1_RELEASE_AUTHORIZED=NO`. Próxima validación debe apuntar a riesgos funcionales pendientes en lugar de elevar un porcentaje sin evidencia.
+
+
+## DD. 11/11/2026 — D1-Y regression sobre match.host antes del inventario efectivo
+
+Se añadieron cinco tests unitarios de alcance de rutas en `scripts/test_main_d1y_caddy_dev_route.py` (commit `42fd74ba`) y se integró su ejecución obligatoria antes de consultar la configuración cargada de Caddy, en `scripts/main_d1y_consolidated_readonly.sh` (commit `f730915a`). Defienden de falsos positivos por `reverse_proxy` de un host ajeno, especialmente anidado bajo una ruta general. Procedimiento actualizado en `docs/D1Y_LOADED_DEV_ROUTE_AND_ROLLBACK_INVENTORY_2026-11-11.md` (commit `8c9331fe`). **Tests todavía sin ejecución; D1-Y pendiente.**
