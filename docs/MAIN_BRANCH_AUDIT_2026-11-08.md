@@ -1670,3 +1670,12 @@ Limitaciones expresas: `D1U_CADDY_CANDIDATE_VERIFIED=NO`, `D1U_ROLLBACK_VERIFIED
 D1-U cerró PASS la cadena HTTPS directa del candidato (Python WSGI sintético). Para cerrar la brecha de proxy se incorporó `scripts/main_d1v_caddy_candidate_probe.py` (commits `83a75327`, `2505b23b`) y `scripts/main_d1v_caddy_candidate_isolated.sh` (commits `690a0736`, `5a90e735`), que construyen y prueban una red interna Docker sin puertos publicados con PG17 tmpfs, Gunicorn/Django candidato y Caddy 2.11.7 TLS con un Caddyfile de laboratorio. Pruebas HTTPS: health/ready/login/CSRF, cookie `Secure`, POST sin token bloqueado, anonimato, rutas nativas no publicadas y CA no confiable denegada; sin lectura ni modificaciones de DEV. Documento completo: `docs/D1V_ISOLATED_CADDY_PROXY_AND_ROLLBACK_GAPS_2026-11-10.md`, commit `0be2b3b7`.
 
 **D1-V NO EJECUTADO; no declarar PASS.** El Caddyfile es sintético, no la configuración activa de Caddy DEV, y la ruta web raíz sirve un fixture en lugar del Flutter real; el rollback de imágenes, artefactos y datos aún no está certificado ni ejecutado. Este bloque aporta una prueba real del software Caddy como reverse proxy ante Django, no una promoción. Se mantienen `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D1_RELEASE_AUTHORIZED=NO`.
+
+
+## CV. 10/11/2026 — D1-V primer gate rc7; orden de Caddy y diagnóstico corregidos
+
+Termius informó de `D1V_PG17_TMPFS=PASS`, `D1V_SYNTHETIC_MIGRATIONS=PASS`, `D1V_GUNICORN_STARTED=YES`, `D1V_NO_HOST_PORTS=PASS`, pero `D1V_CADDY_HTTPS_PROBE=FAIL`, `D1V_PROXY_PROBE=FAIL`, `D1V_RESULT=7`. Los contenedores DEV permanecieron inalterados y el laboratorio se limpió. No se observó la causa HTTP concreta porque el probe antiguo no mostraba el estatus fallido.
+
+Revisión del Caddyfile de laboratorio encontró un `respond` general en conflicto con `reverse_proxy @django` por orden canónico de directivas. Se corrigió usando `handle` mutuamente excluyentes (commit `6bbbad2f`); se añadieron diagnósticos sin divulgar respuestas (commit `a2e71b16`) y validación `caddy validate` + readiness TCP antes de una única prueba HTTPS (commit `0b1934a9`). Documento D1-V actualizado `3e467762`. **D1-V PENDIENTE de reintento; no confundir corrección con PASS.**
+
+La prueba sigue usando Caddyfile sintético; la configuración Caddy activa DEV, frontend Flutter detrás del proxy y rollback completo NO se han verificado. Se mantiene `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
