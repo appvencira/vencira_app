@@ -42,3 +42,8 @@ D1_DEPLOY_EXECUTED=NO
 D1_LIVE_MIGRATIONS_EXECUTED=NO
 D1_LIVE_RESTORE_EXECUTED=NO
 ```
+
+
+## Defensa de interpretación de hosts
+
+Antes de consultar Caddy, `main_d1y_consolidated_readonly.sh` ejecuta `python3 -m unittest discover -s scripts -p 'test_main_d1y_caddy_dev_route.py' -q`. El módulo `scripts/test_main_d1y_caddy_dev_route.py` comprueba una ruta explícita DEV, una ruta ajena, una subruta DEV y un matcher anidado de dominio ajeno que no debe heredarse como ruta DEV. Marcador previsto `D1Y_ROUTE_UNIT_TESTS=PASS`. Publicado en `main`, **todavía no ejecutado**; no atribuir PASS previo.
