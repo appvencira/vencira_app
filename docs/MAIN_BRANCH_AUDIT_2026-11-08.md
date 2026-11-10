@@ -1694,3 +1694,18 @@ D1_RELEASE_AUTHORIZED=NO
 D1_DEPLOY_EXECUTED=NO
 D1_LIVE_MIGRATIONS_EXECUTED=NO
 ```
+
+
+## CX. 10/11/2026 — D1-W Flutter Web real con Nginx/Caddy y restore sintético publicado
+
+Tras D1-V PASS (Caddy 2.11.7 → Gunicorn/Django con PG17 temporal), se creó en `main` `scripts/main_d1w_flutter_caddy_probe.py` (commit `cd42c9c1`) y `scripts/main_d1w_flutter_nginx_caddy_isolated.sh` (commits `20d4a2ae`, `97609506`, ajuste de referencia `90ac1b8d`). Ahora la raíz HTTPS de Caddy sirve un **artefacto Flutter Web recién compilado** desde `clients/flutter` a través de un contenedor Nginx en la red `--internal`; las rutas API pasan a Django candidato y PostgreSQL 17 en `tmpfs`. Se verifica JavaScript y bootstrap, contratos HTTP/CSRF, certificados negativos, ausencia de puertos host, limpieza y conservación de contenedores DEV.
+
+Se añadió al mismo gate un ejercicio `pg_dump` → mutación/eliminación → `pg_restore` sobre un **esquema sintético exclusivo**, sin datos de negocio, sin conectar con DEV. Ese resultado **no sustituye la recuperación O5 integral ni el rollback operacional**. Documento: `docs/D1W_FLUTTER_NGINX_CADDY_SYNTHETIC_RECOVERY_2026-11-10.md` (commit `dc74ee15`). **D1-W está PUBLICADO pero NO EJECUTADO**; no afirmar PASS ni elevar automáticamente el porcentaje. Faltan inspección Caddy/SPA activos DEV, prueba visual navegador, preservación y conmutación de imágenes anteriores y rollback íntegro de datos/escrituras. Permisos y MFA operativos siguen bloqueados.
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D1_RELEASE_AUTHORIZED=NO
+D1_DEPLOY_EXECUTED=NO
+D1_LIVE_MIGRATIONS_EXECUTED=NO
+```
