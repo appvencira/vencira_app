@@ -76,3 +76,34 @@ Los marcadores `D1O_COMPOSE_CADDY_RUNTIME_INSPECTION=NOT_RUN` y `D1O_ANDROID_PHY
 ## Después del gate
 
 Si D1-O pasa, aún quedará validación HTTPS/CSRF contra Caddy, permisos de ficha/adjuntos con fixtures adecuados e inventario/rollback exacto del Compose real para una promoción DEV. Ningún resultado permite desplegar sin **autorización específica posterior**. Mantener Android nativo como pista independiente.
+
+
+## Resultado aportado por el operador (10/11/2026)
+
+**D1-O PASS en el alcance ejecutado.** El operador comunicó los siguientes marcadores, tras resolver una discrepancia entre `HEAD` y la referencia local `origin/main` y excluir `scripts/__pycache__/` con `.gitignore` (commit `f246bae3`):
+
+```text
+D1O_DEV_IDENTITY=PASS
+D1O_INTERNAL_NETWORK=PASS
+D1O_PG17_SYNTHETIC_TMPFS=PASS
+D1O_CANDIDATE_IMAGE_BUILD=PASS
+D1O_DJANGO_DEPLOY_CHECK=PASS
+D1O_MODEL_PARITY=PASS
+D1O_SYNTHETIC_MIGRATIONS=PASS
+D1O_SECURITY_HTTP_CONTRACT=PASS
+D1O_DJANGO_REMINDERS_SUITE=PASS
+D1O_FLUTTER_ANALYZE_TEST_WEB_BUILD=PASS
+D1O_COMPOSE_CADDY_RUNTIME_INSPECTION=NOT_RUN
+D1O_ANDROID_PHYSICAL=NOT_RUN
+D1O_MFA_NATIVE_PUBLIC_ENABLED=NO
+D1O_CANDIDATE_INTEGRAL_GATE=PASS
+D1O_DEV_CONTAINERS_UNCHANGED=OK
+D1O_EPHEMERAL_CLEANUP=DONE
+D1O_DEPLOY_EXECUTED=NO
+D1O_LIVE_MIGRATIONS_EXECUTED=NO
+D1O_RESULT=0
+```
+
+La salida mostrada **no incluye** `D1O_SHELL_RESULT`; el propio `D1O_RESULT=0` emitido por la trampa de salida es evidencia del resultado del script. No inventar marcador de shell. Se observó un primer intento `sudo` erróneo seguido de autenticación suficiente para ejecutar el gate. El aviso de `flutter build web` sobre dry-run WASM no es un fallo de compilación.
+
+**No equivale a test de HTTPS/Caddy real ni a prueba integral de autorización de adjuntos.** Sigue prohibido despliegue y migración DEV; planificar D1-P de contrato HTTPS externo de solo lectura y revisión de rollback Compose, sin usar datos privados ni iniciar acciones persistentes.
