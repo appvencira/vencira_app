@@ -137,8 +137,12 @@ cat > "$work/Caddyfile" <<'CADDY'
 d1v-proxy {
   tls /etc/caddy/lab.pem /etc/caddy/lab.key
   @django path /api/* /accounts/* /admin/*
-  reverse_proxy @django d1v-api:8000
-  respond "D1V isolated fixture; not Flutter" 200
+  handle @django {
+    reverse_proxy d1v-api:8000
+  }
+  handle {
+    respond "D1V isolated fixture; not Flutter" 200
+  }
 }
 CADDY
 chmod 644 "$work/Caddyfile"
