@@ -125,14 +125,26 @@ api_created=YES
 [[ -z "$(D inspect -f '{{.HostConfig.PortBindings}}' "$api")" || "$(D inspect -f '{{.HostConfig.PortBindings}}' "$api")" == 'map[]' ]] || exit 5
 mark CANDIDATE_CONTAINER_INTERNAL PASS
 started=NO
-for _ in $(seq 1 40); do
-  if D exec "$api" python /opt/d1u.py probe --cert /opt/server.pem >/dev/null 2>&1; then
+for _ in $(seq 1 30); do
+  if [[ "$(D inspect -f '{{.State.Running}}' "$api" 2>/dev/null || true)" != true ]]; then
+    mark HTTPS_SERVER_RUNNING FAIL
+    exit 6
+  fi
+  if D exec "$api" python -c 'import socket; socket.create_connection(("127.0.0.1", 18443), 2).close()' >/dev/null 2>&1; then
     started=YES
     break
   fi
   sleep 1
 done
-[[ "$started" == YES ]] || { mark HTTPS_CANDIDATE FAIL; exit 6; }
+[[ "$started" == YES ]] || { mark HTTPS_SERVER_READY FAIL; exit 6; }
+mark HTTPS_SERVER_READY PASS
+# Run once after TCP readiness; report only sanitized negative case/status.
+D exec "$api" python /opt/d1u.py probe --cert /opt/server.pem || {
+  mark HTTPS_CONTRACT_PROBE FAIL
+  mark HTTPS_CANDIDATE FAIL
+  exit 6
+}
+mark HTTPS_CONTRACT_PROBE PASS
 mark HTTPS_CANDIDATE PASS
 mark TRUSTED_CERT_AND_HOSTNAME PASS
 mark UNTRUSTED_AND_HOSTNAME_NEGATIVE PASS
