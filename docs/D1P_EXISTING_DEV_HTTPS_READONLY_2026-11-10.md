@@ -28,3 +28,28 @@ MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 D1_RELEASE_AUTHORIZED=NO
 ```
+
+
+## Resultado real — 10/11/2026
+
+**D1-P PASS** conforme a la salida íntegra del operador:
+
+```text
+D1P_DEPLOY_EXECUTED=NO
+D1P_LIVE_MIGRATIONS_EXECUTED=NO
+D1P_LOGIN_ATTEMPTED=NO
+D1P_MUTATING_HTTP_REQUESTS=NO
+D1P_TLS_TRUSTED_CA_AND_HEALTH=PASS
+D1P_READY_HTTP=PASS
+D1P_LOGIN_GET=PASS
+D1P_CSRF_GET=PASS
+D1P_SAMPLED_NATIVE_ROUTES_404=PASS
+D1P_EXTERNAL_HTTPS_EXISTING_DEV=PASS
+D1P_CANDIDATE_DEPLOYED=NO
+D1P_CANDIDATE_HTTPS_TESTED=NO
+D1P_COMPOSE_CONFIG_CONTENT_INSPECTED=NO
+D1P_RESULT=0
+D1P_SHELL_RESULT=0
+```
+
+No se realizaron peticiones mutadoras, login, despliegues ni migraciones persistentes. La aceptación es **exclusivamente del DEV existente**; no equivale a probar el nuevo código detrás de Caddy. No repetir D1-P sin una modificación relacionada que invalide esta evidencia.
