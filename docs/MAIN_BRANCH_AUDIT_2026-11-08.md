@@ -1756,3 +1756,10 @@ Se añadieron cinco tests unitarios de alcance de rutas en `scripts/test_main_d1
 ## DE. 11/11/2026 — D1-Y preflight detecta SyntaxError; corregido, pendiente
 
 Primera ejecución Termius D1-Y: `SyntaxError` línea 54 de `scripts/main_d1y_caddy_dev_route_readonly.py` causado por secuencias literales `\\n` en expresión Python, `D1Y_SHELL_RESULT=1`. La compilación AST detuvo el gate **antes de consultar Caddy o Docker**; no se declara ningún resultado de ruta ni inventario. Corregido en `main`, commit `220e712e`. Documento D1-Y ampliado con evidencia y alcance, commit `b75b15e6`. Repetir solo D1-Y; no aumentar progreso ni asumir PASS hasta recibir evidencias. Barreras de release inalteradas.
+
+
+## DF. 11/11/2026 — D1-Y PASS: host-scoped proxy Caddy DEV y artefactos actuales
+
+El operador aportó `D1Y_SOURCE_AST=PASS`, `D1Y_ROUTE_UNIT_TESTS=PASS`, `D1Y_CADDY_DEV_HOST_MATCH_PRESENT=YES`, `D1Y_CADDY_DEV_HOST_SCOPED_PROXY_PRESENT=YES`, `D1Y_DEV_ROUTE_GATE=PASS`, `D1Y_ROLLBACK_API_RUNNING_IMAGE_PRESENT=PASS`, `D1Y_ROLLBACK_DB_RUNNING_IMAGE_PRESENT=PASS`, `D1Y_ROLLBACK_WEB_PREVIEW_RUNNING_IMAGE_PRESENT=PASS`, `D1Y_ROLLBACK_DB_NAMED_VOLUME_PRESENT=PASS`, `D1Y_ROLLBACK_INVENTORY_GATE=PASS`, `D1Y_READONLY_GATE=PASS`, `D1Y_RESULT=0`. Evidencia registrada en `docs/D1Y_LOADED_DEV_ROUTE_AND_ROLLBACK_INVENTORY_2026-11-11.md` commit `609be75f`.
+
+**D1-Y PASS solo en su alcance de metadatos**, no prueba comunicación con upstream específico ni certificado real del host, imagen previa conservada, rollback operativo, RPO/RTO ni browser visual. El resultado `D1Y_SHELL_RESULT` independiente no consta; una línea `NO` y `D1Y_ROLLBACK_RESULT=0` quedó concatenada, pero `D1Y_OPS_ROLLBACK_VERIFIED=NO` consta explícito. Quedan prohibidos deploy y migraciones operativas: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
