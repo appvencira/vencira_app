@@ -19,7 +19,7 @@ done
 python3 - <<'PY'
 import ast
 from pathlib import Path
-ast.parse(Path("scripts/main_d1w_caddy_candidate_probe.py").read_text())
+ast.parse(Path("scripts/main_d1w_flutter_caddy_probe.py").read_text())
 print("D1W_PROBE_SYNTAX=PASS")
 PY
 [[ "$(git rev-parse HEAD)" == "$(git rev-parse refs/remotes/origin/main)" ]] || {
@@ -214,7 +214,7 @@ done
 mark CADDY_SOCKET_READY PASS
 # Only one full request contract run after socket readiness.
 D run --rm --network "$net" --security-opt no-new-privileges \
-  -v "$root/scripts/main_d1w_caddy_candidate_probe.py:/opt/probe.py:ro" \
+  -v "$root/scripts/main_d1w_flutter_caddy_probe.py:/opt/probe.py:ro" \
   -v "$work/lab.pem:/opt/lab.pem:ro" "$img" \
   python /opt/probe.py --cert /opt/lab.pem || {
     mark CADDY_HTTPS_PROBE FAIL
@@ -247,4 +247,4 @@ mark FLUTTER_ARTIFACT_BEHIND_CADDY_TESTED YES
 mark CADDY_PRODUCTION_CONFIG_VERIFIED NO
 mark ROLLBACK_EXECUTED NO
 mark ROLLBACK_VERIFIED NO
-mark PROXY_AND_BACKEND_GATE PASS
+mark FLUTTER_CADDY_POSTGRES_AND_SYNTHETIC_RESTORE_GATE PASS
