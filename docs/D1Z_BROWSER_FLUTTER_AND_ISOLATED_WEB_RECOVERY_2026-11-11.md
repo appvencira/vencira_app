@@ -43,3 +43,12 @@ D1_DEPLOY_EXECUTED=NO
 D1_LIVE_MIGRATIONS_EXECUTED=NO
 D1_LIVE_RESTORE_EXECUTED=NO
 ```
+
+
+## Primer resultado del operador y mejora diagnóstica (11/11/2026)
+
+La primera ejecución obtuvo `D1Z_PG17_TMPFS=PASS`, `D1Z_SYNTHETIC_MIGRATIONS=PASS`, `D1Z_FLUTTER_RELEASE_BUILD=PASS`, `D1Z_CADDY_LAB_CONFIG_VALID=PASS`, `D1Z_NO_HOST_PORTS=PASS`, `D1Z_CADDY_TLS_HTTP_CONTRACT=PASS`, `D1Z_CSRF_SECURE_COOKIE=PASS`, `D1Z_CSRF_POST_DENIED=PASS`, `D1Z_UNTRUSTED_CA_DENIED=PASS`, `D1Z_CADDY_HTTPS_PROBE=PASS` y `D1Z_CHROMIUM_IMAGE_BUILD=PASS`. El navegador comunicó `D1Z_CHROMIUM_FAILURE_STAGE=RENDER_OR_BROWSER` y `D1Z_CHROMIUM_RENDER_GATE=FAIL`. El gate devolvió `D1Z_RESULT=8`, con `D1Z_DEV_CONTAINERS_UNCHANGED=OK` y `D1Z_EPHEMERAL_CLEANUP=DONE`. **D1-Z global NO supera el gate**.
+
+El fallo puede corresponder a renderización, arranque Chromium, recursos externos inaccesibles u otro error: el mensaje original **no discrimina** y no hay prueba suficiente para atribuirlo a Flutter o a los certificados. Se cambió `scripts/main_d1z_chromium_smoke.js` en commit `74a32b76` para registrar etapas discretas (`LAUNCH`, `DOCUMENT`, `FLUTTER_VIEW_TIMEOUT`, `SAME_ORIGIN_API`, `JS_ERRORS`) y contadores de errores JS, peticiones fallidas internas y externas, sin imprimir direcciones, cookies, mensajes de consola, tokens ni cuerpos HTTP. El shell ahora ejecuta `node --check` en un contenedor sin red antes del smoke, commit `5df3987b`.
+
+Se requiere **una nueva ejecución D1-Z** sobre `main`. Solo publicar PASS si se obtienen `D1Z_CHROMIUM_SMOKE=PASS`, `D1Z_CHROMIUM_AFTER_WEB_RESTART=PASS`, `D1Z_EPHEMERAL_CLEANUP=DONE` y `D1Z_RESULT=0`. Si persiste el fallo, usar los nuevos marcadores como diagnóstico, no desactivar los controles ni reducir el alcance de la prueba para hacerla pasar. Mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
