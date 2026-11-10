@@ -121,3 +121,14 @@ Tras corregir el `chmod`, el operador comunicó `D1U_COMPOSE_SEMANTICS_GATE=PASS
 Corrección publicada en `main`: `scripts/main_d1u_https_candidate_lab.py` inserta `/app` en el path de importación del servidor y ahora registra solo el índice del caso fallido y su código HTTP si procede (commit `c4a80922`). El orquestador separa la comprobación de que el contenedor siga vivo, la apertura del socket TLS y una única prueba completa posterior, con marcadores sanitizados `D1U_HTTPS_SERVER_RUNNING`, `D1U_HTTPS_SERVER_READY` y `D1U_HTTPS_CONTRACT_PROBE` (commit `da10e784`). No imprime cuerpos de respuestas ni logs del servidor.
 
 **Resultado actual:** COMPOSE PASS / TLS pendiente de nuevo ensayo. No afirmar `D1U_CANDIDATE_TLS_GATE=PASS` hasta disponer de evidencia. Para reejecutar, sincronizar `main` y usar el comando D1-U documentado anteriormente. No requiere repetir gates D1-N a D1-T.
+
+
+## Tercer intento — fallo de arranque confirmado por revisión de fuente (10/11/2026)
+
+El operador obtuvo `D1U_HTTPS_SERVER_RUNNING=FAIL`, `D1U_RESULT=6` después de `D1U_CANDIDATE_CONTAINER_INTERNAL=PASS`. La inspección directa de `scripts/main_d1u_https_candidate_lab.py` reveló **secuencias literales `\\n` fuera de una cadena**, insertadas en el cuerpo de `serve()` entre comentario, `sys.path.insert` y `from django.core.wsgi`. Constituyen un **SyntaxError** al interpretar el fichero y explican que el proceso principal termine inmediatamente; no hace falta inferir un error de CA ni de red. La evidencia de salida no incluye traceback, pero el defecto sintáctico es comprobable en el código del commit anterior.
+
+Correcciones en `main`:
+- `9f0019dd`: sustitución de las secuencias incorrectas por saltos de línea reales en el script Python.
+- `d9e4eb49`: en el ejecutor consolidado se incluye preflight con `ast.parse` de los dos scripts Python y `bash -n` de los dos Bash **antes de iniciar la revisión Compose o el laboratorio**.
+
+No confundir la corrección publicada con ejecución validada. D1-U sigue **TLS PENDIENTE** hasta obtener `D1U_CANDIDATE_TLS_GATE=PASS`, `D1U_RESULT=0` y `D1U_SHELL_RESULT=0`. No repetir controles previos D1-N a D1-T.
