@@ -33,3 +33,10 @@ D1_RELEASE_AUTHORIZED=NO
 D1_DEPLOY_EXECUTED=NO
 D1_LIVE_MIGRATIONS_EXECUTED=NO
 ```
+
+
+## Resultado del operador (10/11/2026)
+
+**D1-T PASS únicamente para metadatos:** `D1T_COMPOSE_YAML_PRESENT=YES`, `D1T_COMPOSE_PREVIEW_YAML_PRESENT=YES`, `D1T_COMPOSE_TWO_FILES_PRESENT=PASS`, `D1T_CADDY_UNIT_ACTIVE=PASS`, `D1T_RESULT=0`. Se observó `D1T_READ_ONLY=YES`, `D1T_DEPLOY_EXECUTED=NO`, `D1T_LIVE_MIGRATIONS_EXECUTED=NO`. No consta en el extracto `D1T_SHELL_RESULT`; no inventarlo. Un primer intento sudo incorrecto fue seguido de ejecución normal.
+
+Los límites expresos siguen siendo `D1T_CADDY_ACTIVE_CONFIG_VERIFIED=NO`, `D1T_COMPOSE_INTERPOLATION_REVIEWED=NO`, `D1T_HTTPS_CANDIDATE_TESTED=NO`, `D1T_ROLLBACK_TESTED=NO`. **No autorizar promoción.** El paso siguiente debe superar las comprobaciones de presencia y contrastar la semántica Compose/Caddy de modo confidencial, preferiblemente combinándolo con un ensayo de proxy HTTPS candidato aislado para evitar inventarios triviales sucesivos.
