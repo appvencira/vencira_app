@@ -1594,3 +1594,16 @@ D1_RELEASE_AUTHORIZED=NO
 D1_DEPLOY_EXECUTED=NO
 D1_LIVE_MIGRATIONS_EXECUTED=NO
 ```
+
+
+## CM. 10/11/2026 — D1-S autorización cruzada de ficha/adjuntos: tests publicados, no ejecutados
+
+Se incorporó directamente en `main` `backend/reminders/test_d1s_workspace_attachment_access.py` (commit `60d665ae`) con pruebas HTTP de separación entre workspaces, miembro sin asignación y comportamiento fail-closed de adjuntos. Procedimiento y matriz de riesgos en `docs/D1S_SECURITY_PROMOTION_GAP_2026-11-10.md` (commit `5fe9c74f`). **No hay PASS de esta nueva suite aún**. El endpoint de adjuntos vigente expone metadatos autorizados; upload/download/delete siguen bloqueados explícitamente. No cambiar esta política por conveniencia de pruebas.
+
+Inventario D1-R PASS ya documentado; persisten revisión de configuración Compose/Caddy, HTTPS de candidato aislado y rollback integral. Despliegue DEV y migraciones persistentes prohibidos. La regresión nueva puede ejecutarse sobre el PG17 sintético del ejecutor D1-O tras sincronizar `main`; es una repetición motivada por cambio nuevo de tests backend. La certificación web no implica disponibilidad del login Android nativo.
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D1_RELEASE_AUTHORIZED=NO
+```
