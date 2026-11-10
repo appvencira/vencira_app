@@ -1614,3 +1614,10 @@ D1_RELEASE_AUTHORIZED=NO
 El operador volvió a ejecutar D1-O desde checkout actualizado tras publicar los tests D1-S y aportó `D1O_SECURITY_HTTP_CONTRACT=PASS`, `D1O_DJANGO_REMINDERS_SUITE=PASS`, `D1O_FLUTTER_ANALYZE_TEST_WEB_BUILD=PASS`, `D1O_DEV_CONTAINERS_UNCHANGED=OK`, `D1O_EPHEMERAL_CLEANUP=DONE` y `D1O_RESULT=0`. No se recibió el valor separado de `D1S_BACKEND_SHELL_RESULT`; no inventarlo. D1-S superado en alcance Django test discovery, no prueba de binarios ni de HTTPS candidato. Registrado en `docs/D1S_SECURITY_PROMOTION_GAP_2026-11-10.md` commit `21182f9c`.
 
 Se integra en `main` el comprobador de solo lectura `scripts/main_d1t_compose_caddy_metadata_readonly.py` (commit `7d5530e2`) y procedimiento `docs/D1T_COMPOSE_CADDY_METADATA_2026-11-10.md` (commit `740e4204`). Comprueba únicamente presencia de los dos manifiestos conocidos y estado activo de `caddy`, sin imprimir configuración ni valores. **D1-T PENDIENTE de ejecución.** No certifica semántica Compose, configuración Caddy cargada, HTTPS del candidato o rollback. Bloqueos operativos intactos.
+
+
+## CO. 10/11/2026 — D1-T PASS solo metadatos; siguiente gate de promoción sustantivo
+
+El operador confirmó `D1T_COMPOSE_TWO_FILES_PRESENT=PASS`, existencia de `compose.yaml` y `compose.preview.yaml`, `D1T_CADDY_UNIT_ACTIVE=PASS`, `D1T_READ_ONLY=YES`, `D1T_RESULT=0`. No se adjuntó resultado independiente de shell. Persisten `D1T_CADDY_ACTIVE_CONFIG_VERIFIED=NO`, `D1T_COMPOSE_INTERPOLATION_REVIEWED=NO`, `D1T_HTTPS_CANDIDATE_TESTED=NO`, `D1T_ROLLBACK_TESTED=NO`. Resultado incorporado a `docs/D1T_COMPOSE_CADDY_METADATA_2026-11-10.md` (commit `8bb56ef5`).
+
+**D1-T cerrado en alcance de presencia/estado de servicio.** Evitar más gates menores de mera existencia: el siguiente bloque debe revisar semántica efectiva de Compose/Caddy confidencialmente y probar el nuevo candidato con proxy HTTPS en un laboratorio sin DEV, junto con procedimiento de rollback, antes de solicitar autorización de despliegue. Sigue `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`; ni deploy ni migraciones persistentes ejecutados.
