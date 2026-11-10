@@ -1709,3 +1709,10 @@ D1_RELEASE_AUTHORIZED=NO
 D1_DEPLOY_EXECUTED=NO
 D1_LIVE_MIGRATIONS_EXECUTED=NO
 ```
+
+
+## CY. 10/11/2026 — D1-W integración funcional PASS, gate global FAIL por permisos cleanup
+
+El operador validó `D1W_FLUTTER_WEB_ROOT_AND_ASSETS=PASS`, `D1W_CADDY_TLS_HTTP_CONTRACT=PASS`, `D1W_CSRF_SECURE_COOKIE=PASS`, `D1W_CSRF_POST_DENIED=PASS`, `D1W_UNTRUSTED_CA_DENIED=PASS`, `D1W_CADDY_HTTPS_PROBE=PASS`, `D1W_SYNTHETIC_SCHEMA_BACKUP_RESTORE=PASS`, `D1W_FLUTTER_CADDY_POSTGRES_AND_SYNTHETIC_RESTORE_GATE=PASS`; contenedores DEV sin cambios. Pero export Flutter creó archivos propiedad de root, imposibles de borrar como usuario del host: `D1W_EPHEMERAL_CLEANUP=FAIL` y `D1W_RESULT=9`. Quedó directorio `/tmp/vencira-d1w.dNWV8mh2/web` de esta prueba; **no declarar D1-W global PASS**.
+
+El script de D1-W recibió corrección `0b04161c` para limpieza de árbol de export mediante contenedor desechable root sin red y bind limitado al subdirectorio temporal, sin `sudo rm -rf` genérico. Documento D1-W actualizado en `972ee155` con comandos de retiro exactamente acotados al residuo anterior. Falta ejecutar el retiro y repetir el gate para observar `D1W_EPHEMERAL_CLEANUP=DONE` y `D1W_RESULT=0`. Aun con PASS no se certifica Caddy operativo ni rollback completo de Docker/PostgreSQL ni se autoriza deploy. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
