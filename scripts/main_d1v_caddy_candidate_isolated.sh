@@ -11,7 +11,7 @@ mark RELEASE_AUTHORIZED NO
 mark DEPLOY_EXECUTED NO
 mark LIVE_MIGRATIONS_EXECUTED NO
 mark LIVE_RESTORE_EXECUTED NO
-root="$(cd "$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
 for tool in docker git openssl python3; do
   command -v "$tool" >/dev/null || { mark MISSING_TOOL "$tool"; exit 2; }
@@ -66,7 +66,7 @@ cleanup(){
   rmdir "$work" >/dev/null 2>&1 || rc=9
   local intact=YES
   for service in vencira_localcheck-api-1 vencira_localcheck-db-1 vencira_localcheck-web_preview-1; do
-    [[ "$(D inspect -f '{{.Id}}:{{.Image}}' "$service" 2>/dev/null || true)" == "\${live[$service]}" ]] || intact=NO
+    [[ "$(D inspect -f '{{.Id}}:{{.Image}}' "$service" 2>/dev/null || true)" == "${live[$service]}" ]] || intact=NO
   done
   mark DEV_CONTAINERS_UNCHANGED "$([[ "$intact" == YES ]] && echo OK || echo FAIL)"
   [[ "$intact" == YES ]] || rc=9
