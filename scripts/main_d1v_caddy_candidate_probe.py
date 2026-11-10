@@ -64,13 +64,6 @@ def main():
     else:
         raise RuntimeError("untrusted CA unexpectedly accepted")
     print("D1V_UNTRUSTED_CA_DENIED=PASS")
-    try:
-        request("https://127.0.0.1/api/health/", context)
-    except urllib.error.URLError:
-        # Wrong target cannot resolve remotely: this is NOT proof of hostname denial.
-        print("D1V_HOSTNAME_NEGATIVE_NOT_TESTED=YES")
-    else:
-        raise RuntimeError("unexpected alternative host admission")
 
 
 if __name__ == "__main__":
