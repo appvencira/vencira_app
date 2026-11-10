@@ -132,3 +132,51 @@ Correcciones en `main`:
 - `d9e4eb49`: en el ejecutor consolidado se incluye preflight con `ast.parse` de los dos scripts Python y `bash -n` de los dos Bash **antes de iniciar la revisión Compose o el laboratorio**.
 
 No confundir la corrección publicada con ejecución validada. D1-U sigue **TLS PENDIENTE** hasta obtener `D1U_CANDIDATE_TLS_GATE=PASS`, `D1U_RESULT=0` y `D1U_SHELL_RESULT=0`. No repetir controles previos D1-N a D1-T.
+
+
+## Resultado final del laboratorio — 10/11/2026
+
+**D1-U PASS en su alcance de semántica básica Compose y HTTPS Django sintético.** El operador ha comunicado:
+
+```text
+D1U_PYTHON_SYNTAX_PREFLIGHT=PASS
+D1U_BASH_SYNTAX_PREFLIGHT=PASS
+D1U_COMPOSE_SERVICE_NAMES=PASS
+D1U_COMPOSE_API_STATIC_POLICY=PASS
+D1U_COMPOSE_DB_STATIC_POLICY=PASS
+D1U_COMPOSE_WEB_PREVIEW_STATIC_POLICY=PASS
+D1U_COMPOSE_DB_VOLUME_DECLARED=YES
+D1U_COMPOSE_SEMANTICS_GATE=PASS
+D1U_DEV_IDENTITY=PASS
+D1U_INTERNAL_NETWORK=PASS
+D1U_PG17_TMPFS=PASS
+D1U_CANDIDATE_IMAGE=PASS
+D1U_SYNTHETIC_MIGRATIONS=PASS
+D1U_CANDIDATE_CONTAINER_INTERNAL=PASS
+D1U_HTTPS_SERVER_READY=PASS
+D1U_CANDIDATE_TLS_VERIFIED=PASS
+D1U_CANDIDATE_HTTPS_HTTP_CONTRACT=PASS
+D1U_HOSTNAME_MISMATCH_DENIED=PASS
+D1U_UNTRUSTED_CA_DENIED=PASS
+D1U_HTTPS_CONTRACT_PROBE=PASS
+D1U_HTTPS_CANDIDATE=PASS
+D1U_CANDIDATE_HTTPS_LAB_GATE=PASS
+D1U_DEV_CONTAINERS_UNCHANGED=OK
+D1U_EPHEMERAL_CLEANUP=DONE
+D1U_CANDIDATE_TLS_GATE=PASS
+D1U_RESULT=0
+```
+
+El log recibido no contiene `D1U_SHELL_RESULT` con valor numérico independiente; el resultado `D1U_RESULT=0` del ejecutor consolidado sí consta. Estos marcadores corresponden a una **certificación de laboratorio con servidor TLS WSGI sintético, no del Caddy real**. También constan expresamente:
+
+```text
+D1U_CADDY_CANDIDATE_VERIFIED=NO
+D1U_ROLLBACK_VERIFIED=NO
+D1U_COMPOSE_CADDY_EFFECTIVE_CONFIG_VERIFIED=NO
+D1U_CADDY_OPERATIVE_CONFIG_REVIEW=NOT_RUN
+D1U_ROLLBACK_PRACTICED=NO
+D1U_DEPLOY_EXECUTED=NO
+D1U_LIVE_MIGRATIONS_EXECUTED=NO
+```
+
+**Próximo bloque concentrado:** Caddy candidato en red aislada, integrado con el artefacto web y HTTP/CSRF; plan de rollback verificable para imágenes y volumen PostgreSQL antes de considerar una futura promoción DEV. Mantener guardas y no interpretar D1-U como autorización de release.
