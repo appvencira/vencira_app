@@ -1679,3 +1679,18 @@ Termius informó de `D1V_PG17_TMPFS=PASS`, `D1V_SYNTHETIC_MIGRATIONS=PASS`, `D1V
 Revisión del Caddyfile de laboratorio encontró un `respond` general en conflicto con `reverse_proxy @django` por orden canónico de directivas. Se corrigió usando `handle` mutuamente excluyentes (commit `6bbbad2f`); se añadieron diagnósticos sin divulgar respuestas (commit `a2e71b16`) y validación `caddy validate` + readiness TCP antes de una única prueba HTTPS (commit `0b1934a9`). Documento D1-V actualizado `3e467762`. **D1-V PENDIENTE de reintento; no confundir corrección con PASS.**
 
 La prueba sigue usando Caddyfile sintético; la configuración Caddy activa DEV, frontend Flutter detrás del proxy y rollback completo NO se han verificado. Se mantiene `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## CW. 10/11/2026 — D1-V PASS: Caddy TLS aislado → Gunicorn candidato → PG17
+
+Evidencia directa del operador: `D1V_CADDY_LAB_CONFIG_VALID=PASS`, `D1V_CADDY_SOCKET_READY=PASS`, `D1V_CADDY_TLS_HTTP_CONTRACT=PASS`, `D1V_CSRF_SECURE_COOKIE=PASS`, `D1V_CSRF_POST_DENIED=PASS`, `D1V_UNTRUSTED_CA_DENIED=PASS`, `D1V_CADDY_HTTPS_PROBE=PASS`, `D1V_CADDY_PROXY_CANDIDATE_LAB=PASS`, `D1V_PROXY_AND_BACKEND_GATE=PASS`, `D1V_DEV_CONTAINERS_UNCHANGED=OK`, `D1V_EPHEMERAL_CLEANUP=DONE`, `D1V_RESULT=0`. Junto a ello, build API, PostgreSQL 17 tmpfs y migraciones sintéticas PASS; no hubo cambios en DEV. El resultado independiente `D1V_SHELL_RESULT` no aparece en el extracto. Documento de gate actualizado en `docs/D1V_ISOLATED_CADDY_PROXY_AND_ROLLBACK_GAPS_2026-11-10.md` (commit `a69d20c8`).
+
+**Cierre de D1-V:** Caddy 2.11.7 de laboratorio con Caddyfile sintético puede terminar TLS y reenviar HTTP a Gunicorn/Django candidato, respetando CSRF/cookies y rutas de muestra. **No acredita** la configuración Caddy efectivamente cargada en DEV, el frontend Flutter/Nginx ni rollback integrado. `D1V_CADDY_PRODUCTION_CONFIG_VERIFIED=NO`, `D1V_FLUTTER_ARTIFACT_BEHIND_CADDY_TESTED=NO`, `D1V_ROLLBACK_VERIFIED=NO` siguen siendo NO. Siguiente bloque D1-W: artefacto Flutter Web a través del reverse proxy y recuperación operativa aislada, con autorizaciones persistentes bloqueadas.
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D1_RELEASE_AUTHORIZED=NO
+D1_DEPLOY_EXECUTED=NO
+D1_LIVE_MIGRATIONS_EXECUTED=NO
+```
