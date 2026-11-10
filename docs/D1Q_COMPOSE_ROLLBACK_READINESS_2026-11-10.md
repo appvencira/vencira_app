@@ -41,3 +41,12 @@ D1_RELEASE_AUTHORIZED=NO
 D1_DEPLOY_EXECUTED=NO
 D1_LIVE_MIGRATIONS_EXECUTED=NO
 ```
+
+
+## Evidencia recibida de Termius (10/11/2026)
+
+El operador ejecutó el comprobador de inventario `d1b_dev_compose_o5_metadata_readonly.py` y obtuvo `D1B_RESULT=0`. Proyecto `vencira_localcheck`, ficheros Compose `compose.yaml` y `compose.preview.yaml`, directorio basename `vencira-localcheck`. Ambos timers O5 `active/enabled`; servicios `inactive/static` entre disparos (normal para unidades puntuales, no prueba independiente de última ejecución). Los renglones de servicios se concatenaron por formato de salida `systemctl`; interpretar los cuatro campos sin afirmar un nuevo evento. Un primer intento de contraseña sudo falló, pero el inventario finalizó.
+
+La propia salida `D1B_BACKUP_RESTORE_VERIFIED=NO` y `D1B_MIGRATION_COMPATIBILITY_VERIFIED=NO` expresa solo que **este script de metadatos no verifica** esos atributos; las pruebas independientes D1-M/D1-N permanecen PASS.
+
+**D1-Q metadatos PASS / rollback operativo PENDIENTE.** Se requiere clasificar dependencias efectivas de imágenes y mounts desde `docker inspect` sin difundir secretos, y revisar en una fase separada el manifiesto real y configuración Caddy custodiada. Este hito **no** autoriza desplegar.
