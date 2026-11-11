@@ -29,17 +29,46 @@ const { chromium } = require("playwright");
       page.locator('button[type="submit"]').click()
     ]);
     console.log("D2E_BROWSER_SYNTHETIC_LOGIN=PASS");
-    stage="FLUTTER";
+    stage="FLUTTER_VIEW";
     await page.locator("flutter-view").first().waitFor({
       state:"attached",timeout:45000
     });
-    // Flutter CanvasKit doesn't always expose semantics until a browser user
-    // enables it. This is a real click of Flutter's accessibility placeholder.
+    console.log("D2E_FLUTTER_VIEW_ATTACHED=PASS");
+    // Flutter uses CanvasKit and may expose accessibility nodes through
+    // shadow roots or an opt-in semantics placeholder. Inspect only counts;
+    // never log DOM content, customer data, cookies, URLs, or tokens.
+    stage="ACCESSIBILITY_DISCOVERY";
+    const accessibility=await page.evaluate(() => {
+      const view=document.querySelector("flutter-view");
+      const viewRoot=view?.shadowRoot||view;
+      const query=(sel)=>[...document.querySelectorAll(sel)].length+
+        ((viewRoot && viewRoot!==document)?
+          [...viewRoot.querySelectorAll(sel)].length:0);
+      return {
+        viewShadow:!!view?.shadowRoot,
+        placeholderCount:query("flt-semantics-placeholder"),
+        semanticsCount:query("flt-semantics"),
+        hostCount:query("flt-semantics-host"),
+        htmlButtonCount:query("button")
+      };
+    });
+    console.log("D2E_FLUTTER_SHADOW_ROOT="+(accessibility.viewShadow?"YES":"NO"));
+    console.log("D2E_FLUTTER_PLACEHOLDER_COUNT="+accessibility.placeholderCount);
+    console.log("D2E_FLUTTER_SEMANTICS_COUNT_BEFORE="+accessibility.semanticsCount);
+    console.log("D2E_FLUTTER_SEMANTICS_HOST_COUNT="+accessibility.hostCount);
+    stage="ACCESSIBILITY_ENABLE";
+    // A real pointer click is required; no Flutter state or DOM mutation.
     const placeholder=page.locator("flt-semantics-placeholder");
     if(await placeholder.count()){
-      await placeholder.click({timeout:15000});
+      console.log("D2E_FLUTTER_PLACEHOLDER_FOUND=YES");
+      await placeholder.first().click({timeout:15000});
+      console.log("D2E_FLUTTER_PLACEHOLDER_CLICK=PASS");
+    } else {
+      console.log("D2E_FLUTTER_PLACEHOLDER_FOUND=NO");
     }
-    await page.locator("flt-semantics").first().waitFor({
+    stage="ACCESSIBILITY_TREE";
+    const semanticSelector=page.locator("flt-semantics, flt-semantics-host");
+    await semanticSelector.first().waitFor({
       state:"attached",timeout:20000
     });
     console.log("D2E_FLUTTER_SEMANTICS_ENABLED=PASS");
@@ -95,6 +124,9 @@ const { chromium } = require("playwright");
       "READ_HTTP","NOT_PERSISTED","JS_PAGE_ERRORS"]);
     console.log("D2E_GUI_FAILURE_STAGE="+(names.has(v)?v:stage));
     console.log("D2E_GUI_PAGE_ERROR_COUNT="+jsErrors.length);
+    console.log("D2E_GUI_FAILURE_TYPE="+
+      (err?.name==="TimeoutError"?"TIMEOUT":
+       err?.name==="Error"?"ASSERTION_OR_RUNTIME":"OTHER"));
     process.exitCode=1;
   } finally {if(browser)await browser.close();}
 })().catch(()=>{console.log("D2E_GUI_FAILURE_STAGE=UNHANDLED");process.exitCode=1;});
