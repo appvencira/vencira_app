@@ -53,7 +53,7 @@ cleanup(){
   trap - EXIT
   case "$lab" in "$workspace"/d13-remote.*) ;; *) mark CLEANUP_SCOPE FAIL; exit 9;; esac
   if [[ -d "$lab" && ! -L "$lab" ]]; then
-    rm -f -- "$lab/images.tar.gz" "$lab/images.tar.gz.sha256" "$lab/images.manifest" "$lab/runtime.out"
+    sudo -n rm -f -- "$lab/images.tar.gz" "$lab/images.tar.gz.sha256" "$lab/images.manifest" "$lab/runtime.out" || rc=9
     rmdir "$lab" >/dev/null 2>&1 || rc=9
   else
     rc=9
