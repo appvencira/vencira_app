@@ -35,8 +35,14 @@ void main() {
     return;
   }
   _LiveNetworkBinding();
-  final workspace = Platform.environment['VENCIRA_D25_WORKSPACE_ID'] ?? '';
-  final access = Platform.environment['VENCIRA_D25_ACCESS'] ?? '';
+  const fixtureFile = '/tmp/d25-public-fixture.txt';
+  if (Platform.environment['VENCIRA_D25_FIXTURE_FILE'] != fixtureFile ||
+      !File(fixtureFile).existsSync()) {
+    throw StateError('Missing isolated D25 fixture file');
+  }
+  final fixture = File(fixtureFile).readAsLinesSync();
+  final workspace = fixture.isNotEmpty ? fixture[0] : '';
+  final access = fixture.length == 2 ? fixture[1] : '';
   if (workspace.isEmpty || access.isEmpty) {
     throw StateError('Missing synthetic workspace/issuer fixture');
   }
