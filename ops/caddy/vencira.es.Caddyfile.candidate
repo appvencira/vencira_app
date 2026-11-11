@@ -1,0 +1,14 @@
+# VENCIRA - candidato exclusivamente documental para el apex.
+# NO IMPORTAR NI ACTIVAR hasta disponer de despliegue de produccion separado,
+# puerto loopback reservado, TLS/CSRF verificados y autorizacion expresa.
+# Este upstream NO es el entorno DEV 127.0.0.1:18732.
+vencira.es {
+    encode zstd gzip
+    @api path /api/* /accounts/* /admin/*
+    handle @api {
+        reverse_proxy 127.0.0.1:18741
+    }
+    handle {
+        reverse_proxy 127.0.0.1:18742
+    }
+}
