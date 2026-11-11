@@ -37,8 +37,9 @@ class AndroidWebAccessScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('VENCIRA')),
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
+        child: SingleChildScrollView(
+          child: Center(
+            child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
             child: Padding(
               padding: const EdgeInsets.all(24),
@@ -84,6 +85,7 @@ class AndroidWebAccessScreen extends StatelessWidget {
                 ],
               ),
             ),
+          ),
           ),
         ),
       ),
