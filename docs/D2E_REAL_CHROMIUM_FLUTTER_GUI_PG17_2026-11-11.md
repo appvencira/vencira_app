@@ -62,3 +62,21 @@ Ante fallo recopilar `D2E_GUI_FAILURE_STAGE` y `D2E_GUI_PAGE_ERROR_COUNT`. No se
 - **Progreso total del producto VENCIRA: no cuantificable de manera fiable a partir de gates.**
 
 Restricciones permanentes: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D2E_RELEASE_AUTHORIZED=NO`, `D2E_DEPLOY_EXECUTED=NO`, `D2E_LIVE_MIGRATIONS_EXECUTED=NO`, `D2E_LIVE_RESTORE_EXECUTED=NO`. No se autoriza producción ni migración DEV.
+
+
+## Primer ensayo del operador: D2-E FAIL en etapa FLUTTER (11/11/2026)
+
+Registro real aportado: `D2E_RESULT=8`, `D2E_CHROMIUM_RENDER_GATE=FAIL`, `D2E_GUI_FAILURE_STAGE=FLUTTER`, `D2E_GUI_PAGE_ERROR_COUNT=0`. Preflight y entorno PASS: `D2E_DEV_IDENTITY=PASS`, `D2E_INTERNAL_NETWORK=PASS`, `D2E_PG17_TMPFS=PASS`, `D2E_CANDIDATE_IMAGE=PASS`, `D2E_SYNTHETIC_MIGRATIONS=PASS`, `D2E_AUTH_FIXTURE=PASS`, `D2E_FLUTTER_RELEASE_BUILD=PASS`, `D2E_LOCAL_CANVASKIT_BUNDLED=PASS`, `D2E_CADDY_TLS_HTTP_CONTRACT=PASS`, `D2E_CSRF_SECURE_COOKIE=PASS`, `D2E_UNTRUSTED_CA_DENIED=PASS`, `D2E_CHROMIUM_SMOKE_SYNTAX=PASS`, `D2E_BROWSER_SYNTHETIC_LOGIN=PASS`. `D2E_DEV_CONTAINERS_UNCHANGED=OK`, `D2E_EPHEMERAL_CLEANUP=DONE`. Ningún acceso persistente ni deploy.
+
+La etapa anterior `FLUTTER` agrupaba tres procesos: `flutter-view` adjunto, activación de `flt-semantics-placeholder` y árbol semántico. El fallo no permite distinguir ausencia del árbol de accesibilidad de un timeout/clic no efectivo. **No hay prueba de que el motor Flutter haya fallado**, ni de defecto de datos.
+
+**Commit `448d9528`** instrumenta etapas distintas `FLUTTER_VIEW`, `ACCESSIBILITY_DISCOVERY`, `ACCESSIBILITY_ENABLE`, `ACCESSIBILITY_TREE`; registra solo booleanos y contadores estructurales (presencia de `shadowRoot`, `flt-semantics-placeholder`, `flt-semantics`, `flt-semantics-host`), clic real sobre el control cuando existe, y clase de error `TIMEOUT/ASSERTION_OR_RUNTIME/OTHER`. Se admite como requisito de árbol alguno de `flt-semantics` o `flt-semantics-host` (ambos son nodos del motor Flutter), sin saltar controles ni realizar escrituras por API para forzar éxito. Sintaxis V8 verificada. **D2-E sigue FAIL / pendiente de reejecución real; no se ha modificado la aplicación ni relajado la obligación de clic GUI.**
+
+Comando de retest:
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+bash scripts/main_d2e_browser_gui_isolated.sh
+echo "D2E_SHELL_RESULT=$?"
+```
