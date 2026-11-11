@@ -202,8 +202,8 @@ def workspace_renewals(request, workspace_id):
     if (
         not page_raw.isascii()
         or not page_raw.isdecimal()
-        or str(int(page_raw)) != page_raw
         or len(page_raw) > 5
+        or str(int(page_raw)) != page_raw
     ):
         return native_auth_denied(status=400)
     offset = int(page_raw)
