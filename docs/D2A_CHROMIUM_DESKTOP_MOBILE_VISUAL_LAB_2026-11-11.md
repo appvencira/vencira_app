@@ -83,3 +83,24 @@ El operador confirma que Caddy/TLS, Django, Flutter release, CanvasKit local y C
 La captura es de dimensiones correctas pero el muestreo original recorría una rejilla cada **21 píxeles**, lo que puede omitir trazos estrechos, iconos y texto de interfaz móvil; tres colores no demuestra ausencia de estos elementos. No es prueba suficiente para atribuir defecto a Flutter ni para bajar arbitrariamente el límite de cuatro colores.
 
 **Commit `29f366da`**: conservando el umbral `>=4`, se instrumentó un segundo muestreo cada **5 píxeles**, capturando `D2A_*_COARSE_COLOR_COUNT` (21px) y `D2A_*_DENSE_COLOR_COUNT` (5px), y se usa la muestra densa para `SAMPLED_COLOR_COUNT` y el gate. Se comprobó sintaxis con parser V8. No cambia la UI ni los recursos, no guarda screenshots ni expone datos. Si el muestreo denso sigue identificando menos de cuatro colores, D2-A continuará FAIL y será necesario inspeccionar realmente el contenido de la pantalla móvil, no aprobarlo por aproximación. Se requiere reejecución en laboratorio; **D2-A no está aprobado**.
+
+
+## Cierre del operador — D2-A PASS (11/11/2026)
+
+Resultado observado y validado por el operador: **`D2A_RESULT=0`**, `D2A_CHROMIUM_DESKTOP_MOBILE_VISUAL_AND_RECOVERY_GATE=PASS`.
+
+- Entorno: `D2A_PROBE_SYNTAX=PASS`, `D2A_DEV_IDENTITY=PASS`, `D2A_INTERNAL_NETWORK=PASS`, `D2A_PG17_TMPFS=PASS`, `D2A_CANDIDATE_IMAGE=PASS`, `D2A_SYNTHETIC_MIGRATIONS=PASS`, `D2A_GUNICORN_STARTED=YES`, `D2A_FLUTTER_RELEASE_BUILD=PASS`, `D2A_LOCAL_CANVASKIT_BUNDLED=PASS`.
+- HTTPS: `D2A_CADDY_LAB_CONFIG_VALID=PASS`, `D2A_NO_HOST_PORTS=PASS`, `D2A_CADDY_TLS_HTTP_CONTRACT=PASS`, `D2A_CSRF_SECURE_COOKIE=PASS`, `D2A_CSRF_POST_DENIED=PASS`, `D2A_UNTRUSTED_CA_DENIED=PASS`.
+- Chromium inicial: `D2A_CHROMIUM_FLUTTER_VIEW=PASS`, `D2A_CHROMIUM_SAME_ORIGIN_API=PASS`, `D2A_CHROMIUM_PAGE_ERRORS=0`, `D2A_CHROMIUM_OTHER_CONSOLE_ERRORS=0`, `D2A_CHROMIUM_EXPECTED_ANONYMOUS_403=PASS`, `D2A_CHROMIUM_APP_JS_ERRORS=NONE`.
+- Escritorio: `D2A_DESKTOP_VIEW_WIDTH_PX=1280`, `D2A_DESKTOP_VIEW_HEIGHT_PX=800`, `D2A_DESKTOP_PNG_PIXELS=PASS`, `D2A_DESKTOP_COARSE_COLOR_COUNT=3`, `D2A_DESKTOP_DENSE_COLOR_COUNT=15`, `D2A_DESKTOP_COLOR_VARIATION=PASS`.
+- Móvil: `D2A_MOBILE_VIEW_WIDTH_PX=390`, `D2A_MOBILE_VIEW_HEIGHT_PX=844`, `D2A_MOBILE_PNG_PIXELS=PASS`, `D2A_MOBILE_COARSE_COLOR_COUNT=4`, `D2A_MOBILE_DENSE_COLOR_COUNT=14`, `D2A_MOBILE_COLOR_VARIATION=PASS`.
+- Después de cada captura: `D2A_VISUAL_POST_CAPTURE_APP_ERRORS=NONE`, `D2A_VISUAL_POST_CAPTURE_API=PASS`; `D2A_SCREENSHOTS_RETAINED=NO`.
+- Segundo Chromium tras recrear Nginx efímero: mismos tamaños, geometría y conteos de colores, `D2A_WEB_RECOVERY_RESTART=PASS`, `D2A_CHROMIUM_AFTER_WEB_RESTART=PASS`.
+- PostgreSQL sintético: `D2A_SYNTHETIC_SCHEMA_BACKUP_RESTORE=PASS`. Aislamiento final: `D2A_DEV_CONTAINERS_UNCHANGED=OK`, `D2A_EPHEMERAL_CLEANUP=DONE`.
+- Fuentes: `D2A_CHROMIUM_FONT_NETWORK_DEGRADED=YES`, `D2A_CHROMIUM_FONT_FIDELITY_VERIFIED=NO`, `D2A_VISUAL_FIDELITY_VERIFIED=NO`, `D2A_CHROMIUM_SMOKE=PASS_WITH_FONT_DEGRADATION`.
+
+**Conclusión precisa:** D2-A PASS para existencia de renderizado no plano en escritorio y móvil, misma API HTTPS y recuperación de laboratorio. No certifica diseño, legibilidad, fuentes correctas, accesibilidad, autenticación interactiva ni funcionalidad detallada de pantallas internas. No se han probado Caddy de producción ni rollback real de imagen/DB: `D2A_OPERATIONAL_IMAGE_AND_DB_ROLLBACK_VERIFIED=NO`, `D2A_CADDY_PRODUCTION_CONFIG_VERIFIED=NO`, `D2A_ROLLBACK_EXECUTED=NO`, `D2A_ROLLBACK_VERIFIED=NO`.
+
+**Restricciones verificadas:** `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D2A_RELEASE_AUTHORIZED=NO`, `D2A_DEPLOY_EXECUTED=NO`, `D2A_LIVE_MIGRATIONS_EXECUTED=NO`, `D2A_LIVE_RESTORE_EXECUTED=NO`. La advertencia del dry-run Wasm es informativa.
+
+**D2-A cerrado**, no necesita repetirse sin cambios materiales. Para el bloque siguiente, plantear una comprobación independiente de pantallas y acciones de usuario, con datos exclusivamente sintéticos y sin liberar MFA.
