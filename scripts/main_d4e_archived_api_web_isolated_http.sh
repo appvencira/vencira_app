@@ -323,6 +323,20 @@ cases=[
 ]
 category=next((name for name, pattern in cases if re.search(pattern,msg)), "UNCLASSIFIED")
 print("D4E_WEB_EXIT_DIAGNOSIS=" + category, flush=True)
+# Interpret only fixed path families from error text, never emit raw
+# log paths. Unknown locations remain UNKNOWN, not a guess.
+families=[
+ ("ETC_NGINX_CONF_D", r"/etc/nginx/conf\\.d/"),
+ ("ETC_NGINX", r"/etc/nginx/"),
+ ("VAR_CACHE_NGINX", r"/var/cache/nginx/"),
+ ("VAR_RUN_NGINX", r"/var/run/nginx"),
+ ("RUN_NGINX", r"/run/nginx"),
+ ("VAR_LOG_NGINX", r"/var/log/nginx/"),
+ ("TMP", r"/tmp/"),
+ ("DOCKER_ENTRYPOINT", r"/docker-entrypoint"),
+]
+matched=[label for label,pattern in families if re.search(pattern,msg)]
+print("D4E_WEB_READONLY_PATH_FAMILY=" + (matched[0] if matched else "UNKNOWN"), flush=True)
 print("D4E_WEB_DIAGNOSTIC_TEXT_PRINTED=NO", flush=True)
 PY
   fi
