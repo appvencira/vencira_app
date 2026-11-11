@@ -19,6 +19,7 @@ http.Response reply(Object body, {int status = 200}) => http.Response(
 
 Object response({String workspaceId = workspace}) => {
   'workspace_id': workspaceId,
+  'next_offset': null,
   'results': [
     {'id': renewal, 'expires_on': '2030-04-03', 'status': 'pending'},
   ],
@@ -49,6 +50,44 @@ void main() {
     expect(records.single.expiresOn, '2030-04-03');
     expect(records.single.status, 'pending');
     expect(() => records.clear(), throwsUnsupportedError);
+    client.close();
+  });
+
+  test('page two uses canonical offset and validates next_offset', () async {
+    final fence = NativeSessionFence()..activate();
+    final client = MockClient((request) async {
+      expect(request.url.queryParameters['offset'], '50');
+      return reply({
+        'workspace_id': workspace,
+        'results': [
+          {'id': renewal, 'expires_on': '2030-04-03', 'status': 'pending'},
+        ],
+        'next_offset': null,
+      });
+    });
+    final page = await port(client, fence).loadPage(workspace, offset: 50);
+    expect(page.results, hasLength(1));
+    expect(page.nextOffset, isNull);
+    client.close();
+  });
+
+  test('invalid offsets and forged next offsets fail closed', () async {
+    final fence = NativeSessionFence()..activate();
+    var calls = 0;
+    final client = MockClient((_) async {
+      calls++;
+      return reply({
+        ...response() as Map<String, dynamic>,
+        'next_offset': 100,
+      });
+    });
+    for (final offset in [-50, 1, 49, 10050]) {
+      await expectLater(port(client, fence).loadPage(workspace, offset: offset),
+          throwsA(isA<NativeWorkspacePayloadInvalid>()));
+    }
+    expect(calls, 0);
+    await expectLater(port(client, fence).loadPage(workspace),
+        throwsA(isA<NativeWorkspacePayloadInvalid>()));
     client.close();
   });
 
@@ -115,6 +154,7 @@ void main() {
     final fence = NativeSessionFence()..activate();
     final body = {
       'workspace_id': workspace,
+      'next_offset': null,
       'results': [
         {'id': renewal, 'expires_on': '2030-04-03',
           'status': 'pending', 'customer_reference': 'secret'},
@@ -130,10 +170,10 @@ void main() {
 
   test('invalid date, state and oversized list all fail closed', () async {
     for (final body in [
-      {'workspace_id': workspace, 'results': [
+      {'workspace_id': workspace, 'next_offset': null, 'results': [
         {'id': renewal, 'expires_on': '2030-02-30', 'status': 'pending'},
       ]},
-      {'workspace_id': workspace, 'results': [
+      {'workspace_id': workspace, 'next_offset': null, 'results': [
         {'id': renewal, 'expires_on': '2030-04-03', 'status': 'unknown'},
       ]},
       {'workspace_id': workspace, 'results': List.generate(
