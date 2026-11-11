@@ -893,3 +893,11 @@ D26 revisión de última hora antes del primer ensayo: commit `3c46d5b3` comprue
 D26 en VPS pasó preflight `D26_MAIN_CLEAN=PASS`, `D26_PYTHON_AST=PASS`, `D26_RELEASE_FENCE=PASS`, PG17 interno/temporal y migraciones. **83 tests, 4 errores**, todos en `D26SignedCursorPG17Tests.setUp`: `MobileAuditDenied` en `g5_audit._key()` (mínimo 32 caracteres para `VENCIRA_G5_AUDIT_KEY`); `CandidateAdmissionDenied` en `begin_native_password`. No se ejecutaron tests de cursor D26 ni el subgate Flutter HTTPS. `NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK`, `NATIVE_I8K_LOCAL_RESULT=1`, `D26_CURSOR_PG17_SECURITY=FAIL`, `D26_RESULT=4`.
 
 **Corregido en main `3a0c5dcf`**: claves AUDIT y ABUSE únicamente del fixture D26 ampliadas a 37 caracteres, sin reducir validación G5. Runbook actualizado `docs/operations/D26_SIGNED_WORKSPACE_CURSOR_GROUPED_2026-11-12.md`, commit `87d8bb27`. **D26 NO PASS**, pendiente de nueva ejecución completa.
+
+## D26 segundo ensayo — falso PASS por ENOSPC Flutter, revocado y runner corregido (12/11/2026)
+
+El VPS notificó `flutter analyze` OK y el test TLS imprimió marcadores internos de cursor 75, pero `flutter test` mostró **`FileSystemException: No space left on device (errno=28)`** al copiar `listener.dart.dill` bajo `/tmp/flutter_tools`, una prueba fallida `+0 -1 [E]`, y posterior `^C`. El runner imprimió `D25_BOUNDARY_RESULT=0`, `D26_CURSOR_REAL_TLS_FLUTTER=PASS`, `D26_RESULT=0` **incorrectamente**: estos marcadores quedan **anulados**. No se puede cerrar D26 sobre una prueba interrumpida/compilación fallida. Causa inmediata: límite Docker `--tmpfs /tmp:rw,size=128m` demasiado pequeño.
+
+Se publica corrección `de59e006` + `4e1ef3d8`: volumen Docker de compilación temporal y desechable, capacidad ≥1 GiB verificada, modo 1777, eliminación al salir, inspección estricta de `flutter test` para exigir código cero + texto `All tests passed!` y no aceptar `[E]`/ENOSPC/fallos de carga. La envoltura `main_d26_signed_workspace_cursor_grouped_gate.sh` maneja INT/TERM como errores (`94536543`). Runbook D26 actualizado `0fe7da69`.
+
+**D26 NO PASS — nueva ejecución íntegra obligatoria** con `D26_FLUTTER_TEMP_CAPACITY=PASS`, `D26_FLUTTER_TEST_PROCESS=PASS`, `D26_FLUTTER_TEST_OUTPUT=PASS`, `D26_CURSOR_REAL_TLS_FLUTTER=PASS` y `D26_RESULT=0`, junto con PG17 PASS y DEV intacto. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
