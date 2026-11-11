@@ -72,3 +72,20 @@ D2C_RESULT=0
 **3/4 gates cerrados = 75 % del tramo de validación D1-Z→D2-C, no 75 % del producto VENCIRA.** D2-C no cuenta como validado por tener scripts publicados.
 
 Se mantienen: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D2C_RELEASE_AUTHORIZED=NO`, `D2C_DEPLOY_EXECUTED=NO`, `D2C_LIVE_MIGRATIONS_EXECUTED=NO`, `D2C_LIVE_RESTORE_EXECUTED=NO`.
+
+
+## Resultado final del operador — D2-C PASS (11/11/2026)
+
+El operador ha confirmado **`D2C_RESULT=0`** y **`D2C_CHROMIUM_SYNTHETIC_RENEWAL_AGENDA_AND_RECOVERY_GATE=PASS`**.
+
+Evidencia de laboratorio: `D2C_PROBE_SYNTAX=PASS`, `D2C_FIXTURE_SYNTAX=PASS`, `D2C_DEV_IDENTITY=PASS`, `D2C_INTERNAL_NETWORK=PASS`, `D2C_PG17_TMPFS=PASS`, `D2C_CANDIDATE_IMAGE=PASS`, `D2C_SYNTHETIC_MIGRATIONS=PASS`, `D2C_AUTH_FIXTURE=PASS`, `D2C_GUNICORN_STARTED=YES`, `D2C_FLUTTER_RELEASE_BUILD=PASS`, `D2C_LOCAL_CANVASKIT_BUNDLED=PASS`, `D2C_CADDY_LAB_CONFIG_VALID=PASS`, `D2C_NO_HOST_PORTS=PASS`, `D2C_CADDY_TLS_HTTP_CONTRACT=PASS`, `D2C_CSRF_SECURE_COOKIE=PASS`, `D2C_CSRF_POST_DENIED=PASS`, `D2C_UNTRUSTED_CA_DENIED=PASS`, `D2C_CADDY_HTTPS_PROBE=PASS`, `D2C_CHROMIUM_SMOKE_SYNTAX=PASS`.
+
+Primer Chromium: `D2C_BROWSER_SYNTHETIC_LOGIN=PASS`, `D2C_FLUTTER_AUTHENTICATED_VIEW=PASS`, `D2C_SYNTHETIC_RENEWAL_CREATE_201=PASS`, `D2C_SYNTHETIC_RENEWAL_DETAIL=PASS`, `D2C_SYNTHETIC_AGENDA_DAY_VISIBLE=PASS`, `D2C_SYNTHETIC_RENEWAL_PATCH_PERSISTED=PASS`, `D2C_SYNTHETIC_AUDIT_EVENTS=PASS`, `D2C_ANONYMOUS_WORKSPACE_DENIED=PASS`, `D2C_BROWSER_PAGE_ERRORS=0`, `D2C_FIXTURE_ONLY=YES`, `D2C_CHROMIUM_SYNTHETIC_CRUD_GATE=PASS` y `D2C_CHROMIUM_RENDER_GATE=PASS`.
+
+Tras `D2C_WEB_RECOVERY_RESTART=PASS` se repitió el recorrido completo sobre otro fixture sintético del mismo PG17 aislado, nuevamente con todos los marcadores de login, renovación, agenda, actualización, auditoría y aislamiento anónimo en PASS; `D2C_CHROMIUM_AFTER_WEB_RESTART=PASS`. `D2C_SYNTHETIC_SCHEMA_BACKUP_RESTORE=PASS`; `D2C_DEV_CONTAINERS_UNCHANGED=OK`; `D2C_EPHEMERAL_CLEANUP=DONE`.
+
+**Cierre formal:** D2-C PASS dentro del alcance de acciones API autorizadas desde navegador real. `D2C_REAL_UI_CRUD_CLICKS_VERIFIED=NO`: no se probaron todavía los botones Flutter de creación/edición ni la navegación interactiva de calendario. Tampoco se validaron `D2C_OPERATIONAL_IMAGE_AND_DB_ROLLBACK_VERIFIED` (`NO`), `D2C_CADDY_PRODUCTION_CONFIG_VERIFIED` (`NO`), `D2C_ROLLBACK_EXECUTED` (`NO`) ni `D2C_ROLLBACK_VERIFIED` (`NO`). No extrapolar a release ni a fidelidad visual.
+
+**Progreso medible del tramo D1-Z / D2-A / D2-B / D2-C: 4/4 gates PASS = 100 %.** Esta métrica no mide desarrollo total del producto VENCIRA ni autorización para publicación. Siguientes gates independientes deberán cubrir clics Flutter reales, fuentes/UX y recuperación operativa con controles específicos.
+
+Restricciones confirmadas: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D2C_RELEASE_AUTHORIZED=NO`, `D2C_DEPLOY_EXECUTED=NO`, `D2C_LIVE_MIGRATIONS_EXECUTED=NO`, `D2C_LIVE_RESTORE_EXECUTED=NO`. Se mantiene cierre sin repetir el gate salvo cambios materiales en sus dependencias.
