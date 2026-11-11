@@ -23,10 +23,10 @@ cfg="$cfgdir/config.env"
 set -a
 source "$cfg"
 set +a
-[[ "$${RESTIC_REPOSITORY:-}" == 'rclone:vencira_google:VENCIRA-Backups/PostgreSQL' &&
-   "$${RESTIC_PASSWORD_FILE:-}" == /etc/vencira-backup/restic-password &&
-   "$${RCLONE_CONFIG:-}" == /etc/vencira-backup/rclone.conf &&
-   -z "$${RESTIC_PASSWORD:-}" ]] || { mark REPOSITORY_IDENTITY FAIL; exit 3; }
+[[ "${RESTIC_REPOSITORY:-}" == 'rclone:vencira_google:VENCIRA-Backups/PostgreSQL' &&
+   "${RESTIC_PASSWORD_FILE:-}" == /etc/vencira-backup/restic-password &&
+   "${RCLONE_CONFIG:-}" == /etc/vencira-backup/rclone.conf &&
+   -z "${RESTIC_PASSWORD:-}" ]] || { mark REPOSITORY_IDENTITY FAIL; exit 3; }
 for f in "$RESTIC_PASSWORD_FILE" "$RCLONE_CONFIG"; do
   [[ -s "$f" && ! -L "$f" && "$(stat -c '%u:%a' "$f")" == 0:600 ]] || {
     mark CREDENTIAL_PERMISSIONS FAIL; exit 3;
