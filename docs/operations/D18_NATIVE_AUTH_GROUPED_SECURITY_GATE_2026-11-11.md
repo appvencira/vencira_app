@@ -66,3 +66,14 @@ Se requiere implementación independiente y auditoría del issuer Django real, c
 
 `MFA_RELEASE_AUTHORIZED=NO`
 `NO_DEPLOY_NO_LIVE_MIGRATION=1`
+
+## Ejecución VPS D18 — PASS para laboratorio, issuer operacional bloqueado (11/11/2026)
+
+Resultado comunicado por operador: `MAIN_I8M_FLUTTER_TLS_ANALYZE=PASS`, `MAIN_I8M_FLUTTER_TLS_FIXTURE_READY=PASS`, `MAIN_I8M_FLUTTER_TLS_CA_AND_HOSTNAME=PASS`, `MAIN_I8M_FLUTTER_RECOVERY_MFA_TLS=PASS`, `MAIN_I8M_FLUTTER_FAILURE_LOCAL_FENCE=PASS`, `MAIN_I8M_FLUTTER_TLS_REAL_CLIENT=PASS`, `MAIN_I8M_FLUTTER_TLS_ACCOUNT_RECOVERY_REVOCATION=PASS`, `MAIN_I8M_FLUTTER_TLS_STORAGE_FAILURE_REMOTE_REVOKE=PASS`, `MAIN_I8M_FLUTTER_TLS_RECOVERY_GATE=PASS`, `MAIN_I8M_FLUTTER_TLS_DEV_CONTAINERS_UNCHANGED=OK`, `MAIN_I8M_FLUTTER_TLS_BOUNDARY_RESULT=0`, `D18_FLUTTER_REAL_TLS_RECOVERY_GATE=PASS`, `D18_NATIVE_AUTH_TEST_LABS_GROUPED=PASS`, `D18_DEV_CONTAINERS_UNCHANGED=OK`, `D18_RESULT=0`. La salida incluye `D18_NATIVE_AUTH_OPERATIONAL_READINESS=BLOCKED` y `D18_AUTH_PRODUCTION_ENABLED=NO` como condición deliberada.
+
+No constan en el fragmento de salida los marcadores individuales iniciales `D18_STATIC_FENCE`, `D18_PG17_NATIVE_HTTP_GATE` ni `D18_SHELL_RESULT`; no obstante el wrapper está configurado para abortar con error si esas fases no se completan. `D18_RESULT=0` implica que el wrapper llegó al final tras validar las pruebas agrupadas, bajo la lógica del script publicado. No inventar salida omitida.
+
+**Conclusión:** D18 PASS para controles de laboratorio, pero NO hay issuer de producción, no hay autorización para MFA real, no se ha construido otro APK ni probado autenticación nativa operacional en teléfono. No repetir D18 salvo cambios en el contrato. Preparar siguiente trabajo sustantivo sobre la separación y futura implementación del emisor autorizado; no conectar las URLs `test_*` a `config.urls`.
+
+`MFA_RELEASE_AUTHORIZED=NO`
+`NO_DEPLOY_NO_LIVE_MIGRATION=1`
