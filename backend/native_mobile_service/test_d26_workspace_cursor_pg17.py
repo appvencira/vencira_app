@@ -19,8 +19,8 @@ from .native_workspace_cursor import NativeCursorDenied, read_native_cursor_page
 
 @override_settings(
     ROOT_URLCONF="native_mobile_service.test_d22_urls",
-    VENCIRA_G5_ABUSE_KEY="d26-isolated-abuse-key",
-    VENCIRA_G5_AUDIT_KEY="d26-isolated-audit-key",
+    VENCIRA_G5_ABUSE_KEY="d26-isolated-abuse-gate-postgres-2026",
+    VENCIRA_G5_AUDIT_KEY="d26-isolated-audit-gate-postgres-2026",
 )
 class D26SignedCursorPG17Tests(TransactionTestCase):
     def setUp(self):
