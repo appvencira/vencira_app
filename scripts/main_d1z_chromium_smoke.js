@@ -56,12 +56,24 @@ const { chromium } = require("playwright");
     return "OTHER";
   }
   try {
-    browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
+    browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--lang=es-ES"] });
     console.log("D1Z_CHROMIUM_LAUNCH=PASS");
     stage = "CONTEXT";
     const page = await browser.newPage({
-      ignoreHTTPSErrors: true, viewport: { width: 1280, height: 800 }
+      ignoreHTTPSErrors: true, locale: "es-ES", viewport: { width: 1280, height: 800 }
     });
+    const localeCheck = await page.evaluate(() => {
+      const language = navigator.language;
+      const accepted = language === "es-ES";
+      let intl = false;
+      try {
+        intl = new Intl.DateTimeFormat(language).resolvedOptions().locale === "es-ES";
+      } catch (_) { intl = false; }
+      return { accepted, intl };
+    });
+    console.log("D1Z_CHROMIUM_SPANISH_LOCALE=" + (localeCheck.accepted ? "PASS" : "FAIL"));
+    console.log("D1Z_CHROMIUM_INTL_DATE_LOCALE=" + (localeCheck.intl ? "PASS" : "FAIL"));
+    if (!localeCheck.accepted || !localeCheck.intl) throw Error("INVALID_BROWSER_LOCALE");
     page.on("pageerror", err => {
       errors.push("PAGE_ERROR");
       tally(errorCategories, errorCategory(err && err.message));
@@ -162,7 +174,7 @@ const { chromium } = require("playwright");
     console.log("D1Z_CHROMIUM_SMOKE=PASS");
   } catch (err) {
     const allowed = new Set([
-      "ROOT_HTTP", "FLUTTER_VIEW_TIMEOUT", "BROWSER_API_HEALTH",
+      "INVALID_BROWSER_LOCALE", "ROOT_HTTP", "FLUTTER_VIEW_TIMEOUT", "BROWSER_API_HEALTH",
       "BROWSER_JS_ERRORS"
     ]);
     console.log("D1Z_CHROMIUM_FAILURE_STAGE=" +
