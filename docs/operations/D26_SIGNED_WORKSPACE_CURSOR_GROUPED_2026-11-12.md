@@ -71,3 +71,11 @@ No se conecta Android real, no se habilitan rutas públicas, no hay escritura ni
 ## Revisión previa al primer gate (12/11/2026)
 
 Antes de entregar el gate se corrigió la prueba de expiración para que la denegación sea demostrada **en el decodificador firmado de cursores**, independientemente del TTL del bearer (`3c46d5b3`). El runner HTTPS compartido se ajustó a un único `flutter analyze` de todo el cliente en lugar de pasar dos archivos posicionales, cuya aceptación por la CLI no estaba garantizada (`eee1df39`). Estas modificaciones están en `main` pero su resultado **todavía no está verificado** en el VPS.
+
+## Primer gate D26 — FAIL por longitud de claves sintéticas G5 (12/11/2026)
+
+La ejecución del VPS confirma `D26_MAIN_CLEAN=PASS`, `D26_PYTHON_AST=PASS`, `D26_RELEASE_FENCE=PASS`, PG17 temporal y paridad de migraciones PASS, **83 tests, 4 errores**. Todos pertenecen a `D26SignedCursorPG17Tests.setUp`, antes de probar cursor alguno. `g5_audit._key` rechaza la clave candidata al exigir `len(VENCIRA_G5_AUDIT_KEY) >= 32`; el fixture D26 la había definido corta (`d26-isolated-audit-key`). `begin_native_password` transforma el fallo de auditoría en `CandidateAdmissionDenied`, como corresponde a un sistema fail-closed. El fallo es del **fixture de pruebas**, no evidencia de acceso no autorizado ni de un defecto del cursor.
+
+Marcadores registrados: `NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK`, `NATIVE_I8K_LOCAL_RESULT=1`, `D26_CURSOR_PG17_SECURITY=FAIL`, `D26_RESULT=4`; la etapa Flutter/TLS no llegó a ejecutarse.
+
+**Corrección en main, commit `3a0c5dcf`**: ambas claves sintéticas de `@override_settings` (AUDIT y ABUSE) son ahora cadenas de 37 caracteres que superan el mínimo G5. No se modifican los validadores G5, las claves reales, ni el código operacional. **D26 continúa pendiente** de ejecutar de nuevo el gate completo; no declarar PASS por esta corrección sin pruebas.
