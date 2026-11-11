@@ -8,6 +8,8 @@ the HTTP request or the I8-D lab key variable.
 import os
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
 
 from .candidate_challenge_store import CandidateChallengeDenied
@@ -22,7 +24,7 @@ from .native_server_custody_issuer import (
     begin_native_password, complete_native_mfa,
     begin_native_recovery, complete_native_recovery,
 )
-from .session_store import MobileTokenDenied, revoke_candidate_device, validate_candidate_access
+from .session_store import MobileTokenDenied, revoke_candidate_device, validate_candidate_access, _find
 from .native_workspace_reader import NativeWorkspaceDenied, read_native_workspace_renewals
 
 
@@ -179,7 +181,13 @@ def me(request):
 
 
 def workspace_renewals(request, workspace_id):
-    """D23 lab-only read: bearer must be valid AND workspace/row visible NOW."""
+    """D24 lab-only page with locked account, device, membership, row scope.
+
+    The account lock precedes the device lock: account-wide recovery follows
+    the same ordering and cannot invalidate the token during this SQL read.
+    Device revoke takes the locked device row. HTTP response is built while
+    locks remain held; membership and assignment changes wait for commit.
+    """
     blocked = _guard(request, "GET")
     if blocked is not None:
         return blocked
@@ -190,11 +198,38 @@ def workspace_renewals(request, workspace_id):
         or header.count(" ") != 1
     ):
         return _deny()
+    page_raw = request.GET.get("offset", "0")
+    if (
+        not page_raw.isascii()
+        or not page_raw.isdecimal()
+        or str(int(page_raw)) != page_raw
+        or len(page_raw) > 5
+    ):
+        return native_auth_denied(status=400)
+    offset = int(page_raw)
+    if offset > 10000:
+        return native_auth_denied(status=400)
+    token = header[7:]
     try:
-        user = validate_candidate_access(header[7:])
-        result = read_native_workspace_renewals(
-            user=user, workspace_id=workspace_id,
-        )
+        # Preflight identifies only which account lock should be acquired.
+        # Identity and revocation are checked AGAIN after locking device row.
+        identity = validate_candidate_access(token)
+        with transaction.atomic():
+            user = get_user_model().objects.select_for_update().filter(
+                pk=identity.pk, is_active=True,
+            ).first()
+            if user is None:
+                raise MobileTokenDenied()
+            device = _find(token, "a", lock=True)
+            if device.user_id != user.pk:
+                raise MobileTokenDenied()
+            # validate_candidate_access checks access expiry, digest, MFA epoch,
+            # credential version and account generation while locks are held.
+            validate_candidate_access(token)
+            result = read_native_workspace_renewals(
+                user=user, workspace_id=workspace_id, offset=offset,
+            )
+            response = native_json_response(result)
+        return response
     except (MobileTokenDenied, NativeWorkspaceDenied, ValueError):
         return _deny()
-    return native_json_response(result)
