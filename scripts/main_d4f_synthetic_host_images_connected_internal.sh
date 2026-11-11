@@ -49,6 +49,7 @@ work="$(mktemp -d /tmp/vencira-d4f.XXXXXXXX)"
 chmod 700 "$work"
 net_created=NO
 created=()
+mark CONTAINER_RUN_EXECUTED NO
 cleanup(){
   rc=$?
   trap - EXIT
@@ -66,6 +67,7 @@ cleanup(){
     [[ "$(D inspect -f '{{.Id}}:{{.Image}}' "$svc" 2>/dev/null || true)" == "${before[$role]}" ]] || intact=NO
   done
   mark DEV_CONTAINERS_UNCHANGED "$intact"
+  mark CONTAINER_RUN_EXECUTED "$([[ "${#created[@]}" -gt 0 ]] && echo YES || echo NO)"
   [[ "$intact" == YES ]] || rc=9
   mark EPHEMERAL_CLEANUP "$([[ "$rc" == 9 ]] && echo FAIL || echo DONE)"
   mark HOST_DOCKER_IMAGE_LOAD_EXECUTED NO
