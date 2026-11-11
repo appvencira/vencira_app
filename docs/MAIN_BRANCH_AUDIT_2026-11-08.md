@@ -2093,3 +2093,10 @@ D3-B3 script `scripts/main_d3b3_verify_archived_images_offline.py` commits `8bf1
 D3-B3 operator run: `D3B3_IMMUTABLE_MANIFEST=PASS`, `D3B3_ARCHIVE_CHECKSUM=PASS`, `D3B3_CONFIG_NAME=FAIL`, `D3B3_RESULT=3`. This does **not** establish archive corruption: the file digest passes and the script rejected the Docker manifest's config path before checking config file bytes. D3-B2 remains PASS (the stored original archive was **not modified**).
 
 Fixes directly to `main`: commits `c8031274` and `1edec477` accept exactly the two standard hash-addressed Docker save Config representations (`64hex.json`, `blobs/sha256/64hex`) and verify actual contents SHA256 under either representation, without printing archive metadata or weakening the identity checks. Details in `docs/D3B_PREVIOUS_IMAGES_AND_OPERATIONAL_ROLLBACK_2026-11-11.md`, commit `0b5b139d`. **Retest pending**, no D3-B3 PASS yet. No `docker load`, rollback, live migration or deployment. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## EX. 11/11/2026 — D3-B3 segundo fallo: hashes internos válidos pero falta identidad de imágenes archivadas
+
+Operador obtuvo `D3B3_IMMUTABLE_MANIFEST=PASS`, `D3B3_ARCHIVE_CHECKSUM=PASS`, `D3B3_EXPECTED_IMAGE_IDS_MISSING=FAIL`, `D3B3_RESULT=3`. Comparar los ID `sha256` de las tres imágenes de contenedores DEV con los hash de los archivos de configuración incluidos en el `docker save` **no demuestra correspondencia completa**. La existencia/CRC del archivo no garantiza custodia de las tres imágenes esperadas, por lo que D3-B3 sigue FAIL, y D3-B2 PASS permanece limitado a exportación y checksum.
+
+Commit `ccaf5dfd` añade diagnósticos de solo conteos y booleanos por rol API/DB/Web para distinguir ausencia frente a diferencias de identidad de representación; nunca revela IDs ni contenido. Procedimiento actualizado commit `a3348a5a`. **No repetir D3-B2 ni reemplazar el archivo hasta saber qué rol falla**. Sin carga ni despliegue, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
