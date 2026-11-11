@@ -100,3 +100,14 @@ La documentación oficial Flutter *Web accessibility* confirma que el modo semá
 **Commit `939e3f95`**: solo en el test de laboratorio, cuando el placeholder de Flutter está fuera de la ventana, ejecutar el método nativo `HTMLElement.click()` de **ese botón de activación**, nunca de los controles de negocio. Para un placeholder visible, continuar usando el puntero normal. Después sigue siendo obligatorio encontrar semántica de anotación y completar edición de notas y guardado con **gestos reales Chromium** y verificar el dato persistido en PG17 por GET. Se introduce marcador `D2E_ACCESSIBILITY_HIDDEN_BUTTON_ACTIVATED=PASS` o `D2E_ACCESSIBILITY_POINTER_ACTIVATED=PASS`, además de `D2E_ACCESSIBILITY_BOOTSTRAP_ONLY=YES`, evitando confundir esta activación instrumental con una edición GUI validada.
 
 **Estado: D2-E todavía NO PASS, pendiente de nuevo ensayo real con ese bootstrap.** No se han alterado Flutter, Django ni configuración de producción y se mantienen `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## Cuarto ensayo — Activación accesibilidad PASS; pantalla inicial no era necesariamente dashboard
+
+El operador confirmó `D2E_ACCESSIBILITY_HIDDEN_BUTTON_ACTIVATED=PASS` y `D2E_FLUTTER_SEMANTICS_CONTAINER_ATTACHED=PASS` tras cargar `flutter-view`, pero `D2E_GUI_FAILURE_STAGE=DASHBOARD_LIST`, `D2E_GUI_FAILURE_TYPE=TIMEOUT`, `D2E_GUI_PAGE_ERROR_COUNT=0`, `D2E_RESULT=8`. La identidad de DEV continuó intacta y la limpieza se completó.
+
+**Causa probable identificada en código:** en `clients/flutter/lib/ui/dashboard_screen.dart`, `_loadWorkspaces` (líneas aprox. 195–202) abre la agenda de **HOY automáticamente** cuando `openTodayOnLoad` está habilitado y se autentica una cuenta con un solo workspace. La fixture de D2-E crea exactamente un workspace. El test anterior asumía erróneamente que el texto del vencimiento ficticio (fecha 2027-05-31) aparecería directamente en el dashboard. El error `DASHBOARD_LIST` es por tanto consistente con estar en la agenda de hoy, pero aún requiere validación de Chromium: no inventar PASS.
+
+Los commits `86566e7e` y `2e6736e8` incorporan reconocimiento de título Agenda o botón real de Volver y, si la agenda está abierta, **clic de Playwright en el botón Flutter de navegación** para volver al dashboard antes de exigir texto del vencimiento. El test comprueba texto DOM o `aria-label` del árbol `flt-semantics` y, si sigue sin encontrarlo, emite solo recuentos no sensibles de nodos accesibles, etiquetas y botones para un diagnóstico posterior, sin registrar datos de clientes. Las escrituras siguen exigiendo mouse/teclado reales sobre Flutter Web y POST/PATCH API directos siguen prohibidos. La activación del botón oculto del framework es la única excepción técnica.
+
+**D2-E sigue FAIL/pending retest** hasta que se demuestre el flujo GUI→Django→PG17 y `D2E_RESULT=0`. Restricciones intactas: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
