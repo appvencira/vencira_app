@@ -68,9 +68,22 @@ cleanup(){
   exit "$rc"
 }
 trap cleanup EXIT
-mkdir -m 700 "$lab/graph" "$lab/run" "$lab/tmp" "$lab/home"
-# Explicit per-command local rootless Podman; never fallback to Docker or sudo.
-export HOME="$lab/home" XDG_CONFIG_HOME="$lab/home" TMPDIR="$lab/tmp"
+mkdir -m 700 "$lab/graph" "$lab/run" "$lab/tmp"
+# Keep the operator's real HOME, XDG_CONFIG_HOME, and XDG_RUNTIME_DIR:
+# rootless Podman may resolve account/runtime state through these paths.
+# The actual images and ephemeral run state remain explicitly scoped to the
+# unique --root and --runroot below. Do not alter the host storage.conf.
+export TMPDIR="$lab/tmp"
+if [[ -n "${XDG_RUNTIME_DIR:-}" ]]; then
+  [[ -d "$XDG_RUNTIME_DIR" && ! -L "$XDG_RUNTIME_DIR" &&
+     "$(stat -c %u "$XDG_RUNTIME_DIR")" == "$(id -u)" ]] || {
+    mark ROOTLESS_RUNTIME_ENV FAIL
+    exit 4
+  }
+  mark ROOTLESS_RUNTIME_ENV PASS
+else
+  mark ROOTLESS_RUNTIME_ENV NOT_SET
+fi
 P=(podman --remote=false --root "$lab/graph" --runroot "$lab/run" --storage-driver vfs --events-backend=file)
 if "${P[@]}" info --format json >"$lab/info.json" 2>"$lab/error.log"; then
   :
