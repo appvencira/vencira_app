@@ -80,3 +80,11 @@ La ejecución llegó al subgate Flutter tras la fase PostgreSQL17, lo que implic
 
 `MFA_RELEASE_AUTHORIZED=NO`
 `NO_DEPLOY_NO_LIVE_MIGRATION=1`
+
+## Tercer gate VPS — análisis Dart bloqueado por corrupción textual, corrección (12/11/2026)
+
+La ejecución entregada reporta `flutter analyze` con **163 issues** y `D24_FLUTTER_PAGINATION_GATE=FAIL`, `D24_DEV_CONTAINERS_UNCHANGED=OK`, `D24_RESULT=5`. Las referencias a tipos `int`, `RegExp` y clases de error que «no existen», y las palabras clave `if`/`try` aparentemente inválidas, eran errores en cascada por una sintaxis rota en `clients/flutter/lib/api/native_api_transport.dart`. La lectura real de GitHub comprobó **273 líneas** con la implementación del transporte duplicada/intercalada tres veces, incluyendo dos expresiones regulares incompletas y clases repetidas; no era un fallo de dependencias `pub get` ni 163 defectos separados.
+
+**Corrección publicada en main, commit `a8b313f3`**: reconstrucción completa y única de `getJson` con query tipada `offset` limitada a renovaciones workspace, sin aceptar query cruda en path; preserva la generación de sesión, rechazo de tokens inválidos y redirecciones, límites de red/JSON y fail-closed. Relectura del blob de GitHub posterior al commit: **132 líneas, una implementación de getJson y una definición de NativeApiTransportFailure**. No se ha ejecutado Flutter local ni VPS después de este commit; D24 **NO PASS**.
+
+Repetir el gate completo desde `main` sincronizado: exigir PostgreSQL17 + `flutter analyze` + tests de workspace, transporte y endpoint, más `D24_RESULT=0`. Seguir con `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
