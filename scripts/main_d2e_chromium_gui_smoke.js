@@ -110,11 +110,59 @@ const { chromium } = require("playwright");
     });
     console.log("D2E_FLUTTER_SEMANTICS_CONTAINER_ATTACHED=PASS");
     console.log("D2E_ACCESSIBILITY_BOOTSTRAP_ONLY=YES");
+    stage="INITIAL_ROUTE";
+    // Dashboard automatically pushes Today's agenda when exactly one
+    // workspace is present. This fixture deliberately has one workspace.
+    // Only a real click on the Flutter AppBar back button may return to the
+    // dashboard. Never use JS route mutation, history.go(), or API writes.
+    const backButton=page.getByRole("button",{
+      name:/^(back|volver|atrás|atras|regresar)$/i
+    });
+    const agendaTitle=page.getByText(/^agenda( del día)?$/i).first();
+    const isAgenda=await agendaTitle.count() && await agendaTitle.isVisible()
+      .catch(()=>false);
+    console.log("D2E_INITIAL_AGENDA_TEXT_VISIBLE="+(isAgenda?"YES":"NO"));
+    const backCount=await backButton.count();
+    console.log("D2E_INITIAL_BACK_BUTTON_COUNT="+backCount);
+    if(isAgenda){
+      stage="RETURN_FROM_AGENDA";
+      if(backCount!==1)throw Error("BACK_BUTTON_NOT_UNIQUE");
+      await backButton.click({timeout:20000});
+      console.log("D2E_GUI_RETURN_FROM_AGENDA=PASS");
+    }
     stage="DASHBOARD_LIST";
-    // Require the synthetic renewal text to be actually present as a DOM
-    // semantics node. Do not accept an API-only confirmation here.
-    await page.getByText("Persona ficticia D2E",{exact:true})
-      .first().waitFor({state:"attached",timeout:30000});
+    // Flutter CanvasKit exposes text as ARIA labels as well as (sometimes)
+    // plain DOM text nodes. Both are accessible DOM content, not API probes.
+    const customerText=page.getByText("Persona ficticia D2E",{exact:true});
+    const customerSemantics=page.locator(
+      'flt-semantics[aria-label*="Persona ficticia D2E"]'
+    );
+    const visible=await Promise.any([
+      customerText.first().waitFor({state:"attached",timeout:15000})
+        .then(()=>true),
+      customerSemantics.first().waitFor({state:"attached",timeout:15000})
+        .then(()=>true)
+    ]).catch(()=>false);
+    if(!visible){
+      const summary=await page.evaluate(()=>{
+        const nodes=[...document.querySelectorAll(
+          "flt-semantics, flt-semantics-host, [role=button]"
+        )];
+        return {
+          semantics:document.querySelectorAll("flt-semantics").length,
+          labeled:nodes.filter(el=>el.hasAttribute("aria-label")).length,
+          buttons:document.querySelectorAll('[role=button]').length,
+          agendaLabeled:nodes.some(el=>/agenda/i.test(
+            el.getAttribute("aria-label")||""))
+        };
+      });
+      console.log("D2E_DASHBOARD_SEMANTICS_COUNT="+summary.semantics);
+      console.log("D2E_DASHBOARD_LABELED_COUNT="+summary.labeled);
+      console.log("D2E_DASHBOARD_ROLE_BUTTON_COUNT="+summary.buttons);
+      console.log("D2E_DASHBOARD_AGENDA_LABEL_PRESENT="+
+        (summary.agendaLabeled?"YES":"NO"));
+      throw Error("RENEWAL_NOT_IN_ACCESSIBLE_DASHBOARD");
+    }
     console.log("D2E_GUI_SYNTHETIC_RENEWAL_VISIBLE=PASS");
     stage="OPEN_EDITOR";
     const edit=page.getByRole("button",{name:/editar/i}).first();
