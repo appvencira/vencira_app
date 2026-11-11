@@ -81,3 +81,15 @@ Si falla, se corrige únicamente la causa observada, sin repetir gates D1-Z→D2
 `D3_LIVE_RESTORE_EXECUTED=NO`
 
 El porcentaje global de VENCIRA no se infiere del 6/6 del tramo anterior. No establecer fecha de producción sin evidencia del rollback operativo y gates de seguridad.
+
+
+## Actualización: Caddy de DEV por inspección estrictamente read-only
+
+Se añadió `scripts/main_d3c_caddy_readonly_preflight.sh` (commit `b3459035`) al orquestador D3 (commit `cc5daa49`). Comprueba en el **host**, sin leer/imprimir configuración ni certificados:
+- Presencia de `/etc/caddy/Caddyfile` y resultado de `caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile`.
+- `systemctl is-active caddy`.
+- Conexión a `https://dev.vencira.es/` con TLS validado por curl (sin `-k` ni credenciales), HTTP 200 o redirección estándar.
+
+Si el despliegue usa otra topología (por ejemplo Caddy en contenedor), el preflight informa UNVERIFIED; no inventa una configuración del host. Nunca aplica `reload`, `restart`, modifica Caddyfile, abre puertos, visita endpoints privados ni ejecuta migraciones. Aunque pase, no certifica rutas de producción, dominio `vencira.es`, funcionamiento de MFA ni release.
+
+**La ejecución agrupada continua con D3-A y después D3-C.** D3-C fallido queda explícito como `D3_D3C_CADDY_READONLY_PREFLIGHT=UNVERIFIED`; la salida `D3_RESULT=0` significa únicamente que el orquestador terminó con recuperación DB sintética PASS y declaración de bloqueos, no que Caddy/producción esté autorizado. Los marcadores `D3_PRODUCTION_CADDY_CONFIG_VERIFIED=NO` y `D3_PUBLIC_RELEASE_AUTHORIZED=NO` siguen forzados. Ninguno de los dos scripts se ha ejecutado aún en VPS.
