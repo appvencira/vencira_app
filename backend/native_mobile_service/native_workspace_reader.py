@@ -32,6 +32,7 @@ def read_native_workspace_renewals(*, user, workspace_id, offset=0):
         or type(workspace_id) is not uuid.UUID
         or type(offset) is not int
         or not 0 <= offset <= MAX_OFFSET
+        or offset % PAGE_SIZE != 0
         or not connection.in_atomic_block
     ):
         raise NativeWorkspaceDenied()
@@ -51,7 +52,7 @@ def read_native_workspace_renewals(*, user, workspace_id, offset=0):
             "id", "expires_on", "status",
         )[offset:offset + PAGE_SIZE + 1]
     )
-    more = len(rows) > PAGE_SIZE
+    more = len(rows) > PAGE_SIZE and offset < MAX_OFFSET
     return {
         "workspace_id": str(workspace_id),
         "results": [
