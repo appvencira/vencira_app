@@ -67,3 +67,7 @@ El orden `created_at,id` no cambia cuando se modifican fechas de vencimiento, es
 **No es una fotografía transaccional completa** de todas las renovaciones: si un usuario pierde o recibe asignaciones durante el recorrido, las filas visibles pueden variar; una reasignación tardía de una fila con clave anterior al cursor no la vuelve a incluir. La eliminación de registros, cambios de rol y revocación de bearer también alteran legítimamente las respuestas. Para una visión histórica inmutable sería necesario un snapshot materializado o sesión de lectura específica con límites de almacenamiento. No confundir este cursor con dicho snapshot.
 
 No se conecta Android real, no se habilitan rutas públicas, no hay escritura ni adjuntos y no se migra ni despliega el servicio. Los certificados y secretos son exclusivos del laboratorio. Controles: `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## Revisión previa al primer gate (12/11/2026)
+
+Antes de entregar el gate se corrigió la prueba de expiración para que la denegación sea demostrada **en el decodificador firmado de cursores**, independientemente del TTL del bearer (`3c46d5b3`). El runner HTTPS compartido se ajustó a un único `flutter analyze` de todo el cliente en lugar de pasar dos archivos posicionales, cuya aceptación por la CLI no estaba garantizada (`eee1df39`). Estas modificaciones están en `main` pero su resultado **todavía no está verificado** en el VPS.
