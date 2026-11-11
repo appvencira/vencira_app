@@ -45,9 +45,9 @@ class NativeWorkspaceReadPort {
         offset % 50 != 0) {
       throw const NativeWorkspacePayloadInvalid();
     }
-    final suffix = offset == 0 ? '' : '?offset=$offset';
     final data = await transport.getJson(
-      '/api/v1/mobile/workspaces/$workspaceId/renewals/$suffix',
+      '/api/v1/mobile/workspaces/$workspaceId/renewals/',
+      query: offset == 0 ? const {} : {'offset': '$offset'},
     );
     if (data is! Map<String, dynamic> ||
         data.length != 3 ||
