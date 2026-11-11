@@ -1814,3 +1814,10 @@ Se publicó un resumen redactado de excepciones `pageerror`, nunca stack ni URLs
 La siguiente ejecución del laboratorio completó en PASS PostgreSQL 17 sintético, Flutter Web release, CanvasKit local, Nginx, Caddy TLS y contrato HTTPS, pero el nuevo `node --check` detectó `SyntaxError: Invalid regular expression flags` en `scripts/main_d1z_chromium_smoke.js` (escapes indebidos en regex de redacción de mensajes). Salida `D1Z_CHROMIUM_SMOKE_SYNTAX=FAIL`, `D1Z_RESULT=8`, sin ejecutar Chromium, DEV intacto y cleanup DONE. **No atribuir el fallo a Flutter ni declarar PASS**.
 
 Corregido en `main` commit `d4d08478`; expresiones regulares comprobadas con Node local. Incidencia detallada en `docs/D1Z_BROWSER_FLUTTER_AND_ISOLATED_WEB_RECOVERY_2026-11-11.md` commit `f911c520`. Repetición de D1-Z pendiente, conservando `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## DN. 11/11/2026 — D1-Z excepción de locale identificada, Chromium es-ES candidato
+
+El séptimo intento D1-Z pasó sintaxis de script, build Flutter, CanvasKit local, Caddy TLS y documentos/scripts HTTP 200, pero Chromium no generó `flutter-view`. El mensaje redactado de excepción es `Invalid argument(s): Incorrect locale information provided`; `D1Z_CHROMIUM_RENDER_GATE=FAIL`, `D1Z_RESULT=8`. Una solicitud externa Google Fonts también falla; no está demostrado que sea causa principal. DEV intacto y limpieza DONE.
+
+Se revisaron `clients/flutter/lib/main.dart` (`es` por defecto, `ca` permitido) y `dashboard_screen.dart` (formato fecha con `languageCode`), sin prueba de código de locale inválido. Se publicó en `scripts/main_d1z_chromium_smoke.js` commit `128d72bb` una configuración explícita del contexto Chromium `es-ES` y preflight Intl/navigator para distinguir un problema de entorno del producto, sin modificar DEV ni código de idiomas. Documento D1-Z actualizado en `docs/D1Z_BROWSER_FLUTTER_AND_ISOLATED_WEB_RECOVERY_2026-11-11.md` commit `78c39991`. **D1-Z no superado; próximo paso es reejecutar y analizar marcadores regionales y renderizado.** Restricciones `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
