@@ -392,3 +392,24 @@ git status --short
 ```
 
 Condiciones relevantes: `D4H_RESTORE_REAL_O5_PG17=PASS`, `D4H_HOST_IMAGE_IDENTITY=PASS`, `D4H_MIGRATIONS_0019_0027=PASS`, `D4H_ROLLBACK_TO_0018=PASS`, `D4H_DEV_CONTAINERS_UNCHANGED=OK`, `D4H_RESULT=0`. Los marcadores `D4H_LIVE_RESTORE_EXECUTED=NO`, `D4H_LIVE_MIGRATIONS_EXECUTED=NO`, `D4H_ARCHIVE_EXPORT_EXECUTABLE_EQUIVALENCE_VERIFIED=NO` deben permanecer en su estado restrictivo.
+
+## D4-H — Restauración O5 PASS, plan de migraciones FAIL (11/11/2026)
+
+El operador ejecutó `sudo bash scripts/main_d4h_retained_images_real_o5_pg17_isolated.sh` y confirmó `D4H_SYNTAX=0`, `D4H_ARCHIVE_CHECKSUM=PASS`, `D4H_ARCHIVE_MANIFEST=PASS`, `D4H_CONFIG_MATCH=PASS`, `D4H_DEV_IDENTITY=PASS`, `D4H_HOST_IMAGE_IDENTITY=PASS`, `D4H_RECENT_POSTGRESQL_SNAPSHOT=PASS`, `D4H_LAB_NETWORK_INTERNAL=PASS`, `D4H_PG17_NETWORK_ISOLATED=PASS`, `D4H_PG17_TMPFS_READY=PASS`, `D4H_RESTORE_REAL_O5_PG17=PASS`, `D4H_HISTORICAL_0018=PASS`, `D4H_BASELINE_COUNTS=PASS`, `D4H_MODEL_MIGRATION_PARITY=PASS` y **`D4H_MIGRATION_PLAN=FAIL`**. `D4H_DEV_CONTAINERS_UNCHANGED=OK`, `D4H_LAB_CONTAINER_REMOVED=YES`, `D4H_REAL_O5_DATA_OUTPUT_PRINTED=NO` y `D4H_RESULT=8`. El resultado del `echo D4H_SHELL_RESULT` no consta en el fragmento recibido.
+
+**Interpretación estricta:** backup real O5 restaurado correctamente a PG17 con imagen retenida en host Docker y datos iniciales accesibles. No hay evidencia de que la base operativa se haya modificado. El plan `migrate reminders 0027 --plan` falló en Django antes de ejecutar migraciones de ensayo; NO se acredita compatibilidad hasta 0027, ni rollback, ni B2 completo. La hipótesis de imagen Django retenida con migraciones anteriores a 0027 necesita verificación: `makemigrations --check --dry-run` PASS no acredita que exista 0027.
+
+Se publica `scripts/main_d4h_image_migration_inventory_readonly.sh` (commits `c67b2a07`, `149f7cfa`). Compara los **números** de migraciones presentes en la imagen API retenida contra el árbol `main`, ejecutando solo un Python en contenedor `--network none --read-only --rm`; sin acceso a DB ni O5, sin imprimir el inventario de archivos. Señala presencia de 0018, 0027 y completitud 0019–0027, además de un máximo numérico. `D4H2_RESULT=0` indica que la inspección concluyó, **no** que las migraciones coincidan: revisar `D4H2_IMAGE_MAIN_NUMBERED_MIGRATION_PARITY` y `D4H2_MIGRATION_PLAN_FAILURE_EXPLAINED_BY_MISSING_TARGET`.
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+bash -n scripts/main_d4h_image_migration_inventory_readonly.sh
+sudo -v
+bash scripts/main_d4h_image_migration_inventory_readonly.sh
+echo "D4H2_SHELL_RESULT=$?"
+git status --short
+```
+
+**No repetir la restauración real O5** hasta resolver la diferencia de migraciones y no reconstruir/reemplazar el archivo archivado para forzar un PASS. Se mantiene `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
