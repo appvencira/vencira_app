@@ -86,3 +86,12 @@ echo "D3B5P_SHELL_RESULT=$?"
 ```
 
 El resultado del preflight tampoco autoriza una instalación: a partir de los indicadores se decidirá si el ensayo puede realizarse con Podman rootless existente, si debe solicitarse permiso para instalar dependencias en el host o si conviene una máquina de laboratorio separada. **B5 importación sigue pendiente**; guardas `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, release no autorizado.
+
+
+## D3-B5P — interrupción SIGPIPE 141 corregida (11/11/2026)
+
+El operador obtuvo `D3B5P_UNPRIVILEGED_OPERATOR=PASS` y `D3B5P_PODMAN_INSTALLED=NO`, con retorno final `141`, antes de emitir `PODMAN_APT_CANDIDATE`. El primer script contenía `apt-cache policy podman | awk '/Candidate:/ {print $2; exit}'` bajo `set -o pipefail`; el `exit` anticipado de AWK puede cerrar la tubería mientras `apt-cache` sigue emitiendo y provocar SIGPIPE. Por tanto **no es posible inferir de esa salida disponibilidad de paquete, soporte rootless ni estado completo del preflight**.
+
+Corregido directamente en `main` commit `bf544996`: AWK continúa consumiendo toda la salida de apt-cache y solo imprime la primera coincidencia; si falla la consulta se marca `D3B5P_PODMAN_APT_QUERY=ERROR` en vez de confundirla con falta de candidato. **No se instalaron paquetes y no se cambió configuración**. La ejecución corregida continúa pendiente de Termius. El valor aportado `D3B5P_SHLL_RESULT=141` procede del `echo` introducido por el operador y no de un marcador interno del script (el script no llegó a `D3B5P_RESULT`).
+
+Repetir únicamente `bash scripts/main_d3b5p_rootless_prerequisites_readonly.sh` tras sincronizar `main`; no repetir importación D3-B5 ni ejecutar `apt install` todavía. Guardas `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
