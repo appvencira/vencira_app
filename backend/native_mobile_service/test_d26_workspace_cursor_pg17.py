@@ -121,8 +121,13 @@ class D26SignedCursorPG17Tests(TransactionTestCase):
                 read_native_cursor_page(
                     user=self.other, workspace_id=self.a.pk, cursor=cursor,
                 )
+        # Check cursor expiration directly, not just an expired bearer token.
         with patch("django.core.signing.time.time", return_value=time.time() + 1000):
-            self.assertEqual(self.request(cursor).status_code, 401)
+            with transaction.atomic():
+                with self.assertRaises(NativeCursorDenied):
+                    read_native_cursor_page(
+                        user=self.user, workspace_id=self.a.pk, cursor=cursor,
+                    )
         print("D26_CURSOR_TAMPER_TENANT_AND_EXPIRY_DENIED=PASS")
 
     def test_member_revocation_applies_to_next_cursor_request(self):
