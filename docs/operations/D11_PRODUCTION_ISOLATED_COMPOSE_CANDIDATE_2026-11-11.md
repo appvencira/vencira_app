@@ -47,3 +47,9 @@ La red exclusivamente interna puede afectar comunicaciones salientes como SMTP o
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+## Resultado operativo D11 (11/11/2026)
+
+El operador ejecutó la prueba sintética: `D11_MAIN_CLEAN=PASS`, `D11_DEV_ISOLATION=PASS`, `D11_SEPARATE_COMPOSE_PROJECT=PASS`, `D11_COMPOSE_PARSE=PASS`, `D11_PRIVATE_NETWORK_ONLY=PASS`, `D11_PG17_HOST_PORTS=NONE`, `D11_PG17_NAMED_VOLUME_SEPARATE=PASS`, `D11_HOST_LOOPBACK_PORTS=PASS`, `D11_PRODUCTION_COMPOSE_CANDIDATE=PASS`, `D11_PROPOSED_PORT_18741_NO_LISTENER_OBSERVED=YES`, `D11_PROPOSED_PORT_18742_NO_LISTENER_OBSERVED=YES`, `D11_PORTS_RESERVED=NO`, `D11_DEPLOY_AUTHORIZED=NO`, `D11_RESULT=0`, `D11_SHELL_RESULT=0`. Docker `active`; Git `status --short` vacío. Sin creación de secretos, contenedores, modificación Caddy/DNS, acceso a producción o migraciones.
+
+**D11 PASS solo de validación del candidato Compose y aislamiento.** Los puertos no están reservados ni los servicios de producción levantados. Conservar las puertas restantes B1/B2/B3/B4 móvil/B5; no ejecutar `compose up` ni conectarlo a datos DEV.
