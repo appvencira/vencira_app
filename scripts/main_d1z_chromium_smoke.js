@@ -107,6 +107,27 @@ const { chromium } = require("playwright");
                   (state?.flutterCanvas ? "YES" : "NO"));
       console.log("D1Z_CHROMIUM_SCRIPT_TAGS_PRESENT=" +
                   ((state?.scriptCount || 0) > 0 ? "YES" : "NO"));
+      // Diagnostic control only: replace the one known blocked external font
+      // stylesheet with an empty response. Never treat this as a browser PASS.
+      let fontIsolation = "NOT_RUN";
+      try {
+        const probe = await browser.newPage({
+          ignoreHTTPSErrors: true, viewport: { width: 1280, height: 800 }
+        });
+        await probe.route(/^https:\/\/fonts\.googleapis\.com\//, async route =>
+          route.fulfill({ status: 200, contentType: "text/css", body: "" }));
+        await probe.goto("https://d1z-proxy/", {
+          waitUntil: "domcontentloaded", timeout: 15000
+        });
+        await probe.locator("flutter-view").first().waitFor({
+          state: "attached", timeout: 12000
+        });
+        fontIsolation = "VIEW_PRESENT_WITH_FONT_STUB";
+        await probe.close();
+      } catch (_) {
+        fontIsolation = "VIEW_ABSENT_OR_DIAGNOSTIC_FAILED";
+      }
+      console.log("D1Z_CHROMIUM_FONT_DEPENDENCY_DIAGNOSTIC=" + fontIsolation);
       throw Error("FLUTTER_VIEW_TIMEOUT");
     }
     console.log("D1Z_CHROMIUM_FLUTTER_VIEW=PASS");
