@@ -240,8 +240,29 @@ const { chromium } = require("playwright");
     await notes.fill(changedNotes);
     console.log("D2E_GUI_NOTES_TYPED=PASS");
     stage="SAVE_CLICK";
+    // Observe only metadata about actual Flutter-originating HTTP writes.
+    // No response bodies, request payloads, URLs with IDs or credentials.
+    const writes=[];
+    page.on("response",response=>{
+      const request=response.request();
+      if(request.method()==="PATCH" &&
+        /\/api\/v1\/workspaces\/[^/]+\/renewals\/[^/]+\/$/.test(
+          new URL(response.url()).pathname)){
+        writes.push({status:response.status(),method:request.method()});
+      }
+    });
+    const editorBefore=await page.getByRole("button",{name:/guardar/i}).count();
+    console.log("D2E_GUI_SAVE_BUTTON_COUNT="+editorBefore);
     await page.getByRole("button",{name:/guardar/i}).last().click({timeout:20000});
     console.log("D2E_GUI_SAVE_CLICK=PASS");
+    // Flutter updates asynchronously; give the actual PATCH operation time
+    // to complete and observe its status rather than relying on a fixed sleep.
+    await page.waitForTimeout(1800);
+    console.log("D2E_GUI_PATCH_COUNT="+writes.length);
+    console.log("D2E_GUI_PATCH_STATUS="+
+      (writes.length===0?"NONE":writes.map(x=>x.status).join(",")));
+    console.log("D2E_GUI_EDITOR_STILL_OPEN="+
+      ((await page.getByRole("button",{name:/guardar/i}).count())>0?"YES":"NO"));
     stage="PERSISTENCE";
     // GET is evidence only; all writes must originate in actual GUI controls.
     const verified=await page.evaluate(async(expectedNotes)=>{
