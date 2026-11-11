@@ -36,24 +36,42 @@ class NativeApiTransport {
     // Never allow a query delimiter in an untrusted raw path.
     final base = endpoint.resolveApiPath(path);
     if (query.isNotEmpty) {
-      if (query.length != 1 || !query.containsKey('offset')) {
+      if (query.length != 1) throw const FormatException('Invalid API query');
+      final workspacePrefix = '/api/v1/mobile/workspaces/';
+      final validWorkspacePath = base.path.startsWith(workspacePrefix) &&
+          base.path.length >= workspacePrefix.length + 36 &&
+          RegExp(r'^[0-9a-f-]{36}').hasMatch(
+            base.path.substring(workspacePrefix.length),
+          );
+      if (!validWorkspacePath) {
+        throw const FormatException('Invalid API query path');
+      }
+      if (query.containsKey('offset') &&
+          base.path.endsWith('/renewals/')) {
+        final rawOffset = query['offset']!;
+        if (rawOffset.isEmpty || rawOffset.length > 5 ||
+            rawOffset.codeUnits.any((c) => c < 48 || c > 57) ||
+            (rawOffset.length > 1 && rawOffset.startsWith('0')) ||
+            base.path.length != workspacePrefix.length + 36 + '/renewals/'.length) {
+          throw const FormatException('Invalid API offset');
+        }
+        final offset = int.tryParse(rawOffset);
+        if (offset == null || offset > 10000 || offset % 50 != 0) {
+          throw const FormatException('Invalid API offset');
+        }
+      } else if (query.containsKey('cursor') &&
+          base.path.endsWith('/renewals/cursor/')) {
+        final cursor = query['cursor']!;
+        if (base.path.length != workspacePrefix.length + 36 +
+                '/renewals/cursor/'.length ||
+            cursor.length < 10 || cursor.length > 1024 ||
+            cursor.codeUnits.any((c) => !((c >= 48 && c <= 57) ||
+                (c >= 65 && c <= 90) || (c >= 97 && c <= 122) ||
+                c == 45 || c == 95 || c == 58 || c == 46))) {
+          throw const FormatException('Invalid API cursor');
+        }
+      } else {
         throw const FormatException('Invalid API query');
-      }
-      final rawOffset = query['offset']!;
-      if (rawOffset.isEmpty || rawOffset.length > 5 ||
-          !RegExp(r'^[0-9]+').hasMatch(rawOffset) ||
-          rawOffset.codeUnits.any((c) => c < 48 || c > 57) ||
-          (rawOffset.length > 1 && rawOffset.startsWith('0'))) {
-        throw const FormatException('Invalid API offset');
-      }
-      final offset = int.tryParse(rawOffset);
-      if (offset == null || offset > 10000 || offset % 50 != 0 ||
-          !RegExp(r'^/api/v1/mobile/workspaces/[0-9a-f-]{36}/renewals/')
-              .hasMatch(base.path) ||
-          !base.path.endsWith('/renewals/') ||
-          base.path.length !=
-              '/api/v1/mobile/workspaces/'.length + 36 + '/renewals/'.length) {
-        throw const FormatException('Invalid API offset');
       }
     }
     final uri = query.isEmpty ? base : base.replace(queryParameters: query);
