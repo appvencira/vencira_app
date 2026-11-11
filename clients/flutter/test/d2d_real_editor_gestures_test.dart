@@ -87,6 +87,56 @@ void main() {
     });
   }
 
+  testWidgets('D2-D edit preserves identity, expiry and persists notes',
+      (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    VenciraRenewalInput? saved;
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('es'),
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      home: Scaffold(body: Builder(builder: (context) =>
+        ElevatedButton(
+          onPressed: () async {
+            saved = await showDialog<VenciraRenewalInput>(
+              context: context,
+              builder: (_) => VenciraRenewalEditor(
+                existing: VenciraRenewal(
+                  id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+                  reference: 'D2D-EDIT',
+                  fullName: 'Persona ficticia',
+                  notes: 'Antes',
+                  entry: 'clients',
+                  expiresOn: DateTime(2027, 5, 31),
+                  status: 'pending',
+                ),
+              ),
+            );
+          },
+          child: const Text('Editar D2D'),
+        ),
+      )),
+    ));
+    await tester.tap(find.text('Editar D2D'));
+    await tester.pumpAndSettle();
+    expect(find.byType(VenciraRenewalEditor), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const ValueKey('renewal-notes')));
+    await tester.enterText(find.byKey(const ValueKey('renewal-notes')),
+        'Despues D2D');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Guardar'));
+    await tester.pumpAndSettle();
+    expect(saved, isNotNull);
+    expect(saved!.reference, 'D2D-EDIT');
+    expect(saved!.entry, 'clients');
+    expect(saved!.expiresOn, DateTime(2027, 5, 31));
+    expect(saved!.notes, 'Despues D2D');
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('D2-D cancel does not produce an update', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
