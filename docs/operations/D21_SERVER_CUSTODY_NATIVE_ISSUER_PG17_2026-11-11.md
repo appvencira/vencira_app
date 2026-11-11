@@ -67,3 +67,17 @@ Es **un servicio emisor de sesiones candidato en entorno de pruebas**, todavía 
 `MFA_RELEASE_AUTHORIZED=NO`
 `NO_DEPLOY_NO_LIVE_MIGRATION=1`
 `D21_OPERATIONAL_ISSUER_ENABLED=NO`
+
+## Validación VPS D21 — PASS (11/11/2026)
+
+El operador ejecutó `bash -n scripts/native_i8k_recovery_http_pg17_isolated.sh` con `D21_SYNTAX=0`. La batería del laboratorio aislado informó `NATIVE_I8K_DISPOSABLE_IMAGE=OK`, `NATIVE_I8K_INTERNAL_NETWORK=OK`, `NATIVE_I8K_PG17_READY=OK`, `NATIVE_I8K_MIGRATION_PARITY=OK`, `NATIVE_I8K_DISPOSABLE_SCHEMA=OK`, **65 tests ejecutados, OK** y destrucción de la base temporal.
+
+Pruebas nuevas confirmadas: `D21_OPERATIONAL_ISSUER_DISABLED=PASS`, `D21_PASSWORD_ONLY_ISSUANCE_DENIED=PASS`, `D21_SERVER_CUSTODIED_PASSWORD_MFA=PASS`, `D21_RECOVERY_PASSWORD_STAGE_NO_REVOKE=PASS`, `D21_ACCOUNT_WIDE_RECOVERY_REVOKES_OLD=PASS`, `D21_INVALID_KEY_CUSTODY_DENIED=PASS`. Gates agregados: `NATIVE_I8K_D21_SERVER_CUSTODY_ISSUER_PG17=PASS`, `NATIVE_I8K_D20_ISSUER_REVIEW_GATE=PASS`, `NATIVE_I8K_NATIVE_JSON_CONTRACT=PASS`, `NATIVE_I8K_NO_PUBLIC_ISSUER=PASS`, `NATIVE_I8K_NO_MFA_DENIAL_POLICY=PASS`, `NATIVE_I8K_ATOMIC_RECOVERY_CORE=PASS`, `NATIVE_I8K_RECOVERY_HTTP_JSON=PASS`, `NATIVE_I8K_RECOVERY_ENDPOINTS_ABSENT=PASS`, `NATIVE_I8K_PG17_HTTP_RECOVERY_GATE=PASS`, `NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK`, `NATIVE_I8K_DEPLOY_EXECUTED=NO`, `NATIVE_I8K_LIVE_MIGRATIONS_EXECUTED=NO`, `NATIVE_I8K_LOCAL_RESULT=0`.
+
+La salida proporcionada no incluye la línea `D21_SHELL_RESULT` independiente, pero el resultado final del gate es cero. `NATIVE_I8K_FLUTTER_GATE=NOT_RUN_SEPARATE` es esperado; D18 ya validó Flutter HTTPS por separado.
+
+**Conclusión: D21 PASS** para emisor candidato de doble factor con carga de claves MFA del servidor, recuperación y revocación atómica en PG17 temporal. La implementación sigue exclusivamente en `VENCIRA_ENV=test` y sin rutas operativas; no extrapolar este resultado a un emisor de producción autorizado ni a login nativo Android habilitado.
+
+`MFA_RELEASE_AUTHORIZED=NO`
+`NO_DEPLOY_NO_LIVE_MIGRATION=1`
+`D21_OPERATIONAL_ISSUER_ENABLED=NO`
