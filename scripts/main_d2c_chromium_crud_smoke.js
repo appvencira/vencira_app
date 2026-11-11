@@ -71,7 +71,7 @@ const { chromium } = require("playwright");
       if(agenda.status!==200)return "AGENDA_HTTP_"+agenda.status;
       const agendaData=await agenda.json();
       if(!Array.isArray(agendaData.results)||
-         !agendaData.results.some(x=>x.id===created.id))return "AGENDA_MISSING";
+         !agendaData.results.some(x=>x.renewal?.id===created.id))return "AGENDA_MISSING";
       const patched=await write(detail,"PATCH",{notes:"Synthetic revised"});
       if(patched.status!==200)return "PATCH_HTTP_"+patched.status;
       const after=await get(detail);
