@@ -676,3 +676,7 @@ La evidencia D12 y D13-R permite conservar la integridad off-host y la importaci
 Runbook `docs/operations/D14_HISTORICAL_API_O5_PG17_ISOLATED_2026-11-11.md` (commit `d51db74e`). Se ejecuta con `sudo bash` y la ruta existente del archivo local, sin `docker load`, restauración de la BD viva ni publicación. El éxito no resuelve por sí mismo el mismatch de IDs Docker exportados, prueba end-to-end desde almacenamiento remoto ni reversión operativa.
 
 **No autorizar aún el despliegue**: Android nativo final, ruta pública/DNS/Caddy activa, recuperación integral y permiso operativo todavía sin cerrar. Invariantes `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## D14 primer intento — preflight falso negativo (11/11/2026)
+
+Resultado operador: `D14_ARCHIVE_CHECKSUM=PASS`, `D14_ARCHIVE_MANIFEST=PASS`, `D14_HISTORICAL_API_0018_ONLY=FAIL`, `D14_O5_CREDENTIALS_ACCESSED=NO`, `D14_REAL_O5_RESTORE_EXECUTED=NO`, `D14_RESULT=8`. No se llegó a restauración O5 ni a arranque de laboratorio PG17. La revisión del código encontró regex Python raw sobreescapada para comprobar archivo `0018_*.py`. Corregido en `main` commit `22d981e3` para comparar nombre y sufijo directamente; detalle en `docs/operations/D14_HISTORICAL_API_O5_PG17_ISOLATED_2026-11-11.md` commit `4a41f263`. **D14 no está aprobada**; repetir solo su versión corregida, no D12/D13. Mantener `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
