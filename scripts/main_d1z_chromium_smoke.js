@@ -11,6 +11,19 @@ const { chromium } = require("playwright");
   let otherConsoleErrors = 0;
   const otherConsoleSamples = [];
   const otherConsoleLocationTypes = {};
+  const internalHttpErrors = {};
+  const internalForbiddenRoutes = {};
+  function safeRouteClass(path) {
+    if (path === "/api/v1/me/") return "AUTH_ME";
+    if (path === "/api/v1/workspaces/") return "WORKSPACES";
+    if (path === "/api/v1/csrf/") return "CSRF";
+    if (path === "/accounts/login/") return "LOGIN";
+    if (path === "/api/health/") return "HEALTH";
+    if (path.startsWith("/api/v1/")) return "OTHER_API_V1";
+    if (path.startsWith("/api/")) return "OTHER_API";
+    if (path.startsWith("/accounts/")) return "OTHER_ACCOUNT";
+    return "OTHER_INTERNAL";
+  }
   const failedRequests = { internal: 0, external: 0 };
   const requestKinds = {};
   const failedHostCategories = {};
@@ -116,6 +129,11 @@ const { chromium } = require("playwright");
       try {
         const loc = new URL(response.url());
         if (loc.hostname !== "d1z-proxy") return;
+        if (response.status() >= 400) {
+          const routeClass = safeRouteClass(loc.pathname);
+          tally(internalHttpErrors, String(response.status()));
+          if (response.status() === 403) tally(internalForbiddenRoutes, routeClass);
+        }
         if (loc.pathname === "/flutter_bootstrap.js") sameOriginScriptStatus = String(response.status());
         if (loc.pathname === "/main.dart.js") sameOriginScriptStatus =
           response.ok() && sameOriginScriptStatus !== "ERROR" ? "200" : "ERROR";
@@ -238,6 +256,8 @@ const { chromium } = require("playwright");
     safeErrorExamples.forEach((message, idx) => console.log("D1Z_CHROMIUM_SAFE_EXCEPTION_" + (idx + 1) + "=" + message));
     otherConsoleSamples.forEach((message, idx) => console.log("D1Z_CHROMIUM_OTHER_CONSOLE_SAFE_" + (idx + 1) + "=" + message));
     for (const [k, n] of Object.entries(otherConsoleLocationTypes).sort()) console.log("D1Z_CHROMIUM_OTHER_CONSOLE_ORIGIN_" + k + "=" + n);
+    for (const [k, n] of Object.entries(internalHttpErrors).sort()) console.log("D1Z_CHROMIUM_INTERNAL_HTTP_STATUS_" + k + "=" + n);
+    for (const [k, n] of Object.entries(internalForbiddenRoutes).sort()) console.log("D1Z_CHROMIUM_INTERNAL_403_ROUTE_" + k + "=" + n);
     process.exitCode = 1;
   } finally {
     if (browser) await browser.close();
