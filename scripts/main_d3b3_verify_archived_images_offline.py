@@ -65,7 +65,7 @@ def main():
         marker("ARCHIVE_CHECKSUM", "PASS")
         with tarfile.open(archive, mode="r:gz") as t:
             members = t.getmembers()
-            if not members or any(not m.isfile() or m.name.startswith("/") or ".." in Path(m.name).parts for m in members):
+            if not members or any(not (m.isfile() or m.isdir()) or m.name.startswith("/") or ".." in Path(m.name).parts for m in members):
                 fail("TAR_SAFETY")
             by_name = {m.name: m for m in members}
             if len(by_name) != len(members):
