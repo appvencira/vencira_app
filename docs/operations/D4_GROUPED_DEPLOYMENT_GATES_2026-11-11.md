@@ -468,3 +468,30 @@ El operador confirmó `D5_SYNTAX=0`, `D5_MAIN_CLEAN=PASS`, `D5_ARCHIVE_CHECKSUM=
 **Decisión:** cierre de **B4 backend + Flutter web sintéticos** para el candidato `main` probado. **B4 nativo Android / APK y dispositivo físico pendientes**. B1 export real independiente, B2 acoplamiento O5+imagen exportada, B3 custodia off-host cifrada, B5 TLS/dominio de producción y aprobación, así como discrepancia de hashes D3-B3, siguen abiertos.
 
 El siguiente bloque debe priorizar evidencias no repetidas y no repetir D4-E/F/G ni D5. `D5_RESULT=4` significa denegación de publicación por condiciones abiertas, no regresión fallida. No generar un release nuevo ni alterar la base viva antes del gate B1/B2/B3/B5 y aprobación expresa.
+
+## D6 — Auditoría agrupada posterior al PASS de D5 (11/11/2026)
+
+**Objetivo:** ejecutar un solo procedimiento **read-only** que contraste los bloqueos actuales sin reconstruir Django/Flutter, reejecutar D4-E/F/G ni volver a leer/restaurar O5. Script `scripts/main_d6_grouped_release_blocker_audit.sh`, commit `8c1c86ab`. Requiere `main` actualizada y limpia, archivo local y SHA256 válido, y sudo ya autenticado; no expone IDs, rutas privadas, secretos o contenido de backup.
+
+Efectúa:
+- Verificación offline D3-B3 de hashes de configuración Docker exportados y clasificación de la discrepancia como `UNRESOLVED` si no pasa (no modifica el archivo original).
+- Lectura D3-B7 del encadenamiento imagen/manifest/servicios DEV, además del inventario D3-B de volumen de PostgreSQL e imágenes disponibles.
+- Preflight HTTPS de **DEV** Caddy y conexión HTTPS a `https://vencira.es/` con TLS verificado, sin imprimir página, cabeceras, cookies, DNS/IP o certificados. El estado `D6_PUBLIC_APEX_TLS_HTTP_REACHABLE=YES` indica **únicamente** HTTP/TLS de la raíz, no configuración del backend de producción.
+- Resumen separado de B1–B5 con flags restrictivos. Un `D6_RESULT=4` final significa que quedan bloqueos de publicación, **no** que fallen todos los controles.
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+bash -n scripts/main_d6_grouped_release_blocker_audit.sh
+echo "D6_SYNTAX=$?"
+sudo -v
+bash scripts/main_d6_grouped_release_blocker_audit.sh
+echo "D6_SHELL_RESULT=$?"
+systemctl is-active docker
+git status --short
+```
+
+**Próxima fase de cierre**, en lugar de más regresiones sintéticas: B1 y discrepancia D3-B3; B2 compatibilidad O5 con versión histórica, sin imponer migración 0027 a imagen 0018; B3 custodia off-host cifrada, integridad y recuperación real; B4 APK Android y validación nativa; B5 HTTPS/CSRF/cookies/dominio de publicación, plan operativo reversible y aprobación explícita. No afirmar preparación pública basándose únicamente en una respuesta HTTPS 200.
+
+La regresión D5 fue `PASS` para Django/PG17/Flutter web del `main` candidato probado; `D5_RESULT=4` proviene de los bloqueos. Continúan `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
