@@ -39,6 +39,27 @@ done < "$archive_root/images.manifest"
 [[ "${#image_ids[@]}" -eq 3 ]] || { mark ARCHIVE_MANIFEST FAIL; exit 2; }
 mark ARCHIVE_MANIFEST PASS
 mark HOST_DOCKER_IMAGE_LOAD_EXECUTED NO
+# Fail before reading O5 credentials or restoring any data if this retained
+# historical API image cannot possibly run the requested target migration.
+# D4-H2 identified migration 0018 as the maximum, vs target 0027 in main.
+# Independent, networkless, read-only metadata check; output is a boolean.
+if docker run --rm --pull never --network none --read-only \
+    --security-opt no-new-privileges --pids-limit 32 --memory 128m \
+    --entrypoint python "${image_ids[api]}" -c '
+from pathlib import Path
+import re
+paths=Path("/app/reminders/migrations").glob("0027_*.py")
+raise SystemExit(0 if any(re.fullmatch(r"0027_[A-Za-z0-9_]+\\.py",p.name) for p in paths) else 1)
+' >/dev/null 2>&1; then
+  mark TARGET_0027_PRESENT_IN_RETAINED_API PASS
+else
+  mark TARGET_0027_PRESENT_IN_RETAINED_API FAIL
+  mark O5_CREDENTIALS_ACCESSED NO
+  mark REAL_O5_RESTORE_REEXECUTED NO
+  mark MIGRATION_PLAN PRECHECK_BLOCKED
+  mark RESULT 8
+  exit 8
+fi
 cfgdir=/etc/vencira-backup
 cfg="$cfgdir/config.env"
 for p in "$cfgdir" "$cfg"; do
