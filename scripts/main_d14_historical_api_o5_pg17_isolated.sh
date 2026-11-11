@@ -275,8 +275,7 @@ historical_sql="SELECT CASE WHEN
  EXISTS(SELECT 1 FROM django_migrations WHERE app='reminders'
         AND name LIKE '0018_%')
  AND NOT EXISTS(SELECT 1 FROM django_migrations WHERE app='reminders'
-        AND substring(name from 1 for 4) ~ '^[0-9]{4}$'
-        AND substring(name from 1 for 4)::integer BETWEEN 19 AND 27)
+        AND name ~ '^00(19|2[0-7])_')
  THEN 'PASS' ELSE 'FAIL' END;"
 historical="$(docker exec "$lab" psql -U "$db_user" -d "$db_name" -Atq -v ON_ERROR_STOP=1 -c "$historical_sql" 2>/dev/null)" || {
   mark HISTORICAL_MIGRATION_SET FAIL; exit 8
