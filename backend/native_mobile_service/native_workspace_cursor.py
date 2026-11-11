@@ -26,7 +26,7 @@ def _decode(cursor, *, user, workspace_id):
     if cursor is None:
         return timezone.now(), None
     if (type(cursor) is not str or not 10 <= len(cursor) <= 1024
-            or any(char not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_:.\" for char in cursor)):
+            or any(char not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_:." for char in cursor)):
         raise NativeCursorDenied()
     try:
         payload = signing.loads(cursor, salt=CURSOR_SALT, max_age=MAX_CURSOR_AGE)
