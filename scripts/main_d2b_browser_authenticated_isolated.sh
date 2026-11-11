@@ -20,7 +20,9 @@ python3 - <<'PY'
 import ast
 from pathlib import Path
 ast.parse(Path("scripts/main_d2b_flutter_caddy_probe.py").read_text())
+ast.parse(Path("scripts/main_d2b_seed_synthetic.py").read_text())
 print("D2B_PROBE_SYNTAX=PASS")
+print("D2B_FIXTURE_SYNTAX=PASS")
 PY
 [[ "$(git rev-parse HEAD)" == "$(git rev-parse refs/remotes/origin/main)" ]] || {
   mark MAIN_HEAD_REQUIRED FAIL; exit 2;
