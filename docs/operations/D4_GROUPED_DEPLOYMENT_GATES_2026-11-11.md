@@ -149,3 +149,9 @@ Operador confirmó `D4C_MAIN_SYNC=PASS`, `D4C_ARCHIVE_CHECKSUM=PASS`, `D4C_ROOTL
 **Alcance:** arranque verdadero del entrypoint PostgreSQL archivado con base de datos sintética y consulta SQL. No ha participado O5 real ni han arrancado API y Web. `D4C_CONTAINER_RUN_EXECUTED=YES` es ejecución efímera aislada, no despliegue. Continúan `D4C_IMAGE_API_WEB_STARTUP_VERIFIED=NO`, `D4C_IMAGE_O5_COMPATIBILITY_VERIFIED=NO`, `D4C_EXACT_ORIGINAL_DOCKER_IMAGE_ID_VERIFIED=NO`, `D4C_OPERATIONAL_ROLLBACK_VERIFIED=NO`.
 
 **Próximo corte D4-D:** identificar de forma inequívoca los roles API/Web sin adivinar tags; reutilizar los fingerprints rootfs/plataforma de D3-B4 y comprobar los argumentos de arranque efectivos sin exponer entornos/secretos. Después diseñar un laboratorio de aplicación con DB **sintética** en primer término. No ejecutar API con credenciales o datos reales O5 hasta justificar aislamiento y compatibilidad.
+
+## D4-D preparado: roles y contrato de arranque API/Web
+
+Script `scripts/main_d4d_archived_api_web_launch_contract_readonly.py` publicado en main. Compara tres configuraciones archivadas con imágenes activas por rootfs diff IDs, OS y arquitectura, exige mapeo único y emite únicamente indicadores booleanos de presencia de entrypoint, CMD y Env sin imprimir valores. No importa, ejecuta ni modifica imágenes. Un PASS no prueba el arranque de Django/Nginx ni su compatibilidad con O5.
+
+Ejecutar después de sincronizar main: `python3 -m py_compile scripts/main_d4d_archived_api_web_launch_contract_readonly.py` y `python3 scripts/main_d4d_archived_api_web_launch_contract_readonly.py /home/vencira/vencira-release-archives/pre-upgrade-82d5a9324f6141b67b5b55a7`; registrar `D4D_SHELL_RESULT=$?`. No se ha ejecutado todavía en VPS.
