@@ -2028,3 +2028,15 @@ El operador confirma `D2E_RESULT=0`. Chromium realiza login real, vuelve desde A
 Isolación y limpieza: `D2E_INTERNAL_NETWORK=PASS`, `D2E_PG17_TMPFS=PASS`, `D2E_CADDY_TLS_HTTP_CONTRACT=PASS`, `D2E_CSRF_POST_DENIED=PASS`, `D2E_UNTRUSTED_CA_DENIED=PASS`, `D2E_SYNTHETIC_SCHEMA_BACKUP_RESTORE=PASS`, `D2E_DEV_CONTAINERS_UNCHANGED=OK`, `D2E_EPHEMERAL_CLEANUP=DONE`. `D2E_DEPLOY_EXECUTED=NO`, `D2E_LIVE_MIGRATIONS_EXECUTED=NO`.
 
 **Tramo D1-Z→D2-E: 6/6 PASS (100 % de ese tramo, no de VENCIRA global).** Excluidos expresamente: `D2E_OPERATIONAL_IMAGE_AND_DB_ROLLBACK_VERIFIED=NO`, `D2E_CADDY_PRODUCTION_CONFIG_VERIFIED=NO`, `D2E_ROLLBACK_EXECUTED=NO`, `D2E_ROLLBACK_VERIFIED=NO`. Requiere siguiente bloque de garantías operativas, validación UX y gates seguridad/MFA antes de release. Evidencia en `docs/D2E_REAL_CHROMIUM_FLUTTER_GUI_PG17_2026-11-11.md`, cierre commit `52629c8a`. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## EP. 11/11/2026 — D3 grouped pre-release readiness prepared on main (NO release)
+
+Following 6/6 PASS D1-Z→D2-E, the operator requested acceleration and grouping without new branches. Implemented directly in `main`:
+
+- `scripts/main_d3a_full_pg17_rollback_isolated.sh` (`63f54a30`, seed fix `e95ed0e2`): Docker internal-only PG17 tmpfs, candidate Django image, migrations, synthetic user/workspace/renewal, **full pg_dump -Fc of the synthetic DB**; controlled notes mutation; `dropdb`/`createdb`/full `pg_restore` **only on temporary DB**; verify original notes, owner identity, membership, Django runtime and migration parity. Guard DEV container IDs/image identities before/after; cleanup. **No O5 real backup nor persistent data touched**. This is NOT operational image rollback.
+- `scripts/main_d3c_caddy_readonly_preflight.sh` (`b3459035`): checks host Caddyfile with `caddy validate`, local systemd caddy active and HTTPS TLS certificate/HTTP availability on `dev.vencira.es` with no credentials, config output or process changes. May return UNVERIFIED for containerized topology.
+- `scripts/main_d3_grouped_release_preflight.sh` (`f7cd4266`, bundle `cc5daa49`): single operator command, validate clean/synced main and script syntax, execute D3-A one time, then D3-C as read-only non-authorizing check. No repetition of concluded D2-E or Flutter widget tests. Emits explicit release fence: `D3_OPERATIONAL_IMAGE_AND_PERSISTENT_DB_ROLLBACK_VERIFIED=NO`, `D3_PRODUCTION_CADDY_CONFIG_VERIFIED=NO`, `D3_PUBLIC_RELEASE_AUTHORIZED=NO`, `D3_RELEASE_READINESS=GATED`.
+- Details, exact Termius command and expected markers: `docs/D3_GROUPED_RELEASE_READINESS_2026-11-11.md` commit `489f072e`.
+
+**Estado D3: scripts committed, NOT EXECUTED on VPS; result unknown.** Do not assign PASS or date of production. Must still validate persistent image+DB/O5 operational rollback, production Caddy topology, security/MFA and explicitly authorize a controlled pilot or production rollout. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, no actual deploy or operational migrations.
