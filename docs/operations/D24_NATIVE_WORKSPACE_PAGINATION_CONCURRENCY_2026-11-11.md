@@ -65,3 +65,18 @@ Reporte real: `D24_SYNTAX=0`, `D24_MAIN_CLEAN=PASS`, `D24_DEV_IDENTITY=PASS`, `D
 **Diagnóstico:** la vista HTTP aceptaba como sintácticamente numérico `offset=1`, pero el lector requería múltiplos de 50, lanzaba `NativeWorkspaceDenied`, y la vista lo traducía a 401. No es una vulnerabilidad de acceso demostrado; sí un error de contrato HTTP para parámetros de paginación. **Corrección publicada en main, commit `58d765bb`**: `test_d22_http_views.workspace_renewals` rechaza offsets no múltiplos de 50 como 400 *antes* de validar credenciales o consultar el tenant. El lector sigue denegando los offsets no canónicos como defensa adicional. No se han modificado `config.urls`, settings operativos ni el flujo de emisión.
 
 **Pendiente:** repetir una sola vez el gate D24 agrupado después de `git fetch` y `git merge --ff-only`; se exige **79 tests OK**, `D24_FLUTTER_PAGINATION_GATE=PASS`, `D24_RESULT=0`. Hasta entonces **D24 NO PASS**.
+
+## Segundo gate VPS — fallo Flutter al serializar offset, corrección publicada (12/11/2026)
+
+La ejecución llegó al subgate Flutter tras la fase PostgreSQL17, lo que implica que el subgate backend precedente finalizó con código cero; la parte del log entregada no incluye el resumen de los 79 tests del recheck y no se inventan esos marcadores. `flutter pub get` completó; `flutter analyze` informó **No issues found**. `flutter test` ejecutó 9 pruebas de `native_workspace_read_port_test.dart`, con **8 correctas y 1 fallo**: `page two uses canonical offset and validates next_offset` arrojó `FormatException: Invalid API path` desde `NativeApiEndpoint.resolveApiPath`. El cliente D24 concatenaba `?offset=50` a la ruta; el contrato de seguridad de `NativeApiEndpoint` rechaza por diseño cualquier query dentro de la ruta. El gate detuvo correctamente la fase con `D24_FLUTTER_PAGINATION_GATE=FAIL`, `D24_DEV_CONTAINERS_UNCHANGED=OK`, `D24_RESULT=5`.
+
+**Corrección en main sin relajar la validación de rutas**:
+- `d17756a2` actualiza `NativeApiTransport.getJson(path, query: ...)`: primero valida ruta por `NativeApiEndpoint.resolveApiPath`, y solo permite una query tipada `offset` numérica, canónica, múltiplo de 50, máxima 10000 y **solo** para `/api/v1/mobile/workspaces/<id>/renewals/`. No permite query cruda, redirección ni otros endpoints. Construye `Uri.replace(queryParameters: ...)` sin interpolar el delimitador en la ruta.
+- `e7c84258` actualiza `NativeWorkspaceReadPort.loadPage` para enviar el `offset` por el parámetro `query`, sin concatenarlo al path.
+- `d252d31a` añade regresiones Flutter del transport: URL HTTPS canónica con offset 50, rechazo antes de leer token y antes de red para offsets inválidos, query inesperada y query cruda.
+- `c45b31bb` amplía el gate Flutter D24 para ejecutar `native_workspace_read_port_test.dart`, `native_api_transport_test.dart` y `native_api_endpoint_test.dart`, además de `flutter analyze`.
+
+**D24 aún PENDIENTE**, hasta repetir el gate de principio a fin y obtener `D24_FLUTTER_PAGINATION_GATE=PASS`, `D24_PG17_CONCURRENCY_PAGINATION=PASS`, `D24_DEV_CONTAINERS_UNCHANGED=OK` y `D24_RESULT=0`. La revisión y validación Flutter no se han ejecutado en el VPS tras esta corrección.
+
+`MFA_RELEASE_AUTHORIZED=NO`
+`NO_DEPLOY_NO_LIVE_MIGRATION=1`
