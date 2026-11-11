@@ -1835,3 +1835,10 @@ Se publicó commit `bcfa7d69` para clasificar estrictamente excepciones `pageerr
 El operador confirmó `D1Z_CHROMIUM_FLUTTER_VIEW=PASS`, `D1Z_CHROMIUM_SAME_ORIGIN_API=PASS`, `D1Z_CHROMIUM_PAGE_ERRORS=0`, `D1Z_CHROMIUM_FONT_CONSOLE_ERRORS=31`, `D1Z_CHROMIUM_OTHER_CONSOLE_ERRORS=2`, `D1Z_CHROMIUM_FAILED_EXTERNAL_REQUESTS=31` todos Google Fonts, `D1Z_CHROMIUM_FAILED_INTERNAL_REQUESTS=0`. **D1Z continúa FAIL**: `D1Z_CHROMIUM_RENDER_GATE=FAIL`, `D1Z_RESULT=8`; DEV intacto y cleanup DONE. No asumir que los 2 errores ajenos a fuentes sean inocuos.
 
 Para obtener causa sin desactivar controles se añadieron mensajes de consola no-font redactados y categorización de origen (commit `e284467c`), documentado en `docs/D1Z_BROWSER_FLUTTER_AND_ISOLATED_WEB_RECOVERY_2026-11-11.md` (commit `0aee421f`). Pendiente siguiente ejecución para revisar `D1Z_CHROMIUM_OTHER_CONSOLE_SAFE_*` y `D1Z_CHROMIUM_OTHER_CONSOLE_ORIGIN_*`. No se ha ejecutado reinicio Nginx del laboratorio ni rollback operativo. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## DQ. 11/11/2026 — D1-Z dos 403 internos no atribuidos; gate sigue FAIL
+
+El décimo intento confirmó arranque Flutter Chromium, same-origin API y cero `pageerror`; los 31 errores de fuente externa se catalogaron Google Fonts. Pero `D1Z_CHROMIUM_OTHER_CONSOLE_ERRORS=2` corresponde a dos respuestas `403` del servidor interno, sin ruta exacta aún comprobada. El contrato sintético indica que `GET /api/v1/me/` anónimo debe devolver 401/403, pero sería incorrecto asumir que estas dos respuestas provienen de ese endpoint. `D1Z_CHROMIUM_RENDER_GATE=FAIL` y `D1Z_RESULT=8`; DEV intacto, limpieza DONE.
+
+Se introdujo clasificación de respuestas HTTP >=400 internas y grupos fijos de rutas HTTP 403 en `scripts/main_d1z_chromium_smoke.js` (commit `ea1a95ed`), sin filtrar los errores ni abrir redes. Documento de gate D1-Z ampliado commit `9e20e24f`. Repetición pendiente para obtener `D1Z_CHROMIUM_INTERNAL_HTTP_STATUS_403` y `D1Z_CHROMIUM_INTERNAL_403_ROUTE_*`. Sin despliegue, MFA ni migraciones persistentes. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
