@@ -170,3 +170,21 @@ Código verificado: `renewal_editor.dart` crea `TextEditingController(text: exis
 **Commit `e8591fd5`**: test reemplaza `notes.fill(...)` por clic real, combinación teclado seleccionar todo `ControlOrMeta+A`, escritura por `page.keyboard.type` y pérdida de foco mediante Tab; no modifica DOM ni hace peticiones de escritura. Instrumenta únicamente metadatos categóricos del texto sintético de las notas en **request PATCH** y **response PATCH** (`EXPECTED`, `UNCHANGED`, `CONTAINS_EXPECTED`, `CONTAINS_ORIGINAL`, `EMPTY`, `OTHER`, `MISSING`, `PARSE_ERROR`), sin imprimir textos ni cuerpo de peticiones/respuestas. Clasifica igualmente el valor visible del campo de entrada si `inputValue()` está disponible. JS V8 parse PASS. No modifica implementación de producción.
 
 En el siguiente ensayo observar `D2E_GUI_NOTES_ACCESSIBLE_INPUT_STATE`, `D2E_GUI_PATCH_SENT_NOTES_CLASS`, `D2E_GUI_PATCH_RETURNED_NOTES_CLASS`, `D2E_GUI_PATCH_STATUS`, `D2E_READONLY_DETAIL_PERSISTENCE` y `D2E_RESULT`. Sigue pendiente que cada pase (antes/después de reinicio efímero de Nginx) tenga su valor distinto persistido. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, DEV intacto.
+
+
+## Cierre D2-E — operador confirma PASS integral (11/11/2026)
+
+El operador ejecutó el laboratorio `scripts/main_d2e_browser_gui_isolated.sh` y aportó salida final `D2E_RESULT=0`. **Gate D2-E: PASS dentro del alcance de edición GUI de notas en escritorio, con reiteración tras reiniciar Nginx efímero.**
+
+Evidencia del primer recorrido:
+- `D2E_DEV_IDENTITY=PASS`, `D2E_INTERNAL_NETWORK=PASS`, `D2E_PG17_TMPFS=PASS`, `D2E_CANDIDATE_IMAGE=PASS`, `D2E_SYNTHETIC_MIGRATIONS=PASS`, `D2E_AUTH_FIXTURE=PASS`.
+- `D2E_FLUTTER_RELEASE_BUILD=PASS`, `D2E_LOCAL_CANVASKIT_BUNDLED=PASS`, `D2E_CADDY_TLS_HTTP_CONTRACT=PASS`, `D2E_CSRF_SECURE_COOKIE=PASS`, `D2E_CSRF_POST_DENIED=PASS`, `D2E_UNTRUSTED_CA_DENIED=PASS`, `D2E_CADDY_HTTPS_PROBE=PASS`.
+- `D2E_BROWSER_SYNTHETIC_LOGIN=PASS`, `D2E_FLUTTER_VIEW_ATTACHED=PASS`, `D2E_ACCESSIBILITY_HIDDEN_BUTTON_ACTIVATED=PASS`, `D2E_INITIAL_ROUTE=AGENDA`, `D2E_GUI_RETURN_FROM_AGENDA=PASS`, `D2E_GUI_SYNTHETIC_RENEWAL_VISIBLE=PASS`.
+- `D2E_GUI_EDIT_CLICK=PASS`, `D2E_GUI_NOTES_ACCESSIBLE_INPUT_STATE=MATCH`, `D2E_GUI_NOTES_TYPED=PASS`, `D2E_GUI_SAVE_CLICK=PASS`, `D2E_GUI_PATCH_COUNT=1`, `D2E_GUI_PATCH_STATUS=200`, `D2E_GUI_PATCH_SENT_NOTES_CLASS=EXPECTED`, `D2E_GUI_PATCH_FIXTURE_TARGET=YES`, `D2E_GUI_PATCH_RETURNED_NOTES_MATCH=YES`, `D2E_GUI_PATCH_RETURNED_NOTES_CLASS=EXPECTED`, `D2E_GUI_TO_DJANGO_PG17_PERSISTENCE=PASS`.
+- `D2E_GUI_PAGE_ERRORS=0`, `D2E_BROWSER_GUI_WRITE_METHOD=REAL_POINTER_KEYBOARD`, `D2E_REAL_GUI_END_TO_END_GATE=PASS`, `D2E_CHROMIUM_RENDER_GATE=PASS`.
+
+**Repetición:** `D2E_WEB_RECOVERY_RESTART=PASS`; mismo recorrido GUI completo con un valor nuevo de prueba y marcadores `PATCH_STATUS=200`, `PATCH_SENT_NOTES_CLASS=EXPECTED`, `PATCH_RETURNED_NOTES_CLASS=EXPECTED`, `GUI_TO_DJANGO_PG17_PERSISTENCE=PASS`; `D2E_CHROMIUM_AFTER_WEB_RESTART=PASS`.
+
+**Protecciones:** `D2E_SYNTHETIC_SCHEMA_BACKUP_RESTORE=PASS`, `D2E_DEV_CONTAINERS_UNCHANGED=OK`, `D2E_EPHEMERAL_CLEANUP=DONE`, `D2E_DEPLOY_EXECUTED=NO`, `D2E_LIVE_MIGRATIONS_EXECUTED=NO`. Importante: **backup/restore de esquema sintético NO implica rollback operativo de contenedores o base persistente**. Salida explícita `D2E_OPERATIONAL_IMAGE_AND_DB_ROLLBACK_VERIFIED=NO`, `D2E_CADDY_PRODUCTION_CONFIG_VERIFIED=NO`, `D2E_ROLLBACK_EXECUTED=NO`, `D2E_ROLLBACK_VERIFIED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+**Estado final:** el tramo D1-Z→D2-E acumula **6/6 PASS**, 100 % de los gates de ese tramo, no del producto VENCIRA ni autorización de deploy. Quedan validación Caddy de producción, rollback operativo de imagen+BD persistente, pruebas GUI adicionales, evaluación de seguridad/MFA y autorización explícita de release. No repetir D2-E salvo cambios materiales. 
