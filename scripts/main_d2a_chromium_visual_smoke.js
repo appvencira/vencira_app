@@ -298,6 +298,17 @@ const { PNG } = require("pngjs");
     console.log("D2A_SCREENSHOTS_RETAINED=NO");
     console.log("D2A_VISUAL_FIDELITY_VERIFIED=NO");
     stage = "VISUAL_COMPLETE";
+    // Revalidate after screenshots: rasterization can trigger new network or
+    // application errors, so the earlier pre-visual checks are not sufficient.
+    const afterVisualExternalFontsOnly = failedRequests.external ===
+      (failedHostCategories.GOOGLE_FONTS || 0);
+    if (pageErrors || otherConsoleErrors || failedRequests.internal ||
+        !afterVisualExternalFontsOnly) throw Error("VISUAL_POST_CAPTURE_BROWSER_ERRORS");
+    const afterVisualHealth = await page.evaluate(async () =>
+      (await fetch("/api/health/", {credentials:"same-origin"})).status);
+    if (afterVisualHealth !== 200) throw Error("VISUAL_POST_CAPTURE_API");
+    console.log("D2A_VISUAL_POST_CAPTURE_APP_ERRORS=NONE");
+    console.log("D2A_VISUAL_POST_CAPTURE_API=PASS");
 
     if (fontConsoleErrors || failedRequests.external) {
       console.log("D2A_CHROMIUM_FONT_NETWORK_DEGRADED=YES");
