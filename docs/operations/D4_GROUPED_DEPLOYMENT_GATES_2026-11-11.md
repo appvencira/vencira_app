@@ -750,3 +750,14 @@ El primer gate Flutter de D17-B tuvo `flutter analyze` sin incidencias, I8-Q/I8-
 Gate VPS validado tras corrección del scroll: `flutter analyze` **0 issues**; **15 tests PASS** (boundary Android, I8-Q fallos y I8-L recuperación). Marcadores: `D17B_FLUTTER_GATE=PASS`, `D17B_NATIVE_STARTUP_INTEGRATED=YES`, `D17B_AUTH_PRODUCTION_ENABLED=NO`, `D17B_DEV_CONTAINERS_UNCHANGED=OK`, `D17B_RESULT=0`. La integración principal usa `NativeAndroidStartupBoundary` y `NativeMobileStartupGate` con secure store y recovery journal: un marcador o refresh huérfano obliga a recuperación, error de store cierra acceso y la UI no ofrece login nativo. El scroll resuelve el overflow en viewport 320x480. Documentación D17-B commit `98600e07`.
 
 **Límite:** D17-B no integra todavía autenticación nativa operativa ni aprueba un issuer; no se ha reconstruido el APK después de estos cambios ni probado físicamente. Siguientes puertas: integrar contrato seguro real del backend + emisión/rotación/revocación, HTTPS dispositivo y nuevo APK firmado; no desplegar ni habilitar MFA hasta autorización. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## D18 — Gate agrupado de seguridad nativa + Django PG17 + Flutter HTTPS (11/11/2026)
+
+Tras D17-B PASS, la auditoría constató que Django `config.urls` **no expone** los endpoints de emisión/recuperación LAB; `VENCIRA_NATIVE_BEARER_ENABLED=False`; `native_mobile_service` existe únicamente en tests con flag explícito. La aplicación Android `main.dart` integra ahora solo el arranque seguro fail-closed, sin `NativeHttpAuthPort` conectado al issuer real. NO es correcto convertir el test endpoint I8-D/I8-K en issuer operacional sin un control completo de claves, abuso, MFA, revocación y sesión.
+
+Para acelerar sin reiterar D12–D17, **D18 publicada en `main`; ejecución VPS pendiente**:
+- `scripts/main_d18_native_auth_release_fence_static.py` (`95dbf983`): valida URLconf Django, flags, fence Flutter, journal durable y bloqueo de issuer en app real sin network ni datos.
+- `scripts/main_d18_native_auth_grouped_security_gate.sh` (`ea490a28`): orquesta gate estático, test real PG17 de contrato backend `native_i8k_recovery_http_pg17_isolated.sh` y HTTPS de cliente Flutter `main_i8m_flutter_real_https_pg17_isolated.sh`, todos en entornos desechables, con IDs DEV invariables.
+- Procedimiento `docs/operations/D18_NATIVE_AUTH_GROUPED_SECURITY_GATE_2026-11-11.md`, commits `26ec21fa` y `f5addc3d`.
+
+Un `D18_RESULT=0` demostrará exclusivamente que **los contratos LAB continúan validados y el entorno operativo no expone un emisor nativo no autorizado**; el marcador esperado es `D18_NATIVE_AUTH_OPERATIONAL_READINESS=BLOCKED` y `D18_AUTH_PRODUCTION_ENABLED=NO`. No anunciar login nativo real ni liberar APK. Mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Siguiente implementación sustantiva requerirá diseño y pruebas del issuer operacional aislado, no elevar un endpoint `test_*` a producción.
