@@ -161,6 +161,69 @@ const { chromium } = require("playwright");
       console.log("D2E_DASHBOARD_ROLE_BUTTON_COUNT="+summary.buttons);
       console.log("D2E_DASHBOARD_AGENDA_LABEL_PRESENT="+
         (summary.agendaLabeled?"YES":"NO"));
+      // Read-only API baseline separates data-loading failure from Flutter
+      // accessibility/route failure. Never use an API write or expose body.
+      const baseline=await page.evaluate(async()=>{
+        try {
+          const ws=await fetch("/api/v1/workspaces/",{
+            credentials:"same-origin",cache:"no-store"});
+          if(ws.status!==200)return "WORKSPACES_HTTP_"+ws.status;
+          const memberships=await ws.json();
+          if(!Array.isArray(memberships)||memberships.length!==1)
+            return "MEMBERSHIP_COUNT";
+          const api="/api/v1/workspaces/"+
+            encodeURIComponent(memberships[0].id)+
+            "/renewals/?q=D2E-EDIT";
+          const renewals=await fetch(api,{
+            credentials:"same-origin",cache:"no-store"});
+          if(renewals.status!==200)
+            return "RENEWALS_HTTP_"+renewals.status;
+          const list=await renewals.json();
+          return (list.results||[]).some(x=>
+            x.customer_reference==="D2E-EDIT")?"FIXTURE_VISIBLE":"FIXTURE_MISSING";
+        } catch(_){return "READ_ERROR";}
+      });
+      console.log("D2E_READONLY_API_BASELINE="+baseline);
+      // Inspect Flutter semantics without printing actual text, DOM markup,
+      // application data, cookies or URLs. A node may have textContent but no
+      // aria-label; CanvasKit may expose names only in the accessibility tree.
+      const dom=await page.evaluate(()=>{
+        const nodes=[...document.querySelectorAll("flt-semantics")];
+        const text=nodes.filter(n=>
+          (n.textContent||"").includes("Persona ficticia D2E")).length;
+        const aria=nodes.filter(n=>
+          (n.getAttribute("aria-label")||"")
+            .includes("Persona ficticia D2E")).length;
+        const content=nodes.filter(n=>
+          (n.getAttribute("flt-semantics-label")||"")
+            .includes("Persona ficticia D2E")).length;
+        const roles=nodes.filter(n=>n.hasAttribute("role")).length;
+        const hasBack=nodes.some(n=>/back|volver|atrás|atras/i.test(
+          [n.getAttribute("aria-label"),n.textContent]
+            .filter(Boolean).join(" ")));
+        return {text,aria,content,roles,hasBack};
+      });
+      console.log("D2E_SEMANTICS_TEXT_MATCH_COUNT="+dom.text);
+      console.log("D2E_SEMANTICS_ARIA_MATCH_COUNT="+dom.aria);
+      console.log("D2E_SEMANTICS_CUSTOM_LABEL_MATCH_COUNT="+dom.content);
+      console.log("D2E_SEMANTICS_ROLE_COUNT="+dom.roles);
+      console.log("D2E_SEMANTICS_BACK_TEXT_PRESENT="+
+        (dom.hasBack?"YES":"NO"));
+      // Chromium AX tree is read-only; compare names to a fixed synthetic
+      // fixture, emit counts only, and never dump the tree to logs.
+      try {
+        const cdp=await page.context().newCDPSession(page);
+        const ax=await cdp.send("Accessibility.getFullAXTree");
+        const nodes=Array.isArray(ax.nodes)?ax.nodes:[];
+        console.log("D2E_AX_NODE_COUNT="+nodes.length);
+        console.log("D2E_AX_SYNTHETIC_NAME_MATCH="+
+          (nodes.some(n=>String(n.name?.value||"")
+            .includes("Persona ficticia D2E"))?"YES":"NO"));
+        console.log("D2E_AX_BACK_NAME_MATCH="+
+          (nodes.some(n=>/back|volver|atrás|atras/i.test(
+            String(n.name?.value||"")))?"YES":"NO"));
+        await cdp.detach();
+      } catch(_) {console.log("D2E_AX_TREE_AVAILABLE=NO");}
       throw Error("RENEWAL_NOT_IN_ACCESSIBLE_DASHBOARD");
     }
     console.log("D2E_GUI_SYNTHETIC_RENEWAL_VISIBLE=PASS");
