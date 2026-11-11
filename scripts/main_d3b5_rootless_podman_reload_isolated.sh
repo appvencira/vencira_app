@@ -72,7 +72,31 @@ mkdir -m 700 "$lab/graph" "$lab/run" "$lab/tmp" "$lab/home"
 # Explicit per-command local rootless Podman; never fallback to Docker or sudo.
 export HOME="$lab/home" XDG_CONFIG_HOME="$lab/home" TMPDIR="$lab/tmp"
 P=(podman --remote=false --root "$lab/graph" --runroot "$lab/run" --storage-driver vfs --events-backend=file)
-if ! "${P[@]}" info --format json >"$lab/info.json" 2>"$lab/error.log"; then
+if "${P[@]}" info --format json >"$lab/info.json" 2>"$lab/error.log"; then
+  :
+else
+  status=$?
+  # Never print raw stderr: paths, environment details or runtime internals
+  # can be sensitive. Emit only predefined error categories and exit status.
+  python3 - "$lab/error.log" "$status" <<'PY'
+import pathlib, re, sys
+try:
+    msg = pathlib.Path(sys.argv[1]).read_text(errors="replace").lower()
+except OSError:
+    msg = ""
+rules = [
+    ("UNKNOWN_FLAG", r"unknown flag|unknown shorthand flag|unknown option"),
+    ("STORAGE_DRIVER_CONFLICT", r"database.*(graph driver|storage driver)|graph driver.*(mismatch|not match|different)"),
+    ("NAMESPACE_FAILURE", r"cannot clone|unshare|user namespace|userns|newuidmap|newgidmap|cannot re-exec"),
+    ("PERMISSION_FAILURE", r"permission denied|operation not permitted|access denied"),
+    ("RUNTIME_DIRECTORY_FAILURE", r"xdg_runtime_dir|runroot|runtime directory|rootless storage"),
+    ("STORAGE_CONFIGURATION_FAILURE", r"storage.conf|graphroot|graph root|storage driver|graphdriver"),
+    ("DATABASE_FAILURE", r"database|bolt|sqlite"),
+]
+category = next((label for label, regex in rules if re.search(regex, msg)), "UNCLASSIFIED")
+print("D3B5_PODMAN_INFO_ERROR_CATEGORY=" + category)
+print("D3B5_PODMAN_INFO_EXIT_CODE=" + sys.argv[2])
+PY
   mark ROOTLESS_PODMAN_STORE FAIL
   exit 4
 fi
