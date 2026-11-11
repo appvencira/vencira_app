@@ -88,3 +88,35 @@ echo "D3B_SHELL_RESULT=$?"
 ```
 
 El criterio anterior que exigía imágenes históricas distintas queda **supersedido** por esta sección. No equivale a autorizar deploy, ni rollback operativo real, ni asegurar la retención de imágenes.
+
+
+## D3-B1 confirmado PASS por operador
+
+La reejecución local corrigió el falso bloqueo de histórico: `D3B_OPERATIONAL_IDENTITY=PASS`, `D3B_CURRENT_IMAGES_IMMUTABLE_AND_LOCAL=PASS`, `D3B_POSTGRES_NAMED_VOLUME=PASS`, `D3B_PRE_UPGRADE_IMAGE_BASELINE_IDENTIFIED=PASS`, `D3B_PRE_UPGRADE_IMAGE_BASELINE_CURRENT_LOCAL=YES`, `D3B_PRE_UPGRADE_ROLLBACK_BASELINE_INVENTORY=PASS`, `D3B_RESULT=0`. **No** se ha demostrado retención de esas imágenes ni rollback de imagen+datos: `D3B_PRE_UPGRADE_IMAGE_RETENTION_GUARANTEED=NO`, `D3B_PRE_UPGRADE_IMAGE_ARCHIVE_VERIFIED=NO`, `D3B_RESTIC_O5_IMAGE_COMPATIBILITY_VERIFIED=NO`, `D3B_OPERATIONAL_ROLLBACK_VERIFIED=NO`.
+
+## D3-B2 preparado: archivo local de las imágenes de retorno
+
+Nuevo script `scripts/main_d3b2_archive_current_images_safe.sh` (commit `c14bd22a`), aún **NO EJECUTADO** en VPS. Su objetivo es conservar fuera de Docker y fuera de Git la versión de retorno, identificada por IDs inmutables de **las tres imágenes operativas actuales (API, PostgreSQL, Web Preview)**. Acciones:
+
+- Requiere HEAD exacto `origin/main`, árbol limpio, identidad Compose `vencira_localcheck`, contenedores corriendo, imágenes SHA256 locales y volumen PG nombrado. No lee su contenido.
+- Operador no root con `sudo docker`; crea `~/vencira-release-archives` con permisos 0700, rechaza permisos distintos y symlink directo.
+- Calcula reserva mínima conservadora según suma de tamaños virtuales de imágenes + 1 GiB libre. Si no cabe, aborta sin hacer archivo ni tocar servicios.
+- `docker image save` por ID de las tres imágenes a un archivo `images.tar.gz` comprimido; `gzip -t`, enumeración de integridad tar y `sha256sum -c` verifican el archivo. Conserva `images.manifest` con IDs y checksum bajo ruta privada; no imprime los SHA de imágenes, nombres de clientes, secretos, certificados ni variables de entorno.
+- Comprueba en el `trap` que identidad ID:imagen de los tres contenedores DEV se mantiene; ante fallo elimina el directorio/archivo parcial. No para contenedores, reinicia Caddy, migra, restaura PG ni hace `docker image load`.
+
+**Importante:** archivo checksum/tar íntegro no equivale a verificar `docker load`, restaurabilidad real de imágenes ni compatibilidad con la base O5. Tampoco equivale a una copia independiente del servidor: `D3B2_ARCHIVE_OFF_HOST_VERIFIED=NO`. No autoriza publicación. El archivo contiene capas Docker potencialmente sensibles, por lo que no se debe subir a GitHub ni adjuntar en el chat; acceso privado exclusivamente en VPS.
+
+### Termius — una sola ejecución D3-B2
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+bash -n scripts/main_d3b2_archive_current_images_safe.sh
+bash scripts/main_d3b2_archive_current_images_safe.sh
+echo "D3B2_SHELL_RESULT=$?"
+```
+
+Resultado por determinar: `D3B2_DISK_CAPACITY=PASS`, `D3B2_IMAGE_SAVE=PASS`, `D3B2_ARCHIVE_STRUCTURAL_INTEGRITY=PASS`, `D3B2_ARCHIVE_CHECKSUM=PASS`, `D3B2_PRE_UPGRADE_IMAGES_ARCHIVED=PASS`, `D3B2_DEV_CONTAINERS_UNCHANGED=OK`, `D3B2_ARCHIVE_PRESERVED=YES`, `D3B2_RESULT=0`. Si capacidad insuficiente, tratar `DISK_CAPACITY=FAIL` como bloqueo real; no eliminar backups ni imágenes operativas para sortearlo.
+
+**Pendiente posterior:** probar `docker load` en laboratorio aislado sin afectar al daemon Docker operativo, cotejar digest/IDs importados y ensayar imagen anterior sobre O5 restaurado, y una copia externa cifrada/retención verificable para disaster recovery. Hasta entonces `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `MFA_RELEASE_AUTHORIZED=NO`.
