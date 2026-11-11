@@ -680,3 +680,13 @@ Runbook `docs/operations/D14_HISTORICAL_API_O5_PG17_ISOLATED_2026-11-11.md` (com
 ## D14 primer intento — preflight falso negativo (11/11/2026)
 
 Resultado operador: `D14_ARCHIVE_CHECKSUM=PASS`, `D14_ARCHIVE_MANIFEST=PASS`, `D14_HISTORICAL_API_0018_ONLY=FAIL`, `D14_O5_CREDENTIALS_ACCESSED=NO`, `D14_REAL_O5_RESTORE_EXECUTED=NO`, `D14_RESULT=8`. No se llegó a restauración O5 ni a arranque de laboratorio PG17. La revisión del código encontró regex Python raw sobreescapada para comprobar archivo `0018_*.py`. Corregido en `main` commit `22d981e3` para comparar nombre y sufijo directamente; detalle en `docs/operations/D14_HISTORICAL_API_O5_PG17_ISOLATED_2026-11-11.md` commit `4a41f263`. **D14 no está aprobada**; repetir solo su versión corregida, no D12/D13. Mantener `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## D14 PASS — backup O5 histórico y API Django 0018 compatibles (11/11/2026)
+
+**Evidencia del VPS:** `D14_HISTORICAL_API_0018_ONLY=PASS`, `D14_CONFIG_MATCH=PASS`, `D14_DEV_IDENTITY=PASS`, `D14_HOST_IMAGE_IDENTITY=PASS`, `D14_RECENT_POSTGRESQL_SNAPSHOT=PASS`, `D14_LAB_NETWORK_INTERNAL=PASS`, `D14_PG17_NETWORK_ISOLATED=PASS`, `D14_PG17_TMPFS_READY=PASS`, `D14_RESTORE_REAL_O5_PG17=PASS`, `D14_HISTORICAL_0018=PASS`, `D14_BACKUP_PAYLOAD_PG_RESTORE_VERIFIED=YES`, `D14_REAL_BACKUP_RESTORED=PASS`, `D14_MODEL_MIGRATION_PARITY=PASS`, `D14_HISTORICAL_0018_MIGRATION_PLAN=PASS`, `D14_HISTORICAL_MIGRATION_SET=PASS`, `D14_CORE_COUNTS_UNCHANGED=PASS`, `D14_HISTORICAL_API_O5_COMPATIBILITY=PASS`, `D14_DEV_CONTAINERS_UNCHANGED=OK`, `D14_LAB_CONTAINER_REMOVED=YES` y `D14_RESULT=0`.
+
+Se ha demostrado que la copia O5 real se restaura en PG17 temporal y que **la imagen histórica Django 0018 retenida en Docker host** valida el esquema, el plan de migraciones y los recuentos sin aplicar migraciones 0019–0027. `D14_CONTAINER_RUN_EXECUTED=YES` corresponde al contenedor de laboratorio, no a despliegue. No se efectuaron operaciones en las bases activas, ni cargas de imágenes, ni despliegues, ni cambios DEV. Documentado `docs/operations/D14_HISTORICAL_API_O5_PG17_ISOLATED_2026-11-11.md` commit `f410b53b`.
+
+**Límites críticos:** D14 no ejecutó servidor HTTP API/Web recuperado, no utilizó el tar externo como origen runtime, no resolvió la discrepancia de IDs de imagen Docker, no efectuó rollback operacional y no validó aún APK/HTTPS Android final ni Caddy/DNS de apex. Mantener `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D14_PUBLIC_RELEASE_AUTHORIZED=NO`.
+
+Priorizar pruebas de extremo a extremo de la pila recuperable y la ruta Android/publicación; no repetir D12–D14 sin motivo técnico nuevo.
