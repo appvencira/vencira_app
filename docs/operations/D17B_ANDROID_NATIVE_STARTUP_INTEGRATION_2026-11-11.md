@@ -46,3 +46,11 @@ La integración no habilita ninguna llamada password/MFA, no emite refresh, no r
 
 `MFA_RELEASE_AUTHORIZED=NO`
 `NO_DEPLOY_NO_LIVE_MIGRATION=1`
+
+## Primera validación — D17-B FAIL por overflow de UI (11/11/2026)
+
+Salida del VPS: `flutter analyze` **0 issues**; I8-Q timeout de password, MFA ambiguo y fallo combinado de almacén/revocación **PASS**; las pruebas I8-L presentes continuaron ejecutándose sin fallos visibles. La única prueba fallida fue `orphan refresh requires recovery and never exposes login` con `RenderFlex overflowed by 28 pixels on the bottom` al mostrar el aviso de recuperación. Marcadores `D17B_FLUTTER_GATE=FAIL`, `D17B_DEV_CONTAINERS_UNCHANGED=OK`, `D17B_RESULT=4`. Esto es defecto de layout, no evidencia de un fallo de autorización nativa.
+
+Correcciones ya publicadas en `main`: `d9098499` hace desplazable `AndroidWebAccessScreen` mediante `SingleChildScrollView` para acomodar mensajes largos y teléfonos pequeños; `847af3c3` incorpora regresión en viewport de 320x480 y comprueba ausencia de excepciones, scroll y que no exista botón de login nativo. No cambian endpoints, credenciales, permisos ni releases.
+
+**Repetir únicamente D17-B** tras `git fetch` y `git merge --ff-only origin/main`; seguir el bloque original de validación de esta documentación. **D17-B continúa pendiente de PASS** hasta recibir `D17B_FLUTTER_GATE=PASS` y `D17B_RESULT=0`. No construir APK nuevo ni instalarlo hasta pasar el gate.
