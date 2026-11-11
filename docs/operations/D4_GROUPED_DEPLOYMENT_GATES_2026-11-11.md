@@ -280,3 +280,59 @@ Próximo ensayo con el script corregido: buscar `D4E_WEB_UPSTREAM_NAME_SYNTHETIC
 El operador confirmó `D4E_API_HEALTH_HTTP=PASS`, `D4E_WEB_START=PASS`, `D4E_WEB_CONTAINER_STILL_RUNNING=YES`, `D4E_WEB_WGET_AVAILABLE=YES`, `D4E_WEB_NGINX_CONFIG_TEST=PASS`, `D4E_WEB_TCP80_LISTEN=NOT_VERIFIED`, `D4E_WEB_TCP8080_LISTEN=YES`, `D4E_WEB_HTTP80_WGET_EXIT=FAILURE`, `D4E_WEB_HTTP80_RESPONSE_CODE=NOT_OBSERVED`, `D4E_EPHEMERAL_STORAGE_REMOVED=YES`, `D4E_RESULT=7` y `D4E_SHELL_RESULT=7`. El contenedor Web **sí permanece vivo** y escucha TCP 8080; el gate fallaba al probar TCP 80 por una suposición de puerto no sustentada.
 
 Commit `f2c442a2` cambia exclusivamente las dos solicitudes HTTP Web del script para apuntar a `http://127.0.0.1:8080/`, con marcadores de diagnóstico `D4E_WEB_HTTP8080_WGET_EXIT` y `D4E_WEB_HTTP8080_RESPONSE_CODE`. No cambia la configuración Nginx, archivos, host, red, montaje, imagen ni criterio de éxito HTTP. Pendiente de ejecutar de nuevo y observar `D4E_WEB_HTTP_LOCAL=PASS`, `D4E_EPHEMERAL_STORAGE_REMOVED=YES`, `D4E_RESULT=0`. La conexión API↔Web real, PG17/O5 y rollback operativo continúan expresamente **NO VERIFICADOS**.
+
+## D4-E PASS confirmado (11/11/2026)
+
+```text
+D4E_MAIN_SYNC=PASS
+D4E_ARCHIVE_CHECKSUM=PASS
+D4E_ROOTLESS_IMAGE_IMPORT=PASS
+D4E_IMPORTED_IMAGE_COUNT_3=PASS
+D4E_UNIQUE_API_WEB_ROLES=PASS
+D4E_API_START=PASS
+D4E_API_HEALTH_HTTP=PASS
+D4E_WEB_START=PASS
+D4E_WEB_HTTP_LOCAL=PASS
+D4E_NO_EXTERNAL_NETWORK=YES
+D4E_NO_HOST_DOCKER_SOCKET=YES
+D4E_API_WEB_ISOLATED_RUNTIME=PASS
+D4E_API_WEB_CROSS_CONTAINER_CONNECTIVITY_VERIFIED=NO
+D4E_DATABASE_INTEGRATION_VERIFIED=NO
+D4E_REAL_O5_COMPATIBILITY_VERIFIED=NO
+D4E_EXACT_ORIGINAL_DOCKER_IMAGE_ID_VERIFIED=NO
+D4E_OFF_HOST_COPY_VERIFIED=NO
+D4E_OPERATIONAL_ROLLBACK_VERIFIED=NO
+D4E_EPHEMERAL_STORAGE_REMOVED=YES
+D4E_RESULT=0
+D4E_SHELL_RESULT=0
+```
+
+Docker `active`; Git limpio. **Cerrado el gate D4-E para HTTP independiente de API y Web archivadas**. Nginx escucha 8080. No extrapolar este PASS a comunicación conjunta o recuperación de PostgreSQL/O5.
+
+## D4-F — Stack sintético conectado (preparado; pendiente en VPS)
+
+Se publican `scripts/main_d4f_synthetic_host_images_connected_internal.sh` y el marcador exacto `D4F_CONTAINER_RUN_EXECUTED`. Usan **identificadores de imagen retenidos en images.manifest y presentes en Docker host**, contrastándolos con los tres contenedores DEV antes y después; **no** cargan el archivo a Docker host ni prueban equivalencia exacta entre SHA de config archivada e ID Docker. Es un ensayo aislado de integración de las imágenes del host, no de restauración ejecutable desde el archivo exportado.
+
+El laboratorio crea una red `docker network create --internal` efímera, PG17 en tmpfs sin persistencia, credenciales sintéticas, API Django con `VENCIRA_ENV=test` y MFA no habilitado, Web Nginx escuchando 8080. Comprueba `pg_isready`, HTTP 200 JSON en `/api/ready/` (Django consultando PG17), HTTP Web local, y HTTP directo Web→API usando DNS de la red interna. No publica puertos, no monta carpetas o volúmenes DEV, no usa O5, no ejecuta migraciones, no realiza despliegue. Finalmente elimina los tres contenedores, la red y los secretos temporales, comparando los IDs inmutables de los tres contenedores DEV. Su ejecución sobre host Docker es **laboratorio aislado controlado**, no rootless Podman; exige `sudo -v` previo.
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+bash -n scripts/main_d4f_synthetic_host_images_connected_internal.sh
+echo "D4F_SYNTAX=$?"
+sudo -v
+bash scripts/main_d4f_synthetic_host_images_connected_internal.sh /home/vencira/vencira-release-archives/pre-upgrade-82d5a9324f6141b67b5b55a7
+echo "D4F_SHELL_RESULT=$?"
+systemctl is-active docker
+git status --short
+```
+
+Buscamos `D4F_PG17_READY=PASS`, `D4F_DJANGO_PG17_READY_HTTP=PASS`, `D4F_WEB_HTTP_8080=PASS`, `D4F_WEB_TO_API_PRIVATE_HTTP=PASS`, `D4F_NO_HOST_PORTS=PASS`, `D4F_DEV_CONTAINERS_UNCHANGED=YES`, `D4F_EPHEMERAL_CLEANUP=DONE`, `D4F_RESULT=0`. Esta prueba **no** certifica reverse proxy end-to-end ni restauración O5 ni rollback operativo. Si falla una etapa, no reproducir ni modificar DEV; analizar el marcador antes de cualquier corrección.
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D4F_HOST_DOCKER_IMAGE_LOAD_EXECUTED=NO
+D4F_REAL_O5_COMPATIBILITY_VERIFIED=NO
+```
