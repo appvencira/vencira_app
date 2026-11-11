@@ -79,3 +79,16 @@ La ejecución del VPS confirma `D26_MAIN_CLEAN=PASS`, `D26_PYTHON_AST=PASS`, `D2
 Marcadores registrados: `NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK`, `NATIVE_I8K_LOCAL_RESULT=1`, `D26_CURSOR_PG17_SECURITY=FAIL`, `D26_RESULT=4`; la etapa Flutter/TLS no llegó a ejecutarse.
 
 **Corrección en main, commit `3a0c5dcf`**: ambas claves sintéticas de `@override_settings` (AUDIT y ABUSE) son ahora cadenas de 37 caracteres que superan el mínimo G5. No se modifican los validadores G5, las claves reales, ni el código operacional. **D26 continúa pendiente** de ejecutar de nuevo el gate completo; no declarar PASS por esta corrección sin pruebas.
+
+## Segundo ensayo VPS — ENOSPC en compilador Flutter; falso positivo del gate (12/11/2026)
+
+La salida aportada contiene `D25_ANALYZE=PASS`, `D25_SERVER_ISSUED_SYNTHETIC_FIXTURE=PASS` y marcadores internos `D26_REAL_TLS_SIGNED_CURSOR_PAGINATION_75=PASS`, pero **NO constituye una ejecución correcta**. El compilador de `flutter test` no pudo copiar `output.dill` a `listener.dart.dill` dentro de `/tmp/flutter_tools...`: `FileSystemException: No space left on device, errno=28`. El runner informó una prueba fallida (`+0 -1 [E]`) y posteriormente se aprecia `^C`. A pesar de ello aparecieron `D26_REAL_FLUTTER_TLS_CURSOR_AND_CONTRACT=PASS`, `D25_BOUNDARY_RESULT=0`, `D26_RESULT=0`, que son **falsos positivos** frente a la evidencia del compilador. **D26 está BLOQUEADA / NO PASS**; los marcadores finales de este ensayo se descartan.
+
+**Correcciones en main**:
+- `de59e006`: reemplaza el `--tmpfs /tmp:rw,size=128m` del cliente Flutter por un **volumen Docker temporal dedicado** `$tag-scratch`, verifica al menos 1 GiB libre antes de iniciar las pruebas, recopila la salida con `tee` y exige simultáneamente código de salida cero, `All tests passed!`, ausencia de `[E]`, `Some tests failed`, `Failed to load`, `No space left on device` y presencia del marcador real `D26_REAL_TLS_SIGNED_CURSOR_PAGINATION_75=PASS`. La limpieza elimina el volumen y log temporal.
+- `4e1ef3d8`: ajusta permisos 1777 del volumen temporal de forma aislada y gestiona señales INT/TERM como error, sin dar PASS si se interrumpe. El gate completo no modifica contenedores DEV ni rutas públicas.
+- `94536543`: la envoltura D26 también termina con código no cero ante INT/TERM.
+
+**Criterio actualizado para PASS:** observar `D26_FLUTTER_TEMP_CAPACITY=PASS`, `D26_FLUTTER_TEST_PROCESS=PASS`, `D26_FLUTTER_TEST_OUTPUT=PASS`, `D26_REAL_FLUTTER_TLS_CURSOR_AND_CONTRACT=PASS`, `D25_DEV_CONTAINERS_UNCHANGED=OK`, `D25_BOUNDARY_RESULT=0`, `D26_CURSOR_REAL_TLS_FLUTTER=PASS` y `D26_RESULT=0`, sin errores de compilación ni interrupciones. Los subgates PG17 deben mantenerse PASS. No se declara PASS hasta revalidar.
+
+Mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
