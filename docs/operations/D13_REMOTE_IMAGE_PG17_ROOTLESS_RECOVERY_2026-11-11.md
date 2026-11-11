@@ -52,3 +52,13 @@ D13_SHELL_RESULT=0
 **Límites importantes:** la ejecución real de PG17 utiliza datos sintéticos, nunca un snapshot de usuarios. La compatibilidad con O5 0018 y el ascenso 0019–0027 de la candidata `main` ya se estudió por separado en D1-N; el error D4-H fue intentar migrar 0027 con una imagen histórica que solo contiene hasta 0018. Para cerrar B2 de extremo a extremo debe probarse una imagen histórica con el esquema correspondiente, sin forzar 0027 desde ella. Tampoco se sustituye una reversión operacional con escrituras reales por un ensayo aislado.
 
 La ejecución D13 es read-only para Restic remoto, pero temporalmente crea recursos **aislados de prueba** locales mediante Podman rootless. Los servicios DEV y Caddy no deben cambiar. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## Incidencia D13 — preflight falso positivo y corrección (11/11/2026)
+
+El operador informó `D13_SHELL_RESULT=2`, tres mensajes `fatal: not a git repository`, el marcador **incorrecto** `D13_MAIN_CLEAN=PASS`, seguido de `D13_SCRIPT_MISSING=FAIL`; Docker siguió `active` y `git status --short` fuera del script funcionó. **No se descargaron snapshots, no se importaron imágenes ni se levantaron contenedores de laboratorio**: el fallo fue antes del preflight de runtime.
+
+**Causa confirmada en código del script publicado:** al generar los scripts D13 se introdujeron equivocadamente expansiones Bash `$\u0024{BASH_SOURCE[0]}` y `$\u0024{RESTIC_REPOSITORY:-}` donde debían ser `${BASH_SOURCE[0]}` y `${RESTIC_REPOSITORY:-}`. En el wrapper, el `$\u0024{BASH_SOURCE[0]}` se interpreta como PID del shell más texto literal, por lo que calculó incorrectamente la ruta del repositorio; las sustituciones `git` fallaron, pero el `[[ ... ]]` comparó dos cadenas vacías y permitió un `MAIN_CLEAN=PASS` espurio. En el helper, el mismo defecto afectaba la validación de las variables de Restic. **No era necesario reparar Git otra vez**.
+
+Fix publicado en `main`: `7a6d9c16` corrige el wrapper (raíz y fail-closed de comandos Git) y `d54b6ff6` el helper (expansión correcta de variables de entorno). La comparación de los marcadores del runner D4-C también se contrastó con su fuente: `ROOTLESS_IMAGE_IMPORT`, `IMPORTED_IMAGE_COUNT_3`, `PG17_READY`, `PG17_SYNTHETIC_SQL`, `EPHEMERAL_STORAGE_REMOVED` y `RESULT` existen.
+
+Tras actualizar `main` repetir solo la **D13 corregida**, sin repetir D12 ni cambiar permisos del worktree, bajo el mismo procedimiento de seguridad y comandos ya descritos. Si algún paso posterior falla, el marcador será nuevo y se analizará por separado; **D13 continúa sin PASS**.
