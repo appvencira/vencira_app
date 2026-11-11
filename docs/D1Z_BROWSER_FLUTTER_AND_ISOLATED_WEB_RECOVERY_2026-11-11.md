@@ -172,3 +172,14 @@ El navegador ya supera `D1Z_CHROMIUM_FLUTTER_VIEW=PASS` y `D1Z_CHROMIUM_SAME_ORI
 La coincidencia aproximada de 31 errores de Google Fonts con 31 solicitudes bloqueadas **no permite clasificar automáticamente** los otros dos errores como fonts. En `scripts/main_d1z_chromium_smoke.js` commit `e284467c`, ahora se capturan exclusivamente los hasta tres primeros errores de consola **no atribuidos a fuentes** como mensajes resumidos/redactados y clases fijas de origen. Nuevos marcadores: `D1Z_CHROMIUM_OTHER_CONSOLE_SAFE_1`, `_2` y `D1Z_CHROMIUM_OTHER_CONSOLE_ORIGIN_*`. No se ocultan los errores, no se modifica el criterio de PASS y no se habilita red externa. Evitar cambios funcionales hasta analizar el nuevo diagnóstico.
 
 **D1-Z permanece FAIL** hasta identificar y resolver los errores no relacionados con fuentes. No se ha realizado el reinicio de Nginx del laboratorio, rollback operativo ni verificación visual completa de fuentes. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## Décimo intento — dos respuestas HTTP 403 internas durante la carga anónima (11/11/2026)
+
+El navegador superó `D1Z_CHROMIUM_FLUTTER_VIEW=PASS`, `D1Z_CHROMIUM_SAME_ORIGIN_API=PASS`, `D1Z_CHROMIUM_PAGE_ERRORS=0`, `D1Z_CHROMIUM_FAILED_INTERNAL_REQUESTS=0`. Se registraron 31 fallos de consulta a Google Fonts, 31 mensajes de consola asociados a esas fuentes, y dos mensajes adicionales de consola `Failed to load resource: the server responded with a status of 403 ()`, de origen interno. `D1Z_CHROMIUM_OTHER_CONSOLE_ORIGIN_INTERNAL=2`, `D1Z_CHROMIUM_RENDER_GATE=FAIL`, `D1Z_RESULT=8`; DEV intacto, limpieza DONE.
+
+Un HTTP 403 es una respuesta del servidor, **no un fallo de transporte**; por ello `FAILED_INTERNAL_REQUESTS=0` no contradice los 403. La prueba HTTPS externa ya verificaba que `GET /api/v1/me/` debe negar una petición sin sesión con 401/403. Aún **no sabemos si esos dos 403 proceden de ese endpoint o de otro**. No se admite una excepción general para errores 403.
+
+Se ha añadido diagnóstico de respuestas HTTP internas con status >=400 y clasificación cerrada de rutas, sin mostrar rutas dinámicas, query strings, cuerpos, tokens ni cookies. Nuevo commit `ea1a95ed` en `scripts/main_d1z_chromium_smoke.js`. Se emitirán `D1Z_CHROMIUM_INTERNAL_HTTP_STATUS_403=N` y `D1Z_CHROMIUM_INTERNAL_403_ROUTE_AUTH_ME=N`, `..._WORKSPACES`, `..._OTHER_API_V1` u otros grupos, únicamente en caso de FAIL. **Criterio del gate intacto**: seguirá FALLANDO ante dos errores de consola internos hasta que se confirme la razón de seguridad y se defina una expectativa de autenticación explícita y acotada.
+
+Se mantiene `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, sin despliegue, restore o migraciones DEV. El gate de reinicio Nginx efímero aún no ha sido alcanzado.
