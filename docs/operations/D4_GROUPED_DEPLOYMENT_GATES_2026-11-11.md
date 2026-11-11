@@ -517,3 +517,25 @@ git status --short
 ```
 
 Se espera `D7_RESULT=4` mientras siga la prohibición pública; el diagnóstico solo es válido si los marcadores intermedios se emiten. Un TLS satisfactorio en apex no acredita cookies/CSRF, proxy Django, MFA ni aprobación. Una coincidencia parcial de rootfs tampoco acredita identidad exacta de la exportación. No repetir D5 ni D4-H por estos motivos. Se mantiene `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## D7 — Diagnóstico confirmado; D8 transporte público agrupado (11/11/2026)
+
+Operador confirmó `D7_MAIN_CLEAN=PASS`, `D7_ARCHIVE_SHA256=PASS`, `D7_ARCHIVE_CONFIG_HASH_INTEGRITY=PASS`, `D7_ARCHIVE_MANIFEST_IMAGE_ID_MATCH=UNRESOLVED`; los tres `D7_CONFIG_ID_API/DB/WEB_MATCH=NO`, `D7_ARCHIVE_OFFLINE_CHECK_RESULT=3`. El comparador de configuración/rootfs D3-B4 terminó `D7_ARCHIVE_ROOTFS_CHECK_RESULT=0`: exactamente una coincidencia rootfs+plataforma para API, DB y Web, con 6/7/8 campos de configuración de runtime comparados respectivamente y **cero diferencias** en los comparados. **No** es identidad exacta de imagen. El export OCI conserva capas y ejecución en lo observado, pero los SHA de config no son los IDs retenidos en Docker host. Se debe mantener el archivo histórico y estudiar la conversión/normalización OCI sin sustituirlo o alterar el inventario.
+
+`D7_APEX_DNS_RESOLVES=YES`, `D7_APEX_CURL_EXIT=35`, `D7_APEX_HTTP_STATUS=000`, `D7_APEX_TLS_VERIFY_CODE=1`, `D7_APEX_TRANSPORT_CLASS=TLS_HANDSHAKE_FAILURE`, `D7_APEX_HTTPS_ACCEPTED=NO`, `D7_RESULT=4`, `D7_SHELL_RESULT=4`. Docker `active`, Git limpio. Curl falla antes de recibir HTTP en el dominio público; `ssl_verify_result=1` en un handshake fallido no identifica por sí mismo un defecto de certificado. DNS sí resolvió; no se ha identificado la causa TCP/TLS definitiva.
+
+**D8**: script `scripts/main_d8_public_tls_transport_split_readonly.py` (commits `63cba41f`, `94d04841`), sin root, sudo, Docker, O5, cambios Caddy ni secretos. Revisa IPv4 e IPv6 separadamente en `dev.vencira.es` y `vencira.es` y compara `curl` HTTPS con verificación TLS, más `openssl s_client -brief` con SNI para TLS1.2 y TLS1.3; no imprime DNS, IP, certificados, cabeceras ni respuesta. Emite categorías de error (EOF, reset, handshake rechazado, versión, connect, timeout), no el texto sin filtrar. Es una única prueba de transporte, no un deploy. `D8_RESULT=4` sigue siendo bloqueo deliberado. No inferir alcance completo de Caddy, CSRF ni cookies aunque una de las variantes TLS funcione.
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+python3 -m py_compile scripts/main_d8_public_tls_transport_split_readonly.py
+echo "D8_SYNTAX=$?"
+python3 scripts/main_d8_public_tls_transport_split_readonly.py
+echo "D8_SHELL_RESULT=$?"
+systemctl is-active docker
+git status --short
+```
+
+El siguiente cambio operativo debe responder a un fallo concreto de transporte verificado; no modificar firewall, Caddy, DNS ni producción a ciegas. Siguen pendientes B1 identidad/export y recuperación, B2 O5 integrado, B3 custodia off-host, B4 Android final, B5 publicación y permiso expreso.
