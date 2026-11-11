@@ -146,3 +146,16 @@ Commit `938bbaaa`: el test ahora espera de manera acotada la navegación inicial
 Persiste además el defecto no resuelto del sexto ensayo (`D2E_GUI_SAVE_CLICK=PASS` seguido de `NOT_PERSISTED`). El commit anterior `c7526af7` ya añadió marcadores pasivos de respuestas PATCH HTTP y estado del editor para diferenciarlo si el recorrido alcanza de nuevo Guardar.
 
 **D2-E todavía no aprobado.** Cinco gates anteriores PASS; MFA/despliegue no autorizados.
+
+
+## Octavo ensayo: PATCH HTTP 200 desde GUI, notas no verificadas en GET posterior
+
+El operador obtuvo `D2E_INITIAL_ROUTE=AGENDA`, `D2E_INITIAL_BACK_ROLE_COUNT=1`, `D2E_GUI_RETURN_FROM_AGENDA=PASS`, `D2E_GUI_SYNTHETIC_RENEWAL_VISIBLE=PASS`, `D2E_GUI_EDIT_CLICK=PASS`, `D2E_GUI_NOTES_TYPED=PASS`, `D2E_GUI_SAVE_BUTTON_COUNT=1`, `D2E_GUI_SAVE_CLICK=PASS`, `D2E_GUI_PATCH_COUNT=1`, `D2E_GUI_PATCH_STATUS=200`, `D2E_GUI_EDITOR_STILL_OPEN=NO`, pero `D2E_GUI_FAILURE_STAGE=NOT_PERSISTED` y `D2E_RESULT=8`. Todos los preflights, TLS, Django, PG17 tmpfs y autenticación pasan; DEV intacto y cleanup DONE. Se ha demostrado una interacción real que termina en un PATCH aceptado (200), **pero no se ha demostrado que la nota esperada esté almacenada**.
+
+Inspección: Django DRF `RenewalSerializer` admite `notes`, `GET /renewals/` usa ese serializer, y `PATCH /renewals/<id>/` también lo usa. El test previo solo comparaba igualdad de `notes` en la lista, sin distinguir si el PATCH correspondía al registro sintético buscado, si su respuesta devolvía el texto esperado o si la lectura de detalle había cambiado.
+
+**Commit `0f53d92a`**: la instrumentación pasiva de respuesta PATCH clasifica únicamente `customer_reference===D2E-EDIT`, presencia del campo `notes` y coincidencia exacta con la cadena sintética `D2E GUI first/second`. Si la lectura de lista sigue sin coincidir, otra petición **GET de detalle** clasifica `DETAIL_MATCHES`, `DETAIL_NOTES_UNCHANGED`, `DETAIL_NOTES_DIFFERENT`, `DETAIL_NOTES_MISSING` u otros errores; no imprime IDs, cuerpos HTTP, datos de clientes, cookies ni credenciales. No hace POST/PATCH artificial ni altera la implementación funcional; JS V8 parse PASS, aún sin revalidación. D2-E sigue FAIL hasta verificación de persistencia y repetición tras reinicio de Nginx.
+
+Marcadores nuevos: `D2E_GUI_PATCH_FIXTURE_TARGET`, `D2E_GUI_PATCH_RETURNED_NOTES_MATCH`, `D2E_GUI_PATCH_RETURNED_NOTES_FIELD`, `D2E_READONLY_DETAIL_PERSISTENCE`.
+
+Se mantienen `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D2E_RELEASE_AUTHORIZED=NO`.
