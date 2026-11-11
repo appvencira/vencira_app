@@ -141,3 +141,11 @@ git status --short
 ```
 
 `D4C_RESULT=0` y `D4C_EPHEMERAL_STORAGE_REMOVED=YES` son las condiciones de cierre del ensayo; el script debe seguir imprimiendo `D4C_IMAGE_O5_COMPATIBILITY_VERIFIED=NO` y `D4C_OPERATIONAL_ROLLBACK_VERIFIED=NO`.
+
+## D4-C PASS real — PostgreSQL 17 archivado (operador, 11/11/2026)
+
+Operador confirmó `D4C_MAIN_SYNC=PASS`, `D4C_ARCHIVE_CHECKSUM=PASS`, `D4C_ROOTLESS_PRIVATE_STORE=PASS`, `D4C_IMPORTED_IMAGE_COUNT_3=PASS`, `D4C_ARCHIVED_PG17_ROLE_IDENTITY=PASS`, `D4C_PG17_START=PASS`, `D4C_PG17_READY=PASS`, `D4C_PG17_SYNTHETIC_SQL=PASS`, `D4C_NO_EXTERNAL_NETWORK=YES`, `D4C_NO_HOST_DOCKER_SOCKET=YES`, `D4C_NO_PERSISTENT_PGDATA=YES`, `D4C_EPHEMERAL_STORAGE_REMOVED=YES`, `D4C_RESULT=0`, `D4C_SHELL_RESULT=0`. Docker operativo `active`. La última línea `git status --short` aparece truncada al final del pegado; no se declara árbol limpio a posteriori.
+
+**Alcance:** arranque verdadero del entrypoint PostgreSQL archivado con base de datos sintética y consulta SQL. No ha participado O5 real ni han arrancado API y Web. `D4C_CONTAINER_RUN_EXECUTED=YES` es ejecución efímera aislada, no despliegue. Continúan `D4C_IMAGE_API_WEB_STARTUP_VERIFIED=NO`, `D4C_IMAGE_O5_COMPATIBILITY_VERIFIED=NO`, `D4C_EXACT_ORIGINAL_DOCKER_IMAGE_ID_VERIFIED=NO`, `D4C_OPERATIONAL_ROLLBACK_VERIFIED=NO`.
+
+**Próximo corte D4-D:** identificar de forma inequívoca los roles API/Web sin adivinar tags; reutilizar los fingerprints rootfs/plataforma de D3-B4 y comprobar los argumentos de arranque efectivos sin exponer entornos/secretos. Después diseñar un laboratorio de aplicación con DB **sintética** en primer término. No ejecutar API con credenciales o datos reales O5 hasta justificar aislamiento y compatibilidad.
