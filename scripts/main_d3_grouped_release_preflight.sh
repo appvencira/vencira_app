@@ -30,6 +30,14 @@ mark SHELL_AND_FIXTURE_SYNTAX PASS
 # One grouped lab, not a replay of the already-closed D1-Z/D2-D/D2-E tests.
 bash scripts/main_d3a_full_pg17_rollback_isolated.sh
 mark D3A_FULL_DATABASE_ROLLBACK_PASS YES
+# Independently inspect host Caddy without touching its process or secrets.
+# If host Caddy is not the operational topology, leave that gate unresolved.
+bash -n scripts/main_d3c_caddy_readonly_preflight.sh
+if bash scripts/main_d3c_caddy_readonly_preflight.sh; then
+  mark D3C_CADDY_READONLY_PREFLIGHT PASS
+else
+  mark D3C_CADDY_READONLY_PREFLIGHT UNVERIFIED
+fi
 # Release blocker inventory: do not claim an operational rollback or Caddy
 # configuration assessment from an ephemeral PG17 experiment.
 mark FULL_SYNTHETIC_DATABASE_RECOVERY PASS
