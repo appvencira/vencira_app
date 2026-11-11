@@ -62,3 +62,30 @@ El operador informó `D13_SHELL_RESULT=2`, tres mensajes `fatal: not a git repos
 Fix publicado en `main`: `7a6d9c16` corrige el wrapper (raíz y fail-closed de comandos Git) y `d54b6ff6` el helper (expansión correcta de variables de entorno). La comparación de los marcadores del runner D4-C también se contrastó con su fuente: `ROOTLESS_IMAGE_IMPORT`, `IMPORTED_IMAGE_COUNT_3`, `PG17_READY`, `PG17_SYNTHETIC_SQL`, `EPHEMERAL_STORAGE_REMOVED` y `RESULT` existen.
 
 Tras actualizar `main` repetir solo la **D13 corregida**, sin repetir D12 ni cambiar permisos del worktree, bajo el mismo procedimiento de seguridad y comandos ya descritos. Si algún paso posterior falla, el marcador será nuevo y se analizará por separado; **D13 continúa sin PASS**.
+
+## D13 — remote rehydration PASS; rootless runtime FAIL (11/11/2026)
+
+El operador obtuvo `D13_MAIN_CLEAN=PASS`, `D13_ROOTLESS_RUNTIME_PREREQUISITES=PASS`, `D13_CAPACITY_CHECK=PASS`, `D13_REMOTE_SOURCE_VERIFIED=PASS`, `D13_D12_SNAPSHOT_SELECTION=PASS`, `D13_RESTIC_REMOTE_ARCHIVE_DOWNLOADED=PASS`, `D13_RECOVERED_ARCHIVE_SHA256=PASS`, `D13_REMOTE_D12_REHYDRATION=PASS`, `D13_PG17_REMOTE_ARCHIVE_RUNTIME=FAIL`, `D13_RECOVERED_TAR_REMOVED=YES`, `D13_RESULT=5`. El helper informó `D13_RESULT=0` **para la recuperación remota**, no para la fase D13 global. La imagen PG17 aún no está acreditada como ejecutable desde ese snapshot. No consta un eco `D13_SHELL_RESULT` separado.
+
+La salida de D4-C se almacenaba en un archivo temporal deliberadamente privado y se borraba al salir, por lo que no se conoce si la causa fue almacenamiento Podman, importación OCI, selección de PG17, inicio o SQL. **No repetir la descarga completa D13 a ciegas**.
+
+Corrección `0ddd1e96`: D13 ahora emite únicamente marcadores allowlist de la salida de D4-C, sin logs crudos ni secretos.
+
+Se publica además `scripts/main_d13r_local_pg17_runtime_diagnostic.sh` (commit `aee8c7aa`), para ejercitar **solo** el mismo runner D4-C contra el archivo local preupgrade previamente igualado mediante SHA256 a la copia remota, con importación rootless a almacén efímero y PostgreSQL 17 sintético; no consulta ni descarga Restic remoto. Emite el último estado de cada etapa con el prefijo `D13R_D4C_...`, código del runner y borrado del log privado. Que el runner pase localmente **no completa** la recuperación remota D13: permite aislar si hay un problema del entorno runtime o de concurrencia/espacio al mantener simultáneamente el tar descargado.
+
+### Ejecutar una sola vez D13-R, no D13
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+bash -n scripts/main_d13r_local_pg17_runtime_diagnostic.sh
+echo "D13R_SYNTAX=$?"
+bash scripts/main_d13r_local_pg17_runtime_diagnostic.sh
+echo "D13R_SHELL_RESULT=$?"
+git status --short
+```
+
+El diagnóstico debe devolver `D13R_D4C_SHELL_EXIT`, `D13R_D4C_RESULT` y, si corresponde, `D13R_D4C_PODMAN_INFO_ERROR_CATEGORY`, `D13R_D4C_ROOTLESS_IMAGE_IMPORT`, `D13R_D4C_PG17_START`, `D13R_D4C_PG17_READY`, `D13R_D4C_PG17_SYNTHETIC_SQL`. Un `D13R_RESULT=5` significa que el laboratorio D4-C falló. No atribuir la causa antes de ver esos marcadores.
+
+No hay autorización de despliegue ni de migraciones vivas: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
