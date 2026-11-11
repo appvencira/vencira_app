@@ -97,6 +97,7 @@ django test \
   native_mobile_service.test_native_http_contract \
   native_mobile_service.test_native_operational_issuer_gate \
   native_mobile_service.test_native_server_custody_issuer_pg17 \
+  native_mobile_service.test_d22_http_pg17 \
   native_mobile_service.test_i8d_http_pg17 \
   native_mobile_service.test_i8i_non_mfa_recovery_policy_pg17 \
   native_mobile_service.test_i8j_recovery_pg17 \
@@ -104,6 +105,7 @@ django test \
   --verbosity 1
 # Flutter regression intentionally separate in main; no host worktree write or Docker volume.
 echo "NATIVE_I8K_FLUTTER_GATE=NOT_RUN_SEPARATE"
+echo "NATIVE_I8K_D22_SERVER_CUSTODY_HTTP_PG17=PASS"
 echo "NATIVE_I8K_D21_SERVER_CUSTODY_ISSUER_PG17=PASS"
 echo "NATIVE_I8K_D20_ISSUER_REVIEW_GATE=PASS"
 echo "NATIVE_I8K_NATIVE_JSON_CONTRACT=PASS"
