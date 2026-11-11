@@ -82,3 +82,12 @@ Los tres fallos de recursos externos en una red `--internal` son compatibles con
 Este cambio afecta a Flutter Web en futuras compilaciones, pero **no hay deploy** ni modificación de los recursos web servidos ahora por DEV. Cualquier validación D1-W previa corresponde al artefacto anterior; D1-Z probará el nuevo build. Si Chromium vuelve a fallar, conservar FAIL y diagnosticar sin atribuir PASS. El aviso Flutter de `Wasm dry run succeeded` es informativo y no es la causa demostrada de este fallo.
 
 En todo momento `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D1Z_RELEASE_AUTHORIZED=NO`. Sigue sin certificarse el rollback operativo ni la navegación completa de la aplicación.
+
+
+## Tercer intento — mejora parcial sin arranque completo (11/11/2026)
+
+El operador volvió a ejecutar el build con CanvasKit local y confirmó `D1Z_LOCAL_CANVASKIT_BUNDLED=PASS` y `D1Z_BOOTSTRAP_LOCAL_CANVASKIT_CONFIG=PASS`. Chromium inició y abrió el HTML; `D1Z_CHROMIUM_FLUTTER_VIEW_PRESENT=NO`, `D1Z_CHROMIUM_FAILURE_STAGE=FLUTTER_VIEW_TIMEOUT`. Los errores JS pasaron de 6 a 2 y las peticiones externas fallidas de 3 a 1, pero **no existe evidencia suficiente de que CanvasKit sea la única causa ni de qué recurso sigue fallando**. No hay peticiones internas fallidas. La cadena HTTPS/Flutter build continúa PASS; `D1Z_EPHEMERAL_CLEANUP=DONE`, `D1Z_DEV_CONTAINERS_UNCHANGED=OK`, `D1Z_RESULT=8`.
+
+Para obtener información discriminatoria sin exponer URLs, cuerpos de respuesta, trazas completas ni secretos, el test Chromium registra en caso de fallo los contadores `D1Z_CHROMIUM_FAILED_REQUEST_TYPE_*` (tipo de recurso), `D1Z_CHROMIUM_FAILED_HOST_CLASS_*` (clases acotadas de servicios externos conocidos) y `D1Z_CHROMIUM_ERROR_CLASS_*` (categorías de mensajes de errores JS). Implementado en `scripts/main_d1z_chromium_smoke.js`, commit `d98be0fd`. Los nombres de clases están definidos estáticamente y otros hosts se agrupan bajo `OTHER_EXTERNAL`. **Es diagnóstica, no corrección ni PASS.**
+
+Repetir D1-Z únicamente cuando el operador quiera seguir con la comprobación; no modificar Caddy operativo ni permitir tráfico externo general a la red aislada para ocultar el error. Si la petición es una fuente remota se valorará sustituirla por un recurso local con procedencia clara. Si sigue fallando el render sin relación con recursos externos, revisar compatibilidad de Flutter/Chromium y errores de inicialización.
