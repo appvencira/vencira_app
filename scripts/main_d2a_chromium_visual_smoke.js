@@ -268,14 +268,22 @@ const { PNG } = require("pngjs");
       await page.setViewportSize({ width, height });
       await page.waitForTimeout(600);
       const view = await page.locator("flutter-view").first().boundingBox();
+      const viewWidth = view ? Math.round(view.width) : 0;
+      const viewHeight = view ? Math.round(view.height) : 0;
+      console.log("D2A_" + label + "_VIEW_WIDTH_PX=" + viewWidth);
+      console.log("D2A_" + label + "_VIEW_HEIGHT_PX=" + viewHeight);
       if (!view || view.width < width * 0.5 || view.height < height * 0.5) {
         throw Error("VISUAL_VIEW_GEOMETRY_" + label);
       }
+      console.log("D2A_" + label + "_VIEW_GEOMETRY=PASS");
       const pngBytes = await page.screenshot({ type: "png", animations: "disabled" });
       const bitmap = PNG.sync.read(pngBytes);
+      console.log("D2A_" + label + "_PNG_WIDTH_PX=" + bitmap.width);
+      console.log("D2A_" + label + "_PNG_HEIGHT_PX=" + bitmap.height);
       if (bitmap.width !== width || bitmap.height !== height) {
         throw Error("VISUAL_PNG_DIMENSIONS_" + label);
       }
+      console.log("D2A_" + label + "_PNG_PIXELS=PASS");
       const colors = new Set();
       for (let y = 8; y < height; y += 21) {
         for (let x = 8; x < width; x += 21) {
@@ -286,9 +294,8 @@ const { PNG } = require("pngjs");
           );
         }
       }
+      console.log("D2A_" + label + "_SAMPLED_COLOR_COUNT=" + colors.size);
       if (colors.size < 4) throw Error("VISUAL_BLANK_OR_FLAT_" + label);
-      console.log("D2A_" + label + "_VIEW_GEOMETRY=PASS");
-      console.log("D2A_" + label + "_PNG_PIXELS=PASS");
       console.log("D2A_" + label + "_COLOR_VARIATION=PASS");
     }
     stage = "VISUAL_DESKTOP";
@@ -323,7 +330,11 @@ const { PNG } = require("pngjs");
   } catch (err) {
     const allowed = new Set([
       "INVALID_BROWSER_LOCALE", "ROOT_HTTP", "FLUTTER_VIEW_TIMEOUT", "BROWSER_API_HEALTH",
-      "BROWSER_JS_ERRORS"
+      "BROWSER_JS_ERRORS", "VISUAL_VIEW_GEOMETRY_MOBILE",
+      "VISUAL_PNG_DIMENSIONS_MOBILE", "VISUAL_BLANK_OR_FLAT_MOBILE",
+      "VISUAL_VIEW_GEOMETRY_DESKTOP", "VISUAL_PNG_DIMENSIONS_DESKTOP",
+      "VISUAL_BLANK_OR_FLAT_DESKTOP", "VISUAL_POST_CAPTURE_BROWSER_ERRORS",
+      "VISUAL_POST_CAPTURE_API"
     ]);
     console.log("D2A_CHROMIUM_FAILURE_STAGE=" +
                 (allowed.has(err.message) ? err.message : stage));
