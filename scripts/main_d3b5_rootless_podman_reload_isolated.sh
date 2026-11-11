@@ -47,19 +47,39 @@ free_kib="$(df -Pk "$workspace" | awk 'END {print $4}')"
 needed_kib=$(((archive_bytes*6+3221225472+1023)/1024))
 (( free_kib >= needed_kib )) || { mark STORAGE_CAPACITY FAIL; mark RESULT 4; exit 4; }
 mark STORAGE_CAPACITY PASS
+# Keep runroot beneath the operator-owned XDG runtime filesystem rather
+# than HOME; this is a targeted A/B response to the runtime-dir failure 125.
+# Neither path is shared with host Docker or other Podman image stores.
+if [[ -z "${XDG_RUNTIME_DIR:-}" || ! -d "$XDG_RUNTIME_DIR" ||
+      -L "$XDG_RUNTIME_DIR" ||
+      "$(stat -c %u "$XDG_RUNTIME_DIR")" != "$(id -u)" ]]; then
+  mark XDG_RUNTIME_DIRECTORY FAIL
+  mark RESULT 4
+  exit 4
+fi
+mark XDG_RUNTIME_DIRECTORY PASS
 lab="$(mktemp -d "$workspace/d3b5-rootless.XXXXXXXX")"
 chmod 700 "$lab"
-finished=NO
+runtime_lab="$(mktemp -d "$XDG_RUNTIME_DIR/d3b5-runroot.XXXXXXXX")"
+chmod 700 "$runtime_lab"
 cleanup(){
   rc=$?
   trap - EXIT
   case "$lab" in "$workspace"/d3b5-rootless.*) ;; *) mark CLEANUP_PATH FAIL; exit 9;; esac
+  case "$runtime_lab" in "$XDG_RUNTIME_DIR"/d3b5-runroot.*) ;; *) mark CLEANUP_PATH FAIL; exit 9;; esac
+  cleanup_ok=YES
   if [[ -d "$lab" && ! -L "$lab" ]]; then
-    rm -rf -- "$lab" || rc=9
+    rm -rf -- "$lab" || cleanup_ok=NO
   else
-    rc=9
+    cleanup_ok=NO
   fi
-  mark EPHEMERAL_STORAGE_REMOVED "$([[ "$rc" == 9 ]] && echo NO || echo YES)"
+  if [[ -d "$runtime_lab" && ! -L "$runtime_lab" ]]; then
+    rm -rf -- "$runtime_lab" || cleanup_ok=NO
+  else
+    cleanup_ok=NO
+  fi
+  [[ "$cleanup_ok" == YES ]] || rc=9
+  mark EPHEMERAL_STORAGE_REMOVED "$cleanup_ok"
   mark HOST_DOCKER_IMAGE_LOAD_EXECUTED NO
   mark CONTAINER_RUN_EXECUTED NO
   mark OPERATIONAL_ROLLBACK_VERIFIED NO
@@ -68,7 +88,7 @@ cleanup(){
   exit "$rc"
 }
 trap cleanup EXIT
-mkdir -m 700 "$lab/graph" "$lab/run" "$lab/tmp"
+mkdir -m 700 "$lab/graph" "$lab/tmp" "$runtime_lab/run"
 # Keep the operator's real HOME, XDG_CONFIG_HOME, and XDG_RUNTIME_DIR:
 # rootless Podman may resolve account/runtime state through these paths.
 # The actual images and ephemeral run state remain explicitly scoped to the
@@ -84,7 +104,7 @@ if [[ -n "${XDG_RUNTIME_DIR:-}" ]]; then
 else
   mark ROOTLESS_RUNTIME_ENV NOT_SET
 fi
-P=(podman --remote=false --root "$lab/graph" --runroot "$lab/run" --storage-driver vfs --events-backend=file)
+P=(podman --remote=false --root "$lab/graph" --runroot "$runtime_lab/run" --storage-driver vfs --events-backend=file)
 if "${P[@]}" info --format json >"$lab/info.json" 2>"$lab/error.log"; then
   :
 else
