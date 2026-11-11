@@ -1,12 +1,9 @@
 import 'native_api_transport.dart';
 
-/// Immutable, intentionally minimal projection of a renewal returned by the
-/// test-only mobile workspace contract. No customer PII is retained here.
+/// Minimal renewal projection. No customer PII is retained on the client.
 class NativeWorkspaceRenewal {
   const NativeWorkspaceRenewal({
-    required this.id,
-    required this.expiresOn,
-    required this.status,
+    required this.id, required this.expiresOn, required this.status,
   });
 
   final String id;
@@ -14,9 +11,15 @@ class NativeWorkspaceRenewal {
   final String status;
 }
 
-/// Typed mobile workspace reader. The Django server MUST enforce membership
-/// and per-renewal assignment: UUID validation here is NOT authorization.
-/// This port is neither instantiated in main.dart nor approved for production.
+class NativeWorkspacePage {
+  const NativeWorkspacePage({required this.results, required this.nextOffset});
+
+  final List<NativeWorkspaceRenewal> results;
+  final int? nextOffset;
+}
+
+/// Candidate-only mobile workspace reader; the server rechecks authorization
+/// on every page. This is NOT wired into the operational Flutter entrypoint.
 class NativeWorkspaceReadPort {
   const NativeWorkspaceReadPort(this.transport);
   final NativeApiTransport transport;
@@ -33,21 +36,33 @@ class NativeWorkspaceReadPort {
         value.toIso8601String().substring(0, 10) == date;
   }
 
-  Future<List<NativeWorkspaceRenewal>> load(String workspaceId) async {
-    if (!_uuid.hasMatch(workspaceId)) {
+  /// Compatibility: first page only. Call [loadPage] for subsequent pages.
+  Future<List<NativeWorkspaceRenewal>> load(String workspaceId) async =>
+      (await loadPage(workspaceId)).results;
+
+  Future<NativeWorkspacePage> loadPage(String workspaceId, {int offset = 0}) async {
+    if (!_uuid.hasMatch(workspaceId) || offset < 0 || offset > 10000 ||
+        offset % 50 != 0) {
       throw const NativeWorkspacePayloadInvalid();
     }
+    final suffix = offset == 0 ? '' : '?offset=$offset';
     final data = await transport.getJson(
-      '/api/v1/mobile/workspaces/$workspaceId/renewals/',
+      '/api/v1/mobile/workspaces/$workspaceId/renewals/$suffix',
     );
     if (data is! Map<String, dynamic> ||
-        data.length != 2 ||
+        data.length != 3 ||
         data['workspace_id'] != workspaceId ||
         data['results'] is! List<dynamic>) {
       throw const NativeWorkspacePayloadInvalid();
     }
     final items = data['results'] as List<dynamic>;
     if (items.length > 50) throw const NativeWorkspacePayloadInvalid();
+    final next = data['next_offset'];
+    if (next != null &&
+        (next is! int || next != offset + 50 || items.length != 50 ||
+         next > 10000)) {
+      throw const NativeWorkspacePayloadInvalid();
+    }
     final results = <NativeWorkspaceRenewal>[];
     for (final item in items) {
       if (item is! Map<String, dynamic> || item.length != 3 ||
@@ -66,7 +81,10 @@ class NativeWorkspaceReadPort {
         id: id, expiresOn: expires, status: status,
       ));
     }
-    return List<NativeWorkspaceRenewal>.unmodifiable(results);
+    return NativeWorkspacePage(
+      results: List<NativeWorkspaceRenewal>.unmodifiable(results),
+      nextOffset: next as int?,
+    );
   }
 }
 
