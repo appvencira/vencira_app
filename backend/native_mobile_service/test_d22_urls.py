@@ -9,4 +9,5 @@ urlpatterns = [
     path("api/v1/mobile/auth/recover/mfa/", views.recover_mfa),
     path("api/v1/mobile/token/revoke/", views.revoke),
     path("api/v1/mobile/me/", views.me),
+    path("api/v1/mobile/workspaces/<uuid:workspace_id>/renewals/", views.workspace_renewals),
 ]
