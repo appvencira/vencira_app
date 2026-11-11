@@ -183,3 +183,22 @@ D4D_SHELL_RESULT=0
 El árbol Git reportado está limpio. Hay asignación única de imagen archivada a API, DB y Web por plataforma y rootfs. El backend tiene CMD de arranque pero no ENTRYPOINT; Web y PostgreSQL tienen ambos. No se ejecutaron contenedores en este gate.
 
 **Evitar más inventarios parciales:** la próxima fase debe agrupar en un único ensayo ejecución real de API y Web con configuración de pruebas, red/laboratorio aislados, DB sintética, test HTTP local y limpieza verificada. Un paso posterior distinto acoplará O5 real únicamente tras comprobar que no hay fuga de acceso desde la aplicación aislada al entorno DEV. Sin evidencia de ejecución funcional, mantener B1/B2 abiertos. La copia off-host B3, la regresión final B4 y producción B5 continúan pendientes.
+
+## D4-E — Una ejecución API+Web HTTP aislada (preparada, NO ejecutada)
+
+Se publicó `scripts/main_d4e_archived_api_web_isolated_http.sh`. En una sola importación privada VFS se identifican las dos imágenes por su contrato de arranque (`gunicorn` y `nginx`, no por tags). El script arranca API y Web en **contenedores separados con red `none`**, filesystem read-only, `tmpfs` para directorios temporales, sin puertos del host, sin montajes de volúmenes DEV ni acceso a Docker operativo. Django recibe `VENCIRA_ENV=test`, secreto aleatorio efímero, SQLite no persistente y MFA desactivado: comprueba HTTP 200 JSON de `/api/health/` desde el **mismo contenedor**. Web arranca su entrypoint y se prueba HTTP local 80 mediante `wget` interno.
+
+El criterio web presupone disponibilidad del cliente `wget` y escucha en 80; un FAIL no es corrupción, puede ser discrepancia del contrato HTTP y debe diagnosticarse antes de ajustar prueba. El test **no conecta API/Web entre sí**, ni PostgreSQL ni O5: B1 funcional completo y B2 siguen abiertos. No bajar protecciones para forzar un PASS.
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+bash -n scripts/main_d4e_archived_api_web_isolated_http.sh
+bash scripts/main_d4e_archived_api_web_isolated_http.sh /home/vencira/vencira-release-archives/pre-upgrade-82d5a9324f6141b67b5b55a7
+echo "D4E_SHELL_RESULT=$?"
+systemctl is-active docker
+git status --short
+```
+
+Buscamos: `D4E_UNIQUE_API_WEB_ROLES=PASS`, `D4E_API_HEALTH_HTTP=PASS`, `D4E_WEB_HTTP_LOCAL=PASS`, `D4E_EPHEMERAL_STORAGE_REMOVED=YES`, `D4E_RESULT=0`. En todo caso `D4E_REAL_O5_COMPATIBILITY_VERIFIED=NO` y `D4E_OPERATIONAL_ROLLBACK_VERIFIED=NO`.
