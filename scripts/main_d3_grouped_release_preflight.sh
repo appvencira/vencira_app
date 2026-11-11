@@ -12,7 +12,8 @@ mark LIVE_MIGRATIONS_EXECUTED NO
 mark LIVE_RESTORE_EXECUTED NO
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root"
-[[ "$(git branch --show-current)" == main ]] || { mark MAIN_REQUIRED FAIL; exit 2; }
+# Read-only main checkout (detached HEAD is valid if exact origin/main).
+# No branch creation, checkout, reset, worktree mutation, or merge here.
 [[ "$(git rev-parse HEAD)" == "$(git rev-parse refs/remotes/origin/main)" ]] || {
   mark MAIN_SYNC FAIL; exit 2;
 }
