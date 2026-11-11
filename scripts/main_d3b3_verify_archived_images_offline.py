@@ -83,15 +83,26 @@ def main():
                 if not isinstance(item, dict):
                     fail("DOCKER_MANIFEST")
                 cfg = item.get("Config")
-                if not isinstance(cfg, str) or not re.fullmatch(r"[a-f0-9]{64}\.json", cfg):
+                # Docker save has two legitimate content-addressed config
+                # layouts: classic <sha>.json, or OCI blobs/sha256/<sha>.
+                # Verify actual bytes against the claimed digest in either.
+                if not isinstance(cfg, str):
                     fail("CONFIG_NAME")
-                if cfg not in by_name:
+                classic = re.fullmatch(r"([a-f0-9]{64})\\.json", cfg)
+                oci = re.fullmatch(r"blobs/sha256/([a-f0-9]{64})", cfg)
+                if classic is None and oci is None:
+                    fail("CONFIG_NAME")
+                expected_hash = (classic or oci).group(1)
+                if cfg not in by_name or not by_name[cfg].isfile():
                     fail("CONFIG_MISSING")
                 config_data = t.extractfile(by_name[cfg])
                 if config_data is None:
                     fail("CONFIG_MISSING")
-                actual = hashlib.sha256(config_data.read()).hexdigest()
-                if cfg != actual + ".json":
+                actual = hashlib.sha256()
+                for block in iter(lambda: config_data.read(1024 * 1024), b""):
+                    actual.update(block)
+                actual = actual.hexdigest()
+                if expected_hash != actual:
                     fail("CONFIG_HASH")
                 config_hashes.add("sha256:" + actual)
                 layers = item.get("Layers")
