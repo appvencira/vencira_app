@@ -98,3 +98,13 @@ La última ejecución llega otra vez al subgate Flutter: `flutter pub get` termi
 **Corrección commit `43011416`:** sustituye exclusivamente la invocación fragmentada por un comando `flutter test --reporter expanded test/native_workspace_read_port_test.dart test/native_api_transport_test.dart test/native_api_endpoint_test.dart` de una sola línea. No altera Django, DRF, PostgreSQL, acceso móvil ni las rutas de producción.
 
 D24 **no PASS** hasta un gate íntegro con `D24_PG17_CONCURRENCY_PAGINATION=PASS`, `D24_FLUTTER_PAGINATION_GATE=PASS`, `D24_DEV_CONTAINERS_UNCHANGED=OK`, `D24_RESULT=0`. Se mantienen `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## Revalidación final VPS — D24 PASS (12/11/2026)
+
+El operador ejecutó de nuevo el gate D24 en `main` tras la corrección del ejecutor Flutter (commit `43011416`). Los resultados remitidos son `flutter analyze`: **No issues found** (15,3 s), `flutter test`: **26 tests PASS** en `native_workspace_read_port_test.dart`, `native_api_transport_test.dart` y `native_api_endpoint_test.dart`. Incluyen página 2 con offset canónico, rechazo de offsets falsificados, cross-workspace, 401 y sesión, protección frente a datos PII inesperados, bloqueo de redirecciones y rutas externas, timeouts, respuesta tardía tras cierre y no reactivación después de logout.
+
+Marcadores finales: `D24_FLUTTER_PAGINATION_GATE=PASS`, `D24_PAGINATION_LIMIT=50`, `D24_ACTUAL_TLS_NETWORK_GATE=NOT_RUN`, `D24_NATIVE_ISSUER_ENABLED=NO`, `D24_DEV_CONTAINERS_UNCHANGED=OK`, `D24_DEPLOY_EXECUTED=NO`, `D24_LIVE_MIGRATIONS_EXECUTED=NO`, `D24_NATIVE_RELEASE_AUTHORIZED=NO`, `D24_RESULT=0`.
+
+El gate ejecuta primero la suite PostgreSQL 17 aislada y se detiene si esta falla; por lo tanto, haber llegado a Flutter y obtenido `D24_RESULT=0` permite confirmar que el subgate PG17 de esta ejecución terminó con código cero. **El fragmento final facilitado no incluye el contador ni los marcadores de la suite Django**, por lo que no se repiten cifras ni se presentan sus marcadores como observados directamente.
+
+**Conclusión: D24 PASS para su gate combinado PG17 + Flutter.** No demuestra TLS real de red contra estas nuevas vistas, estabilidad de offsets entre páginas concurrentemente modificadas, acceso Android operativo ni autorización para desplegar. Guardas intactas: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
