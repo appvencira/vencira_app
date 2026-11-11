@@ -212,3 +212,11 @@ Próxima actuación: diagnóstico **sanitizado dentro del mismo almacén efímer
 ### Diagnóstico D4-E publicado
 
 Commits `117adf64`, `0921152d`: cuando falle `WEB_HTTP_LOCAL`, el mismo ensayo emitirá antes de limpiar el estado del contenedor, disponibilidad de `wget`, resultado de `nginx -t`, posibles escuchas de TCP 80/8080 y código de respuesta HTTP observado. No expone logs, configuraciones ni cuerpos de respuesta; conserva exactamente el fallo `D4E_RESULT=7` si no hay HTTP satisfactorio. No cambia puertos, permisos, imágenes, red ni la condición PASS. El operador puede hacer una **única** reejecución para categorizar la causa. Si el diagnóstico identifica incompatibilidad del cliente `wget`, la próxima corrección debe utilizar una sonda adecuada independiente del servidor, no marcar PASS automáticamente.
+
+### D4-E — segundo diagnóstico: Web termina antes de HTTP
+
+Operador confirmó `D4E_API_START=PASS`, `D4E_API_HEALTH_HTTP=PASS`, `D4E_WEB_START=PASS`, `D4E_WEB_CONTAINER_STILL_RUNNING=NO`, `D4E_WEB_HTTP_LOCAL=FAIL`, `D4E_EPHEMERAL_STORAGE_REMOVED=YES`, `D4E_RESULT=7`, `D4E_DIAGNOSTIC_RESULT=7`, Docker `active` y árbol Git limpio.
+
+La sonda `wget` no explica el fallo: el proceso contenedor Web deja de ejecutarse. Commit `8ba5e8cc` añade únicamente **diagnóstico seguro tras la salida del proceso**: `WEB_EXIT_CODE`, `WEB_OOM_KILLED`, `WEB_EXIT_DIAGNOSIS` según patrones de logs (sin imprimir su contenido); todo se guarda y elimina dentro del workspace privado. El gate HTTP permanece FAIL si no responde, sin rebajar aislamiento.
+
+Reejecutar D4-E una vez, ya con esta clasificación, para seleccionar una corrección basada en evidencia. No se ha identificado aún si es un problema de filesystem read-only, permisos, configuración, puertos u otra causa. No afirmar corrupción de imagen.
