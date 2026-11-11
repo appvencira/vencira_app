@@ -61,8 +61,44 @@ const { chromium } = require("playwright");
     const placeholder=page.locator("flt-semantics-placeholder");
     if(await placeholder.count()){
       console.log("D2E_FLUTTER_PLACEHOLDER_FOUND=YES");
-      await placeholder.first().click({timeout:15000});
-      console.log("D2E_FLUTTER_PLACEHOLDER_CLICK=PASS");
+      const p=placeholder.first();
+      const geometry=await p.evaluate(node=>{
+        const r=node.getBoundingClientRect();
+        const css=getComputedStyle(node);
+        return {
+          width:Math.round(r.width),height:Math.round(r.height),
+          insideViewport:r.left>=0 && r.top>=0 &&
+            r.right<=innerWidth && r.bottom<=innerHeight,
+          displayNone:css.display==="none",
+          visibilityHidden:css.visibility==="hidden",
+          pointerNone:css.pointerEvents==="none",
+          opacityZero:Number(css.opacity)===0
+        };
+      });
+      console.log("D2E_PLACEHOLDER_GEOMETRY="+
+        (geometry.width>0&&geometry.height>0?"NONZERO":"ZERO"));
+      console.log("D2E_PLACEHOLDER_IN_VIEWPORT="+
+        (geometry.insideViewport?"YES":"NO"));
+      console.log("D2E_PLACEHOLDER_DISPLAY_NONE="+
+        (geometry.displayNone?"YES":"NO"));
+      console.log("D2E_PLACEHOLDER_VISIBILITY_HIDDEN="+
+        (geometry.visibilityHidden?"YES":"NO"));
+      console.log("D2E_PLACEHOLDER_POINTER_EVENTS_NONE="+
+        (geometry.pointerNone?"YES":"NO"));
+      console.log("D2E_PLACEHOLDER_OPACITY_ZERO="+
+        (geometry.opacityZero?"YES":"NO"));
+      stage="ACCESSIBILITY_POINTER";
+      // A real browser pointer event on Flutter's actual placeholder. The
+      // force option bypasses Playwright's actionability checks, NOT Flutter's
+      // event handlers. No evaluate/click(), dispatchEvent(), CSS alteration,
+      // or API write is used to simulate activation.
+      if(geometry.width>0&&geometry.height>0&&geometry.insideViewport){
+        await p.click({force:true,timeout:6000});
+        console.log("D2E_FLUTTER_PLACEHOLDER_POINTER_CLICK=PASS");
+      } else {
+        // A zero-size or offscreen target cannot be treated as a valid click.
+        console.log("D2E_FLUTTER_PLACEHOLDER_POINTER_CLICK=NOT_POSSIBLE");
+      }
     } else {
       console.log("D2E_FLUTTER_PLACEHOLDER_FOUND=NO");
     }
@@ -71,7 +107,7 @@ const { chromium } = require("playwright");
     await semanticSelector.first().waitFor({
       state:"attached",timeout:20000
     });
-    console.log("D2E_FLUTTER_SEMANTICS_ENABLED=PASS");
+    console.log("D2E_FLUTTER_SEMANTICS_CONTAINER_ATTACHED=PASS");
     stage="DASHBOARD_LIST";
     // Require the synthetic renewal text to be actually present as a DOM
     // semantics node. Do not accept an API-only confirmation here.
