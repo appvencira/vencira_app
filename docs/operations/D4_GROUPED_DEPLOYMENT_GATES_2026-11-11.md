@@ -155,3 +155,31 @@ Operador confirmó `D4C_MAIN_SYNC=PASS`, `D4C_ARCHIVE_CHECKSUM=PASS`, `D4C_ROOTL
 Script `scripts/main_d4d_archived_api_web_launch_contract_readonly.py` publicado en main. Compara tres configuraciones archivadas con imágenes activas por rootfs diff IDs, OS y arquitectura, exige mapeo único y emite únicamente indicadores booleanos de presencia de entrypoint, CMD y Env sin imprimir valores. No importa, ejecuta ni modifica imágenes. Un PASS no prueba el arranque de Django/Nginx ni su compatibilidad con O5.
 
 Ejecutar después de sincronizar main: `python3 -m py_compile scripts/main_d4d_archived_api_web_launch_contract_readonly.py` y `python3 scripts/main_d4d_archived_api_web_launch_contract_readonly.py /home/vencira/vencira-release-archives/pre-upgrade-82d5a9324f6141b67b5b55a7`; registrar `D4D_SHELL_RESULT=$?`. No se ha ejecutado todavía en VPS.
+
+## D4-D PASS validado por operador (11/11/2026)
+
+```text
+D4D_MANIFEST_SCHEMA=PASS
+D4D_LIVE_IDENTITY=PASS
+D4D_ARCHIVED_CONFIGS=3
+D4D_API_ROOTFS_PLATFORM_MATCH_COUNT=1
+D4D_API_LAUNCH_ENTRYPOINT_PRESENT=NO
+D4D_API_LAUNCH_CMD_PRESENT=YES
+D4D_DB_ROOTFS_PLATFORM_MATCH_COUNT=1
+D4D_DB_LAUNCH_ENTRYPOINT_PRESENT=YES
+D4D_DB_LAUNCH_CMD_PRESENT=YES
+D4D_WEB_ROOTFS_PLATFORM_MATCH_COUNT=1
+D4D_WEB_LAUNCH_ENTRYPOINT_PRESENT=YES
+D4D_WEB_LAUNCH_CMD_PRESENT=YES
+D4D_UNIQUE_ROLE_MAPPING=PASS
+D4D_API_WEB_STARTUP_VERIFIED=NO
+D4D_O5_IMAGE_COMPATIBILITY_VERIFIED=NO
+D4D_EXACT_HISTORICAL_ID_VERIFIED=NO
+D4D_OPERATIONAL_ROLLBACK_VERIFIED=NO
+D4D_RESULT=0
+D4D_SHELL_RESULT=0
+```
+
+El árbol Git reportado está limpio. Hay asignación única de imagen archivada a API, DB y Web por plataforma y rootfs. El backend tiene CMD de arranque pero no ENTRYPOINT; Web y PostgreSQL tienen ambos. No se ejecutaron contenedores en este gate.
+
+**Evitar más inventarios parciales:** la próxima fase debe agrupar en un único ensayo ejecución real de API y Web con configuración de pruebas, red/laboratorio aislados, DB sintética, test HTTP local y limpieza verificada. Un paso posterior distinto acoplará O5 real únicamente tras comprobar que no hay fuga de acceso desde la aplicación aislada al entorno DEV. Sin evidencia de ejecución funcional, mantener B1/B2 abiertos. La copia off-host B3, la regresión final B4 y producción B5 continúan pendientes.
