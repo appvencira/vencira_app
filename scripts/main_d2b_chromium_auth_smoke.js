@@ -22,6 +22,15 @@ const { chromium } = require("playwright");
       viewport: { width: 1280, height: 800 }
     });
     const pageErrors = [];
+    let flutterWorkspaceResponses = 0;
+    page.on("response", response => {
+      try {
+        const url = new URL(response.url());
+        if (url.hostname === "d2b-proxy" &&
+            url.pathname === "/api/v1/workspaces/" &&
+            response.status() === 200) flutterWorkspaceResponses++;
+      } catch (_) {}
+    });
     page.on("pageerror", () => pageErrors.push("JS_EXCEPTION"));
 
     stage = "LOGIN_FORM";
@@ -76,6 +85,8 @@ const { chromium } = require("playwright");
       state: "attached", timeout: 45000
     });
     await page.waitForTimeout(1500);
+    if (flutterWorkspaceResponses < 1) throw Error("FLUTTER_WORKSPACE_FETCH_MISSING");
+    console.log("D2B_FLUTTER_AUTHENTICATED_WORKSPACE_HTTP=PASS");
     if (pageErrors.length) throw Error("APP_PAGE_ERROR");
     console.log("D2B_AUTHENTICATED_FLUTTER_VIEW=PASS");
     console.log("D2B_AUTHENTICATED_PAGE_ERRORS=0");
@@ -114,7 +125,8 @@ const { chromium } = require("playwright");
     const markers = new Set([
       "LOGIN_FORM_HTTP", "LOGIN_FORM_FIELDS", "SESSION_WORKSPACE_CONTRACT",
       "APP_PAGE_ERROR", "APP_PAGE_ERROR_AFTER_RELOAD",
-      "SESSION_RELOAD_FAILED", "ANONYMOUS_ACCESS_NOT_DENIED"
+      "SESSION_RELOAD_FAILED", "ANONYMOUS_ACCESS_NOT_DENIED",
+      "FLUTTER_WORKSPACE_FETCH_MISSING"
     ]);
     console.log("D2B_AUTH_FAILURE_STAGE=" +
       (markers.has(e.message) ? e.message : stage));
