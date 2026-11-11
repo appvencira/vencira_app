@@ -87,17 +87,18 @@ const { chromium } = require("playwright");
         (geometry.pointerNone?"YES":"NO"));
       console.log("D2E_PLACEHOLDER_OPACITY_ZERO="+
         (geometry.opacityZero?"YES":"NO"));
-      stage="ACCESSIBILITY_POINTER";
-      // A real browser pointer event on Flutter's actual placeholder. The
-      // force option bypasses Playwright's actionability checks, NOT Flutter's
-      // event handlers. No evaluate/click(), dispatchEvent(), CSS alteration,
-      // or API write is used to simulate activation.
-      if(geometry.width>0&&geometry.height>0&&geometry.insideViewport){
-        await p.click({force:true,timeout:6000});
-        console.log("D2E_FLUTTER_PLACEHOLDER_POINTER_CLICK=PASS");
+      stage="ACCESSIBILITY_BOOTSTRAP";
+      // Flutter deliberately positions this opt-in placeholder offscreen
+      // (-1,-1). A browser mouse cannot target it. Its native DOM click()
+      // activates Flutter's accessibility handler. This is exclusively the
+      // accessibility opt-in, NOT a business action, not an injected PATCH,
+      // and not a replacement for mouse/keyboard interaction with the editor.
+      if(!geometry.insideViewport){
+        await p.evaluate(element=>element.click());
+        console.log("D2E_ACCESSIBILITY_HIDDEN_BUTTON_ACTIVATED=PASS");
       } else {
-        // A zero-size or offscreen target cannot be treated as a valid click.
-        console.log("D2E_FLUTTER_PLACEHOLDER_POINTER_CLICK=NOT_POSSIBLE");
+        await p.click({timeout:10000});
+        console.log("D2E_ACCESSIBILITY_POINTER_ACTIVATED=PASS");
       }
     } else {
       console.log("D2E_FLUTTER_PLACEHOLDER_FOUND=NO");
@@ -108,6 +109,7 @@ const { chromium } = require("playwright");
       state:"attached",timeout:20000
     });
     console.log("D2E_FLUTTER_SEMANTICS_CONTAINER_ATTACHED=PASS");
+    console.log("D2E_ACCESSIBILITY_BOOTSTRAP_ONLY=YES");
     stage="DASHBOARD_LIST";
     // Require the synthetic renewal text to be actually present as a DOM
     // semantics node. Do not accept an API-only confirmation here.
