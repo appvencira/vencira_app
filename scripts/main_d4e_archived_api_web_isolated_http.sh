@@ -171,7 +171,8 @@ mark HOST_DOCKER_SOCKET_MOUNTED NO
 # Use the previously validated network=none namespace and share it only
 # with the Web container; no bridge, DNS service or external network.
 mark ROOTLESS_BRIDGE_NETWORK_USED NO
-mark SHARED_LOOPBACK_NO_EGRESS YES
+mark SEPARATE_NETWORK_NONE_NO_EGRESS YES
+mark API_WEB_CROSS_CONTAINER_CONNECTIVITY_VERIFIED NO
 if ! "${P[@]}" load --quiet --input "$archive" >"$lab/load.out" 2>"$lab/error.log"; then
   mark ROOTLESS_IMAGE_IMPORT FAIL
   exit 5
@@ -294,9 +295,10 @@ done
 if [[ "$api_ok" != YES ]]; then mark API_HEALTH_HTTP FAIL; exit 6; fi
 mark API_HEALTH_HTTP PASS
 
-# The archived web image starts with its actual ENTRYPOINT and CMD.
-# Its upstream API hostname resolves on the private DNS if it uses the
-# expected Compose alias; no external DNS or DEV service is attached.
+# Archived Web starts in its own network=none namespace. A synthetic hosts
+# entry allows parsing the original upstream configuration at startup, but
+# DOES NOT connect to the separately isolated API container. The HTTP test
+# is for Web static serving only, not proxy or service integration.
 web_name="d4e-web-$(basename "$lab" | tr -cd 'a-zA-Z0-9')"
 container_names+=("$web_name")
 # The archived nginx entrypoint writes its configuration under /etc/nginx.
@@ -304,8 +306,9 @@ container_names+=("$web_name")
 # layer. No mounts, host port bindings or network; rootless store is deleted.
 # Do not hide /etc/nginx with tmpfs: it contains the original configuration.
 mark WEB_PRIVATE_EPHEMERAL_ROOTFS_WRITABLE YES
+mark WEB_UPSTREAM_NAME_SYNTHETIC_HOSTS YES
 if ! "${P[@]}" run -d --name "$web_name" --pull never \
-    --network "container:$api_name" --add-host api:127.0.0.1 --security-opt no-new-privileges \
+    --network none --add-host api:127.0.0.1 --security-opt no-new-privileges \
     --pids-limit 96 --memory 256m \
     --tmpfs /tmp:rw,size=64m,mode=1777 \
     --tmpfs /var/cache/nginx:rw,size=64m,mode=1777 \
@@ -431,7 +434,8 @@ fi
 mark WEB_HTTP_LOCAL PASS
 mark NO_EXTERNAL_NETWORK YES
 mark NO_HOST_DOCKER_SOCKET YES
-mark SHARED_LOOPBACK_API_WEB TESTED_BY_WEB_HTTP
+mark WEB_LOCAL_STATIC_HTTP TESTED
+mark API_WEB_CROSS_CONTAINER_CONNECTIVITY_VERIFIED NO
 mark API_WEB_ISOLATED_RUNTIME PASS
 mark DATABASE_INTEGRATION_VERIFIED NO
 mark REAL_O5_COMPATIBILITY_VERIFIED NO
