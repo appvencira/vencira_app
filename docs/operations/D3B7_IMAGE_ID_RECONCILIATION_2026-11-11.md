@@ -40,3 +40,27 @@ El operador verificó Docker Engine cliente/servidor 29.9.2 (API 1.56), Ubuntu 2
 Esto justifica investigar las representaciones de imagen Docker/configuración/manifest en la exportación, pero **no prueba** que containerd explique los tres IDs históricos discordantes. D3-B3 sigue FAIL. Próximo control: cotejo sanitizado de descriptores/identificadores, sin imprimir el resultado crudo de `docker inspect`, sin alterar imágenes ni daemon.
 
 `D3B7_CONTAINERD_STORE=CONFIRMED`; `D3B7_EXACT_HISTORICAL_IMAGE_ID_VERIFIED=NO`; `D3B7_OPERATIONAL_ROLLBACK_VERIFIED=NO`.
+
+## D3-B7 — Ejecución de cadena de IDs PASS (operador, 11/11/2026)
+
+Validación local del verificador `scripts/main_d3b7_image_id_chain_readonly.py`:
+
+```text
+D3B7_MANIFEST_SCHEMA=PASS
+D3B7_API_CONTAINER_VS_IMAGE_INSPECT=MATCH
+D3B7_API_CONTAINER_VS_RETAINED_MANIFEST=MATCH
+D3B7_DB_CONTAINER_VS_IMAGE_INSPECT=MATCH
+D3B7_DB_CONTAINER_VS_RETAINED_MANIFEST=MATCH
+D3B7_WEB_CONTAINER_VS_IMAGE_INSPECT=MATCH
+D3B7_WEB_CONTAINER_VS_RETAINED_MANIFEST=MATCH
+D3B7_EXACT_ARCHIVED_CONFIG_ID_VERIFIED=NO
+D3B7_OPERATIONAL_ROLLBACK_VERIFIED=NO
+D3B7_RESULT=0
+D3B7_SHELL_RESULT=0
+```
+
+`systemctl is-active docker` -> `active`; `git status --short` -> vacío.
+
+Se han verificado seis coincidencias: los IDs de los tres contenedores corresponden exactamente a las imágenes reconocidas por Docker y al manifiesto inmutable conservado en D3-B2. **No valida la igualdad de dichos IDs con los digest de configuración incluidos en el archivo comprimido**: D3-B3 sigue FAIL en ese criterio. No regenerar ni sobrescribir el original, ni rebajar la condición de identidad exacta. D3-B7 PASS exclusivamente para cadena contenedor / image inspect / manifiesto externo, no para equivalencia con exportación o rollback.
+
+Próximo paso recomendado: priorizar un preflight de recuperación funcional en laboratorio realmente aislado y sin acceso a Docker operativo; la investigación de por qué `docker image save` creó configuraciones con digest distintos permanece como trabajo independiente. En cualquier caso, compatibilidad O5 y rollback NO verificados.
