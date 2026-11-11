@@ -272,6 +272,7 @@ D run --rm --network "$net" --security-opt no-new-privileges \
   --pids-limit 512 --memory 2g --shm-size=512m \
   -e D2E_SYNTHETIC_USER="$synthetic_username" \
   -e D2E_SYNTHETIC_PASSWORD="$synthetic_password" \
+  -e D2E_PASS_ID=first \
   -v "$root/scripts/main_d2e_chromium_gui_smoke.js:/opt/d2e/smoke.js:ro" \
   "$browser_img" node /opt/d2e/smoke.js || {
   mark CHROMIUM_RENDER_GATE FAIL
@@ -301,6 +302,7 @@ D run --rm --network "$net" --security-opt no-new-privileges \
   --pids-limit 512 --memory 2g --shm-size=512m \
   -e D2E_SYNTHETIC_USER="$synthetic_username" \
   -e D2E_SYNTHETIC_PASSWORD="$synthetic_password" \
+  -e D2E_PASS_ID=second \
   -v "$root/scripts/main_d2e_chromium_gui_smoke.js:/opt/d2e/smoke.js:ro" \
   "$browser_img" node /opt/d2e/smoke.js || {
   mark CHROMIUM_AFTER_WEB_RESTART FAIL; exit 9;
