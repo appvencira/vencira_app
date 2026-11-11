@@ -54,3 +54,12 @@ Salida del VPS: `flutter analyze` **0 issues**; I8-Q timeout de password, MFA am
 Correcciones ya publicadas en `main`: `d9098499` hace desplazable `AndroidWebAccessScreen` mediante `SingleChildScrollView` para acomodar mensajes largos y teléfonos pequeños; `847af3c3` incorpora regresión en viewport de 320x480 y comprueba ausencia de excepciones, scroll y que no exista botón de login nativo. No cambian endpoints, credenciales, permisos ni releases.
 
 **Repetir únicamente D17-B** tras `git fetch` y `git merge --ff-only origin/main`; seguir el bloque original de validación de esta documentación. **D17-B continúa pendiente de PASS** hasta recibir `D17B_FLUTTER_GATE=PASS` y `D17B_RESULT=0`. No construir APK nuevo ni instalarlo hasta pasar el gate.
+
+## Validación final D17-B — PASS (11/11/2026)
+
+Salida del VPS: `flutter analyze`: **No issues found**. Los 15 tests del conjunto (5 del boundary Android, 3 I8-Q y 7 I8-L) se ejecutaron correctamente: `All tests passed!`. Pasaron los casos clean login sin acceso nativo, refresh anterior con recuperación obligatoria, error de protected store cerrado, regresión de viewport compacto y espera de inspección, además de timeout/MFA ambiguo/fallo de escritura-revocación y recuperación segura I8-L. El operador informa `D17B_FLUTTER_GATE=PASS`, `D17B_NATIVE_STARTUP_INTEGRATED=YES`, `D17B_AUTH_PRODUCTION_ENABLED=NO`, `D17B_DEV_CONTAINERS_UNCHANGED=OK` y `D17B_RESULT=0`. No consta `D17B_SHELL_RESULT` independiente en el fragmento.
+
+**D17-B PASS** para integración fail-closed de arranque Android y regresión Flutter. No afirma autenticación nativa real operativa, prueba física del nuevo binario, ni firma release. No repetir D17-B salvo cambio del código de boundary. Las siguientes puertas requieren explícitamente un emisor backend apto para producción y pruebas reales HTTPS/Keystore/logout/recovery; no convertir los endpoints LAB en endpoints públicos sin esas garantías.
+
+`MFA_RELEASE_AUTHORIZED=NO`
+`NO_DEPLOY_NO_LIVE_MIGRATION=1`
