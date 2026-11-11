@@ -95,3 +95,12 @@ El operador obtuvo `D3B5P_UNPRIVILEGED_OPERATOR=PASS` y `D3B5P_PODMAN_INSTALLED=
 Corregido directamente en `main` commit `bf544996`: AWK continúa consumiendo toda la salida de apt-cache y solo imprime la primera coincidencia; si falla la consulta se marca `D3B5P_PODMAN_APT_QUERY=ERROR` en vez de confundirla con falta de candidato. **No se instalaron paquetes y no se cambió configuración**. La ejecución corregida continúa pendiente de Termius. El valor aportado `D3B5P_SHLL_RESULT=141` procede del `echo` introducido por el operador y no de un marcador interno del script (el script no llegó a `D3B5P_RESULT`).
 
 Repetir únicamente `bash scripts/main_d3b5p_rootless_prerequisites_readonly.sh` tras sincronizar `main`; no repetir importación D3-B5 ni ejecutar `apt install` todavía. Guardas `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## D3-B5P — preflight del host CONFIRMADO PASS (11/11/2026)
+
+El operador ha aportado dos ejecuciones idénticas, ambas con `D3B5P_RESULT=0`, `D3B5P_UNPRIVILEGED_OPERATOR=PASS`, `D3B5P_PODMAN_INSTALLED=NO`, `D3B5P_PODMAN_APT_CANDIDATE=AVAILABLE`, `D3B5P_SUBUID_SUBGID_RANGE=PASS`, `D3B5P_USER_NAMESPACES_KERNEL=ENABLED`, `D3B5P_UNPRIVILEGED_USERNS_CLONE=ENABLED`. Los ejecutables auxiliares `newuidmap`, `newgidmap`, `fuse-overlayfs`, `slirp4netns` y `pasta` constan como `NO` disponibles. `D3B5P_ROOTLESS_PODMAN_RUNTIME_VERIFIED=NO`; `D3B5P_PACKAGE_INSTALL_AUTHORIZED=NO`.
+
+**Clasificación:** PASS de *inventario de requisitos*, NO de Podman operativo. Un paquete candidato y namespaces habilitados no certifican ejecución rootless. El siguiente paso necesita una decisión operativa explícita sobre instalar `podman` y dependencias de UID/GID en el VPS o usar una máquina de laboratorio externa. No instalar ni modificar sysctl/subuid o paquetes por inferencia automática. Si se opta por VPS, primero verificar simulación APT (`apt-get -s install podman uidmap`) y efectos de dependencias; `fuse-overlayfs` no es obligatorio para VFS, ni `slirp4netns`/pasta para importación de imágenes sin ejecutar contenedores. Separar rigurosamente el alta de software base del ensayo de recuperación y auditar cualquier cambio.
+
+**El gate D3-B5 de importación continúa NO EJECUTADO** por falta de Podman; `D3B5P_RESULT=0` no desbloquea por sí solo `D3B5_ROOTLESS_IMAGE_IMPORT`. Persisten `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, sin alteraciones de Docker operativo, O5 o DEV.
