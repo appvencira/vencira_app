@@ -1975,3 +1975,12 @@ Evidencia: `D2E_RESULT=8`, `D2E_GUI_FAILURE_STAGE=DASHBOARD_LIST`, `D2E_GUI_FAIL
 Commit `939e3f95` del test D2-E usa `HTMLElement.click()` exclusivamente para **activar el botón oculto del framework** cuando está fuera de pantalla; la edición y guardado de notas siguen obligatoriamente mediante eventos reales de ratón/teclado de Chromium, con verificación posterior de persistencia PG17 exclusivamente por GET. No se falsea el clic de negocio, no se ejecuta escritura de API para superar el gate y no cambia el código de VENCIRA. Documento actualizado `docs/D2E_REAL_CHROMIUM_FLUTTER_GUI_PG17_2026-11-11.md` commit `8fc2788a`.
 
 **D2-E aún FAIL / a revalidar**, sin despliegue ni autorización MFA. Contenedores DEV intactos y limpieza DONE; D1-Z→D2-D continúa 5/5 PASS.
+
+
+## EI. 11/11/2026 — D2-E cuarto ensayo: accesibilidad activada, bloqueo DASHBOARD_LIST; ruta inicial auto-agenda corregida
+
+El operador confirmó `D2E_RESULT=8`, `D2E_ACCESSIBILITY_HIDDEN_BUTTON_ACTIVATED=PASS`, `D2E_FLUTTER_SEMANTICS_CONTAINER_ATTACHED=PASS`, `D2E_GUI_FAILURE_STAGE=DASHBOARD_LIST`, `D2E_GUI_FAILURE_TYPE=TIMEOUT`, cero errores JS, DEV intacto y limpieza DONE. La carga de Flutter y activación de accesibilidad ya pasaron; el test falla al buscar el vencimiento ficticio.
+
+Inspección del código Flutter `dashboard_screen.dart`: tras login con único workspace y `openTodayOnLoad`, la app **abre automáticamente la agenda de hoy**. D2-E siembra una única cuenta y una renovación futura, de modo que buscar directamente el texto en dashboard puede fallar porque la pantalla visible es agenda. Commits `86566e7e` y `2e6736e8`: el smoke detecta agenda por texto o botón único de retroceso, navega usando **clic real de Playwright sobre Flutter Back**, luego busca el vencimiento tanto en DOM convencional como en `flt-semantics[aria-label]`. Si falla, emite recuentos anónimos y booleanos semánticos para diagnóstico sin logs de datos privados. Se mantienen escritura GUI real y verificación PG17 por GET; ningún bypass de formulario ni API PATCH sintético. Documento `docs/D2E_REAL_CHROMIUM_FLUTTER_GUI_PG17_2026-11-11.md` commit `588a5810`.
+
+**Estado D2-E sigue FAIL y no contabiliza PASS**; siguiente acción es ejecutar nueva versión en laboratorio aislado. Precedentes D1-Z→D2-D continúan 5/5 PASS. MFA y despliegue sin autorizar.
