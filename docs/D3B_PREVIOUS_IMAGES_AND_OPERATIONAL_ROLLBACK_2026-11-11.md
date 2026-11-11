@@ -120,3 +120,30 @@ echo "D3B2_SHELL_RESULT=$?"
 Resultado por determinar: `D3B2_DISK_CAPACITY=PASS`, `D3B2_IMAGE_SAVE=PASS`, `D3B2_ARCHIVE_STRUCTURAL_INTEGRITY=PASS`, `D3B2_ARCHIVE_CHECKSUM=PASS`, `D3B2_PRE_UPGRADE_IMAGES_ARCHIVED=PASS`, `D3B2_DEV_CONTAINERS_UNCHANGED=OK`, `D3B2_ARCHIVE_PRESERVED=YES`, `D3B2_RESULT=0`. Si capacidad insuficiente, tratar `DISK_CAPACITY=FAIL` como bloqueo real; no eliminar backups ni imágenes operativas para sortearlo.
 
 **Pendiente posterior:** probar `docker load` en laboratorio aislado sin afectar al daemon Docker operativo, cotejar digest/IDs importados y ensayar imagen anterior sobre O5 restaurado, y una copia externa cifrada/retención verificable para disaster recovery. Hasta entonces `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `MFA_RELEASE_AUTHORIZED=NO`.
+
+
+## D3-B2 ejecución validada, D3-B3 comprobación independiente preparada
+
+El operador proporcionó `D3B2_RESULT=0`, `D3B2_MAIN_SYNC=PASS`, `D3B2_CURRENT_IMAGES_PRESENT=PASS`, `D3B2_DB_NAMED_VOLUME=PASS`, `D3B2_DISK_CAPACITY=PASS`, `D3B2_IMAGE_SAVE=PASS`, `D3B2_ARCHIVE_STRUCTURAL_INTEGRITY=PASS`, `D3B2_ARCHIVE_CHECKSUM=PASS`, `D3B2_PRE_UPGRADE_IMAGES_ARCHIVED=PASS`, `D3B2_DEV_CONTAINERS_UNCHANGED=OK`, `D3B2_ARCHIVE_PRESERVED=YES`. El archivo se encuentra **solo en el VPS**, en un directorio protegido bajo `/home/vencira/vencira-release-archives/`. No reproducir su contenido en chat/Git. Según el log `D3B2_ARCHIVE_OFF_HOST_VERIFIED=NO`, `D3B2_IMAGE_RELOAD_TESTED=NO`, `D3B2_OPERATIONAL_ROLLBACK_VERIFIED=NO`. Esto acredita custodia local y checksum, no recuperación conjunta.
+
+Se preparó **D3-B3** `scripts/main_d3b3_verify_archived_images_offline.py` (commit `8bf132f9`, corrección tar `6a89f9a0`), un comprobador independiente de **solo lectura** que:
+- Exige directorio y archivos propiedad del operador, sin symlinks y sin permisos para grupo/otros.
+- Verifica formato exacto de `images.manifest` con tres SHA256 Docker, el checksum SHA256 del archivo comprimido y estructura tar segura (archivos y directorios únicamente, sin symlinks ni rutas escapadas).
+- Lee `manifest.json` de `docker save`, calcula SHA256 de los JSON de configuración y exige que los tres IDs inmutables archivados aparezcan realmente entre las imágenes. Verifica que las referencias de capas en el índice existan. No muestra identificadores, datos ni contenido de capas.
+- **No hace `docker load`, no arranca contenedores ni accede al volumen PostgreSQL, a O5, a Caddy o a credenciales.** La comprobación del contenido comprimido implica lecturas intensivas del archivo; no volver a ejecutarla sin necesidad una vez PASS.
+
+### Ejecución D3-B3 en Termius
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+python3 -m py_compile scripts/main_d3b3_verify_archived_images_offline.py
+python3 scripts/main_d3b3_verify_archived_images_offline.py \
+  /home/vencira/vencira-release-archives/pre-upgrade-82d5a9324f6141b67b5b55a7
+echo "D3B3_SHELL_RESULT=$?"
+```
+
+**Esperado, pendiente de validación:** `D3B3_IMMUTABLE_MANIFEST=PASS`, `D3B3_ARCHIVE_CHECKSUM=PASS`, `D3B3_DOCKER_ARCHIVE_CONFIG_IDS=PASS`, `D3B3_OFFLINE_ARCHIVE_STRUCTURE=PASS`, `D3B3_RESULT=0`.
+
+**Siguiente decisión operativa:** decidir prueba real de importación/ejecución en daemon aislado, compatibilidad con O5 restaurado y copia cifrada externa; no retirar guardas `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` ni aprobar release por este archivo.
