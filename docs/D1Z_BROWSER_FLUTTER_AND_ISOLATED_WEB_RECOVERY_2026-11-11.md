@@ -183,3 +183,28 @@ Un HTTP 403 es una respuesta del servidor, **no un fallo de transporte**; por el
 Se ha añadido diagnóstico de respuestas HTTP internas con status >=400 y clasificación cerrada de rutas, sin mostrar rutas dinámicas, query strings, cuerpos, tokens ni cookies. Nuevo commit `ea1a95ed` en `scripts/main_d1z_chromium_smoke.js`. Se emitirán `D1Z_CHROMIUM_INTERNAL_HTTP_STATUS_403=N` y `D1Z_CHROMIUM_INTERNAL_403_ROUTE_AUTH_ME=N`, `..._WORKSPACES`, `..._OTHER_API_V1` u otros grupos, únicamente en caso de FAIL. **Criterio del gate intacto**: seguirá FALLANDO ante dos errores de consola internos hasta que se confirme la razón de seguridad y se defina una expectativa de autenticación explícita y acotada.
 
 Se mantiene `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, sin despliegue, restore o migraciones DEV. El gate de reinicio Nginx efímero aún no ha sido alcanzado.
+
+
+## Undécimo intento — 403 de sesión anónima explicados; gate de aceptación estricta (11/11/2026)
+
+La prueba del operador confirma la procedencia exacta de los **dos** errores de consola HTTP 403:
+```text
+D1Z_CHROMIUM_FLUTTER_VIEW=PASS
+D1Z_CHROMIUM_SAME_ORIGIN_API=PASS
+D1Z_CHROMIUM_PAGE_ERRORS=0
+D1Z_CHROMIUM_OTHER_CONSOLE_ERRORS=2
+D1Z_CHROMIUM_INTERNAL_HTTP_STATUS_403=2
+D1Z_CHROMIUM_INTERNAL_403_ROUTE_AUTH_ME=1
+D1Z_CHROMIUM_INTERNAL_403_ROUTE_WORKSPACES=1
+D1Z_CHROMIUM_FAILED_INTERNAL_REQUESTS=0
+D1Z_CHROMIUM_FAILED_HOST_CLASS_GOOGLE_FONTS=32
+D1Z_CHROMIUM_RENDER_GATE=FAIL
+D1Z_RESULT=8
+```
+Los dos 403 corresponden a `GET /api/v1/me/` y `GET /api/v1/workspaces/`, rutas que no deben exponer datos sin sesión. Este resultado es compatible con la protección de acceso esperada, no justifica habilitar acceso anónimo y no demuestra problema en el servidor. Las fuentes Google Fonts permanecen inaccesibles en la red efímera interna.
+
+**Commit `4c5eeaa5`** — se ajustó solo el test Chromium, NO Django/Flutter/Caddy. Cada error de consola 403 se considera denegación esperada únicamente si la URL de origen coincide **exactamente** con uno de esos dos endpoints, el navegador registró una respuesta HTTP 403 para esa URL, y el mensaje coincide con el error de recurso 403. El gate exige además exactamente **una** denegación de cada ruta, exactamente **dos** respuestas HTTP 403 totales, ausencia de otros errores HTTP >=400 internos, de fallos de transporte internos, de excepciones JS `pageerror` y de errores de consola restantes. Cualquier desviación mantiene FAIL. Nuevos marcadores: `D1Z_CHROMIUM_EXPECTED_AUTH_DENIAL_CONSOLE=2`, `D1Z_CHROMIUM_EXPECTED_ANONYMOUS_403=PASS`. La instrumentación no imprime URLs de peticiones, cookies ni datos privados.
+
+**Pendiente**: reejecutar el laboratorio y comprobar la correlación de URL de consola con respuesta. Si la consola no proporciona esa URL o cambia la cantidad de solicitudes, el gate conservará FAIL para revisión. Si Chromium pasa, el script seguirá con la recreación **exclusivamente de Nginx efímero** y restauración de un esquema sintético en PG17 aislado. Un eventual `D1Z_RESULT=0` no validaría fuentes ni gráficos exactos, interacción UI completa o rollback real de producción; el marcador de fuentes seguiría siendo `D1Z_CHROMIUM_FONT_FIDELITY_VERIFIED=NO`.
+
+Los controles `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D1Z_DEPLOY_EXECUTED=NO`, `D1Z_LIVE_MIGRATIONS_EXECUTED=NO` siguen inalterados.
