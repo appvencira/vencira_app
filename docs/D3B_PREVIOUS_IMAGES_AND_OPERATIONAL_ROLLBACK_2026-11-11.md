@@ -165,3 +165,25 @@ El operador repitió D3-B3 tras permitir nombres de configuración Docker válid
 Se añadió el diagnóstico seguro en commit `ccaf5dfd` sin modificar archivo, Docker ni el contrato de aceptación. Marcadores: `D3B3_ARCHIVED_CONFIG_ENTRY_COUNT`, `D3B3_ARCHIVED_CONFIG_UNIQUE_COUNT`, `D3B3_EXPECTED_IMAGE_UNIQUE_COUNT`, `D3B3_EXPECTED_API_CONFIG_ID_MATCH`, `D3B3_EXPECTED_DB_CONFIG_ID_MATCH`, `D3B3_EXPECTED_WEB_CONFIG_ID_MATCH`, `D3B3_DOCKER_IMAGE_ID_EQ_CONFIG_DIGEST`. Se emiten solo conteos y booleanos; nunca identificadores, datos de configuración ni capas. La prueba **continúa FAIL** si falta cualquier ID. No regenerar ni eliminar el archivo y no forzar un PASS mediante comparación parcial.
 
 Repetir comando D3-B3 existente después de actualizar main; investigar según qué rol falte. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, sin operaciones sobre DEV.
+
+
+## D3-B3 tercer ensayo: tres configuraciones, cero coincidencias por ID
+
+El operador informa `D3B3_ARCHIVED_CONFIG_ENTRY_COUNT=3`, `D3B3_ARCHIVED_CONFIG_UNIQUE_COUNT=3`, `D3B3_EXPECTED_IMAGE_UNIQUE_COUNT=3`, `D3B3_EXPECTED_API_CONFIG_ID_MATCH=NO`, `D3B3_EXPECTED_DB_CONFIG_ID_MATCH=NO`, `D3B3_EXPECTED_WEB_CONFIG_ID_MATCH=NO`, `D3B3_EXPECTED_IMAGE_IDS_MISSING=FAIL`, `D3B3_RESULT=3`. El checksum global del archivo y los hashes de las configuraciones que contiene siguen verificándose correctamente, pero **no** se ha acreditado su identidad como las imágenes ejecutadas. No convertir el gate D3-B3 en PASS sin evidencia de equivalencia y sin probar restauración. No regenerar ni borrar el archivo original.
+
+Para evitar nuevas modificaciones especulativas del gate, se publicó un **diagnóstico independiente D3-B4** (`scripts/main_d3b4_archive_vs_running_metadata_readonly.py`, commit `a02af3ad`). Inspecciona metadatos actuales de las tres imágenes Docker y sus contenedores de forma **read-only** (`sudo -n docker container/image inspect`), exige que los contenedores sigan usando los tres IDs registrados al archivar y compara internamente, sin imprimir identificadores, variables de entorno ni contenido, el OS/arquitectura y los `rootfs.diff_ids` archivados contra `RootFS.Layers` del host. Si hay exactamente una coincidencia por rol, compara una selección de campos efectivos de configuración y emite **solo conteos de diferencias**. No supone que esas capas y campos basten para acreditar identidad bit-a-bit: aun si coinciden, `D3B4_ARCHIVE_EXACT_IMAGE_IDS_VERIFIED=NO`, `D3B4_IMAGE_RELOAD_TESTED=NO`, `D3B4_OPERATIONAL_ROLLBACK_VERIFIED=NO`. Un `D3B4_RESULT=0` indica solo que el diagnóstico se completó, nunca aprobación de release.
+
+### Comando único D3-B4
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+python3 -m py_compile scripts/main_d3b4_archive_vs_running_metadata_readonly.py
+sudo -v
+python3 scripts/main_d3b4_archive_vs_running_metadata_readonly.py \
+  /home/vencira/vencira-release-archives/pre-upgrade-82d5a9324f6141b67b5b55a7
+echo "D3B4_SHELL_RESULT=$?"
+```
+
+D3-B4 **NO ejecutado aún en VPS**. Los marcadores más útiles son `D3B4_DEV_IMMUTABLE_IDENTITY`, `D3B4_ARCHIVE_CONFIG_COUNT`, `D3B4_EXPECTED_API_ROOTFS_PLATFORM_MATCH_COUNT`, `D3B4_EXPECTED_DB_ROOTFS_PLATFORM_MATCH_COUNT`, `D3B4_EXPECTED_WEB_ROOTFS_PLATFORM_MATCH_COUNT` y respectivos `RUNTIME_FIELDS_COMPARED`/`RUNTIME_FIELDS_DIFFERENT`. No publicar `docker inspect` bruto, que puede exponer secretos. Las tres copias Docker siguen intactas en el archivo original y no se ha ejecutado ninguna carga de imágenes ni restauración operacional.
