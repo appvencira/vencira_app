@@ -49,3 +49,42 @@ D3B_OPERATIONAL_ROLLBACK_VERIFIED=NO
 ```
 
 **No confundir custodia de una imagen anterior con recuperación operativa demostrada.**
+
+
+## D3-B1 ejecución y corrección del criterio previo al upgrade
+
+El operador confirmó `D3B_MAIN_SYNC=PASS`, `D3B_OPERATIONAL_IDENTITY=PASS`, `D3B_CURRENT_IMAGES_IMMUTABLE_AND_LOCAL=PASS`, `D3B_POSTGRES_NAMED_VOLUME=PASS`, seguido por `D3B_PREVIOUS_IMAGE_MANIFEST=MISSING`, `D3B_RESULT=4`. No se hizo deploy ni rollback.
+
+**Corrección conceptual:** el inventario original exigía dos imágenes anteriores *distintas de las que están corriendo*, algo innecesario antes de iniciar una actualización: **las imágenes corrientes son la versión anterior del futuro despliegue**. El test no debe confundir un histórico no documentado con ausencia de punto de retorno *pre-upgrade*. Publicado commit `ec17d9ed` en `scripts/main_d3b_operational_rollback_inventory_readonly.sh`.
+
+La comprobación corregida mantiene los controles de identidad, hash completo de imagen Docker, disponibilidad local y volumen nombrado, y clasifica:
+
+```text
+D3B_PRE_UPGRADE_IMAGE_BASELINE_IDENTIFIED=PASS
+D3B_PRE_UPGRADE_IMAGE_BASELINE_CURRENT_LOCAL=YES
+D3B_PRE_UPGRADE_IMAGE_RETENTION_GUARANTEED=NO
+D3B_PRE_UPGRADE_IMAGE_ARCHIVE_VERIFIED=NO
+D3B_HISTORICAL_IMAGE_MANIFEST=NOT_PROVIDED
+D3B_HISTORICAL_IMAGE_CUSTODY_VERIFIED=NO
+D3B_PRE_UPGRADE_ROLLBACK_BASELINE_INVENTORY=PASS
+D3B_RESTIC_O5_IMAGE_COMPATIBILITY_VERIFIED=NO
+D3B_OPERATIONAL_IMAGE_AND_DB_ROLLBACK_VERIFIED=NO
+D3B_OPERATIONAL_ROLLBACK_VERIFIED=NO
+D3B_PUBLIC_RELEASE_AUTHORIZED=NO
+D3B_RESULT=0
+```
+
+Esto **no se ha ejecutado aún** y dichos marcadores son resultados esperados, no hechos comprobados. El 0 final significa que se ha inventariado la versión base; **no garantiza que Docker retenga estas imágenes después de sustituirlas**. Una salvaguarda de retención o exportación de imágenes, con almacenamiento suficiente y verificación de restaurabilidad, es necesaria antes de tocar contenedores operativos.
+
+### Comando reducido
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+bash -n scripts/main_d3b_operational_rollback_inventory_readonly.sh
+bash scripts/main_d3b_operational_rollback_inventory_readonly.sh
+echo "D3B_SHELL_RESULT=$?"
+```
+
+El criterio anterior que exigía imágenes históricas distintas queda **supersedido** por esta sección. No equivale a autorizar deploy, ni rollback operativo real, ni asegurar la retención de imágenes.
