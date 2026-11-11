@@ -690,3 +690,11 @@ Se ha demostrado que la copia O5 real se restaura en PG17 temporal y que **la im
 **Límites críticos:** D14 no ejecutó servidor HTTP API/Web recuperado, no utilizó el tar externo como origen runtime, no resolvió la discrepancia de IDs de imagen Docker, no efectuó rollback operacional y no validó aún APK/HTTPS Android final ni Caddy/DNS de apex. Mantener `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D14_PUBLIC_RELEASE_AUTHORIZED=NO`.
 
 Priorizar pruebas de extremo a extremo de la pila recuperable y la ruta Android/publicación; no repetir D12–D14 sin motivo técnico nuevo.
+
+## D15 — HTTP API + Nginx históricos sobre O5 real, aislados (11/11/2026)
+
+D14 fue superada en el VPS y demuestra restauración O5 + compatibilidad esquema 0018. Para acelerar, se publica la puerta **D15**, que reutiliza su restauración protegida y añade arranque de la imagen API histórica en la **misma red Docker --internal**, comprobación HTTP 200 JSON salud, arranque Nginx histórico, GET estático 8080 y GET salud de la API a través del proxy Nginx, todo **desde dentro de los contenedores**, sin puertos host ni acceso a datos desde exterior. Los tres contenedores de laboratorio (PG/API/Web), red y entorno temporal se destruyen al salir; se verifica inmutabilidad de IDs de DEV.
+
+Script `scripts/main_d15_real_o5_historical_stack_http_isolated.sh`, commit `2ec68fc5`. Runbook `docs/operations/D15_HISTORICAL_O5_API_WEB_HTTP_ISOLATED_2026-11-11.md`, commit `aecc4dad`. **D15 publicada y NO ejecutada**. Es un gate HTTP/infra, no una validación del conjunto de operaciones funcionales ni autorización de publicación. No cerrar mismatch IDs de Docker exportados, HTTPS/Caddy, Android ni reversión operativa sin pruebas propias.
+
+Controles: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
