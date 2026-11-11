@@ -53,3 +53,11 @@ D12_SHELL_RESULT=0
 MFA_RELEASE_AUTHORIZED=NO
 NO_DEPLOY_NO_LIVE_MIGRATION=1
 ```
+
+## Resultado del operador — D12 PASS (11/11/2026)
+
+El operador informó: `D12_MAIN_CLEAN=PASS`, `D12_LOCAL_ARCHIVE_CHECKSUM=PASS`, `D12_REMOTE_REPOSITORY_CONFIG=PASS`, `D12_ENCRYPTED_OFF_HOST_SNAPSHOT_CREATED=YES`, `D12_UNIQUE_REMOTE_SNAPSHOT=PASS`, `D12_REMOTE_ARCHIVE_BYTES_EQUAL=PASS`, `D12_REMOTE_METADATA_BYTES_EQUAL=PASS`, `D12_REMOTE_PAYLOAD_VERIFIED=YES`, `D12_ENCRYPTED_OFF_HOST_ARCHIVE_CUSTODY=PASS`, `D12_RESULT=0`. Los indicadores `...SNAPSHOT_CREATED=NO` y `...PAYLOAD_VERIFIED=NO` del inicio de la salida son marcadores de estado previo, sustituidos por las verificaciones posteriores. No consta eco separado `D12_SHELL_RESULT`.
+
+**Cierre parcial de B3:** copias cifradas fuera del VPS en el repositorio Restic O5 y verificación de lectura integral del tar y sus dos metadatos. No demostrar independencia de proveedor/credenciales respecto a O5, recuperación desde una instalación nueva, equivalencia exacta de IDs Docker ni restauración/rollback operacional. No repetir D12: crearía un segundo snapshot remoto. Registrar política de conservación en el procedimiento de recuperación.
+
+Invariantes: `D12_DEPLOY_EXECUTED=NO`, `D12_LIVE_MIGRATIONS_EXECUTED=NO`, `D12_LIVE_RESTORE_EXECUTED=NO`, `D12_HOST_DOCKER_IMAGE_LOAD_EXECUTED=NO`, `D12_CONTAINER_RUN_EXECUTED=NO`, `D12_CADDY_RELOAD_EXECUTED=NO`, `D12_DNS_CHANGED=NO`, `D12_PUBLIC_RELEASE_AUTHORIZED=NO`. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
