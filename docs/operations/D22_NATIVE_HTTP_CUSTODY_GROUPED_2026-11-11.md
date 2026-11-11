@@ -4,7 +4,7 @@ Fecha: 11/11/2026. Rama: **main**. Estado: **implementado; pendiente de gate VPS
 
 ## Alcance de la fase agrupada
 
-D21 demostró en 65 tests PG17 un emisor candidato capaz de verificar contraseña/TOTP, leer claves MFA desde el servidor y revocar sesiones con recuperación. D22 añade la pieza que faltaba entre el contrato JSON y el emisor: **HTTP real dentro de un laboratorio Django de pruebas**, preservando la ausencia de rutas operativas.
+D21 demostró en 65 tests PG17 un emisor candidato capaz de verificar contraseña/TOTP, leer claves MFA desde el servidor y revocar sesiones con recuperación. D22 añade la pieza que faltaba entre el contrato JSON y el emisor: **vistas HTTP Django ejecutadas con el cliente de pruebas sobre PG17 efímero**, preservando la ausencia de rutas operativas.
 
 1. `backend/native_mobile_service/test_d22_http_views.py` (`413c5f3e`): vistas de password/MFA, recuperación password/MFA, revocación y `me`. Invocan `native_server_custody_issuer.py`, no admiten claves MFA ni tiempos enviados por el cliente. El parser común `native_http_contract.py` impone cuerpo exacto y JSON sin duplicados; no hay cookies ni caché en respuestas. Todas las vistas deniegan si falta cualquiera de `VENCIRA_ENV=test`, candidato explícito, bearer deshabilitado, URLconf aislado `test_d22_urls` y flag efímero `VENCIRA_D22_HTTP_LAB=1`. Exigen `request.is_secure()`, no admiten Cookie, Origin ni Referer, ni Authorization en POST.
 2. `backend/native_mobile_service/test_d22_urls.py` (`4e65100f`): URLconf **exclusivamente de laboratorio**. No se importa desde `backend/config/urls.py`.
@@ -45,7 +45,7 @@ D22_RESULT=0
 D22_SHELL_RESULT=0
 ```
 
-**No hay D22 PASS hasta recibir marcadores del VPS.** El laboratorio prueba la pila HTTP completa con claves de servidor de prueba y sesiones desechables, sin tocar DEV, sin instalar endpoints ni migrar datos reales. Una prueba del cliente Flutter por HTTPS ya figura en D18, pero **no utiliza estas nuevas vistas D22**; se requiere un gate específico antes de atribuir compatibilidad cliente→D22.
+**No hay D22 PASS hasta recibir marcadores del VPS.** El laboratorio prueba la pila de vistas HTTP Django con claves de servidor de prueba y sesiones desechables; `secure=True` simula la solicitud HTTPS en el test client y **no** verifica un handshake TLS de red, sin tocar DEV, sin instalar endpoints ni migrar datos reales. Una prueba del cliente Flutter por HTTPS ya figura en D18, pero **no utiliza estas nuevas vistas D22**; se requiere un gate específico antes de atribuir compatibilidad cliente→D22.
 
 ## Bloqueos reales de salida
 
