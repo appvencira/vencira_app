@@ -92,8 +92,9 @@ const { chromium } = require("playwright");
     console.log("D2C_SYNTHETIC_AUDIT_EVENTS=PASS");
     stage="ANONYMOUS";
     const anon=await browser.newPage({ignoreHTTPSErrors:true,locale:"es-ES"});
+    await anon.goto(origin+"/",{waitUntil:"domcontentloaded",timeout:45000});
     const denied=await anon.evaluate(async () => {
-      const r=await fetch("https://d2c-proxy/api/v1/workspaces/",
+      const r=await fetch("/api/v1/workspaces/",
         {credentials:"same-origin"});
       return r.status;
     });
