@@ -49,7 +49,7 @@ if docker run --rm --pull never --network none --read-only \
 from pathlib import Path
 import re
 paths=Path("/app/reminders/migrations").glob("0027_*.py")
-raise SystemExit(0 if any(re.fullmatch(r"0027_[A-Za-z0-9_]+\\.py",p.name) for p in paths) else 1)
+raise SystemExit(0 if any(re.fullmatch(r"0027_[A-Za-z0-9_]+\.py",p.name) for p in paths) else 1)
 ' >/dev/null 2>&1; then
   mark TARGET_0027_PRESENT_IN_RETAINED_API PASS
 else
