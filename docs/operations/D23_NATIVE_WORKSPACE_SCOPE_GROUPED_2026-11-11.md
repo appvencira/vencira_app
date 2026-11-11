@@ -56,3 +56,11 @@ El mecanismo es dinámico entre peticiones; **no** implica que una lectura en cu
 `MFA_RELEASE_AUTHORIZED=NO`
 `NO_DEPLOY_NO_LIVE_MIGRATION=1`
 `D23_NATIVE_ISSUER_RELEASE_AUTHORIZED=NO`
+
+## Validación del VPS — D23 PASS (11/11/2026)
+
+La ejecución comunicada confirma `D23_MAIN_CLEAN=PASS`, `D23_OPERATIONAL_ROUTE_FENCE=PASS`, imagen efímera, red interna PostgreSQL17, paridad de migraciones y base temporal. Suite: **74 tests ejecutados; OK**. Marcadores funcionales: `D23_NATIVE_CROSS_WORKSPACE_DENIED=PASS`, `D23_NATIVE_MEMBER_ASSIGNMENT_SCOPE=PASS`, `D23_NATIVE_LIVE_MEMBERSHIP_AND_ASSIGNMENT_FENCE=PASS`, `D23_OPERATIONAL_WORKSPACE_ROUTE_ABSENT=PASS`. Regresión: `NATIVE_I8K_D23_NATIVE_WORKSPACE_PG17=PASS`, `NATIVE_I8K_D22_SERVER_CUSTODY_HTTP_PG17=PASS`, `NATIVE_I8K_D21_SERVER_CUSTODY_ISSUER_PG17=PASS`, `NATIVE_I8K_D20_ISSUER_REVIEW_GATE=PASS`, `NATIVE_I8K_NATIVE_JSON_CONTRACT=PASS`, `NATIVE_I8K_NO_PUBLIC_ISSUER=PASS`, `NATIVE_I8K_NO_MFA_DENIAL_POLICY=PASS`, `NATIVE_I8K_ATOMIC_RECOVERY_CORE=PASS`, `NATIVE_I8K_RECOVERY_HTTP_JSON=PASS`, `NATIVE_I8K_RECOVERY_ENDPOINTS_ABSENT=PASS`, `NATIVE_I8K_PG17_HTTP_RECOVERY_GATE=PASS`, `NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK`, `NATIVE_I8K_LOCAL_RESULT=0`, `D23_WORKSPACE_ASSIGNMENT_PG17=PASS`, `D23_RESULT=0`.
+
+Las guardas se mantienen: `D23_OPERATIONAL_ISSUER_ENABLED=NO`, `D23_PUBLIC_WORKSPACE_ROUTE_ENABLED=NO`, `D23_DEPLOY_EXECUTED=NO`, `D23_LIVE_MIGRATIONS_EXECUTED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. `NATIVE_I8K_FLUTTER_GATE=NOT_RUN_SEPARATE` es esperado. El recorte de terminal no contiene una línea independiente `D23_SHELL_RESULT`, pero el gate informa cero.
+
+**D23 PASS** para consulta mínima de datos con bearer válido, pertenencia/rol/asignación vigentes por petición y rechazo de otros tenants. No se han probado concurrencia de pérdida de permiso a mitad de la petición, escrituras, adjuntos, paginación completa, HTTPS de red contra la nueva ruta ni un APK operativo. No interpretar como liberación de emisor.
