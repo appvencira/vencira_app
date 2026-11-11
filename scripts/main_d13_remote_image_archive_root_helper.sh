@@ -61,7 +61,7 @@ for filename in images.tar.gz images.tar.gz.sha256 images.manifest; do
   if ! restic --no-lock dump "$snapshot" "$archive/$filename" >"$dst/$filename" 2>/dev/null; then
     mark REMOTE_DOWNLOAD FAIL; exit 5;
   fi
-  chown "$owner:$owner" "$dst/$filename"
+  chown "$owner" "$dst/$filename"
   chmod 600 "$dst/$filename"
 done
 (cd "$dst" && sha256sum --status -c images.tar.gz.sha256) || {
