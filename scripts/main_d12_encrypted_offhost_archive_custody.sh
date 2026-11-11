@@ -17,8 +17,8 @@ for t in restic rclone python3 sha256sum stat openssl git; do
 done
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root"
-[[ "$(git rev-parse HEAD)" == "$(git rev-parse refs/remotes/origin/main)" &&
-   -z "$(git status --porcelain)" ]] || { mark MAIN_CLEAN FAIL; mark RESULT 2; exit 2; }
+[[ "$(git -c safe.directory="$root" rev-parse HEAD)" == "$(git -c safe.directory="$root" rev-parse refs/remotes/origin/main)" &&
+   -z "$(git -c safe.directory="$root" status --porcelain)" ]] || { mark MAIN_CLEAN FAIL; mark RESULT 2; exit 2; }
 mark MAIN_CLEAN PASS
 archive="/home/vencira/vencira-release-archives/pre-upgrade-82d5a9324f6141b67b5b55a7"
 [[ -d "$archive" && ! -L "$archive" ]] || { mark ARCHIVE_PATH FAIL; mark RESULT 2; exit 2; }
