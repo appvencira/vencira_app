@@ -128,6 +128,25 @@ class D23NativeWorkspacePG17Tests(TransactionTestCase):
         self.assertEqual(self.read(self.a).status_code, 401)
         print("D23_NATIVE_LIVE_MEMBERSHIP_AND_ASSIGNMENT_FENCE=PASS")
 
+    def test_native_workspace_http_offset_and_canonical_page(self):
+        request_path = self.url(self.a)
+        for suffix in ("?offset=1", "?offset=-50", "?offset=050",
+                       "?offset=10050", "?offset=not-a-number"):
+            with self.subTest(suffix=suffix):
+                response = self.client.get(
+                    request_path + suffix, secure=True,
+                    HTTP_AUTHORIZATION="Bearer " + self.access,
+                )
+                self.assertEqual(response.status_code, 400)
+        page = self.client.get(
+            request_path + "?offset=50", secure=True,
+            HTTP_AUTHORIZATION="Bearer " + self.access,
+        )
+        self.assertEqual(page.status_code, 200)
+        self.assertEqual(page.json()["results"], [])
+        self.assertIsNone(page.json()["next_offset"])
+        print("D24_WORKSPACE_HTTP_OFFSET_FENCE=PASS")
+
     def test_no_native_workspace_route_in_operational_urlconf(self):
         from django.test import override_settings as override
         with override(ROOT_URLCONF="config.urls"):
