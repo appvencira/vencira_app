@@ -1,0 +1,59 @@
+# D24 — lectura móvil paginada y revocación concurrente con PostgreSQL 17
+
+Fecha: 11/11/2026. Rama: **main**. Estado: **código publicado; resultado VPS pendiente**.
+
+## Implementación
+
+D23 validó 74 tests y la pertenencia/asignación comprobada en cada petición. D24 añade garantías transaccionales a la lectura del workspace y un protocolo paginado de 50 registros:
+
+- `backend/native_mobile_service/native_workspace_reader.py`: solo funciona dentro de una transacción explícita. La membresía actual se bloquea con `select_for_update`; se bloquean las filas seleccionadas antes de proyectar `id/expires_on/status`. Páginas `offset` de 50, desde 0 hasta 10000, con `next_offset` o `null`. Los offsets no canónicos y roles distintos de owner/member deniegan. Es un límite deliberado para laboratorio, **no paginación completa sin límite**.
+- `backend/native_mobile_service/test_d22_http_views.py`: bajo `transaction.atomic` bloquea usuario → sesión móvil → membresía → filas. Antes del bloqueo obtiene la identidad a partir del token, pero **la valida de nuevo con los bloqueos adquiridos**, evitando entregar datos si se revocó el dispositivo entre ambas validaciones. Rechaza offsets HTTP inválidos. El body JSON se construye mientras se mantienen los bloqueos.
+- `clients/flutter/lib/api/native_workspace_read_port.dart`: respuesta paginada `NativeWorkspacePage`, `loadPage(workspaceId, offset: ...)`, conserva `load()` para la primera página; valida offsets, estructura, estados y fechas, y rechaza campos PII. **No se conecta al entrypoint real Android**.
+- `backend/native_mobile_service/test_d24_workspace_pagination_pg17.py`: cuatro pruebas con base PG17 temporal: 75 renovaciones asignadas recuperadas en dos páginas, offsets inválidos, bloqueo de eliminación de membresía hasta finalizar la consulta y bloqueo de reasignación de fila durante la lectura. Los tests usan dos conexiones reales y `ThreadPoolExecutor`, no solo mocks.
+- `backend/native_mobile_service/test_d23_workspace_pg17.py`: añade un test HTTP de offsets y página vacía.
+- `clients/flutter/test/native_workspace_read_port_test.dart`: adapta el contrato y añade segunda página y metadatos de paginación falsificados.
+- `scripts/native_i8k_recovery_http_pg17_isolated.sh`: añade D24 al paquete histórico I8-K y marca `NATIVE_I8K_D24_PAGINATION_CONCURRENCY_PG17=PASS` solo tras suite completa.
+- `scripts/main_d24_native_workspace_pagination_race_gate.sh`: un gate agrupa checks estáticos, el mismo laboratorio PG17 aislado y `flutter analyze` + `flutter test test/native_workspace_read_port_test.dart` en Flutter 3.44.0 Docker, con comparación de identidades de DEV. No hace deploy, LIVE migrate ni build de APK.
+
+## Ejecutar una sola vez en Termius
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+bash -n scripts/main_d24_native_workspace_pagination_race_gate.sh
+echo "D24_SYNTAX=$?"
+sudo -v
+bash scripts/main_d24_native_workspace_pagination_race_gate.sh
+echo "D24_SHELL_RESULT=$?"
+git status --short
+```
+
+Requerido para D24 PASS:
+```text
+D24_MAIN_CLEAN=PASS
+D24_OPERATIONAL_ROUTE_FENCE=PASS
+D24_WORKSPACE_BOUNDED_PAGINATION_PG17=PASS
+D24_WORKSPACE_OFFSET_FENCE_PG17=PASS
+D24_MEMBERSHIP_REVOKE_SERIALIZED_PG17=PASS
+D24_ASSIGNMENT_REVOKE_SERIALIZED_PG17=PASS
+D24_WORKSPACE_HTTP_OFFSET_FENCE=PASS
+NATIVE_I8K_D24_PAGINATION_CONCURRENCY_PG17=PASS
+NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK
+NATIVE_I8K_LOCAL_RESULT=0
+D24_PG17_CONCURRENCY_PAGINATION=PASS
+D24_FLUTTER_PAGINATION_GATE=PASS
+D24_ACTUAL_TLS_NETWORK_GATE=NOT_RUN
+D24_NATIVE_ISSUER_ENABLED=NO
+D24_DEV_CONTAINERS_UNCHANGED=OK
+D24_RESULT=0
+D24_SHELL_RESULT=0
+```
+
+## Alcance y límites
+
+**No marcar PASS hasta recibir el resultado del VPS.** Estas pruebas verifican que una modificación de la membresía o asignación **sobre filas bloqueadas** no termina antes de la transacción de lectura; una vez enviada una respuesta no se pueden retirar sus bytes del dispositivo. Hay además dos riesgos fuera de alcance: 1) offsets pueden saltar/repetir filas si cambia el dataset *entre páginas*; para producción hará falta cursor estable con reautorización por página; 2) el límite en 10000 impide recorrer workspaces enormes y es temporal. La lectura es read-only, no permisos de escrituras ni adjuntos.
+
+**TLS de red cliente Flutter ↔ las nuevas vistas D24 NO ha sido ejecutado.** El gate Flutter usa un transport mock, y el test Django utiliza request `secure=True`. El gate anterior D18 sí cubrió TLS real, pero en una API de laboratorio anterior, no D24; se necesita un gate posterior específico para esta versión.
+
+Conservar `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, no registrar URL D22/D24 en `config.urls`, no habilitar issuer móvil ni instalar APK.
