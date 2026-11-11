@@ -66,7 +66,10 @@ sudo -n docker run --rm -v "$root/clients/flutter:/source:ro" \
   cd /tmp/vencira-d24-flutter
   flutter pub get
   flutter analyze
-  flutter test --reporter expanded test/native_workspace_read_port_test.dart
+  flutter test --reporter expanded \\
+    test/native_workspace_read_port_test.dart \\
+    test/native_api_transport_test.dart \\
+    test/native_api_endpoint_test.dart
 ' || {
   mark FLUTTER_PAGINATION_GATE FAIL
   exit 5
