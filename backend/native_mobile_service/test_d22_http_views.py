@@ -23,6 +23,7 @@ from .native_server_custody_issuer import (
     begin_native_recovery, complete_native_recovery,
 )
 from .session_store import MobileTokenDenied, revoke_candidate_device, validate_candidate_access
+from .native_workspace_reader import NativeWorkspaceDenied, read_native_workspace_renewals
 
 
 def _guard(request, method):
@@ -175,3 +176,25 @@ def me(request):
     except _DENIED:
         return _deny()
     return native_json_response({"authenticated": True, "user_id": user.pk})
+
+
+def workspace_renewals(request, workspace_id):
+    """D23 lab-only read: bearer must be valid AND workspace/row visible NOW."""
+    blocked = _guard(request, "GET")
+    if blocked is not None:
+        return blocked
+    header = request.META.get("HTTP_AUTHORIZATION")
+    if (
+        type(header) is not str
+        or not header.startswith("Bearer ")
+        or header.count(" ") != 1
+    ):
+        return _deny()
+    try:
+        user = validate_candidate_access(header[7:])
+        result = read_native_workspace_renewals(
+            user=user, workspace_id=workspace_id,
+        )
+    except (MobileTokenDenied, NativeWorkspaceDenied, ValueError):
+        return _deny()
+    return native_json_response(result)
