@@ -1906,3 +1906,12 @@ El navegador Chromium sin credenciales de DEV rellena/formulario de login Django
 **Estado D2-B: PREPARADO, NO EJECUTADO / no PASS.** Operador debe actualizar `main` y ejecutar `bash scripts/main_d2b_browser_authenticated_isolated.sh`. No despliegues ni migraciones persistentes, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D2B_RELEASE_AUTHORIZED=NO`.
 
 Complemento D2-B preflight: commit `5f81bbdc` incorpora validación AST tanto del proxy HTTPS como del script de fixtures Python, antes de crear el laboratorio Docker. D2-B continúa NO EJECUTADO.
+
+
+## DZ. 11/11/2026 — D2-B cerrado PASS: login Django→Flutter con sesión ficticia y recuperación Nginx aislada
+
+El operador confirmó **`D2B_RESULT=0`** y `D2B_CHROMIUM_AUTHENTICATED_NAVIGATION_AND_RECOVERY_GATE=PASS` con usuario `owner` y workspace generados exclusivamente en PG17 tmpfs. Chromium pasó formulario Django con CSRF, login HTTP real, `/api/v1/me/` 200, `/api/v1/workspaces/` 200, fetch autenticado iniciado por Flutter y `flutter-view`, persistencia de sesión después de recarga, aislamiento de un segundo contexto sin cookies con 401/403, y `PAGE_ERRORS=0`. Se repitió el mismo recorrido tras recrear exclusivamente el Nginx efímero: `D2B_WEB_RECOVERY_RESTART=PASS`, `D2B_CHROMIUM_AFTER_WEB_RESTART=PASS`. Se validó también `D2B_SYNTHETIC_SCHEMA_BACKUP_RESTORE=PASS`, contenedores DEV intactos y cleanup DONE.
+
+No implica prueba de CRUD de vencimientos, calendario, MFA real, fidelidad visual ni rollback de imagen/base de datos operativa. Evidencia detallada en `docs/D2B_SYNTHETIC_AUTHENTICATED_CHROMIUM_2026-11-11.md`, cierre commit `42c07b23`. Restricciones: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D2B_RELEASE_AUTHORIZED=NO`, `D2B_DEPLOY_EXECUTED=NO`, `D2B_LIVE_MIGRATIONS_EXECUTED=NO`, `D2B_LIVE_RESTORE_EXECUTED=NO`.
+
+**D1-Z, D2-A y D2-B cerrados dentro de su alcance**, sin volver a ejecutarlos sin cambios relevantes. Siguiente fase D2-C: ensayar operaciones de negocio sintéticas verificando transacciones/visibilidad en PG17 aislado, no despliegue.
