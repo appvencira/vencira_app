@@ -141,3 +141,14 @@ La ejecución más reciente validó compilación Flutter, configuración CanvasK
 Se corrigieron las expresiones regulares de la función en `scripts/main_d1z_chromium_smoke.js`, commit `d4d08478`. Se comprobó con Node 22 instalado en entorno local la sintaxis de las expresiones de redacción de URLs, rutas, cadenas y datos largos. **El archivo completo aún debe superar `node --check` en Termius y el navegador debe volver a ejecutarse; no afirmar que D1-Z haya pasado.** El diagnóstico del arranque Flutter permanece pendiente desde el quinto intento; el sexto solo informa de una incidencia de instrumentación.
 
 La advertencia sobre `--wasm` sigue siendo informativa. No se autorizó despliegue, restore o migración de DEV. `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## Séptimo intento — excepción de configuración regional identificada (11/11/2026)
+
+El operador confirmó `D1Z_CHROMIUM_SMOKE_SYNTAX=PASS`, `D1Z_CHROMIUM_LAUNCH=PASS`, `D1Z_CHROMIUM_DOCUMENT=PASS`, `D1Z_CHROMIUM_DOCUMENT_HTTP_STATUS=200`, `D1Z_CHROMIUM_SCRIPT_HTTP_STATUS=200`; sigue sin `flutter-view`. Nueva evidencia determinante: `D1Z_CHROMIUM_SAFE_EXCEPTION_1=Invalid argument(s): Incorrect locale information provided`. Hay además una solicitud de Google Fonts fallida, `LOAD_FAILURE=1`, `OTHER=1`; el control CSS vacío fue inconcluso. El gate termina con `D1Z_CHROMIUM_RENDER_GATE=FAIL`, `D1Z_RESULT=8`, DEV intacto, cleanup DONE.
+
+Esta excepción es compatible con una configuración regional inválida en alguna llamada a las APIs internacionales del navegador; no demuestra aún si el valor inválido nace en Chromium, Dart/Flutter o una dependencia. Al revisar el código, `clients/flutter/lib/main.dart` configura idioma `es` por defecto, `ca` como alternativo, y `dashboard_screen.dart` pasa el `languageCode` de Flutter a `DateFormat`. No se detectó ahí un código regional no estándar que justifique alterar producto.
+
+**Corrección de entorno de prueba candidata** publicada en `scripts/main_d1z_chromium_smoke.js` commit `128d72bb`: Chromium se lanza con `--lang=es-ES` y cada contexto Playwright usa `locale: "es-ES"`; antes del `goto` verifica `navigator.language` y `Intl.DateTimeFormat(language).resolvedOptions().locale`. Nuevos marcadores `D1Z_CHROMIUM_SPANISH_LOCALE=PASS` y `D1Z_CHROMIUM_INTL_DATE_LOCALE=PASS`. Es una configuración reproducible del navegador del laboratorio, no un cambio en el idioma de VENCIRA, en Caddy o en DEV.
+
+**D1-Z continúa FAIL hasta recibir una nueva ejecución.** Si ambos marcadores regionales pasan y persiste la excepción, hay que buscar el valor concreto en Flutter/paquetes y no atribuirlo simplemente al sistema del contenedor. La solicitud Google Fonts puede ser secundaria. No ejecutar deploy ni migraciones persistentes; `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
