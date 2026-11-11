@@ -1807,3 +1807,10 @@ Se amplió diagnóstico de tipo de excepción y respuestas de JS estático sin p
 Las pruebas HTTP de Flutter/Nginx/Caddy, PG17 aislado y seguridad siguen PASS; Chromium obtiene documento/JS HTTP 200 y falla esperando `flutter-view`. Petición Google Fonts externa fallida = 1, JS errors = 2 (`LOAD_FAILURE=1`, `OTHER=1`, `EXCEPTION_TYPE_ERROR=1`). El control con CSS vacío devolvió `VIEW_ABSENT_OR_DIAGNOSTIC_FAILED` (inconcluso). `D1Z_CHROMIUM_RENDER_GATE=FAIL`, `D1Z_RESULT=8`, DEV intacto y cleanup DONE. **No convertir en PASS ni afirmar que la fuente sea la causa única.**
 
 Se publicó un resumen redactado de excepciones `pageerror`, nunca stack ni URLs ni tokens, commits `585464a2` y `ec709087` en `scripts/main_d1z_chromium_smoke.js`, documentado en `docs/D1Z_BROWSER_FLUTTER_AND_ISOLATED_WEB_RECOVERY_2026-11-11.md` commit `4ceea47d`. Pendiente nueva ejecución de D1-Z para obtener `D1Z_CHROMIUM_SAFE_EXCEPTION_*`. Controles release `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` inalterados.
+
+
+## DM. 11/11/2026 — D1-Z regresión de instrumentación Node corregida
+
+La siguiente ejecución del laboratorio completó en PASS PostgreSQL 17 sintético, Flutter Web release, CanvasKit local, Nginx, Caddy TLS y contrato HTTPS, pero el nuevo `node --check` detectó `SyntaxError: Invalid regular expression flags` en `scripts/main_d1z_chromium_smoke.js` (escapes indebidos en regex de redacción de mensajes). Salida `D1Z_CHROMIUM_SMOKE_SYNTAX=FAIL`, `D1Z_RESULT=8`, sin ejecutar Chromium, DEV intacto y cleanup DONE. **No atribuir el fallo a Flutter ni declarar PASS**.
+
+Corregido en `main` commit `d4d08478`; expresiones regulares comprobadas con Node local. Incidencia detallada en `docs/D1Z_BROWSER_FLUTTER_AND_ISOLATED_WEB_RECOVERY_2026-11-11.md` commit `f911c520`. Repetición de D1-Z pendiente, conservando `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
