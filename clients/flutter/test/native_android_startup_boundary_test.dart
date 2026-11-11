@@ -49,6 +49,28 @@ void main() {
     expect(find.byKey(const Key('native-login-submit')), findsNothing);
   });
 
+  testWidgets('recovery warning scrolls on a compact Android viewport',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 480);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(MaterialApp(
+      home: NativeAndroidStartupBoundary(
+        inspect: () async => NativeStartupDisposition.fullReauthentication,
+      ),
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.takeException(), isNull);
+    expect(find.byType(SingleChildScrollView), findsOneWidget);
+    expect(find.byKey(const Key('native-login-submit')), findsNothing);
+    await tester.ensureVisible(
+        find.text('Abrir VENCIRA en el navegador'));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('startup waits for inspection before displaying the browser',
       (tester) async {
     final pending = Completer<NativeStartupDisposition>();
