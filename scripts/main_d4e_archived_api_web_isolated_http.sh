@@ -296,6 +296,36 @@ if [[ "$web_ok" != YES ]]; then
   # missing wget utility; never print response bodies or container logs.
   state="$("${P[@]}" inspect --format '{{.State.Running}}' "$web_name" 2>/dev/null || true)"
   mark WEB_CONTAINER_STILL_RUNNING "$([[ "$state" == true ]] && echo YES || echo NO)"
+  if [[ "$state" != true ]]; then
+    # Only fixed status fields. Never expose container log lines.
+    exit_code="$("${P[@]}" inspect --format '{{.State.ExitCode}}' "$web_name" 2>/dev/null || true)"
+    if [[ "$exit_code" =~ ^[0-9]{1,3}$ ]]; then
+      mark WEB_EXIT_CODE "$exit_code"
+    else
+      mark WEB_EXIT_CODE UNKNOWN
+    fi
+    oom="$("${P[@]}" inspect --format '{{.State.OOMKilled}}' "$web_name" 2>/dev/null || true)"
+    mark WEB_OOM_KILLED "$([[ "$oom" == true ]] && echo YES || echo NO)"
+    # Capture just this isolated container's latest diagnostics privately.
+    "${P[@]}" logs --tail 100 "$web_name" >"$lab/web-log.out" 2>"$lab/web-log.err" || true
+    python3 - "$lab/web-log.out" "$lab/web-log.err" <<'PY'
+from pathlib import Path
+import re, sys
+msg="\n".join(Path(p).read_text(errors="replace")[-32000:] for p in sys.argv[1:]).lower()
+cases=[
+ ("READONLY_FILESYSTEM", r"read.only.file.system|ero?fs|filesystem is read.only"),
+ ("PERMISSION_DENIED", r"permission denied|operation not permitted|access denied"),
+ ("NGINX_CONFIGURATION", r"emerg|invalid number of arguments|unknown directive|nginx: configuration|syntax is invalid"),
+ ("PORT_BIND", r"bind\(\).*failed|address already in use|cannot assign requested address"),
+ ("MISSING_PATH", r"no such file or directory|not found|does not exist"),
+ ("MISSING_DEPENDENCY", r"error while loading shared libraries|library.*not found"),
+ ("EXECUTION_FAILURE", r"exec format error|executable file not found"),
+]
+category=next((name for name, pattern in cases if re.search(pattern,msg)), "UNCLASSIFIED")
+print("D4E_WEB_EXIT_DIAGNOSIS=" + category, flush=True)
+print("D4E_WEB_DIAGNOSTIC_TEXT_PRINTED=NO", flush=True)
+PY
+  fi
   if [[ "$state" == true ]]; then
     if "${P[@]}" exec "$web_name" sh -c 'command -v wget >/dev/null 2>&1'; then
       mark WEB_WGET_AVAILABLE YES
