@@ -666,3 +666,13 @@ D13 descargó desde Restic el snapshot D12 y verificó SHA256, pero falló en la
 **Conclusión válida:** respaldo externo D12 verificado byte a byte; recuperación remota del tar D13 verificada; archivo equivalente importado en Podman independiente y PostgreSQL17 archivado funcionando con datos sintéticos D13-R. **No afirmar D13 end-to-end PASS** ni rehidratación completa del servicio/API/Web, identidad original exacta, ni restauración real O5/rollback operacional. No es necesario volver a descargar y ejecutar la misma carga solo para duplicar evidencia; la prioridad operativa pasa a coherencia entre O5 histórico `0018` y API retenida sin solicitar `0027` a ese binario.
 
 Documentación extendida: `docs/operations/D13_REMOTE_IMAGE_PG17_ROOTLESS_RECOVERY_2026-11-11.md` (commit `aefeb7ec`). Los controles `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1` permanecen.
+
+## D14 — compatibilidad del backup real O5 con API histórica 0018 (11/11/2026)
+
+La evidencia D12 y D13-R permite conservar la integridad off-host y la importación/ejecución de PG17 archivado sin repetir esos ensayos. Quedaba un fallo conceptual en D4-H: pedir `migrate reminders 0027` a la imagen histórica Django que D4-H2 confirmó limitada a migración 0018.
+
+**D14 publicada en main, NO ejecutada todavía.** `scripts/main_d14_historical_api_o5_pg17_isolated.sh` (commits `c96c2c3a`, `646b9422`) adapta el laboratorio seguro D4-H al esquema histórico real. Preflight 0018-only del binario retenido antes de leer el backup; restaura un snapshot O5 real a PG17 temporal en red interna y PGDATA tmpfs; Django `check`, paridad modelo 0018 y `migrate reminders 0018 --plan` (no aplica migraciones), ausencia de registro 0019–0027, conservación de recuentos core, cleanup DEV y red. Se excluye explícitamente `migrate reminders 0027` en esta imagen; la candidata `main` 0019–0027 quedó validada separadamente en D1-N.
+
+Runbook `docs/operations/D14_HISTORICAL_API_O5_PG17_ISOLATED_2026-11-11.md` (commit `d51db74e`). Se ejecuta con `sudo bash` y la ruta existente del archivo local, sin `docker load`, restauración de la BD viva ni publicación. El éxito no resuelve por sí mismo el mismatch de IDs Docker exportados, prueba end-to-end desde almacenamiento remoto ni reversión operativa.
+
+**No autorizar aún el despliegue**: Android nativo final, ruta pública/DNS/Caddy activa, recuperación integral y permiso operativo todavía sin cerrar. Invariantes `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
