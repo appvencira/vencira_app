@@ -69,3 +69,30 @@ echo "D4A_SHELL_RESULT=$?"
 ```
 
 Un `D4A_RESULT=0` solamente acredita la **preparación de laboratorio**; B1/B2 continuarán NO verificados hasta ejecutar el ensayo aislado conjunto. No regenerar el archivo original ni repetir D3-B5/B6C/B7.
+
+## D4-A PASS y D4-B runtime de imágenes preparado (11/11/2026)
+
+El operador confirmó D4-A: `D4A_MAIN_SYNC=PASS`, `D4A_PRIVATE_ARCHIVE_DIRECTORY=PASS`, `D4A_PRIVATE_ARCHIVE_FILES=PASS`, `D4A_XDG_RUNTIME=PASS`, `D4A_PODMAN_ROOTLESS_ENV=PASS`, `D4A_O5_CREDENTIAL_PATH_PERMISSIONS=PASS`, `D4A_LAB_PREFLIGHT=PASS`, `D4A_RESULT=0`. `D4A_SHELL_RESULT` no aparece en la salida aportada; no se presupone. B1 y B2 permanecen sin ejecución.
+
+Nuevo `scripts/main_d4b_isolated_archive_runtime_smoke.sh`: reutiliza el almacenamiento VFS de Podman rootless que pasó D3-B5, importa exclusivamente las tres imágenes a un almacén temporal, y prueba **únicamente** iniciar `/bin/sh -c 'exit 0'` en cada una con `--network none`, `--read-only`, `--cap-drop all`, `--security-opt no-new-privileges`, recursos limitados, sin volúmenes ni credenciales. El cierre elimina contenedores del almacén aislado y capas VFS con `podman unshare`. No es arranque completo de API/Web/PostgreSQL; no acredita O5, compatibilidad ni rollback. Los marcadores `D4B_CONTAINER_RUN_EXECUTED=YES` y `D4B_RESULT=0` (si pasan) indican solo **ejecución de prueba aislada**, no despliegue.
+
+**No ejecutado aún en VPS.** Ejecutar únicamente tras revisar sintaxis, con `main` limpio:
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+bash -n scripts/main_d4b_isolated_archive_runtime_smoke.sh
+bash scripts/main_d4b_isolated_archive_runtime_smoke.sh /home/vencira/vencira-release-archives/pre-upgrade-82d5a9324f6141b67b5b55a7
+echo "D4B_SHELL_RESULT=$?"
+```
+
+Si falla el arranque del shell por ausencia de `/bin/sh` en una imagen, no implica corrupción: requerirá adaptar la prueba a su ejecutable real tras inspección de metadatos sin secretos. En un PASS, el siguiente ensayo conjunto B1/B2 deberá incorporar **servicios reales** y O5 en un laboratorio aislado separado; la mera ejecución de shell nunca cerrará el bloque B1.
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D4B_DEPLOY_EXECUTED=NO
+D4B_LIVE_RESTORE_EXECUTED=NO
+D4B_OPERATIONAL_ROLLBACK_VERIFIED=NO
+```
