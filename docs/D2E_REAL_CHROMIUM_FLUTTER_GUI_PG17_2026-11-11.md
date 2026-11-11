@@ -111,3 +111,14 @@ El operador confirmó `D2E_ACCESSIBILITY_HIDDEN_BUTTON_ACTIVATED=PASS` y `D2E_FL
 Los commits `86566e7e` y `2e6736e8` incorporan reconocimiento de título Agenda o botón real de Volver y, si la agenda está abierta, **clic de Playwright en el botón Flutter de navegación** para volver al dashboard antes de exigir texto del vencimiento. El test comprueba texto DOM o `aria-label` del árbol `flt-semantics` y, si sigue sin encontrarlo, emite solo recuentos no sensibles de nodos accesibles, etiquetas y botones para un diagnóstico posterior, sin registrar datos de clientes. Las escrituras siguen exigiendo mouse/teclado reales sobre Flutter Web y POST/PATCH API directos siguen prohibidos. La activación del botón oculto del framework es la única excepción técnica.
 
 **D2-E sigue FAIL/pending retest** hasta que se demuestre el flujo GUI→Django→PG17 y `D2E_RESULT=0`. Restricciones intactas: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## Quinto ensayo (11/11/2026) — Flutter tiene nodos semánticos pero el vencimiento no se localiza
+
+El operador confirma `D2E_RESULT=8`, `D2E_GUI_FAILURE_STAGE=DASHBOARD_LIST`, `D2E_GUI_FAILURE_TYPE=ASSERTION_OR_RUNTIME`, `D2E_GUI_PAGE_ERROR_COUNT=0`. Login real, `flutter-view`, activación del botón oculto y contenedor de semántica PASS; `D2E_INITIAL_AGENDA_TEXT_VISIBLE=NO`, `D2E_INITIAL_BACK_BUTTON_COUNT=0`, `D2E_DASHBOARD_SEMANTICS_COUNT=44`, `D2E_DASHBOARD_LABELED_COUNT=2`, `D2E_DASHBOARD_ROLE_BUTTON_COUNT=20`, `D2E_DASHBOARD_AGENDA_LABEL_PRESENT=NO`. DEV intacto y limpieza DONE.
+
+**Lectura crítica:** no puede atribuirse aún el problema a agenda autoabierta, como se sospechó en la fase anterior: el botón Volver y título Agenda no fueron detectados. Tampoco implica ausencia del vencimiento en la DB. La escasez de atributos `aria-label` obliga a revisar cómo CanvasKit publica los textos, los roles y el árbol de accesibilidad. `getByText(..., exact:true)` puede no ser un selector correcto para este entorno.
+
+Commit `29446299` instrumenta el caso de fallo sin modificar la aplicación ni simular acciones. Dentro del contexto Chromium, una consulta **solo GET** a `workspaces` y `renewals?q=D2E-EDIT` clasifica si la fixture está visible por la API; los contadores DOM identifican coincidencia con texto sintético en `textContent`, `aria-label` y `flt-semantics-label` y existencia de roles; consulta CDP `Accessibility.getFullAXTree` y emite únicamente número de nodos y presencia booleana del nombre de fixture y del botón Volver. No escribe por API, no revela bodies, cookies, URL privadas, datos de clientes ni el árbol AX. La etapa continúa **FAIL** hasta comprobar navegación y escritura con gestos GUI reales. Sintaxis V8 verificada; reejecución local pendiente.
+
+Se mantiene el cierre de los cinco gates anteriores, `D2E_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
