@@ -66,3 +66,14 @@ El gate NO activa servicios ni requiere repetir D12-D19. Las pruebas backend I8-
 
 `MFA_RELEASE_AUTHORIZED=NO`
 `NO_DEPLOY_NO_LIVE_MIGRATION=1`
+
+## Ejecución VPS — D20 PASS (11/11/2026)
+
+La salida compartida por el operador confirma `NATIVE_I8K_D20_ISSUER_REVIEW_GATE=PASS`, `NATIVE_I8K_NATIVE_JSON_CONTRACT=PASS`, `NATIVE_I8K_NO_PUBLIC_ISSUER=PASS`, `NATIVE_I8K_NO_MFA_DENIAL_POLICY=PASS`, `NATIVE_I8K_ATOMIC_RECOVERY_CORE=PASS`, `NATIVE_I8K_RECOVERY_HTTP_JSON=PASS`, `NATIVE_I8K_RECOVERY_ENDPOINTS_ABSENT=PASS`, `NATIVE_I8K_PG17_HTTP_RECOVERY_GATE=PASS`, `NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK`, `NATIVE_I8K_LOCAL_RESULT=0`, `D20_PG17_ISSUER_POLICY=PASS` y `D20_RESULT=0`.
+
+Las barreras operacionales continúan activas: `D20_CREDENTIAL_ISSUER_ENABLED=NO`, `D20_OPERATIONAL_ROUTES_ENABLED=NO`, `NATIVE_I8K_DEPLOY_EXECUTED=NO`, `NATIVE_I8K_LIVE_MIGRATIONS_EXECUTED=NO`. El marcador `NATIVE_I8K_FLUTTER_GATE=NOT_RUN_SEPARATE` es el comportamiento esperado para este gate backend. La salida proporcionada no contiene `D20_SHELL_RESULT` por separado, pero el script comunicó su resultado final cero.
+
+**D20 PASS exclusivamente para revisión de readiness y rechazo del emisor no autorizado con regresión PG17 de laboratorio.** No hay un emisor operacional activo, ni login Android real ni autorización para migrar producción. El trabajo siguiente debe ser la implementación sustantiva de un emisor autorizado por evidencia server-side y un contrato de despliegue independiente, manteniendo el veto hasta las pruebas y aprobación expresas.
+
+`MFA_RELEASE_AUTHORIZED=NO`
+`NO_DEPLOY_NO_LIVE_MIGRATION=1`
