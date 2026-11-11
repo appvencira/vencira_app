@@ -4,6 +4,7 @@
 const { chromium } = require("playwright");
 (async () => {
   let browser,stage="LAUNCH";
+  const jsErrors=[];
   const username=process.env.D2E_SYNTHETIC_USER;
   const password=process.env.D2E_SYNTHETIC_PASSWORD;
   if(!username?.startsWith("d2e-synthetic-")||!password||password.length<24)
@@ -13,7 +14,6 @@ const { chromium } = require("playwright");
     browser=await chromium.launch({headless:true,args:["--no-sandbox","--lang=es-ES"]});
     const page=await browser.newPage({ignoreHTTPSErrors:true,locale:"es-ES",
       viewport:{width:1280,height:800}});
-    const jsErrors=[];
     page.on("pageerror",()=>jsErrors.push(1));
     stage="LOGIN_FORM";
     const login=await page.goto(origin+"/accounts/login/?next=/",
@@ -91,7 +91,7 @@ const { chromium } = require("playwright");
     const names=new Set(["LOGIN_HTTP","WORKSPACE_HTTP","WORKSPACE_LIST",
       "READ_HTTP","NOT_PERSISTED","JS_PAGE_ERRORS"]);
     console.log("D2E_GUI_FAILURE_STAGE="+(names.has(v)?v:stage));
-    console.log("D2E_GUI_PAGE_ERROR_COUNT="+(typeof jsErrors==="undefined"?0:jsErrors.length));
+    console.log("D2E_GUI_PAGE_ERROR_COUNT="+jsErrors.length);
     process.exitCode=1;
   } finally {if(browser)await browser.close();}
 })().catch(()=>{console.log("D2E_GUI_FAILURE_STAGE=UNHANDLED");process.exitCode=1;});
