@@ -88,3 +88,13 @@ La ejecución entregada reporta `flutter analyze` con **163 issues** y `D24_FLUT
 **Corrección publicada en main, commit `a8b313f3`**: reconstrucción completa y única de `getJson` con query tipada `offset` limitada a renovaciones workspace, sin aceptar query cruda en path; preserva la generación de sesión, rechazo de tokens inválidos y redirecciones, límites de red/JSON y fail-closed. Relectura del blob de GitHub posterior al commit: **132 líneas, una implementación de getJson y una definición de NativeApiTransportFailure**. No se ha ejecutado Flutter local ni VPS después de este commit; D24 **NO PASS**.
 
 Repetir el gate completo desde `main` sincronizado: exigir PostgreSQL17 + `flutter analyze` + tests de workspace, transporte y endpoint, más `D24_RESULT=0`. Seguir con `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## Cuarto gate VPS — Flutter test recibe una ruta literal `\\`; corregido en main (12/11/2026)
+
+La última ejecución llega otra vez al subgate Flutter: `flutter pub get` termina y `flutter analyze` informa **No issues found** (14,4 s). Sin embargo, Flutter no ejecutó ningún test real: intentó cargar `/tmp/vencira-d24-flutter/\\` y notificó `Failed to load ... Does not exist`. Marcadores: `D24_FLUTTER_PAGINATION_GATE=FAIL`, `D24_DEV_CONTAINERS_UNCHANGED=OK`, `D24_RESULT=5`. No concluir sobre el resultado de los tests Flutter.
+
+**Causa confirmada en el script de main:** el comando dentro del argumento `sh -euc '...'` tenía finales de línea con **dos barras invertidas** en lugar de una. Para el shell interno, `\\\\` deja una barra literal como argumento, y Flutter intenta ejecutar esa ruta. `bash -n` no detecta este fallo semántico de escape dentro de una cadena pasada a otro intérprete.
+
+**Corrección commit `43011416`:** sustituye exclusivamente la invocación fragmentada por un comando `flutter test --reporter expanded test/native_workspace_read_port_test.dart test/native_api_transport_test.dart test/native_api_endpoint_test.dart` de una sola línea. No altera Django, DRF, PostgreSQL, acceso móvil ni las rutas de producción.
+
+D24 **no PASS** hasta un gate íntegro con `D24_PG17_CONCURRENCY_PAGINATION=PASS`, `D24_FLUTTER_PAGINATION_GATE=PASS`, `D24_DEV_CONTAINERS_UNCHANGED=OK`, `D24_RESULT=0`. Se mantienen `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
