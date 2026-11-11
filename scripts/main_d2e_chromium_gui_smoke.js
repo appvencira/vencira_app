@@ -10,6 +10,9 @@ const { chromium } = require("playwright");
   if(!username?.startsWith("d2e-synthetic-")||!password||password.length<24)
     throw Error("SYNTHETIC_CREDENTIALS_REQUIRED");
   const origin="https://d2e-proxy";
+  const passId=process.env.D2E_PASS_ID;
+  if(!["first","second"].includes(passId))throw Error("PASS_ID_REQUIRED");
+  const changedNotes="D2E GUI "+passId;
   try {
     browser=await chromium.launch({headless:true,args:["--no-sandbox","--lang=es-ES"]});
     const page=await browser.newPage({ignoreHTTPSErrors:true,locale:"es-ES",
@@ -56,14 +59,14 @@ const { chromium } = require("playwright");
     // dispatchEvent substitutes.
     const notes=page.getByRole("textbox",{name:/notas|observaciones/i}).last();
     await notes.waitFor({state:"visible",timeout:20000});
-    await notes.fill("D2E GUI changed");
+    await notes.fill(changedNotes);
     console.log("D2E_GUI_NOTES_TYPED=PASS");
     stage="SAVE_CLICK";
     await page.getByRole("button",{name:/guardar/i}).last().click({timeout:20000});
     console.log("D2E_GUI_SAVE_CLICK=PASS");
     stage="PERSISTENCE";
     // GET is evidence only; all writes must originate in actual GUI controls.
-    const verified=await page.evaluate(async()=>{
+    const verified=await page.evaluate(async(expectedNotes)=>{
       const spaces=await fetch("/api/v1/workspaces/",{credentials:"same-origin"});
       if(spaces.status!==200)return "WORKSPACE_HTTP";
       const memberships=await spaces.json();
@@ -75,11 +78,11 @@ const { chromium } = require("playwright");
         if(r.status!==200)return "READ_HTTP";
         const body=await r.json();
         const match=(body.results||[]).find(x=>x.customer_reference==="D2E-EDIT");
-        if(match?.notes==="D2E GUI changed")return "PASS";
+        if(match?.notes===expectedNotes)return "PASS";
         await new Promise(resolve=>setTimeout(resolve,250));
       }
       return "NOT_PERSISTED";
-    });
+    },changedNotes);
     if(verified!=="PASS")throw Error(verified);
     console.log("D2E_GUI_TO_DJANGO_PG17_PERSISTENCE=PASS");
     if(jsErrors.length)throw Error("JS_PAGE_ERRORS");
