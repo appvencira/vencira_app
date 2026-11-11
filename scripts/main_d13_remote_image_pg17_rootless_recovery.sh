@@ -75,7 +75,23 @@ mark REMOTE_D12_REHYDRATION PASS
 # It imports all three archived images, then boots archived PG17 on synthetic
 # tmpfs data, checks SQL, and tears down. No persistent PGDATA or DEV volume.
 mark CONTAINER_RUN_EXECUTED ISOLATED_ROOTLESS_LAB_ONLY
+# Publish only allowlisted statuses. Never dump raw stdout/stderr.
+diagnose_runtime(){
+  python3 - "$lab/runtime.out" <<'PY'
+import pathlib,re,sys
+s=pathlib.Path(sys.argv[1]).read_text(errors="replace")
+keys=("MAIN_SYNC","ARCHIVE_CHECKSUM","STORAGE_CAPACITY","XDG_RUNTIME_DIRECTORY",
+      "ROOTLESS_RUNTIME_ENV","ROOTLESS_PODMAN_STORE","PODMAN_INFO_ERROR_CATEGORY",
+      "PODMAN_INFO_EXIT_CODE","ROOTLESS_PRIVATE_STORE","ROOTLESS_IMAGE_IMPORT",
+      "IMPORTED_IMAGE_COUNT_3","ARCHIVED_PG17_ROLE_IDENTITY","PG17_START",
+      "PG17_READY","PG17_SYNTHETIC_SQL","EPHEMERAL_STORAGE_REMOVED","RESULT")
+for k in keys:
+    hits=re.findall(r"(?m)^D4C_"+k+r"=([A-Za-z0-9_]+)$",s)
+    if hits: print("D13_RUNTIME_"+k+"="+hits[-1],flush=True)
+PY
+}
 if bash "$runtime" "$lab" >"$lab/runtime.out" 2>&1; then
+  diagnose_runtime
   for required in 'D4C_ROOTLESS_IMAGE_IMPORT=PASS' 'D4C_IMPORTED_IMAGE_COUNT_3=PASS' 'D4C_PG17_READY=PASS' 'D4C_PG17_SYNTHETIC_SQL=PASS' 'D4C_EPHEMERAL_STORAGE_REMOVED=YES' 'D4C_RESULT=0'; do
     if ! grep -Fxq "$required" "$lab/runtime.out"; then
       mark PG17_REMOTE_ARCHIVE_RUNTIME FAIL
@@ -85,6 +101,7 @@ if bash "$runtime" "$lab" >"$lab/runtime.out" 2>&1; then
   mark ROOTLESS_ARCHIVED_IMAGES_IMPORT PASS
   mark PG17_REMOTE_ARCHIVE_RUNTIME PASS
 else
+  diagnose_runtime
   mark PG17_REMOTE_ARCHIVE_RUNTIME FAIL
   # The runtime log intentionally remains private and is removed by trap.
   exit 5
