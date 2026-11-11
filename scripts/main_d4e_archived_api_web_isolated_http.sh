@@ -320,11 +320,12 @@ fi
 mark WEB_START PASS
 
 # Use the web image's own HTTP client, if available, without host networking.
-# wget availability and the server's default internal port are part of this
-# deliberately strict smoke gate; failure is diagnostic, not image corruption.
+# The archived Nginx image was observed listening on TCP 8080 in the previous
+# D4-E run. Test that port, not the assumed generic Nginx TCP 80. Preserve
+# HTTP success as an obligatory gate; failure remains diagnostic.
 web_ok=NO
 for _ in $(seq 1 25); do
-  if "${P[@]}" exec "$web_name" sh -c 'wget -q -O /dev/null http://127.0.0.1:80/' >/dev/null 2>&1; then
+  if "${P[@]}" exec "$web_name" sh -c 'wget -q -O /dev/null http://127.0.0.1:8080/' >/dev/null 2>&1; then
     web_ok=YES; break
   fi
   sleep 1
@@ -415,17 +416,17 @@ PY
     else
       mark WEB_TCP8080_LISTEN NOT_VERIFIED
     fi
-    # Probe only status metadata; output stays private inside ephemeral lab.
-    if "${P[@]}" exec "$web_name" sh -c 'command -v wget >/dev/null && wget -S -O /dev/null -T 2 http://127.0.0.1:80/' >"$lab/web-probe.out" 2>"$lab/web-probe.err"; then
-      mark WEB_HTTP80_WGET_EXIT SUCCESS
+    # Probe only status metadata on the observed TCP 8080; output remains private.
+    if "${P[@]}" exec "$web_name" sh -c 'command -v wget >/dev/null && wget -S -O /dev/null -T 2 http://127.0.0.1:8080/' >"$lab/web-probe.out" 2>"$lab/web-probe.err"; then
+      mark WEB_HTTP8080_WGET_EXIT SUCCESS
     else
-      mark WEB_HTTP80_WGET_EXIT FAILURE
+      mark WEB_HTTP8080_WGET_EXIT FAILURE
     fi
     python3 - "$lab/web-probe.err" <<'PY'
 import pathlib, re, sys
 data=pathlib.Path(sys.argv[1]).read_text(errors="replace")
 codes=re.findall(r"HTTP/1(?:\.[01])?\s+([1-5][0-9][0-9])", data)
-print("D4E_WEB_HTTP80_RESPONSE_CODE=" + (codes[-1] if codes else "NOT_OBSERVED"))
+print("D4E_WEB_HTTP8080_RESPONSE_CODE=" + (codes[-1] if codes else "NOT_OBSERVED"))
 PY
   fi
   mark WEB_HTTP_LOCAL FAIL
