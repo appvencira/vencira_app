@@ -132,3 +132,12 @@ El ensayo con CSS vacío es **inconcluso**, porque combina vista ausente y error
 Se publicó en `main` una síntesis de la primera línea de `pageerror` con eliminación de URLs, valores largos opacos y cadenas entrecomilladas (sin stack completo, cuerpos de respuesta ni tokens), en `scripts/main_d1z_chromium_smoke.js` (commits `585464a2`, `ec709087`). Los marcadores `D1Z_CHROMIUM_SAFE_EXCEPTION_1` y, si corresponde, `_2`, permitirán distinguir excepción Flutter del error de fuente. El runner existente ya ejecuta `node --check` antes de abrir Chromium.
 
 **D1-Z mantiene resultado FAIL** y solo la siguiente ejecución puede validar esta instrumentación. No se ha autorizado despliegue ni migraciones persistentes, y la causa exacta sigue pendiente.
+
+
+## Sexto intento — fallo de sintaxis en instrumentación (11/11/2026)
+
+La ejecución más reciente validó compilación Flutter, configuración CanvasKit local, PostgreSQL 17 efímero, Nginx, Caddy/TLS y contratos HTTP (PASS), pero **no llegó a arrancar Chromium**. El paso `node --check /opt/d1z/smoke.js` detectó `SyntaxError: Invalid regular expression flags` en la línea que pretendía ocultar URLs en `safeExceptionSummary`, por barras sobreescapadas. El gate cerró limpiamente con `D1Z_CHROMIUM_SMOKE_SYNTAX=FAIL`, `D1Z_RESULT=8`, `D1Z_DEV_CONTAINERS_UNCHANGED=OK` y `D1Z_EPHEMERAL_CLEANUP=DONE`.
+
+Se corrigieron las expresiones regulares de la función en `scripts/main_d1z_chromium_smoke.js`, commit `d4d08478`. Se comprobó con Node 22 instalado en entorno local la sintaxis de las expresiones de redacción de URLs, rutas, cadenas y datos largos. **El archivo completo aún debe superar `node --check` en Termius y el navegador debe volver a ejecutarse; no afirmar que D1-Z haya pasado.** El diagnóstico del arranque Flutter permanece pendiente desde el quinto intento; el sexto solo informa de una incidencia de instrumentación.
+
+La advertencia sobre `--wasm` sigue siendo informativa. No se autorizó despliegue, restore o migración de DEV. `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
