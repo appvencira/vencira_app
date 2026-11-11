@@ -122,3 +122,12 @@ La causa raíz **aún no está establecida**. El fallo del `podman info` con par
 Se integró en `main` commit `fa4df2ff` un clasificador cerrado del error `podman info` dentro de `scripts/main_d3b5_rootless_podman_reload_isolated.sh`. Solo imprime `D3B5_PODMAN_INFO_ERROR_CATEGORY` y `D3B5_PODMAN_INFO_EXIT_CODE`; nunca registra stderr bruto, variables o rutas. No cambia el modo de almacenamiento, no relaja la igualdad de `graphRoot` ni la prohibición de tocar Docker host.
 
 Repetir D3-B5 solo una vez tras actualizar `main` para obtener la categoría; **si el fallo se repite, detenerse**, no añadir `sudo podman` ni cambiar `storage.conf` o sysctls manualmente. D3-B5 sigue pendiente de importación, D3-B3 sigue sin identidad exacta, y `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` se mantienen.
+
+
+## D3-B5 — reensayo: categoría de fallo del runtime rootless
+
+Salida del operador: `D3B5_MAIN_SYNC=PASS`, `D3B5_ARCHIVE_CHECKSUM=PASS`, `D3B5_STORAGE_CAPACITY=PASS`, `D3B5_PODMAN_INFO_ERROR_CATEGORY=RUNTIME_DIRECTORY_FAILURE`, `D3B5_PODMAN_INFO_EXIT_CODE=125`, `D3B5_ROOTLESS_PODMAN_STORE=FAIL`, `D3B5_EPHEMERAL_STORAGE_REMOVED=YES`, `D3B5_RESULT=4`. La clasificación es orientativa y **no demuestra causa raíz**; no ha comenzado la importación.
+
+Se detectó que el script original reescribía `HOME` y `XDG_CONFIG_HOME` a un directorio temporal, además de definir almacenes `--root`/`--runroot` independientes. Dado que Podman rootless utiliza el contexto de usuario y directorios runtime, esa sustitución es una **hipótesis plausible** del error. Corrección `aeb37369`: conserva `HOME`, `XDG_CONFIG_HOME` y `XDG_RUNTIME_DIR` del operador, verifica la propiedad del directorio runtime cuando existe; mantiene `--remote=false`, almacén VFS nuevo `--root` y `--runroot`, y limpieza de laboratorio. No requiere cambios a `storage.conf`, `sudo podman`, Docker operativo o configuración del kernel.
+
+**Validación pendiente del operador**; no se puede declarar D3-B5 PASS antes del nuevo resultado. Si continúa `ROOTLESS_PODMAN_STORE=FAIL`, analizar de forma acotada el error clasificado y evitar repetir ciclos sin evidencia nueva. Mantener `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, sin deploy ni migraciones.
