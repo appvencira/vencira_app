@@ -577,3 +577,23 @@ D9_CADDY_RELOAD_EXECUTED=NO
 D9_DNS_CHANGED=NO
 D9_PUBLIC_RELEASE_AUTHORIZED=NO
 ```
+
+## D10 — Opción 2: configuración de apex separada (preparada; NO activada)
+
+A petición del operador se preparó el fichero de configuración **independiente** `ops/caddy/vencira.es.Caddyfile.candidate` (commit `b664da99`). Define únicamente `vencira.es`, sin reconfigurar `dev.vencira.es`, con rutas mutuamente excluyentes para `/api/*`, `/accounts/*`, `/admin/*` dirigidas al **futuro** API de producción en `127.0.0.1:18741` y el resto al **futuro** Web de producción en `127.0.0.1:18742`. Estos puertos son **propuestos/reservados**, no comprobados abiertos, no servicios existentes ni un permiso para exponerlos. Se evita deliberadamente reutilizar DEV (18731/18732) para no publicar sus datos.
+
+`scripts/main_d10_apex_caddy_candidate_static_gate.sh` (commit `cc21bbe6`) realiza inspección estática del candidato y `caddy validate --adapter caddyfile` sin tocar `/etc/caddy/Caddyfile`, reiniciar/reload, modificar DNS, desplegar Docker ni leer credenciales. **Validar su sintaxis no prueba conectividad TLS, DNS, CSRF, cookies ni el funcionamiento de las futuras aplicaciones.**
+
+Ejecución de validación estática:
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+bash -n scripts/main_d10_apex_caddy_candidate_static_gate.sh
+echo "D10_SYNTAX=$?"
+bash scripts/main_d10_apex_caddy_candidate_static_gate.sh
+echo "D10_SHELL_RESULT=$?"
+git status --short
+```
+
+Precondiciones antes de cualquier activación: aprovisionar API/Web producción **separados** de DEV, revisar política de rutas y acceso a media/estáticos, `DJANGO_ALLOWED_HOSTS=vencira.es`, `DJANGO_CSRF_TRUSTED_ORIGINS=https://vencira.es`, `DJANGO_HTTPS_BEHIND_PROXY=1`, cookies Secure y secretos de producción independientes, asegurar PostgreSQL segregado y backups/custodia, probar TLS del dominio con DNS adecuado, definir ventana y rollback reversible y pedir aprobación explícita. **Ningún cambio operativo autorizado** (`MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`). Este candidato no debe importarse al Caddy activo antes de que esas condiciones se cumplan.
