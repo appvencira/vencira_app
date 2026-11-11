@@ -149,7 +149,7 @@ D run --rm \
   -v "$flutter_volume:/work" -v "$pub_volume:/pub" \
   -e PUB_CACHE=/pub -w /work \
   ghcr.io/cirruslabs/flutter:3.44.0 \
-  sh -c 'cp -a /source/. /work/ && flutter pub get && flutter analyze test/native_d25_workspace_real_https_pg17_test.dart' 
+  sh -c 'cp -a /source/. /work/ && flutter pub get && flutter analyze test/native_d25_workspace_real_https_pg17_test.dart test/native_d26_workspace_cursor_test.dart' 
 echo "D25_ANALYZE=PASS"
 
 fixture="$(cat <<'PY'
@@ -223,7 +223,8 @@ D run --rm --network "$network" \
   -e VENCIRA_ENV=test -e VENCIRA_I8M_FLUTTER_INTERNAL_ONLY=1 \
   -e VENCIRA_D25_WORKSPACE_TLS_LAB=1 \
   -w /work ghcr.io/cirruslabs/flutter:3.44.0 \
-  flutter test --no-pub test/native_d25_workspace_real_https_pg17_test.dart --reporter expanded
+  flutter test --no-pub --reporter expanded test/native_d25_workspace_real_https_pg17_test.dart test/native_d26_workspace_cursor_test.dart
+echo "D26_REAL_FLUTTER_TLS_CURSOR_AND_CONTRACT=PASS"
 echo "D25_REAL_FLUTTER_TLS_WORKSPACE_GATE=PASS"
 echo "D25_REAL_TLS_NO_PUBLIC_PORTS=PASS"
 echo "D25_OPERATIONAL_ROUTES_ENABLED=NO"
