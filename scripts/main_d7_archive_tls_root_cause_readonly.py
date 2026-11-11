@@ -39,9 +39,7 @@ def main():
             f=base/fn
             if not f.is_file() or f.is_symlink() or f.stat().st_mode & 0o077:
                 mark("ARCHIVE_FILE_PERMISSIONS","FAIL");return 2
-        integrity=safe_run(["sha256sum","--status","-c","images.tar.gz.sha256"],180)
-        # sha256sum command must run in archive directory
-        # checked separately below, through cwd.
+        # Check the complete tar checksum from the archive directory.
         integrity=subprocess.run(["sha256sum","--status","-c","images.tar.gz.sha256"],
             cwd=str(base),stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=180,check=False)
         if integrity.returncode!=0:
