@@ -122,3 +122,22 @@ D4B_SHELL_RESULT=0
 ```
 
 Docker `active`, árbol Git limpio. El valor `CONTAINER_RUN_EXECUTED=YES` corresponde a **tres ejecuciones efímeras de /bin/sh**, no a un despliegue. Se ha demostrado ejecución mínima de los tres sistemas de archivos OCI recuperados, no arranque de Django, PostgreSQL ni Nginx. Próximo control D4-C: arrancar solo el PostgreSQL archivado con red `none` y PGDATA `tmpfs`, comprobar `pg_isready`, conservar cero datos y limpiar. Todavía no se acopla O5 ni se cierra B1/B2.
+
+## D4-C — Arranque real de PostgreSQL archivado (preparado, no ejecutado)
+
+El gate `scripts/main_d4c_pg17_archived_isolated_runtime.sh` importa de nuevo el archivo en un almacén VFS efímero **distinto de Docker host**. Identifica por metadatos la única imagen PG17 archivada, inicia su entrypoint real en rootless Podman, red `none`, sin puertos, FS raíz read-only, PGDATA y rutas auxiliares en `tmpfs`, usuario/base/contraseña sintéticos, y comprueba `pg_isready` más `SELECT 1`. Nada de O5 ni volúmenes DEV. El script borra los contenedores temporales y los almacenes privados mediante `podman unshare`.
+
+Si falla `PG17_START`, no implica corrupción de la imagen: podría deberse a permisos rootless/tmpfs o restricciones del entrypoint. No reducir el aislamiento como atajo. Si pasa, **solo cierra arranque básico PG17**, no compatibilidad O5, ni API/Web, ni rollback conjunto.
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+bash -n scripts/main_d4c_pg17_archived_isolated_runtime.sh
+bash scripts/main_d4c_pg17_archived_isolated_runtime.sh /home/vencira/vencira-release-archives/pre-upgrade-82d5a9324f6141b67b5b55a7
+echo "D4C_SHELL_RESULT=$?"
+systemctl is-active docker
+git status --short
+```
+
+`D4C_RESULT=0` y `D4C_EPHEMERAL_STORAGE_REMOVED=YES` son las condiciones de cierre del ensayo; el script debe seguir imprimiendo `D4C_IMAGE_O5_COMPATIBILITY_VERIFIED=NO` y `D4C_OPERATIONAL_ROLLBACK_VERIFIED=NO`.
