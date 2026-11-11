@@ -271,12 +271,20 @@ const { chromium } = require("playwright");
     // Observe only metadata about actual Flutter-originating HTTP writes.
     // No response bodies, request payloads, URLs with IDs or credentials.
     const writes=[];
+    const writeResponses=[];
     page.on("response",response=>{
       const request=response.request();
       if(request.method()==="PATCH" &&
         /\/api\/v1\/workspaces\/[^/]+\/renewals\/[^/]+\/$/.test(
           new URL(response.url()).pathname)){
         writes.push({status:response.status(),method:request.method()});
+        // Only classify fixed synthetic fixture and notes equality;
+        // do not log response bodies, request bodies, tokens or UUIDs.
+        writeResponses.push(response.json().then(body=>({
+          targetFixture:body?.customer_reference==="D2E-EDIT",
+          returnedNotesMatch:body?.notes===changedNotes,
+          returnedNotesPresent:typeof body?.notes==="string"
+        })).catch(()=>({parseError:true})));
       }
     });
     const editorBefore=await page.getByRole("button",{name:/guardar/i}).count();
@@ -289,6 +297,13 @@ const { chromium } = require("playwright");
     console.log("D2E_GUI_PATCH_COUNT="+writes.length);
     console.log("D2E_GUI_PATCH_STATUS="+
       (writes.length===0?"NONE":writes.map(x=>x.status).join(",")));
+    const writeBodies=await Promise.all(writeResponses);
+    console.log("D2E_GUI_PATCH_FIXTURE_TARGET="+
+      (writeBodies.some(x=>x.targetFixture)?"YES":"NO"));
+    console.log("D2E_GUI_PATCH_RETURNED_NOTES_MATCH="+
+      (writeBodies.some(x=>x.returnedNotesMatch)?"YES":"NO"));
+    console.log("D2E_GUI_PATCH_RETURNED_NOTES_FIELD="+
+      (writeBodies.some(x=>x.returnedNotesPresent)?"YES":"NO"));
     console.log("D2E_GUI_EDITOR_STILL_OPEN="+
       ((await page.getByRole("button",{name:/guardar/i}).count())>0?"YES":"NO"));
     stage="PERSISTENCE";
@@ -310,6 +325,33 @@ const { chromium } = require("playwright");
       }
       return "NOT_PERSISTED";
     },changedNotes);
+    if(verified==="NOT_PERSISTED"){
+      const detailCheck=await page.evaluate(async(expectedNotes)=>{
+        try{
+          const ws=await fetch("/api/v1/workspaces/",{credentials:"same-origin",cache:"no-store"});
+          if(ws.status!==200)return "WORKSPACE_READ_ERROR";
+          const spaces=await ws.json();
+          if(!Array.isArray(spaces)||spaces.length!==1)return "WORKSPACE_COUNT";
+          const root="/api/v1/workspaces/"+encodeURIComponent(spaces[0].id);
+          const list=await fetch(root+"/renewals/?q=D2E-EDIT",{
+            credentials:"same-origin",cache:"no-store"});
+          if(list.status!==200)return "LIST_READ_ERROR";
+          const records=(await list.json()).results||[];
+          const item=records.find(x=>x.customer_reference==="D2E-EDIT");
+          if(!item)return "LIST_FIXTURE_NOT_FOUND";
+          const detail=await fetch(root+"/renewals/"+
+            encodeURIComponent(item.id)+"/",{
+              credentials:"same-origin",cache:"no-store"});
+          if(detail.status!==200)return "DETAIL_HTTP_"+detail.status;
+          const data=await detail.json();
+          if(data.notes===expectedNotes)return "DETAIL_MATCHES";
+          if(typeof data.notes!=="string")return "DETAIL_NOTES_MISSING";
+          if(data.notes==="Before D2E")return "DETAIL_NOTES_UNCHANGED";
+          return "DETAIL_NOTES_DIFFERENT";
+        }catch(_){return "DETAIL_READ_ERROR";}
+      },changedNotes);
+      console.log("D2E_READONLY_DETAIL_PERSISTENCE="+detailCheck);
+    }
     if(verified!=="PASS")throw Error(verified);
     console.log("D2E_GUI_TO_DJANGO_PG17_PERSISTENCE=PASS");
     if(jsErrors.length)throw Error("JS_PAGE_ERRORS");
