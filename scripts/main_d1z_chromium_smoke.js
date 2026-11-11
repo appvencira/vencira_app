@@ -11,6 +11,20 @@ const { chromium } = require("playwright");
   const failedHostCategories = {};
   const errorCategories = {};
   const exceptionTypes = {};
+  const safeErrorExamples = [];
+  function safeExceptionSummary(raw) {
+    // Synthetic unauthenticated lab only. Redact URLs, query strings, long
+    // opaque values and quoted strings; never dump stack/DOM/body/cookies.
+    return String(raw || "")
+      .split("\\n")[0]
+      .replace(/https?:\\/\\/[^\\s)]+/gi, "[URL]")
+      .replace(/(?:[A-Za-z]:)?\\/[^\\s:)]+/g, "[PATH]")
+      .replace(/["'`][^"'`]*["'`]/g, "[STRING]")
+      .replace(/\\b[A-Za-z0-9+/_=-]{35,}\\b/g, "[OPAQUE]")
+      .replace(/[^A-Za-z0-9 .,;:!?()_\\[\\]\\-/]/g, " ")
+      .slice(0, 180)
+      .trim() || "EMPTY";
+  }
   let browserDocumentStatus = "UNKNOWN";
   let sameOriginScriptStatus = "UNKNOWN";
   function tally(target, key) { target[key] = (target[key] || 0) + 1; }
@@ -53,6 +67,7 @@ const { chromium } = require("playwright");
       tally(errorCategories, errorCategory(err && err.message));
       const type = String(err?.name || "UNKNOWN").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 30);
       tally(exceptionTypes, type || "UNKNOWN");
+      if (safeErrorExamples.length < 2) safeErrorExamples.push(safeExceptionSummary(err?.message));
     });
     page.on("console", msg => {
       if (msg.type() === "error") {
@@ -161,6 +176,7 @@ const { chromium } = require("playwright");
     for (const [k, n] of Object.entries(failedHostCategories).sort()) console.log("D1Z_CHROMIUM_FAILED_HOST_CLASS_" + k + "=" + n);
     for (const [k, n] of Object.entries(errorCategories).sort()) console.log("D1Z_CHROMIUM_ERROR_CLASS_" + k + "=" + n);
     for (const [k, n] of Object.entries(exceptionTypes).sort()) console.log("D1Z_CHROMIUM_EXCEPTION_TYPE_" + k + "=" + n);
+    safeErrorExamples.forEach((message, idx) => console.log("D1Z_CHROMIUM_SAFE_EXCEPTION_" + (idx + 1) + "=" + message));
     process.exitCode = 1;
   } finally {
     if (browser) await browser.close();
