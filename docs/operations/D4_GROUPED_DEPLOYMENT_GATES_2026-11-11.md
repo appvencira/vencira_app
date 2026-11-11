@@ -413,3 +413,17 @@ git status --short
 ```
 
 **No repetir la restauración real O5** hasta resolver la diferencia de migraciones y no reconstruir/reemplazar el archivo archivado para forzar un PASS. Se mantiene `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## D4-H2 — causa confirmada de fallo de migración (11/11/2026)
+
+Operador confirmó `D4H2_API_IMAGE_IDENTIFIED=PASS`, `D4H2_IMAGE_0018_PRESENT=YES`, `D4H2_IMAGE_0027_PRESENT=NO`, `D4H2_IMAGE_0019_0027_COMPLETE=NO`, `D4H2_IMAGE_MAX_MIGRATION_NUMBER=18`, `D4H2_MAIN_0018_PRESENT=YES`, `D4H2_MAIN_0027_PRESENT=YES`, `D4H2_MAIN_0019_0027_COMPLETE=YES`, `D4H2_MAIN_MAX_MIGRATION_NUMBER=27`, `D4H2_IMAGE_MAIN_NUMBERED_MIGRATION_PARITY=FAIL`, `D4H2_MIGRATION_PLAN_FAILURE_EXPLAINED_BY_MISSING_TARGET=YES`, `D4H2_O5_REAL_RESTORE_REEXECUTED=NO`, `D4H2_DEV_CONTAINERS_MODIFIED=NO`, `D4H2_RESULT=0`. No consta eco separado `D4H2_SHELL_RESULT` en el mensaje pegado.
+
+**Causa raíz demostrada:** la imagen histórica API retenida en Docker solo incorpora hasta `reminders.0018`; el ensayo D4-H le exigía `migrate reminders 0027 --plan`, imposible al faltar 0027. Una prueba de modelo/paridad con `makemigrations --check` no acreditaba presencia del fichero `0027`. La discrepancia es **entre versiones de código**; no se atribuye corrupción de O5 ni de las imágenes exportadas.
+
+**Dos rutas distintas:**
+1. **Recuperación histórica**: DB O5 restaurada con imagen PostgreSQL retenida y el Django histórico 0018, sin pedir migraciones posteriores; D4-H ya verificó restauración real, recuentos y comprobaciones Django. No se ha demostrado todavía un flujo completo de operaciones de usuario tras recuperar el archivo.
+2. **Actualización de esquema**: usar imagen candidata con código de `main` (hasta 0027), y migraciones solamente en PG17 de laboratorio. D1-N ya registró prueba histórica de 0019–0027 con rollback. No sustituir en secreto la imagen retenida 0018 por una construida a partir de `main` para declarar recuperación binaria del archivo.
+
+Corrección preventiva de D4-H en commits `83f81a29` y `8a381292`: un preflight sin red ni acceso a O5 inspecciona los archivos de migración de la imagen retenida antes de leer las credenciales de backup o recuperar datos. Si no existe `0027`, emite `D4H_TARGET_0027_PRESENT_IN_RETAINED_API=FAIL`, `D4H_O5_CREDENTIALS_ACCESSED=NO`, `D4H_REAL_O5_RESTORE_REEXECUTED=NO`, `D4H_MIGRATION_PLAN=PRECHECK_BLOCKED` y `D4H_RESULT=8`. **No se debe repetir D4-H**: el diagnóstico ya ha demostrado que el preflight lo bloqueará. La guarda conserva el procedimiento histórico, pero evita un costoso restore innecesario.
+
+B1 (rehidratar y ejecutar imágenes exportadas en un runtime independiente), B2 (compatibilidad integral real O5 con el ejecutable recuperado, y protocolo reversible), B3 (custodia cifrada fuera del VPS), B4 (regresión final) y B5 (producción/autorización) siguen abiertos. El antiguo hash mismatch de D3-B3 continúa sin cerrar.
