@@ -57,3 +57,13 @@ El `D16_APK_PATH` mostrado por el script identifica el artefacto generado, no un
 ## Próximas puertas
 
 D17: prueba nativa del **APK real**, terminal Android y HTTPS/Keystore/recovery, manteniendo separado servidor sintético de entorno vivo. D18: build **firmado release** usando keystore externo, validación de firma, versión y permisos, y plan de rotación/rollback. En paralelo resolver si `vencira.es` debe migrar al VPS o permanecer en otra máquina: DNS apex y Caddy todavía no corresponden a una web pública VENCIRA operativa. La publicación exige autorización explícita posterior y cumplimiento de los gates.
+
+## Ejecución VPS — D16 PASS (11/11/2026)
+
+El operador confirmó: `D16_FLUTTER_ANALYZE_TEST_BUILD=PASS`, `D16_APK_ZIP_INTEGRITY=PASS`, `D16_APK_SHA256_RECORDED=PASS`, `D16_APK_MAIN_ENTRYPOINT=YES`, `D16_APK_DEBUG_ONLY=YES`, `D16_APK_PHYSICAL_DEVICE_TEST=NOT_RUN`, `D16_APK_NATIVE_HTTPS_RELEASE_GATE=NOT_VERIFIED`, `D16_APK_RELEASE_SIGNING_GATE=NOT_VERIFIED`, `D16_DEV_CONTAINERS_UNCHANGED=OK`, `D16_DEPLOY_EXECUTED=NO`, `D16_RELEASE_AUTHORIZED=NO` y `D16_RESULT=0`.
+
+Artefacto generado bajo la ruta privada: `/home/vencira/vencira-android-candidate/b0a8b60ca1a873ce36c481d14827513c0ab054b5/VENCIRA-main-candidate-debug.apk`. Esta ruta es evidencia del resultado comunicado, no una descarga disponible desde GitHub. El script generó SHA256 pero el valor del hash no se incluyó en la salida del operador. Tampoco figura `D16_SHELL_RESULT` por separado en el fragmento mostrado.
+
+**Gate D16 PASS únicamente para APK debug de la aplicación real, compilación/análisis/tests e integridad del ZIP.** La siguiente prueba decisiva es un dispositivo Android real. Los LAB I8-P/G13 anteriores validaban laboratorios con entradas distintas, no prueban la versión `main.dart`. No instalar ni distribuir como release un APK debug.
+
+Los límites de seguridad se mantienen: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. D16 no ejecutó operaciones DEV ni publicación.
