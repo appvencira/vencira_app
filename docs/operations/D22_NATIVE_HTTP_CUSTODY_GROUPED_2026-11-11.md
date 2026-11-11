@@ -53,3 +53,13 @@ Todavía falta integrar y comprobar autorización por workspace y objeto, custod
 
 `MFA_RELEASE_AUTHORIZED=NO`
 `NO_DEPLOY_NO_LIVE_MIGRATION=1`
+
+## Ejecución VPS — D22 PASS (11/11/2026)
+
+El operador ejecutó el gate `scripts/main_d22_native_http_custody_grouped_gate.sh` en el checkout de main. Marcadores: `D22_MAIN_CLEAN=PASS`, `D18_OPERATIONAL_URLCONF_LAB_ABSENT=PASS`, `D18_NATIVE_BEARER_PRODUCTION_OFF=PASS`, `D18_REAL_ANDROID_ISSUER_UNWIRED=PASS`, `D18_STARTUP_PROTECTED_FENCE=PASS`, `D18_ISSUANCE_RECOVERY_CHECKPOINTS=PASS`, `D18_BROWSER_FALLBACK_RETAINED=PASS`, `D18_CLIENT_CONTRACT_DEFINITIONS=PASS`, `D18_STATIC_FENCE_GATE=PASS`, `D22_PRODUCTION_ROUTE_FENCE=PASS`. Se generó imagen desechable, red interna PG17, migraciones de prueba en paridad y base temporal.
+
+Django informó **70 tests ejecutados, OK**, incluyendo `D22_HTTP_RECOVERY_ATOMIC_REVOKE=PASS`, `D22_SERVER_CUSTODIED_HTTP_ISSUANCE=PASS`, `D22_KEY_FAILURE_AND_DUPLICATE_JSON_DENIED=PASS`, `D22_OPERATIONAL_ROUTES_ABSENT=PASS`, `D22_HTTP_CLIENT_METADATA_FENCED=PASS`. Regresiones: `NATIVE_I8K_D22_SERVER_CUSTODY_HTTP_PG17=PASS`, `NATIVE_I8K_D21_SERVER_CUSTODY_ISSUER_PG17=PASS`, `NATIVE_I8K_D20_ISSUER_REVIEW_GATE=PASS`, `NATIVE_I8K_NATIVE_JSON_CONTRACT=PASS`, `NATIVE_I8K_NO_PUBLIC_ISSUER=PASS`, `NATIVE_I8K_NO_MFA_DENIAL_POLICY=PASS`, `NATIVE_I8K_ATOMIC_RECOVERY_CORE=PASS`, `NATIVE_I8K_RECOVERY_HTTP_JSON=PASS`, `NATIVE_I8K_RECOVERY_ENDPOINTS_ABSENT=PASS`, `NATIVE_I8K_PG17_HTTP_RECOVERY_GATE=PASS`, `NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK`, `NATIVE_I8K_LOCAL_RESULT=0`, `D22_SERVER_CUSTODY_HTTP_PG17=PASS` y `D22_RESULT=0`.
+
+El transcript no incluye `D22_SHELL_RESULT` separado; sí el resultado final del gate `D22_RESULT=0`. El marcador `NATIVE_I8K_FLUTTER_GATE=NOT_RUN_SEPARATE` es esperado. Permanecen `D22_OPERATIONAL_ISSUER_ENABLED=NO`, `D22_WORKSPACE_AUTHORIZATION_GATE=NOT_VERIFIED`, `D22_DEPLOY_EXECUTED=NO`, `D22_LIVE_MIGRATIONS_EXECUTED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+**D22 PASS para la pila HTTP de pruebas de Django + PG17 y custodia server-side de claves MFA; no prueba un enlace TLS de red con estas nuevas vistas, permisos por workspace, integración con el APK real ni condiciones de despliegue.** No repetir D22 sin cambios que afecten el contrato o estos componentes. Priorizar el acceso limitado por workspace y las pruebas cruzadas de autorización, sin exponer endpoints de laboratorio.
