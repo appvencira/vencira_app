@@ -3,6 +3,8 @@
 set -Eeuo pipefail
 set +x
 umask 077
+trap 'exit 130' INT
+trap 'exit 143' TERM
 mark(){ printf 'D26_%s=%s\n' "$1" "$2"; }
 echo 'MFA_RELEASE_AUTHORIZED=NO'
 echo 'NO_DEPLOY_NO_LIVE_MIGRATION=1'
