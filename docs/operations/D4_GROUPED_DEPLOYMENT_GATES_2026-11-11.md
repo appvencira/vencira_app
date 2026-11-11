@@ -202,3 +202,9 @@ git status --short
 ```
 
 Buscamos: `D4E_UNIQUE_API_WEB_ROLES=PASS`, `D4E_API_HEALTH_HTTP=PASS`, `D4E_WEB_HTTP_LOCAL=PASS`, `D4E_EPHEMERAL_STORAGE_REMOVED=YES`, `D4E_RESULT=0`. En todo caso `D4E_REAL_O5_COMPATIBILITY_VERIFIED=NO` y `D4E_OPERATIONAL_ROLLBACK_VERIFIED=NO`.
+
+## D4-E — Primer ensayo: API PASS, Web HTTP FAIL (11/11/2026)
+
+Salida real: `D4E_UNIQUE_API_WEB_ROLES=PASS`, `D4E_API_START=PASS`, `D4E_API_HEALTH_HTTP=PASS`, `D4E_WEB_START=PASS`, `D4E_WEB_HTTP_LOCAL=FAIL`, `D4E_EPHEMERAL_STORAGE_REMOVED=YES`, `D4E_RESULT=7`, `D4E_SHELL_RESULT=7`. El resultado de `systemctl is-active docker` está truncado en el mensaje; no atribuirlo. El cleanup sí reportó PASS. D4-E **no está superada**. La comprobación anterior depende de `wget` y puerto 80: no distingue fallo de cliente, servidor detenido, puerto/config distinto o respuesta HTTP no-2xx. No inventar causa, no degradar la prueba HTTP a PASS y no inferir corrupción del archivo.
+
+Próxima actuación: diagnóstico **sanitizado dentro del mismo almacén efímero**, antes del cleanup, que distinga estado del contenedor, disponibilidad del cliente HTTP, validez de la configuración Nginx, socket HTTP y código de respuesta, sin emitir logs, metadatos ni cuerpos. Conservar aislamiento y exigir una respuesta HTTP verificable antes de pasar.
