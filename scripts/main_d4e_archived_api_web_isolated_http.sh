@@ -328,6 +328,19 @@ cases=[
 ]
 category=next((name for name, pattern in cases if re.search(pattern,msg)), "UNCLASSIFIED")
 print("D4E_WEB_EXIT_DIAGNOSIS=" + category, flush=True)
+# Categorize the Nginx startup root cause from log patterns. The output is
+# deliberately fixed vocabulary and reveals no hostnames or config values.
+nginx_causes=[
+ ("UPSTREAM_DNS_UNRESOLVED", r"host not found in upstream|no resolver defined|could not be resolved"),
+ ("UPSTREAM_ENDPOINT_INVALID", r"invalid (?:url|port|host|upstream)|no port in upstream|upstream.*no live upstreams"),
+ ("TLS_CERTIFICATE_OR_KEY", r"cannot load certificate|cannot load certificate key|ssl_certificate.*failed|bio_new_file.*failed"),
+ ("NGINX_CONFIG_SYNTAX", r"unknown directive|invalid number of arguments|unexpected [\\}\{]|directive .* is not allowed here|invalid parameter"),
+ ("NGINX_CONFIG_INCLUDE_MISSING", r"open\\(\\).*failed.*no such file|include.*failed"),
+ ("NGINX_LISTEN_BIND", r"bind\\(\\).*failed|address already in use|cannot assign requested address|permission denied.*bind"),
+ ("NGINX_ENTRYPOINT_TEMPLATE", r"envsubst|template|/docker-entrypoint"),
+]
+cause=next((name for name,pattern in nginx_causes if re.search(pattern,msg)), "OTHER_OR_UNCLASSIFIED")
+print("D4E_WEB_NGINX_CONFIG_CAUSE=" + cause, flush=True)
 # Interpret only fixed path families from error text, never emit raw
 # log paths. Unknown locations remain UNKNOWN, not a guess.
 families=[
