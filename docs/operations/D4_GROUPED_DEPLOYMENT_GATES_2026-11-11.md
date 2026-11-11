@@ -336,3 +336,32 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 D4F_HOST_DOCKER_IMAGE_LOAD_EXECUTED=NO
 D4F_REAL_O5_COMPATIBILITY_VERIFIED=NO
 ```
+
+## D4-F PASS confirmado y D4-G preparado (11/11/2026)
+
+Confirmación de operador en D4-F: `D4F_MAIN_CLEAN=PASS`, `D4F_ARCHIVE_CHECKSUM=PASS`, `D4F_LIVE_IMAGE_IDENTITY=PASS`, `D4F_INTERNAL_NETWORK=PASS`, `D4F_PG17_READY=PASS`, `D4F_DJANGO_PG17_READY_HTTP=PASS`, `D4F_WEB_HTTP_8080=PASS`, `D4F_WEB_TO_API_PRIVATE_HTTP=PASS`, `D4F_NO_HOST_PORTS=PASS`, `D4F_SYNTHETIC_PG17_DJANGO_WEB_INTERNAL_NETWORK=PASS`, `D4F_DEV_CONTAINERS_UNCHANGED=YES`, `D4F_EPHEMERAL_CLEANUP=DONE`, `D4F_RESULT=0`. El `echo "D4F_SHELL_RESULT=$?"` aparece intercalado en el pegado pero no el valor resultante; no se inventa. D4-F acredita **comunicación privada real Web→Django→PG17 con DB sintética**, usando las **imágenes retenidas en Docker host**. No carga el archivo archivado; el hash exacto de la configuración exportada sigue sin reconciliarse.
+
+D4-G publicado en `scripts/main_d4g_synthetic_reverse_proxy_pg17.sh`: reproduce el ensayo aislado del host Docker con red `--internal`, base PG17 exclusivamente en tmpfs, credenciales sintéticas, contenedores DEV intocados, sin host ports ni migraciones operativas. Añade una prueba estricta a través de **Nginx mismo**: HTTP a `127.0.0.1:8080/api/ready/` desde Web y validación privada de JSON `{"status":"ready"}`, que solo responde 200 cuando Django consulta correctamente PostgreSQL. No imprime cuerpos, credenciales ni configuración. La URL es local al contenedor Web y no pasa por el Caddy operativo. El reverse proxy de Web sólo se considerará verificado si `D4G_WEB_REVERSE_PROXY_HTTP=PASS`, `D4G_WEB_REVERSE_PROXY_JSON=PASS`, `D4G_WEB_REVERSE_PROXY_PATH_VERIFIED=YES`, `D4G_DEV_CONTAINERS_UNCHANGED=YES`, `D4G_EPHEMERAL_CLEANUP=DONE`, `D4G_RESULT=0`. **No ejecutado todavía en VPS.**
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+bash -n scripts/main_d4g_synthetic_reverse_proxy_pg17.sh
+echo "D4G_SYNTAX=$?"
+sudo -v
+bash scripts/main_d4g_synthetic_reverse_proxy_pg17.sh /home/vencira/vencira-release-archives/pre-upgrade-82d5a9324f6141b67b5b55a7
+echo "D4G_SHELL_RESULT=$?"
+systemctl is-active docker
+git status --short
+```
+
+Lo aún abierto tras D4-F: **B1** recuperación operacional *desde* el archivo (no solo imágenes ya presentes); **B2** restauración O5 real y compatibilidad en el mismo laboratorio conectado; **B3** custodia off-host cifrada y verificación de recuperación; **B4** regresión final integrada en main; **B5** controles TLS, dominio y autorización pública. No mezclar los resultados de D4-F/G con el cierre de B1/B2.
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D4F_HOST_DOCKER_IMAGE_LOAD_EXECUTED=NO
+D4F_REAL_O5_COMPATIBILITY_VERIFIED=NO
+D4F_OPERATIONAL_ROLLBACK_VERIFIED=NO
+```
