@@ -133,3 +133,16 @@ Revisión de Flutter: `dashboard_screen.dart::_editRenewal` llama a `_api.update
 **Commit `c7526af7`** añade observación pasiva de **metadatos** de las respuestas PATCH originadas por Flutter dentro de Playwright (método, código HTTP y cuenta), además de contar el control Guardar antes/después del clic, sin almacenar bodies, URLs con UUID, cookies ni credenciales. La prueba permanece estricta y exige actualización real de notas y persistencia en PostgreSQL. Siguiente resultado a recopilar: `D2E_GUI_PATCH_COUNT`, `D2E_GUI_PATCH_STATUS`, `D2E_GUI_EDITOR_STILL_OPEN`, `D2E_GUI_FAILURE_STAGE`, `D2E_RESULT`. Código JS parseado con V8; nuevo ensayo VPS pendiente. Sin modificar código productivo.
 
 Se mantienen `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` y cinco gates previos PASS.
+
+
+## Séptimo ensayo recibido — D2-E FAIL por navegación no reconocida (11/11/2026)
+
+El operador obtuvo `D2E_RESULT=8`, `D2E_GUI_FAILURE_STAGE=DASHBOARD_LIST`, `D2E_GUI_FAILURE_TYPE=ASSERTION_OR_RUNTIME`. El laboratorio completó LOGIN, Flutter, Caddy HTTPS y activación del botón oculto de accesibilidad, mantuvo contenedores DEV sin cambios y limpió los recursos. Los nuevos diagnósticos de **solo lectura** confirman `D2E_READONLY_API_BASELINE=FIXTURE_VISIBLE` (la anotación sí está en PG17) y `D2E_AX_NODE_COUNT=120`, `D2E_AX_SYNTHETIC_NAME_MATCH=NO`, `D2E_AX_BACK_NAME_MATCH=YES`, `D2E_SEMANTICS_BACK_TEXT_PRESENT=YES`, `D2E_INITIAL_BACK_BUTTON_COUNT=0`. Existen 44 nodos `flt-semantics`, solo dos `aria-label` y 20 botones por rol DOM. **No se ejecutaron acciones de edición, y este ensayo no aporta evidencia sobre persistencia**.
+
+La observación favorece el diagnóstico de ruta agenda inicial no abandonada: el árbol Chromium AX detecta el nombre de volver, pero `getByRole(button, name EXACTO)` anterior no lo reconoció. No se puede afirmar aún que la navegación de agenda sea la causa definitiva porque no se conoce el rol exacto del nodo AX ni su posición interactiva.
+
+Commit `938bbaaa`: el test ahora espera de manera acotada la navegación inicial asíncrona; detecta el vencimiento sintético en texto/semántica o un **único** botón Volver bajo expresión más flexible (rol accesible; fallback rol semántico DOM con texto o atributo `aria-label`); pulsa mediante **Playwright click real** para regresar al dashboard, sin tocar history, rutas ni APIs de escritura. Emite `D2E_INITIAL_ROUTE`, `D2E_INITIAL_BACK_ROLE_COUNT`, `D2E_INITIAL_BACK_SEMANTIC_COUNT`, `D2E_INITIAL_BACK_ARIA_COUNT`, `D2E_GUI_RETURN_FROM_AGENDA` y mantiene criterio posterior de renovación visible y edición/persistencia real. No crea PASS con un nombre AX sin clic. JS V8 parse PASS, **retest local pendiente**.
+
+Persiste además el defecto no resuelto del sexto ensayo (`D2E_GUI_SAVE_CLICK=PASS` seguido de `NOT_PERSISTED`). El commit anterior `c7526af7` ya añadió marcadores pasivos de respuestas PATCH HTTP y estado del editor para diferenciarlo si el recorrido alcanza de nuevo Guardar.
+
+**D2-E todavía no aprobado.** Cinco gates anteriores PASS; MFA/despliegue no autorizados.
