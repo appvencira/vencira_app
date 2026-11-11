@@ -147,3 +147,12 @@ echo "D3B3_SHELL_RESULT=$?"
 **Esperado, pendiente de validación:** `D3B3_IMMUTABLE_MANIFEST=PASS`, `D3B3_ARCHIVE_CHECKSUM=PASS`, `D3B3_DOCKER_ARCHIVE_CONFIG_IDS=PASS`, `D3B3_OFFLINE_ARCHIVE_STRUCTURE=PASS`, `D3B3_RESULT=0`.
 
 **Siguiente decisión operativa:** decidir prueba real de importación/ejecución en daemon aislado, compatibilidad con O5 restaurado y copia cifrada externa; no retirar guardas `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` ni aprobar release por este archivo.
+
+
+## D3-B3 primer ensayo: fallo del verificador de nombres (no del checksum)
+
+El operador ejecutó D3-B3: `D3B3_IMMUTABLE_MANIFEST=PASS`, `D3B3_ARCHIVE_CHECKSUM=PASS`, `D3B3_CONFIG_NAME=FAIL`, `D3B3_RESULT=3`. La comparación de hash del archivo comprimido es satisfactoria; **el nombre `Config` contenido en el índice Docker no cumple la única expresión regular permitida en la versión anterior**. No se acredita todavía que el contenido sea correcto ni que el fallo sea exclusivamente un formato admitido: la única conclusión es que el parser falló antes de contrastar los bytes de configuración.
+
+Se han publicado las correcciones `c8031274` y `1edec477` en `scripts/main_d3b3_verify_archived_images_offline.py`: ahora se aceptan exactamente dos representaciones *content-addressed* conocidas del campo `Config`: `<64hex>.json` o `blobs/sha256/<64hex>`. En ambos casos se verifica SHA256 de **los bytes reales del JSON** contra el digest codificado en el nombre. Continúan rechazándose rutas arbitrarias, archivos faltantes, duplicados, symlinks y manifiestos inconsistentes, y nunca se imprimen datos del archivo. **El fallo previo no justifica regenerar ni borrar el archivo de imágenes**.
+
+**Retest:** actualizar `origin/main` y volver a lanzar exactamente el comando D3-B3 sobre el archivo existente. El nuevo resultado **no está validado aún**. Si llega a `CONFIG_HASH=FAIL` o `LAYERS_MISSING=FAIL`, analizar el formato interno sin asumir corrupción ni desactivar verificaciones. `D3B3_IMAGE_LOAD_EXECUTED=NO`, `D3B3_ROLLBACK_EXECUTED=NO`, `D3B3_OFF_HOST_COPY_VERIFIED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` se mantienen.
