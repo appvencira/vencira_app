@@ -28,7 +28,7 @@ else
   D(){ sudo docker "$@"; }
 fi
 services=(vencira_localcheck-api-1 vencira_localcheck-db-1 vencira_localcheck-web_preview-1)
-for name in "\${services[@]}"; do
+for name in "${services[@]}"; do
   project="$(D inspect -f '{{index .Config.Labels "com.docker.compose.project"}}' "$name" 2>/dev/null || true)"
   status="$(D inspect -f '{{.State.Running}}' "$name" 2>/dev/null || true)"
   [[ "$project" == vencira_localcheck && "$status" == true ]] || {
@@ -36,9 +36,9 @@ for name in "\${services[@]}"; do
   }
 done
 mark OPERATIONAL_IDENTITY PASS
-api_current="$(D inspect -f '{{.Image}}' "\${services[0]}")"
-db_current="$(D inspect -f '{{.Image}}' "\${services[1]}")"
-web_current="$(D inspect -f '{{.Image}}' "\${services[2]}")"
+api_current="$(D inspect -f '{{.Image}}' "${services[0]}")"
+db_current="$(D inspect -f '{{.Image}}' "${services[1]}")"
+web_current="$(D inspect -f '{{.Image}}' "${services[2]}")"
 for current in "$api_current" "$db_current" "$web_current"; do
   [[ "$current" =~ ^sha256:[0-9a-f]{64}$ ]] || {
     mark IMMUTABLE_IDENTITY FAIL; exit 3;
@@ -48,7 +48,7 @@ for current in "$api_current" "$db_current" "$web_current"; do
   }
 done
 mark CURRENT_IMAGES_IMMUTABLE_AND_LOCAL PASS
-mount="$(D inspect -f '{{range .Mounts}}{{if eq .Destination "/var/lib/postgresql/data"}}{{.Type}}:{{.Name}}{{end}}{{end}}' "\${services[1]}")"
+mount="$(D inspect -f '{{range .Mounts}}{{if eq .Destination "/var/lib/postgresql/data"}}{{.Type}}:{{.Name}}{{end}}{{end}}' "${services[1]}")"
 [[ "$mount" =~ ^volume:[a-zA-Z0-9][a-zA-Z0-9_.-]+$ ]] || {
   mark POSTGRES_NAMED_VOLUME FAIL; exit 3;
 }
@@ -56,8 +56,8 @@ mark POSTGRES_NAMED_VOLUME PASS
 # The PREVIOUS images must be explicitly supplied as immutable IDs, distinct
 # from current running images, and already retained in local Docker storage.
 # Never accept mutable tags or infer a previous release from 'latest'.
-prev_api="\${D3B_PREVIOUS_API_IMAGE:-}"
-prev_web="\${D3B_PREVIOUS_WEB_IMAGE:-}"
+prev_api="${D3B_PREVIOUS_API_IMAGE:-}"
+prev_web="${D3B_PREVIOUS_WEB_IMAGE:-}"
 if [[ -z "$prev_api" || -z "$prev_web" ]]; then
   mark PREVIOUS_IMAGE_MANIFEST MISSING
   mark PREVIOUS_IMAGE_CUSTODY_VERIFIED NO
