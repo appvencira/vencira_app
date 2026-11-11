@@ -13,15 +13,15 @@ const { chromium } = require("playwright");
   const exceptionTypes = {};
   const safeErrorExamples = [];
   function safeExceptionSummary(raw) {
-    // Synthetic unauthenticated lab only. Redact URLs, query strings, long
-    // opaque values and quoted strings; never dump stack/DOM/body/cookies.
+    // Only the first exception line, with URLs, paths, quoted text, long
+    // opaque tokens and non-allowlisted punctuation removed.
     return String(raw || "")
       .split("\n")[0]
-      .replace(/https?:\\/\\/[^\\s)]+/gi, "[URL]")
-      .replace(/(?:[A-Za-z]:)?\\/[^\\s:)]+/g, "[PATH]")
-      .replace(/["'`][^"'`]*["'`]/g, "[STRING]")
-      .replace(/\\b[A-Za-z0-9+/_=-]{35,}\\b/g, "[OPAQUE]")
-      .replace(/[^A-Za-z0-9 .,;:!?()_\\[\\]\\-/]/g, " ")
+      .replace(/https?:\/\/[^\s)]+/gi, "[URL]")
+      .replace(/(?:[A-Za-z]:)?\/[^\s:)]+/g, "[PATH]")
+      .replace(/["'\x60][^"'\x60]*["'\x60]/g, "[STRING]")
+      .replace(/\b[A-Za-z0-9+/_=-]{35,}\b/g, "[OPAQUE]")
+      .replace(/[^A-Za-z0-9 .,;:!?()_\[\]-]/g, " ")
       .slice(0, 180)
       .trim() || "EMPTY";
   }
