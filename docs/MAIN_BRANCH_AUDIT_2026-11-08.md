@@ -2130,3 +2130,8 @@ Published `scripts/main_d3b5_rootless_podman_reload_isolated.sh` commit `d92739f
 Operator log `D3B5_PREREQUISITE_MISSING=podman`, `D3B5_RESULT=4`; image import **never started**. No host Docker load, runtime, migration, restore or deploy. Previous D3-B2 archive checksum PASS and D3-B4 content-comparison PASS remain in their own limited scopes; D3-B3 exact image ID discrepancy still unresolved.
 
 Published read-only `scripts/main_d3b5p_rootless_prerequisites_readonly.sh` commit `afa237a6` to inspect `apt-cache` Podman package candidate, rootless helpers, allocated subuid/subgid and namespace support without installing software, changing kernel settings, touching Docker or accessing archive. The operator will run B5P once, then a host installation decision (or separate lab) can be made on evidence. D3-B5 doc updated commit `74f3eca3`. B5P **not executed**; no PASS claimed. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, release prohibited.
+
+
+## FC. 11/11/2026 — D3-B5P SIGPIPE 141 in apt-cache preflight, not an environment failure
+
+Operator output `D3B5P_UNPRIVILEGED_OPERATOR=PASS`, `D3B5P_PODMAN_INSTALLED=NO`, then exit code `141`, **without** any `D3B5P_RESULT` marker. Read-only preflight accidentally terminated `apt-cache policy podman | awk '/Candidate:/ {print $2; exit}'` early with `pipefail`: possible SIGPIPE. Fix `bf544996` now consumes the entire producer output and distinguishes unsuccessful apt query. Docs updated in `docs/D3B5_ROOTLESS_IMAGE_RELOAD_2026-11-11.md` commit `c9405dad`. **Recheck pending**. No installation/deploy/restore, and rootless system prerequisites not yet assessed; do not infer Podman viability before complete preflight.
