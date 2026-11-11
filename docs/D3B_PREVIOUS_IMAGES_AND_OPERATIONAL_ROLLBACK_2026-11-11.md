@@ -187,3 +187,12 @@ echo "D3B4_SHELL_RESULT=$?"
 ```
 
 D3-B4 **NO ejecutado aún en VPS**. Los marcadores más útiles son `D3B4_DEV_IMMUTABLE_IDENTITY`, `D3B4_ARCHIVE_CONFIG_COUNT`, `D3B4_EXPECTED_API_ROOTFS_PLATFORM_MATCH_COUNT`, `D3B4_EXPECTED_DB_ROOTFS_PLATFORM_MATCH_COUNT`, `D3B4_EXPECTED_WEB_ROOTFS_PLATFORM_MATCH_COUNT` y respectivos `RUNTIME_FIELDS_COMPARED`/`RUNTIME_FIELDS_DIFFERENT`. No publicar `docker inspect` bruto, que puede exponer secretos. Las tres copias Docker siguen intactas en el archivo original y no se ha ejecutado ninguna carga de imágenes ni restauración operacional.
+
+
+## D3-B4 — ejecución y cierre diagnóstico (11/11/2026)
+
+El operador confirma `D3B4_RESULT=0`, `D3B4_DEV_IMMUTABLE_IDENTITY=PASS` y `D3B4_ARCHIVE_CONFIG_COUNT=3`. Hay **una coincidencia de plataforma + rootfs diff IDs por cada rol**: `D3B4_EXPECTED_API_ROOTFS_PLATFORM_MATCH_COUNT=1`, `D3B4_EXPECTED_DB_ROOTFS_PLATFORM_MATCH_COUNT=1`, `D3B4_EXPECTED_WEB_ROOTFS_PLATFORM_MATCH_COUNT=1`. Las diferencias entre campos de ejecución comunes son cero: API `0/6`, PostgreSQL `0/7`, Web `0/8`. Conclusión sustentada: **el archivo contiene configuraciones con capas/OS/arquitectura correspondientes a las tres imágenes en ejecución y campos de runtime muestreados iguales**. No explica aún por qué los hash de configuración de `docker save` difieren de los IDs inmutables Docker.
+
+**D3-B4 PASS únicamente como diagnóstico read-only.** `D3B4_ARCHIVE_EXACT_IMAGE_IDS_VERIFIED=NO`, `D3B4_IMAGE_RELOAD_TESTED=NO`, `D3B4_OPERATIONAL_ROLLBACK_VERIFIED=NO` siguen explícitos. D3-B3 continúa FAIL bajo su contrato estricto anterior; no reescribir la historia para adjudicarle PASS. El archivo original de imágenes no se modifica ni se descarta. DEV y datos operativos permanecen sin cambios.
+
+**Próxima acción técnica racional:** diseñar una prueba de importación independiente del Docker daemon operativo (contenedor/VM de laboratorio realmente aislado, con límites de recursos y sin acceso a sockets Docker del host ni a volúmenes DEV), acreditar recuperación de API/Web/PG por comportamiento y compatibilidad con snapshot O5 real ya conocido. No usar `docker load` contra el daemon operativo como atajo, ni exigir que un contenedor `docker:dind --privileged` sin aislamiento suficiente sea equivalente a recuperación certificada. Verificar espacio y retención externa antes de una promoción. Mantener `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
