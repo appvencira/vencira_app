@@ -706,3 +706,9 @@ Validación operador: `D15_RESTORE_REAL_O5_PG17=PASS`, `D15_HISTORICAL_0018=PASS
 **D15 PASS** cierra la prueba **HTTP de la pila histórica retenida** con copia O5 real restaurada en laboratorio. No implica endpoints autenticados funcionales, recuperación exclusivamente desde archivo off-host ni identidad exacta del tar, ni HTTPS público. Detalle y marcadores adicionales en `docs/operations/D15_HISTORICAL_O5_API_WEB_HTTP_ISOLATED_2026-11-11.md`, commit `1d8a1ec1`. Se mantiene `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
 
 El próximo trabajo de mayor impacto para publicación es el paquete Flutter/Android de release con conexiones HTTPS nativas/credenciales, y confirmar la intención y enrutamiento del dominio apex, sin tocar todavía producción. Evitar repetir D12–D15 salvo cambios materiales.
+
+## D16 — Candidata Android REAL desde Flutter main.dart (11/11/2026)
+
+Se preparó la próxima puerta para publicación Android: `scripts/main_d16_android_main_candidate_debug_gate.sh` (commit `ed2df74a`). **Estado: publicada en `main`, sin ejecución/resultado aún.** Verifica Git limpio/sin ramas adicionales, Docker DEV identidades, `flutter analyze`, pruebas de recuperación y contratos HTTP, compilación nativa **debug** desde `lib/main.dart` mediante Docker Flutter 3.44.0, contenido básico ZIP y SHA256 de artefacto privado por commit. No construye otra app LAB, no requiere/acepta credenciales signing release, no publica APK, no instala en teléfono ni modifica producción. Procedimiento `docs/operations/D16_ANDROID_MAIN_CANDIDATE_GATE_2026-11-11.md` (commit `a91b5c63`).
+
+**No confundir D16 PASS con APK listo para producción:** faltarán validación física HTTPS/Keystore del artefacto real, build firmada release, instalación/update, certificados y dominio apex. Mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`. No repetir los gates recuperados D12–D15. Priorizar ejecución D16 y resolver cualquier error de Flutter concreto.
