@@ -3,14 +3,15 @@
 The lab-only key is injected server-side; request clients can never choose
 TOTP key material or a verification timestamp. No production release implied.
 """
-import json
 import os
 import uuid
 
 from django.conf import settings
-from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
+from .native_http_contract import (
+    native_auth_denied, native_json_response, parse_native_json,
+)
 from .candidate_challenge_store import CandidateChallengeDenied
 from .candidate_two_step_issuer import (
     candidate_mfa_challenge_to_session, candidate_password_to_challenge,
@@ -23,19 +24,12 @@ from .session_store import (
     rotate_candidate_refresh, validate_candidate_access,
 )
 
-_LIMIT = 4096
-
-
 def _response(value, code=200):
-    r = JsonResponse(value, status=code)
-    r["Cache-Control"] = "no-store, max-age=0"
-    r["Pragma"] = "no-cache"
-    r["X-Content-Type-Options"] = "nosniff"
-    return r
+    return native_json_response(value, status=code)
 
 
 def _deny(code=401):
-    return _response({"error": "native_auth_unavailable"}, code)
+    return native_auth_denied(status=code)
 
 
 def _guard(request, method):
@@ -58,20 +52,7 @@ def _guard(request, method):
 
 
 def _payload(request, fields):
-    if request.content_type != "application/json":
-        return None
-    raw = request.body
-    if len(raw) > _LIMIT:
-        return None
-    try:
-        value = json.loads(raw.decode("utf-8"))
-    except (UnicodeError, ValueError):
-        return None
-    if type(value) is not dict or set(value) != set(fields):
-        return None
-    if any(type(value[k]) is not str for k in fields):
-        return None
-    return value
+    return parse_native_json(request, frozenset(fields))
 
 
 def _pair(tokens):
