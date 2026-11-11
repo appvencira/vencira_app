@@ -10,4 +10,5 @@ urlpatterns = [
     path("api/v1/mobile/token/revoke/", views.revoke),
     path("api/v1/mobile/me/", views.me),
     path("api/v1/mobile/workspaces/<uuid:workspace_id>/renewals/", views.workspace_renewals),
+    path("api/v1/mobile/workspaces/<uuid:workspace_id>/renewals/cursor/", views.workspace_cursor_renewals),
 ]
