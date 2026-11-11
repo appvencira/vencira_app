@@ -77,8 +77,11 @@ void main() {
     final client = MockClient((_) async {
       calls++;
       return reply({
-        ...response() as Map<String, dynamic>,
+        'workspace_id': workspace,
         'next_offset': 100,
+        'results': [
+          {'id': renewal, 'expires_on': '2030-04-03', 'status': 'pending'},
+        ],
       });
     });
     for (final offset in [-50, 1, 49, 10050]) {
