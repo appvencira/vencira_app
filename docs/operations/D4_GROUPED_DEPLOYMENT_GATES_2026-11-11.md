@@ -726,3 +726,17 @@ Dos capturas del operador muestran (1) pantalla nativa `Acceso seguro a VENCIRA`
 D17 visual: `ANDROID_APP_LAUNCH_VISUAL=PASS`; `EXTERNAL_WEB_HANDOFF_VISUAL=PASS`; `NATIVE_AUTHENTICATED_LOGIN=NOT_IMPLEMENTED`; `NATIVE_HTTPS_SESSION_VERIFIED=NO`; `NATIVE_KEYSTORE_REAL_APP_VERIFIED=NO`; `RELEASE_SIGNING_VERIFIED=NO`. No hay prueba de seguridad real autenticada del APK. La ruta nativa está bloqueada por diseño, no por fallo de build. Detalle en `docs/operations/D17_ANDROID_VISUAL_FENCE_2026-11-11.md`, commit `084a03a9`.
 
 **Bloqueo funcional de publicación Android:** un APK que solo abre la web no puede declararse aplicación Android nativa autenticada; para cambiarlo hacen falta emisor autorizado real, manejo de vault/HTTPS, reanudación/revocación de sesión y prueba física completa. No ocultar el fence visual hasta superar estos controles. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## D17-B — native Android startup inspection integrated into real main (11/11/2026)
+
+The D17 phone screenshots and a source inspection established that `main.dart` routes production Android directly to the browser-launch screen. The existing native auth components are prototypes/ports with no operationally authorized real issuer. **Not appropriate to activate those credentials through main.dart merely because debug laboratory gates passed.**
+
+Published native startup integration **in `main`, tests still awaiting VPS**:
+- `clients/flutter/lib/ui/native_android_startup_boundary.dart`, commit `47290ff5`: constructs real `FlutterNativeSecretStore`, `NativeRefreshCredentialVault`, `NativeRefreshRecoveryJournal`, `NativeMobileStartupGate` and classifies Android protected state before browser handoff. A previous/orphan refresh stays blocked and requests full reauthentication (not yet operational); secure-store failure blocks native activity.
+- `clients/flutter/lib/ui/android_web_access_screen.dart`, commit `f6f5c23f`: optional clear native state warning, without pretending native authentication exists.
+- `clients/flutter/lib/main.dart`, commit `90eeb9ff`: real Android startup now uses this boundary after the native alarm cancellation gate; the browser alternative remains.
+- `clients/flutter/test/native_android_startup_boundary_test.dart`, commit `f02e9c80`: tests for clean login, old credential, secure store failure and asynchronous pending state.
+- `scripts/main_d17b_android_startup_boundary_gate.sh`, commit `cc6a7330`: test runner (Flutter analyze + startup and recovery regressions) against clean main; no APK installation, backend mutation or release.
+- Runbook `docs/operations/D17B_ANDROID_NATIVE_STARTUP_INTEGRATION_2026-11-11.md`, commit `a1cc7504`.
+
+**D17-B not yet PASS**; requires local output `D17B_FLUTTER_GATE=PASS` and `D17B_RESULT=0`. This phase completes only safe startup inspection integration, NOT native issuance, full recovery, HTTPS mobile authentication, or release signing. Maintaining `MFA_RELEASE_AUTHORIZED=NO` and `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Next meaningful separate gate is audited native issuer + account-wide recovery and physical-device validation; do not remove the browser fallback or expose credentials until that gate passes.
