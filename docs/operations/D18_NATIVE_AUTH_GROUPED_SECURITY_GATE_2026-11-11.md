@@ -31,7 +31,7 @@ Estos scripts son los gates existentes: no crean nuevas ramas, no usan credencia
 cd ~/vencira-main-check-20261108
 git fetch origin refs/heads/main:refs/remotes/origin/main
 git merge --ff-only origin/main
-python3 -m py_compile scripts/main_d18_native_auth_release_fence_static.py
+python3 -c 'import ast,pathlib; ast.parse(pathlib.Path("scripts/main_d18_native_auth_release_fence_static.py").read_text())'
 bash -n scripts/main_d18_native_auth_grouped_security_gate.sh
 echo "D18_SYNTAX=$?"
 sudo -v
