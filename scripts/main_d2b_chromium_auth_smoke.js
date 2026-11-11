@@ -53,6 +53,17 @@ const { chromium } = require("playwright");
     ]);
     console.log("D2B_BROWSER_FORM_LOGIN=PASS");
 
+    // Count only Flutter's own workspace request, before making any manual
+    // API contract calls. This avoids a false PASS from verifySession().
+    stage = "FLUTTER_INITIAL_WORKSPACE";
+    await page.locator("flutter-view").first().waitFor({
+      state: "attached", timeout: 45000
+    });
+    for (let attempt = 0; attempt < 30 && flutterWorkspaceResponses < 1; attempt++)
+      await page.waitForTimeout(250);
+    if (flutterWorkspaceResponses < 1) throw Error("FLUTTER_WORKSPACE_FETCH_MISSING");
+    console.log("D2B_FLUTTER_AUTHENTICATED_WORKSPACE_HTTP=PASS");
+
     stage = "SESSION_IDENTITY";
     async function verifySession() {
       return page.evaluate(async () => {
@@ -85,8 +96,6 @@ const { chromium } = require("playwright");
       state: "attached", timeout: 45000
     });
     await page.waitForTimeout(1500);
-    if (flutterWorkspaceResponses < 1) throw Error("FLUTTER_WORKSPACE_FETCH_MISSING");
-    console.log("D2B_FLUTTER_AUTHENTICATED_WORKSPACE_HTTP=PASS");
     if (pageErrors.length) throw Error("APP_PAGE_ERROR");
     console.log("D2B_AUTHENTICATED_FLUTTER_VIEW=PASS");
     console.log("D2B_AUTHENTICATED_PAGE_ERRORS=0");
