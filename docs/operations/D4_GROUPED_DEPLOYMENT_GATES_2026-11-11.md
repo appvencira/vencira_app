@@ -613,3 +613,16 @@ El operador confirmó `D10_MAIN_CLEAN=PASS`, `D10_APEX_HOST_EXPLICIT=PASS`, `D10
 5. **Autorización y reversión:** evidencias de salud y recuperación, ventana/criterios de rollback y aprobación específica para cualquier despliegue, migración de la base operativa o conmutación DNS/Caddy. Mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1` salvo decisión expresa separada.
 
 **Progreso cualitativo:** D5 cierra la regresión Django+PG17+Flutter web del candidato; D10 cierra la sintaxis y aislamiento declarativo del Caddyfile apex. Los bloqueos de publicación aún requieren ejecuciones de pruebas específicas y no deben darse por superados con una validación estática.
+
+## D11 — Candidato Compose de producción segregado, sin despliegue (11/11/2026)
+
+Tras D10 PASS (operador verificó sintaxis Caddy y exclusión de DEV con `D10_RESULT=0`), se publican en `main`:
+
+- `ops/production/compose.production.candidate.yaml`: proyecto `vencira_prod`, servicios exclusivos `db`, `api`, `web`; red `prod_internal` solo interna; DB PG17 con volumen nuevo y sin puerto host; API y Web solo en loopback 18741/18742, compatibles con el candidato D10; imágenes obligatoriamente declaradas por variables, nunca tags implícitos.
+- `ops/production/production.env.reference.txt`: contrato de variables Django/PG17 **sin secretos ni env operativo**.
+- `scripts/main_d11_production_compose_dryrun.py`: verificación exclusivamente sintética de Docker Compose a través de `docker compose config --format json`, más validaciones estructurales de aislamiento y puertos observacionales. Nunca `up/pull/build/run`.
+- `docs/operations/D11_PRODUCTION_ISOLATED_COMPOSE_CANDIDATE_2026-11-11.md`: ejecución y riesgos.
+
+Commits: `fa3bcaa8` (Compose), `c08f6193` (gate), `62d9f008` (sudo/variables sintéticas), `d3b1d239` (contrato env), `c86cd11e` (runbook).
+
+**Estado D11: publicado y no ejecutado.** No acreditar PASS del script ni inferir que puertos/red/PG17 ya estén provisionados. Seguridad: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. D11 solamente prepara configuración de la infraestructura, mientras B1/B2/B3/B4-nativo/B5 y autorización operativa continúan pendientes.
