@@ -597,3 +597,19 @@ git status --short
 ```
 
 Precondiciones antes de cualquier activación: aprovisionar API/Web producción **separados** de DEV, revisar política de rutas y acceso a media/estáticos, `DJANGO_ALLOWED_HOSTS=vencira.es`, `DJANGO_CSRF_TRUSTED_ORIGINS=https://vencira.es`, `DJANGO_HTTPS_BEHIND_PROXY=1`, cookies Secure y secretos de producción independientes, asegurar PostgreSQL segregado y backups/custodia, probar TLS del dominio con DNS adecuado, definir ventana y rollback reversible y pedir aprobación explícita. **Ningún cambio operativo autorizado** (`MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`). Este candidato no debe importarse al Caddy activo antes de que esas condiciones se cumplan.
+
+## D10 — PASS validación estática de apex (11/11/2026)
+
+El operador confirmó `D10_MAIN_CLEAN=PASS`, `D10_APEX_HOST_EXPLICIT=PASS`, `D10_SEPARATE_API_WEB_UPSTREAMS=PASS`, `D10_DEV_PORTS_EXCLUDED=PASS`, `D10_CADDYFILE_CANDIDATE_SYNTAX=PASS`, `D10_RESULT=0` y `D10_SHELL_RESULT=0`. Los invariantes restrictivos fueron `D10_DEPLOY_EXECUTED=NO`, `D10_CADDY_RELOAD_EXECUTED=NO`, `D10_CADDY_CONFIG_CHANGED=NO`, `D10_DNS_CHANGED=NO`, `D10_LIVE_MIGRATIONS_EXECUTED=NO`, `D10_PRODUCTION_UPSTREAMS_DEPLOYED=NO`, `D10_DNS_CUTOVER_AUTHORIZED=NO`, `D10_PUBLIC_RELEASE_AUTHORIZED=NO`. `git status --short` terminó sin cambios.
+
+**Cerrado:** gramática del Caddyfile candidato, host apex explícito, endpoints de futuro backend y frontend separados y ausencia de puertos DEV. **No cerrado:** servicios operativos en 18741/18742, revisión de configuración real, certificado y dominio, seguridad CSRF/cookies, restauración operativa, custodia off-host, Android final y aprobación.
+
+### Puerta consolidada hacia publicación
+
+1. **Infraestructura segregada:** confirmar que los puertos 18741 y 18742 están libres y se pueden reservar sin interferir con DEV; definir proyecto Compose y base PostgreSQL de producción independientes, secretos separados y no montar volúmenes DEV; crear un runbook de activación y retirada, pero no ejecutarlo aún.
+2. **Recuperación:** identidad/rehidratación de las imágenes exportadas en runtime independiente (discrepancia D3-B3), restauración O5 coherente con la versión histórica 0018, custodia externa cifrada con verificación de recuperación y decisión sobre escrituras posteriores al snapshot.
+3. **Cliente:** Android APK final, prueba física de HTTPS, ciclo de inicio/cierre de sesión, recuperación y almacenamiento seguro; no deducirlo de tests Flutter web.
+4. **Seguridad pública:** validar configuración de Caddy candidata frente a producción, TLS, proxy, `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS`, cookies Secure, HSTS y el comportamiento del frontend/backend. Confirmar el destino previsto del apex antes del cambio DNS; la discrepancia IPv4 observada en D9 no da permiso para sustituir el contenido del dominio actual.
+5. **Autorización y reversión:** evidencias de salud y recuperación, ventana/criterios de rollback y aprobación específica para cualquier despliegue, migración de la base operativa o conmutación DNS/Caddy. Mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1` salvo decisión expresa separada.
+
+**Progreso cualitativo:** D5 cierra la regresión Django+PG17+Flutter web del candidato; D10 cierra la sintaxis y aislamiento declarativo del Caddyfile apex. Los bloqueos de publicación aún requieren ejecuciones de pruebas específicas y no deben darse por superados con una validación estática.
