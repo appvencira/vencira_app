@@ -124,7 +124,7 @@ const { chromium } = require("playwright");
     console.log("D2E_INITIAL_AGENDA_TEXT_VISIBLE="+(isAgenda?"YES":"NO"));
     const backCount=await backButton.count();
     console.log("D2E_INITIAL_BACK_BUTTON_COUNT="+backCount);
-    if(isAgenda){
+    if(isAgenda || backCount===1){
       stage="RETURN_FROM_AGENDA";
       if(backCount!==1)throw Error("BACK_BUTTON_NOT_UNIQUE");
       await backButton.click({timeout:20000});
