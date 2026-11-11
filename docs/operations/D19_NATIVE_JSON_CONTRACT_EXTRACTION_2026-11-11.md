@@ -51,3 +51,16 @@ Este paso **solo extrae el contrato**. Aún faltan, antes de conectar el acceso 
 `NO_DEPLOY_NO_LIVE_MIGRATION=1`
 `D19_NATIVE_OPERATIONAL_ISSUER_ENABLED=NO`
 `D19_RELEASE_AUTHORIZED=NO`
+
+## Resultado VPS D19 — PASS (11/11/2026)
+
+El operador informa `NATIVE_I8K_NATIVE_JSON_CONTRACT=PASS`, `NATIVE_I8K_NO_PUBLIC_ISSUER=PASS`, `NATIVE_I8K_NO_MFA_DENIAL_POLICY=PASS`, `NATIVE_I8K_ATOMIC_RECOVERY_CORE=PASS`, `NATIVE_I8K_RECOVERY_HTTP_JSON=PASS`, `NATIVE_I8K_RECOVERY_ENDPOINTS_ABSENT=PASS`, `NATIVE_I8K_PG17_HTTP_RECOVERY_GATE=PASS`, `NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK`, `NATIVE_I8K_DEPLOY_EXECUTED=NO`, `NATIVE_I8K_LIVE_MIGRATIONS_EXECUTED=NO`, `NATIVE_I8K_LOCAL_RESULT=0`.
+
+`NATIVE_I8K_FLUTTER_GATE=NOT_RUN_SEPARATE` es esperado: I8-K ejecuta suite backend en PG17 desechable; el cliente Flutter HTTPS fue verificado en D18. El fragmento no incluye `D19_SHELL_RESULT` independiente, pero sí el resultado final del script de I8-K.
+
+**Conclusión D19 PASS:** extracción/uso de contrato JSON endurecido, pruebas PG17 de emisión/revocación candidatas y ausencia de rutas públicas. No significa que exista emisor nativo operacional habilitado. No repetir D19 si no cambian parser, handlers, modelos o contrato de auth.
+
+`MFA_RELEASE_AUTHORIZED=NO`
+`NO_DEPLOY_NO_LIVE_MIGRATION=1`
+`D19_NATIVE_OPERATIONAL_ISSUER_ENABLED=NO`
+`D19_RELEASE_AUTHORIZED=NO`
