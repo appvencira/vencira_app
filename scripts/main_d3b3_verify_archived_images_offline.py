@@ -88,7 +88,7 @@ def main():
                 # Verify actual bytes against the claimed digest in either.
                 if not isinstance(cfg, str):
                     fail("CONFIG_NAME")
-                classic = re.fullmatch(r"([a-f0-9]{64})\\.json", cfg)
+                classic = re.fullmatch(r"([a-f0-9]{64})\.json", cfg)
                 oci = re.fullmatch(r"blobs/sha256/([a-f0-9]{64})", cfg)
                 if classic is None and oci is None:
                     fail("CONFIG_NAME")
