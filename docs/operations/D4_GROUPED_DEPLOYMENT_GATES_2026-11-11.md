@@ -887,3 +887,9 @@ Tras D25 PASS, `main` añade un lector alternativo de renovaciones con cursor fi
 **D26 IMPLEMENTADA, PENDIENTE DE VALIDAR**: esperar `NATIVE_I8K_D26_SIGNED_WORKSPACE_CURSOR_PG17=PASS`, `D26_REAL_TLS_SIGNED_CURSOR_PAGINATION_75=PASS`, `D26_CURSOR_REAL_TLS_FLUTTER=PASS` y `D26_RESULT=0` antes de anunciar PASS. Mejora la consistencia frente a cambios de fecha/estado entre páginas, **NO es snapshot completo**: la pertenencia/asignación puede cambiar entre solicitudes y las filas recién asignadas detrás del cursor pueden omitirse. No producción, Android, escrituras, adjuntos o migraciones LIVE. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
 
 D26 revisión de última hora antes del primer ensayo: commit `3c46d5b3` comprueba la caducidad del cursor en el lector directamente (sin confundirlo con vencimiento de bearer); commit `eee1df39` ejecuta `flutter analyze` completo en lugar de múltiples rutas posicionales; runbook actualizado `be439bd4`. **No hay aún resultados del gate VPS D26**.
+
+## D26 primer gate FAIL — clave de auditoría sintética inferior al mínimo, corregida (12/11/2026)
+
+D26 en VPS pasó preflight `D26_MAIN_CLEAN=PASS`, `D26_PYTHON_AST=PASS`, `D26_RELEASE_FENCE=PASS`, PG17 interno/temporal y migraciones. **83 tests, 4 errores**, todos en `D26SignedCursorPG17Tests.setUp`: `MobileAuditDenied` en `g5_audit._key()` (mínimo 32 caracteres para `VENCIRA_G5_AUDIT_KEY`); `CandidateAdmissionDenied` en `begin_native_password`. No se ejecutaron tests de cursor D26 ni el subgate Flutter HTTPS. `NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK`, `NATIVE_I8K_LOCAL_RESULT=1`, `D26_CURSOR_PG17_SECURITY=FAIL`, `D26_RESULT=4`.
+
+**Corregido en main `3a0c5dcf`**: claves AUDIT y ABUSE únicamente del fixture D26 ampliadas a 37 caracteres, sin reducir validación G5. Runbook actualizado `docs/operations/D26_SIGNED_WORKSPACE_CURSOR_GROUPED_2026-11-12.md`, commit `87d8bb27`. **D26 NO PASS**, pendiente de nueva ejecución completa.
