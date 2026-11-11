@@ -56,6 +56,8 @@ cleanup() {
   exit "$rc"
 }
 trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 D build -q -t "$image_name" ./backend >/dev/null
 image_created=1
@@ -217,6 +219,8 @@ echo "D25_SERVER_ISSUED_SYNTHETIC_FIXTURE=PASS"
 # Use a dedicated disposable Docker volume; fail before auth test if <1 GiB free.
 D volume create "$scratch_volume" >/dev/null
 scratch_volume_created=1
+D run --rm --network none --user 0 -v "$scratch_volume:/tmp" \
+  --entrypoint chmod ghcr.io/cirruslabs/flutter:3.44.0 1777 /tmp
 available_kib="$(D run --rm --network none -v "$scratch_volume:/tmp" \
   --entrypoint df ghcr.io/cirruslabs/flutter:3.44.0 \
   -Pk /tmp | awk 'NR==2 {print $4}')"
@@ -249,7 +253,7 @@ else
   exit 9
 fi
 if ! grep -Eq '^.*All tests passed!$' "$tmp/flutter-test.log" ||
-   grep -Eq 'Some tests failed|No space left on device|Failed to load|\\[E\\]' "$tmp/flutter-test.log" ||
+   (grep -Eq 'Some tests failed|No space left on device|Failed to load' "$tmp/flutter-test.log" || grep -Fq '[E]' "$tmp/flutter-test.log") ||
    ! grep -Fq 'D26_REAL_TLS_SIGNED_CURSOR_PAGINATION_75=PASS' "$tmp/flutter-test.log"; then
   echo "D26_FLUTTER_TEST_OUTPUT=FAIL" >&2
   exit 10
