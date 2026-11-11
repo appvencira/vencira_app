@@ -460,3 +460,11 @@ git status --short
 - **B5**: configuración pública de `vencira.es` (DNS, TLS, Caddy, CSRF, cookies, rollback operativo), aprobación expresa y ventana de despliegue. El preflight DEV de `dev.vencira.es` no suple estos controles.
 
 Hasta autorización explícita: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D5_DEPLOY_EXECUTED=NO`, `D5_LIVE_RESTORE_EXECUTED=NO`, `D5_HOST_DOCKER_IMAGE_LOAD_EXECUTED=NO`.
+
+## D5 — Regresión candidata PASS; liberación sigue BLOQUEADA (11/11/2026)
+
+El operador confirmó `D5_SYNTAX=0`, `D5_MAIN_CLEAN=PASS`, `D5_ARCHIVE_CHECKSUM=PASS`, `D5_CANDIDATE_SCRIPT_SYNTAX=PASS`, `D1O_DEV_IDENTITY=PASS`, `D1O_INTERNAL_NETWORK=PASS`, `D1O_PG17_SYNTHETIC_TMPFS=PASS`, `D1O_CANDIDATE_IMAGE_BUILD=PASS`, `D1O_DJANGO_DEPLOY_CHECK=PASS`, `D1O_MODEL_PARITY=PASS`, `D1O_SYNTHETIC_MIGRATIONS=PASS`, `D1O_SECURITY_HTTP_CONTRACT=PASS`, `D1O_DJANGO_REMINDERS_SUITE=PASS`, `D1O_FLUTTER_ANALYZE_TEST_WEB_BUILD=PASS`, `D1O_CANDIDATE_INTEGRAL_GATE=PASS`, `D1O_DEV_CONTAINERS_UNCHANGED=OK`, `D1O_EPHEMERAL_CLEANUP=DONE`, `D1O_RESULT=0`, `D5_CANDIDATE_REGRESSION=PASS`, `D5_B4_MAIN_DJANGO_FLUTTER_SYNTHETIC_GATE=PASS`, `D5_BLOCKERS_OPEN=5`, `D5_RELEASE_READINESS=BLOCKED`, `D5_RESULT=4`. El texto intercalado de comandos oculta `D5_SHELL_RESULT`, no se inventa su eco. El aviso Flutter Wasm dry-run no es un test fallido.
+
+**Decisión:** cierre de **B4 backend + Flutter web sintéticos** para el candidato `main` probado. **B4 nativo Android / APK y dispositivo físico pendientes**. B1 export real independiente, B2 acoplamiento O5+imagen exportada, B3 custodia off-host cifrada, B5 TLS/dominio de producción y aprobación, así como discrepancia de hashes D3-B3, siguen abiertos.
+
+El siguiente bloque debe priorizar evidencias no repetidas y no repetir D4-E/F/G ni D5. `D5_RESULT=4` significa denegación de publicación por condiciones abiertas, no regresión fallida. No generar un release nuevo ni alterar la base viva antes del gate B1/B2/B3/B5 y aprobación expresa.
