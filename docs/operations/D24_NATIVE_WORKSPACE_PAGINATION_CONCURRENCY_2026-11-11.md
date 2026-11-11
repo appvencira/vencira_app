@@ -57,3 +57,11 @@ D24_SHELL_RESULT=0
 **TLS de red cliente Flutter ↔ las nuevas vistas D24 NO ha sido ejecutado.** El gate Flutter usa un transport mock, y el test Django utiliza request `secure=True`. El gate anterior D18 sí cubrió TLS real, pero en una API de laboratorio anterior, no D24; se necesita un gate posterior específico para esta versión.
 
 Conservar `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, no registrar URL D22/D24 en `config.urls`, no habilitar issuer móvil ni instalar APK.
+
+## Primer gate VPS — FAIL, corrección localizada (12/11/2026)
+
+Reporte real: `D24_SYNTAX=0`, `D24_MAIN_CLEAN=PASS`, `D24_DEV_IDENTITY=PASS`, `D24_OPERATIONAL_ROUTE_FENCE=PASS`, red interna PG17, imagen y migraciones temporales OK. **79 tests ejecutados, 1 fallo**. Test `test_native_workspace_http_offset_and_canonical_page` para `?offset=1`: esperaba HTTP 400 y obtuvo HTTP 401. Las otras pruebas de D24 informaron `D24_WORKSPACE_BOUNDED_PAGINATION_PG17=PASS`, `D24_ASSIGNMENT_REVOKE_SERIALIZED_PG17=PASS`, `D24_WORKSPACE_OFFSET_FENCE_PG17=PASS`, `D24_MEMBERSHIP_REVOKE_SERIALIZED_PG17=PASS`. `NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK`, `NATIVE_I8K_LOCAL_RESULT=1`, `D24_PG17_CONCURRENCY_PAGINATION=FAIL`, `D24_DEV_CONTAINERS_UNCHANGED=OK`, `D24_RESULT=4`. **Flutter no se ejecutó por fail-fast del gate**.
+
+**Diagnóstico:** la vista HTTP aceptaba como sintácticamente numérico `offset=1`, pero el lector requería múltiplos de 50, lanzaba `NativeWorkspaceDenied`, y la vista lo traducía a 401. No es una vulnerabilidad de acceso demostrado; sí un error de contrato HTTP para parámetros de paginación. **Corrección publicada en main, commit `58d765bb`**: `test_d22_http_views.workspace_renewals` rechaza offsets no múltiplos de 50 como 400 *antes* de validar credenciales o consultar el tenant. El lector sigue denegando los offsets no canónicos como defensa adicional. No se han modificado `config.urls`, settings operativos ni el flujo de emisión.
+
+**Pendiente:** repetir una sola vez el gate D24 agrupado después de `git fetch` y `git merge --ff-only`; se exige **79 tests OK**, `D24_FLUTTER_PAGINATION_GATE=PASS`, `D24_RESULT=0`. Hasta entonces **D24 NO PASS**.
