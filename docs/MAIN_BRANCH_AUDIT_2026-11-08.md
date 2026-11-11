@@ -2135,3 +2135,10 @@ Published read-only `scripts/main_d3b5p_rootless_prerequisites_readonly.sh` comm
 ## FC. 11/11/2026 — D3-B5P SIGPIPE 141 in apt-cache preflight, not an environment failure
 
 Operator output `D3B5P_UNPRIVILEGED_OPERATOR=PASS`, `D3B5P_PODMAN_INSTALLED=NO`, then exit code `141`, **without** any `D3B5P_RESULT` marker. Read-only preflight accidentally terminated `apt-cache policy podman | awk '/Candidate:/ {print $2; exit}'` early with `pipefail`: possible SIGPIPE. Fix `bf544996` now consumes the entire producer output and distinguishes unsuccessful apt query. Docs updated in `docs/D3B5_ROOTLESS_IMAGE_RELOAD_2026-11-11.md` commit `c9405dad`. **Recheck pending**. No installation/deploy/restore, and rootless system prerequisites not yet assessed; do not infer Podman viability before complete preflight.
+
+
+## FD. 11/11/2026 — D3-B5P host prerequisites PASS, rootless Podman import still blocked on missing packages
+
+Operator repeated preflight twice: `D3B5P_RESULT=0`, `D3B5P_PODMAN_INSTALLED=NO`, `D3B5P_PODMAN_APT_CANDIDATE=AVAILABLE`, `D3B5P_SUBUID_SUBGID_RANGE=PASS`, `D3B5P_USER_NAMESPACES_KERNEL=ENABLED`, `D3B5P_UNPRIVILEGED_USERNS_CLONE=ENABLED`. Helper commands `newuidmap`, `newgidmap`, `fuse-overlayfs`, `slirp4netns`, `pasta` not installed. **Read-only inventory PASS, not a Podman runtime PASS**: `D3B5P_ROOTLESS_PODMAN_RUNTIME_VERIFIED=NO`; `D3B5P_PACKAGE_INSTALL_AUTHORIZED=NO`. No packages installed, config changed, Docker touched, migrations or deployment. Docs updated in `docs/D3B5_ROOTLESS_IMAGE_RELOAD_2026-11-11.md` commit `9311d19f`.
+
+D3-B5 reload needs a separate explicit operational decision on Podman/uidmap installation or external isolated host; proposed next preflight is `apt-get -s install podman uidmap` only (simulation) to inspect removals/upgrades before approval. Do not substitute host `docker load`. D3-B2 archive retained, D3-B3 exact identity comparison FAIL, D3-B4 partial rootfs/runtime match PASS, D3-B5 import not run. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
