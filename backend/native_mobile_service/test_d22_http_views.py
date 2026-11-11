@@ -26,6 +26,7 @@ from .native_server_custody_issuer import (
 )
 from .session_store import MobileTokenDenied, revoke_candidate_device, validate_candidate_access, _find
 from .native_workspace_reader import NativeWorkspaceDenied, read_native_workspace_renewals
+from .native_workspace_cursor import NativeCursorDenied, read_native_cursor_page
 
 
 def _guard(request, method):
@@ -234,4 +235,42 @@ def workspace_renewals(request, workspace_id):
             response = native_json_response(result)
         return response
     except (MobileTokenDenied, NativeWorkspaceDenied, ValueError):
+        return _deny()
+
+
+def workspace_cursor_renewals(request, workspace_id):
+    """D26 isolated read: revalidate bearer under account/device SQL locks."""
+    blocked = _guard(request, "GET")
+    if blocked is not None:
+        return blocked
+    header = request.META.get("HTTP_AUTHORIZATION")
+    if (type(header) is not str or not header.startswith("Bearer ")
+            or header.count(" ") != 1):
+        return _deny()
+    if set(request.GET) - {"cursor"} or len(request.GET.getlist("cursor")) > 1:
+        return native_auth_denied(status=400)
+    cursor = request.GET.get("cursor")
+    if cursor is not None and (
+            len(cursor) > 1024 or len(cursor) < 10 or
+            any(char not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_:.": for char in cursor)):
+        return native_auth_denied(status=400)
+    token = header[7:]
+    try:
+        identity = validate_candidate_access(token)
+        with transaction.atomic():
+            user = get_user_model().objects.select_for_update().filter(
+                pk=identity.pk, is_active=True,
+            ).first()
+            if user is None:
+                raise MobileTokenDenied()
+            device = _find(token, "a", lock=True)
+            if device.user_id != user.pk:
+                raise MobileTokenDenied()
+            validate_candidate_access(token)
+            result = read_native_cursor_page(
+                user=user, workspace_id=workspace_id, cursor=cursor,
+            )
+            response = native_json_response(result)
+        return response
+    except (MobileTokenDenied, NativeCursorDenied, ValueError):
         return _deny()
