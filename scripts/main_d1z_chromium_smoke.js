@@ -16,7 +16,7 @@ const { chromium } = require("playwright");
     // Synthetic unauthenticated lab only. Redact URLs, query strings, long
     // opaque values and quoted strings; never dump stack/DOM/body/cookies.
     return String(raw || "")
-      .split("\\n")[0]
+      .split("\n")[0]
       .replace(/https?:\\/\\/[^\\s)]+/gi, "[URL]")
       .replace(/(?:[A-Za-z]:)?\\/[^\\s:)]+/g, "[PATH]")
       .replace(/["'`][^"'`]*["'`]/g, "[STRING]")
