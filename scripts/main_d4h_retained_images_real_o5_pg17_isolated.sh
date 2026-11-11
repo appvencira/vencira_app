@@ -8,6 +8,8 @@ umask 077
 
 mark(){ printf 'D4H_%s=%s\n' "$1" "$2"; }
 mark READ_ONLY_SOURCE_REPOSITORY YES
+mark ARCHIVED_IMAGES_HOST_DOCKER_RELOADED NO
+mark CONTAINER_RUN_EXECUTED NO
 mark BACKUP_EXECUTED NO
 mark LIVE_RESTORE_EXECUTED NO
 mark LIVE_MIGRATIONS_EXECUTED NO
@@ -85,7 +87,7 @@ mark HOST_IMAGE_IDENTITY PASS
 lab="vencira-d4h-$(openssl rand -hex 8)"
 network="$lab-net"
 network_created=NO
-tmp="$(mktemp -d /tmp/vencira-d1n.XXXXXXXX)"
+tmp="$(mktemp -d /tmp/vencira-d4h.XXXXXXXX)"
 chmod 700 "$tmp"
 db_user=d4hrestore
 db_name=d4hrestore
@@ -111,6 +113,9 @@ cleanup(){
   mark DEV_CONTAINERS_UNCHANGED "$([[ "$intact" == YES ]] && echo OK || echo FAIL)"
   if [[ "$intact" != YES ]]; then rc=9; fi
   mark LAB_CONTAINER_REMOVED "$([[ "$created" == YES ]] && echo YES || echo NOT_CREATED)"
+  mark CONTAINER_RUN_EXECUTED "$([[ "$created" == YES ]] && echo YES || echo NO)"
+  mark HOST_DOCKER_IMAGE_LOAD_EXECUTED NO
+  mark REAL_O5_DATA_OUTPUT_PRINTED NO
   mark LIVE_RESTORE_EXECUTED NO
   mark LIVE_MIGRATIONS_EXECUTED NO
   mark DEPLOY_EXECUTED NO
