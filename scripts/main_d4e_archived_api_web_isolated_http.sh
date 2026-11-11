@@ -328,7 +328,7 @@ if [[ "$web_ok" != YES ]]; then
     python3 - "$lab/web-probe.err" <<'PY'
 import pathlib, re, sys
 data=pathlib.Path(sys.argv[1]).read_text(errors="replace")
-codes=re.findall(r"HTTP/1(?:\\.[01])?\\s+([1-5][0-9][0-9])", data)
+codes=re.findall(r"HTTP/1(?:\.[01])?\s+([1-5][0-9][0-9])", data)
 print("D4E_WEB_HTTP80_RESPONSE_CODE=" + (codes[-1] if codes else "NOT_OBSERVED"))
 PY
   fi
