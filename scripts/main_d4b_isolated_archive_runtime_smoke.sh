@@ -183,7 +183,7 @@ if not isinstance(items,list): raise SystemExit(1)
 ids={str(x.get("Id") or x.get("ID") or "") for x in items if isinstance(x,dict)}
 if len(ids)!=3 or any(not re.fullmatch(r"(?:sha256:)?[a-f0-9]{64}",i) for i in ids):
     raise SystemExit(1)
-pathlib.Path(sys.argv[2]).write_text("\\n".join(sorted(ids))+"\\n")
+pathlib.Path(sys.argv[2]).write_text("\n".join(sorted(ids))+"\n")
 PY
 then
   mark IMPORTED_IMAGE_COUNT_3 FAIL
