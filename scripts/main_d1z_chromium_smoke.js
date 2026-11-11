@@ -6,6 +6,9 @@ const { chromium } = require("playwright");
   let browser;
   let stage = "LAUNCH";
   const errors = [];
+  let pageErrors = 0;
+  let fontConsoleErrors = 0;
+  let otherConsoleErrors = 0;
   const failedRequests = { internal: 0, external: 0 };
   const requestKinds = {};
   const failedHostCategories = {};
@@ -76,6 +79,7 @@ const { chromium } = require("playwright");
     if (!localeCheck.accepted || !localeCheck.intl) throw Error("INVALID_BROWSER_LOCALE");
     page.on("pageerror", err => {
       errors.push("PAGE_ERROR");
+      pageErrors++;
       tally(errorCategories, errorCategory(err && err.message));
       const type = String(err?.name || "UNKNOWN").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 30);
       tally(exceptionTypes, type || "UNKNOWN");
@@ -84,7 +88,13 @@ const { chromium } = require("playwright");
     page.on("console", msg => {
       if (msg.type() === "error") {
         errors.push("CONSOLE_ERROR");
-        tally(errorCategories, errorCategory(msg.text()));
+        const message = msg.text();
+        const location = msg.location()?.url || "";
+        const fontOrigin = /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\//i.test(location);
+        const mentionsFont = /(?:fonts\.googleapis\.com|fonts\.gstatic\.com|failed to load font)/i.test(message);
+        if (fontOrigin || mentionsFont) fontConsoleErrors++;
+        else otherConsoleErrors++;
+        tally(errorCategories, errorCategory(message));
       }
     });
     page.on("response", response => {
@@ -169,9 +179,28 @@ const { chromium } = require("playwright");
     console.log("D1Z_CHROMIUM_SAME_ORIGIN_API=PASS");
     stage = "JS_ERRORS";
     await page.waitForTimeout(1500);
-    if (errors.length) throw Error("BROWSER_JS_ERRORS");
-    console.log("D1Z_CHROMIUM_JS_ERRORS=NONE");
-    console.log("D1Z_CHROMIUM_SMOKE=PASS");
+    // The internal Docker network intentionally cannot reach external Google
+    // Fonts. Such failures are tracked as degraded glyph coverage, never
+    // silently counted as application JS errors. Any other console error,
+    // pageerror, unexpected external host or internal request is fatal.
+    console.log("D1Z_CHROMIUM_PAGE_ERRORS=" + pageErrors);
+    console.log("D1Z_CHROMIUM_FONT_CONSOLE_ERRORS=" + fontConsoleErrors);
+    console.log("D1Z_CHROMIUM_OTHER_CONSOLE_ERRORS=" + otherConsoleErrors);
+    const allExternalAreFonts = failedRequests.external ===
+      (failedHostCategories.GOOGLE_FONTS || 0);
+    if (pageErrors || otherConsoleErrors || failedRequests.internal ||
+        !allExternalAreFonts) throw Error("BROWSER_JS_ERRORS");
+    console.log("D1Z_CHROMIUM_APP_JS_ERRORS=NONE");
+    if (fontConsoleErrors || failedRequests.external) {
+      console.log("D1Z_CHROMIUM_FONT_NETWORK_DEGRADED=YES");
+      console.log("D1Z_CHROMIUM_FONT_FIDELITY_VERIFIED=NO");
+      console.log("D1Z_CHROMIUM_SMOKE=PASS_WITH_FONT_DEGRADATION");
+    } else {
+      console.log("D1Z_CHROMIUM_JS_ERRORS=NONE");
+      console.log("D1Z_CHROMIUM_FONT_NETWORK_DEGRADED=NO");
+      console.log("D1Z_CHROMIUM_FONT_FIDELITY_VERIFIED=YES");
+      console.log("D1Z_CHROMIUM_SMOKE=PASS");
+    }
   } catch (err) {
     const allowed = new Set([
       "INVALID_BROWSER_LOCALE", "ROOT_HTTP", "FLUTTER_VIEW_TIMEOUT", "BROWSER_API_HEALTH",
@@ -180,6 +209,9 @@ const { chromium } = require("playwright");
     console.log("D1Z_CHROMIUM_FAILURE_STAGE=" +
                 (allowed.has(err.message) ? err.message : stage));
     console.log("D1Z_CHROMIUM_JS_ERRORS_COUNT=" + errors.length);
+    console.log("D1Z_CHROMIUM_PAGE_ERRORS=" + pageErrors);
+    console.log("D1Z_CHROMIUM_FONT_CONSOLE_ERRORS=" + fontConsoleErrors);
+    console.log("D1Z_CHROMIUM_OTHER_CONSOLE_ERRORS=" + otherConsoleErrors);
     console.log("D1Z_CHROMIUM_FAILED_INTERNAL_REQUESTS=" + failedRequests.internal);
     console.log("D1Z_CHROMIUM_FAILED_EXTERNAL_REQUESTS=" + failedRequests.external);
     console.log("D1Z_CHROMIUM_DOCUMENT_HTTP_STATUS=" + browserDocumentStatus);
