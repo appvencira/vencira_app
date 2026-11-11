@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# D3-B: READ-ONLY immutable operational image inventory and previous version custody.
+# D3-B: READ-ONLY inventory of current pre-deploy rollback baseline and optional historical images.
 set -Eeuo pipefail
 set +x
 umask 077
@@ -53,36 +53,42 @@ mount="$(D inspect -f '{{range .Mounts}}{{if eq .Destination "/var/lib/postgresq
   mark POSTGRES_NAMED_VOLUME FAIL; exit 3;
 }
 mark POSTGRES_NAMED_VOLUME PASS
-# The PREVIOUS images must be explicitly supplied as immutable IDs, distinct
-# from current running images, and already retained in local Docker storage.
-# Never accept mutable tags or infer a previous release from 'latest'.
+# Before an upgrade, the *current* operational images are the prospective
+# rollback baseline. A distinct, older release is not required at this stage.
+# Running image IDs are local today; this check does NOT pin or export them
+# against future Docker image pruning.
+mark PRE_UPGRADE_IMAGE_BASELINE_IDENTIFIED PASS
+mark PRE_UPGRADE_IMAGE_BASELINE_CURRENT_LOCAL YES
+mark PRE_UPGRADE_IMAGE_RETENTION_GUARANTEED NO
+mark PRE_UPGRADE_IMAGE_ARCHIVE_VERIFIED NO
+# A separately identified historical release is OPTIONAL at this stage,
+# never inferred from mutable tags or from 'latest'.
 prev_api="${D3B_PREVIOUS_API_IMAGE:-}"
 prev_web="${D3B_PREVIOUS_WEB_IMAGE:-}"
-if [[ -z "$prev_api" || -z "$prev_web" ]]; then
-  mark PREVIOUS_IMAGE_MANIFEST MISSING
-  mark PREVIOUS_IMAGE_CUSTODY_VERIFIED NO
-  mark OPERATIONAL_ROLLBACK_VERIFIED NO
-  mark PUBLIC_RELEASE_AUTHORIZED NO
-  mark RESULT 4
-  exit 4
+if [[ -z "$prev_api" && -z "$prev_web" ]]; then
+  mark HISTORICAL_IMAGE_MANIFEST NOT_PROVIDED
+  mark HISTORICAL_IMAGE_CUSTODY_VERIFIED NO
+elif [[ -z "$prev_api" || -z "$prev_web" ]]; then
+  mark HISTORICAL_IMAGE_MANIFEST INCOMPLETE
+  mark HISTORICAL_IMAGE_CUSTODY_VERIFIED NO
+else
+  for previous in "$prev_api" "$prev_web"; do
+    [[ "$previous" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+      mark HISTORICAL_IMAGE_IMMUTABLE_IDS FAIL; exit 4;
+    }
+    D image inspect "$previous" >/dev/null 2>&1 || {
+      mark HISTORICAL_IMAGE_LOCAL_CUSTODY FAIL; exit 4;
+    }
+  done
+  [[ "$prev_api" != "$api_current" && "$prev_web" != "$web_current" ]] || {
+    mark HISTORICAL_DISTINCT_FROM_RUNNING FAIL; exit 4;
+  }
+  mark HISTORICAL_IMAGE_CUSTODY_VERIFIED YES
 fi
-for previous in "$prev_api" "$prev_web"; do
-  [[ "$previous" =~ ^sha256:[0-9a-f]{64}$ ]] || {
-    mark PREVIOUS_IMAGE_IMMUTABLE_IDS FAIL; exit 4;
-  }
-  D image inspect "$previous" >/dev/null 2>&1 || {
-    mark PREVIOUS_IMAGE_LOCAL_CUSTODY FAIL; exit 4;
-  }
-done
-[[ "$prev_api" != "$api_current" && "$prev_web" != "$web_current" ]] || {
-  mark PREVIOUS_DISTINCT_FROM_RUNNING FAIL; exit 4;
-}
-mark PREVIOUS_IMAGES_IMMUTABLE PASS
-mark PREVIOUS_IMAGES_LOCALLY_AVAILABLE PASS
-mark PREVIOUS_IMAGE_CUSTODY_VERIFIED YES
-# Availability is necessary, not sufficient, for rollback readiness.
-mark PRIOR_IMAGE_RUNTIME_WITH_O5_RESTORED_DB_VERIFIED NO
-mark PREVIOUS_IMAGE_SWITCHOVER_VERIFIED NO
+# This is an inventory gate, not a rehearsal or release authorization.
+mark PRE_UPGRADE_ROLLBACK_BASELINE_INVENTORY PASS
+mark RESTIC_O5_IMAGE_COMPATIBILITY_VERIFIED NO
+mark OPERATIONAL_IMAGE_AND_DB_ROLLBACK_VERIFIED NO
 mark OPERATIONAL_ROLLBACK_VERIFIED NO
 mark PUBLIC_RELEASE_AUTHORIZED NO
 mark RESULT 0
