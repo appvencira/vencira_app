@@ -65,3 +65,12 @@ D2A_LIVE_RESTORE_EXECUTED=NO
 ```
 
 El gate no verifica fuentes reales con conexión, acciones de usuarios autenticados, Caddy de producción, restauración real de la DB persistente ni rollback operativo de imágenes. **Prohibido interpretarlo como release.**
+
+
+## Primera ejecución del operador — escritorio PASS, fallo móvil sin causa diferenciada (11/11/2026)
+
+El usuario confirmó los preflights de PG17 tmpfs, Django, Flutter release, CanvasKit local, Nginx, Caddy TLS/CSRF y Chromium (`es-ES`) con `D2A_CHROMIUM_FLUTTER_VIEW=PASS`, `D2A_CHROMIUM_SAME_ORIGIN_API=PASS`, `D2A_CHROMIUM_PAGE_ERRORS=0`, `D2A_CHROMIUM_OTHER_CONSOLE_ERRORS=0`, `D2A_CHROMIUM_EXPECTED_ANONYMOUS_403=PASS`, `D2A_CHROMIUM_APP_JS_ERRORS=NONE`. **Escritorio completo PASS**: `D2A_DESKTOP_VIEW_GEOMETRY=PASS`, `D2A_DESKTOP_PNG_PIXELS=PASS`, `D2A_DESKTOP_COLOR_VARIATION=PASS`.
+
+La fase móvil falló con el único marcador `D2A_CHROMIUM_FAILURE_STAGE=VISUAL_MOBILE` y `D2A_CHROMIUM_RENDER_GATE=FAIL`; **`D2A_RESULT=8`**. Se observaron 65 peticiones externas Google Fonts (por el cambio de viewport), ninguna petición interna fallida ni `pageerror`. DEV intacto y cleanup DONE. Esta evidencia no identifica si la fase móvil falló por geometría de `flutter-view`, dimensiones del PNG, cantidad de colores o error de captura. No se han modificado los estilos Flutter ni los umbrales para forzar un PASS.
+
+En `scripts/main_d2a_chromium_visual_smoke.js` commit `9f98856b`, se añadieron marcadores de etapa precisos para `VISUAL_VIEW_GEOMETRY_MOBILE`, `VISUAL_PNG_DIMENSIONS_MOBILE`, `VISUAL_BLANK_OR_FLAT_MOBILE` y equivalentes de escritorio. Además imprime solo `D2A_MOBILE_VIEW_WIDTH_PX`, `D2A_MOBILE_VIEW_HEIGHT_PX`, `D2A_MOBILE_PNG_WIDTH_PX`, `D2A_MOBILE_PNG_HEIGHT_PX` y `D2A_MOBILE_SAMPLED_COLOR_COUNT` según se alcancen las comprobaciones. No se imprimen ni guardan imágenes ni datos privados. Se verificó sintaxis JavaScript mediante parser V8 tras la corrección. **Pendiente otra ejecución D2-A en el laboratorio aislado**, sin desplegar ni migrar DEV.
