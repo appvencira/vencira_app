@@ -26,6 +26,8 @@ network_created=0
 image_created=0
 flutter_volume_created=0
 pub_volume_created=0
+scratch_volume_created=0
+scratch_volume="$tag-scratch"
 flutter_volume="$tag-flutter"
 pub_volume="$tag-pub"
 cleanup() {
@@ -36,7 +38,8 @@ cleanup() {
   if [[ "$image_created" == 1 ]]; then D image rm "$image_name" >/dev/null 2>&1 || true; fi
   if [[ "$flutter_volume_created" == 1 ]]; then D volume rm "$flutter_volume" >/dev/null 2>&1 || true; fi
   if [[ "$pub_volume_created" == 1 ]]; then D volume rm "$pub_volume" >/dev/null 2>&1 || true; fi
-  rm -f "$tmp/env" "$tmp/cert.pem" "$tmp/key.pem" "$tmp/d25-fixture.txt"
+  if [[ "$scratch_volume_created" == 1 ]]; then D volume rm "$scratch_volume" >/dev/null 2>&1 || true; fi
+  rm -f "$tmp/env" "$tmp/cert.pem" "$tmp/key.pem" "$tmp/d25-fixture.txt" "$tmp/flutter-test.log"
   rmdir "$tmp" 2>/dev/null || true
   local stable=YES
   for name in vencira_localcheck-api-1 vencira_localcheck-db-1 vencira_localcheck-web_preview-1; do
@@ -209,11 +212,26 @@ chmod 644 "$tmp/d25-fixture.txt"
 unset access fixture_output
 echo "D25_SERVER_ISSUED_SYNTHETIC_FIXTURE=PASS"
 
+# The Flutter test compiler can use hundreds of MiB under /tmp.
+# A 128 MiB tmpfs caused ENOSPC while copying the test .dill.
+# Use a dedicated disposable Docker volume; fail before auth test if <1 GiB free.
+D volume create "$scratch_volume" >/dev/null
+scratch_volume_created=1
+available_kib="$(D run --rm --network none -v "$scratch_volume:/tmp" \
+  --entrypoint df ghcr.io/cirruslabs/flutter:3.44.0 \
+  -Pk /tmp | awk 'NR==2 {print $4}')"
+if [[ ! "$available_kib" =~ ^[0-9]+$ || "$available_kib" -lt 1048576 ]]; then
+  echo "D26_FLUTTER_TEMP_CAPACITY=FAIL" >&2
+  exit 8
+fi
+echo "D26_FLUTTER_TEMP_CAPACITY=PASS"
+
 # No DB password, MFA encryption key, private TLS key, or auth token in
 # Flutter environment. Source and token fixture are mounted read-only.
-D run --rm --network "$network" \
-  --tmpfs /tmp:rw,size=128m,mode=1777 \
+# The test suite must both exit 0 AND produce an explicit final success marker.
+if D run --rm --network "$network" \
   --cap-drop ALL --security-opt no-new-privileges --pids-limit 128 \
+  -v "$scratch_volume:/tmp" \
   -v "$flutter_volume:/work" -v "$pub_volume:/pub" \
   -v "$tmp/cert.pem:/tmp/d25-public-ca.pem:ro" \
   -v "$tmp/d25-fixture.txt:/tmp/d25-public-fixture.txt:ro" \
@@ -223,7 +241,21 @@ D run --rm --network "$network" \
   -e VENCIRA_ENV=test -e VENCIRA_I8M_FLUTTER_INTERNAL_ONLY=1 \
   -e VENCIRA_D25_WORKSPACE_TLS_LAB=1 \
   -w /work ghcr.io/cirruslabs/flutter:3.44.0 \
-  flutter test --no-pub --reporter expanded test/native_d25_workspace_real_https_pg17_test.dart test/native_d26_workspace_cursor_test.dart
+  flutter test --no-pub --reporter expanded test/native_d25_workspace_real_https_pg17_test.dart test/native_d26_workspace_cursor_test.dart \
+  2>&1 | tee "$tmp/flutter-test.log"; then
+  :
+else
+  echo "D26_FLUTTER_TEST_PROCESS=FAIL" >&2
+  exit 9
+fi
+if ! grep -Eq '^.*All tests passed!$' "$tmp/flutter-test.log" ||
+   grep -Eq 'Some tests failed|No space left on device|Failed to load|\\[E\\]' "$tmp/flutter-test.log" ||
+   ! grep -Fq 'D26_REAL_TLS_SIGNED_CURSOR_PAGINATION_75=PASS' "$tmp/flutter-test.log"; then
+  echo "D26_FLUTTER_TEST_OUTPUT=FAIL" >&2
+  exit 10
+fi
+echo "D26_FLUTTER_TEST_PROCESS=PASS"
+echo "D26_FLUTTER_TEST_OUTPUT=PASS"
 echo "D26_REAL_FLUTTER_TLS_CURSOR_AND_CONTRACT=PASS"
 echo "D25_REAL_FLUTTER_TLS_WORKSPACE_GATE=PASS"
 echo "D25_REAL_TLS_NO_PUBLIC_PORTS=PASS"
