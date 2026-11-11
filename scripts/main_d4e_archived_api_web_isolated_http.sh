@@ -273,6 +273,26 @@ if ! "${P[@]}" run -d --name "$api_name" --pull never \
     -e DJANGO_ALLOWED_HOSTS=127.0.0.1,localhost \
     -e VENCIRA_DB_ENGINE=sqlite -e VENCIRA_MFA_ENROLLMENT_ENABLED=0 \
     "$api_id" >"$lab/api.id" 2>"$lab/error.log"; then
+  # Categorize Podman's private error output without printing image names,
+  # paths, network identifiers or secret-bearing command-line arguments.
+  python3 - "$lab/error.log" <<'PY'
+from pathlib import Path
+import re,sys
+msg=Path(sys.argv[1]).read_text(errors="replace").lower()[-32000:]
+patterns=[
+ ("ROOTLESS_NETWORK_NAMESPACE",r"rootless.*network namespace|network namespace.*rootless|cannot (?:create|set up).*namespace|unshare|slirp4netns|pasta"),
+ ("NETAVARK_BACKEND",r"netavark|aardvark|failed to setup network|error configuring network"),
+ ("FIREWALL_OR_NFT",r"iptables|nftables|firewall|masquerade"),
+ ("PERMISSION_DENIED",r"permission denied|operation not permitted|access denied"),
+ ("DNS_CONFIGURATION",r"dns|resolv.conf|hostname"),
+ ("NAME_CONFLICT",r"name .*already in use|already exists|container name"),
+ ("STORAGE_FAILURE",r"overlay|vfs|storage|out of space"),
+ ("MISSING_EXECUTABLE",r"executable file not found|no such file or directory|exec format error"),
+]
+category=next((name for name,pattern in patterns if re.search(pattern,msg)), "UNCLASSIFIED")
+print("D4E_API_START_ERROR_CATEGORY="+category,flush=True)
+print("D4E_API_START_ERROR_REDACTED=YES",flush=True)
+PY
   mark API_START FAIL
   exit 6
 fi
