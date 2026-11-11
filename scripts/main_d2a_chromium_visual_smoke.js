@@ -284,16 +284,25 @@ const { PNG } = require("pngjs");
         throw Error("VISUAL_PNG_DIMENSIONS_" + label);
       }
       console.log("D2A_" + label + "_PNG_PIXELS=PASS");
-      const colors = new Set();
-      for (let y = 8; y < height; y += 21) {
-        for (let x = 8; x < width; x += 21) {
-          const i = (y * width + x) * 4;
-          colors.add(
-            bitmap.data[i] + "," + bitmap.data[i+1] + "," +
-            bitmap.data[i+2] + "," + bitmap.data[i+3]
-          );
+      // A sparse 21px grid can miss mobile text, borders and icons. Compare
+      // coarse and dense sampling without lowering the >=4-color gate.
+      function sampledColors(step) {
+        const colors = new Set();
+        for (let y = 2; y < height; y += step) {
+          for (let x = 2; x < width; x += step) {
+            const i = (y * width + x) * 4;
+            colors.add(
+              bitmap.data[i] + "," + bitmap.data[i+1] + "," +
+              bitmap.data[i+2] + "," + bitmap.data[i+3]
+            );
+          }
         }
+        return colors;
       }
+      const coarseColors = sampledColors(21);
+      const colors = sampledColors(5);
+      console.log("D2A_" + label + "_COARSE_COLOR_COUNT=" + coarseColors.size);
+      console.log("D2A_" + label + "_DENSE_COLOR_COUNT=" + colors.size);
       console.log("D2A_" + label + "_SAMPLED_COLOR_COUNT=" + colors.size);
       if (colors.size < 4) throw Error("VISUAL_BLANK_OR_FLAT_" + label);
       console.log("D2A_" + label + "_COLOR_VARIATION=PASS");
