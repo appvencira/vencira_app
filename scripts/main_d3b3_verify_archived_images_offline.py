@@ -108,8 +108,19 @@ def main():
                 layers = item.get("Layers")
                 if not isinstance(layers, list) or not all(isinstance(x, str) and x in by_name for x in layers):
                     fail("LAYERS_MISSING")
+            # Diagnostic classifications only: never print IDs or config
+            # data. Distinguish missing images, a content-store ID mismatch,
+            # and duplicate image identities before investigating OCI layout.
+            marker("ARCHIVED_CONFIG_ENTRY_COUNT", len(metadata))
+            marker("ARCHIVED_CONFIG_UNIQUE_COUNT", len(config_hashes))
+            marker("EXPECTED_IMAGE_UNIQUE_COUNT", len(set(ids.values())))
+            for role in ("api", "db", "web"):
+                marker("EXPECTED_" + role.upper() + "_CONFIG_ID_MATCH",
+                       "YES" if ids[role] in config_hashes else "NO")
             if not set(ids.values()).issubset(config_hashes):
+                marker("DOCKER_IMAGE_ID_EQ_CONFIG_DIGEST", "NOT_VERIFIED")
                 fail("EXPECTED_IMAGE_IDS_MISSING")
+            marker("DOCKER_IMAGE_ID_EQ_CONFIG_DIGEST", "PASS")
         marker("DOCKER_ARCHIVE_CONFIG_IDS", "PASS")
         marker("OFFLINE_ARCHIVE_STRUCTURE", "PASS")
         marker("IMAGE_RELOAD_TESTED", "NO")
