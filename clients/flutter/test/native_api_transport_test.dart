@@ -90,6 +90,44 @@ void main() {
     client.close();
   });
 
+  test('typed workspace offset is only permitted API query', () async {
+    var calls = 0;
+    var tokenReads = 0;
+    final client = MockClient((request) async {
+      calls++;
+      expect(request.url.toString(),
+          'https://dev.vencira.es/api/v1/mobile/workspaces/'
+          '12345678-1234-1234-1234-123456789abc/renewals/?offset=50');
+      expect(request.headers['Authorization'], 'Bearer $testToken');
+      return http.Response('{}', 200,
+          headers: {'content-type': 'application/json'});
+    });
+    final transport = NativeApiTransport(
+      endpoint: endpoint, client: client, sessionFence: fence,
+      accessToken: () async { tokenReads++; return testToken; },
+    );
+    const path = '/api/v1/mobile/workspaces/'
+        '12345678-1234-1234-1234-123456789abc/renewals/';
+    expect(await transport.getJson(path, query: {'offset': '50'}), {});
+    expect(calls, 1);
+    for (final query in [
+      {'offset': '-50'}, {'offset': '1'}, {'offset': '050'},
+      {'offset': '10050'}, {'offset': '50', 'other': 'x'},
+      {'next': 'https://evil.invalid'}, {'offset': '50%26other%3D1'},
+    ]) {
+      await expectLater(transport.getJson(path, query: query),
+          throwsFormatException);
+    }
+    await expectLater(
+        transport.getJson('/api/v1/me/', query: {'offset': '50'}),
+        throwsFormatException);
+    await expectLater(
+        transport.getJson('$path?offset=50'), throwsFormatException);
+    expect(calls, 1);
+    expect(tokenReads, 1);
+    client.close();
+  });
+
   test('never follows redirects carrying bearer credentials', () async {
     var calls = 0;
     final client = MockClient((request) async {
