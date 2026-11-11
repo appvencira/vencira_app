@@ -111,32 +111,60 @@ const { chromium } = require("playwright");
     console.log("D2E_FLUTTER_SEMANTICS_CONTAINER_ATTACHED=PASS");
     console.log("D2E_ACCESSIBILITY_BOOTSTRAP_ONLY=YES");
     stage="INITIAL_ROUTE";
-    // Dashboard automatically pushes Today's agenda when exactly one
-    // workspace is present. This fixture deliberately has one workspace.
-    // Only a real click on the Flutter AppBar back button may return to the
-    // dashboard. Never use JS route mutation, history.go(), or API writes.
-    const backButton=page.getByRole("button",{
-      name:/^(back|volver|atrás|atras|regresar)$/i
+    // A single-workspace login asynchronously opens Today's agenda. The
+    // Flutter AX name is not necessarily EXACTLY "Back"/"Volver" and the
+    // route transition can race semantics initialization. Poll until either
+    // the synthetic customer is accessible or one unambiguous Back control
+    // appears; no JS navigation/history manipulation or API writes.
+    const customerText=page.getByText("Persona ficticia D2E",{exact:true});
+    const customerSemantics=page.locator(
+      'flt-semantics[aria-label*="Persona ficticia D2E"]'
+    );
+    const backByRole=page.getByRole("button",{
+      name:/\b(?:back|volver|atrás|atras|regresar)\b/i
     });
-    const agendaTitle=page.getByText(/^agenda( del día)?$/i).first();
-    const isAgenda=await agendaTitle.count() && await agendaTitle.isVisible()
-      .catch(()=>false);
-    console.log("D2E_INITIAL_AGENDA_TEXT_VISIBLE="+(isAgenda?"YES":"NO"));
-    const backCount=await backButton.count();
-    console.log("D2E_INITIAL_BACK_BUTTON_COUNT="+backCount);
-    if(isAgenda || backCount===1){
+    const backBySemantic=page.locator(
+      'flt-semantics[role="button"]'
+    ).filter({hasText:/\b(?:back|volver|atrás|atras|regresar)\b/i});
+    // Avoid relying on a hidden semantic node's accessibility role; the
+    // fallback checks the same Flutter node directly, not an arbitrary text.
+    const backAria=page.locator(
+      'flt-semantics[role="button"][aria-label*="Back"],'+
+      'flt-semantics[role="button"][aria-label*="Volver"],'+
+      'flt-semantics[role="button"][aria-label*="Atrás"]'
+    );
+    let route="UNKNOWN";
+    let backCandidate=null;
+    for(let tries=0;tries<40;tries++){
+      if((await customerText.count())>0 ||
+         (await customerSemantics.count())>0){
+        route="DASHBOARD";break;
+      }
+      const roleCount=await backByRole.count();
+      const semanticCount=await backBySemantic.count();
+      const ariaCount=await backAria.count();
+      if(roleCount===1){route="AGENDA";backCandidate=backByRole;break;}
+      if(roleCount===0 && semanticCount===1){
+        route="AGENDA";backCandidate=backBySemantic;break;
+      }
+      if(roleCount===0 && semanticCount===0 && ariaCount===1){
+        route="AGENDA";backCandidate=backAria;break;
+      }
+      await page.waitForTimeout(250);
+    }
+    console.log("D2E_INITIAL_ROUTE="+route);
+    console.log("D2E_INITIAL_BACK_ROLE_COUNT="+await backByRole.count());
+    console.log("D2E_INITIAL_BACK_SEMANTIC_COUNT="+
+      await backBySemantic.count());
+    console.log("D2E_INITIAL_BACK_ARIA_COUNT="+await backAria.count());
+    if(route==="AGENDA"){
       stage="RETURN_FROM_AGENDA";
-      if(backCount!==1)throw Error("BACK_BUTTON_NOT_UNIQUE");
-      await backButton.click({timeout:20000});
+      await backCandidate.click({timeout:20000});
       console.log("D2E_GUI_RETURN_FROM_AGENDA=PASS");
     }
     stage="DASHBOARD_LIST";
     // Flutter CanvasKit exposes text as ARIA labels as well as (sometimes)
     // plain DOM text nodes. Both are accessible DOM content, not API probes.
-    const customerText=page.getByText("Persona ficticia D2E",{exact:true});
-    const customerSemantics=page.locator(
-      'flt-semantics[aria-label*="Persona ficticia D2E"]'
-    );
     const visible=await Promise.any([
       customerText.first().waitFor({state:"attached",timeout:15000})
         .then(()=>true),
