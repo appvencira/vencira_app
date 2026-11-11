@@ -208,3 +208,12 @@ Los dos 403 corresponden a `GET /api/v1/me/` y `GET /api/v1/workspaces/`, rutas 
 **Pendiente**: reejecutar el laboratorio y comprobar la correlación de URL de consola con respuesta. Si la consola no proporciona esa URL o cambia la cantidad de solicitudes, el gate conservará FAIL para revisión. Si Chromium pasa, el script seguirá con la recreación **exclusivamente de Nginx efímero** y restauración de un esquema sintético en PG17 aislado. Un eventual `D1Z_RESULT=0` no validaría fuentes ni gráficos exactos, interacción UI completa o rollback real de producción; el marcador de fuentes seguiría siendo `D1Z_CHROMIUM_FONT_FIDELITY_VERIFIED=NO`.
 
 Los controles `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D1Z_DEPLOY_EXECUTED=NO`, `D1Z_LIVE_MIGRATIONS_EXECUTED=NO` siguen inalterados.
+
+
+## Duodécimo intento — bug de estructura de datos en test, no en Django (11/11/2026)
+
+El operador confirmó en Chromium `D1Z_CHROMIUM_FLUTTER_VIEW=PASS`, `D1Z_CHROMIUM_SAME_ORIGIN_API=PASS`, `D1Z_CHROMIUM_PAGE_ERRORS=0`, `D1Z_CHROMIUM_OTHER_CONSOLE_ERRORS=0`, `D1Z_CHROMIUM_EXPECTED_AUTH_DENIAL_CONSOLE=2`, `D1Z_CHROMIUM_INTERNAL_HTTP_STATUS_403=2`, `D1Z_CHROMIUM_INTERNAL_403_ROUTE_AUTH_ME=1` y `D1Z_CHROMIUM_INTERNAL_403_ROUTE_WORKSPACES=1`. Fallaron 28 solicitudes externas de Google Fonts, y no hubo errores internos de transporte. Pese a ello, `D1Z_CHROMIUM_EXPECTED_ANONYMOUS_403=FAIL`, `D1Z_RESULT=8`; limpieza efímera DONE y DEV intacto.
+
+Inspección del código del test identificó fallo **determinista**: `expectedAuthDenialConsoleRoutes` se había declarado como objeto `{}`, pero el control accede a `.set()`, `.get()` y `.size` de `Map`. La excepción se absorbía en el `catch` de clasificación, lo que permitía contar dos denegaciones esperadas sin registrar los dos paths requeridos. No hay indicio de defecto Django por este marcador. **Corrección puntual:** inicializar `new Map()`, commit `3065e338`, sin relajar comprobaciones, abrir red externa ni cambiar frontend/backend.
+
+El próximo intento debe confirmar `D1Z_CHROMIUM_EXPECTED_ANONYMOUS_403=PASS`, `D1Z_CHROMIUM_RENDER_GATE=PASS` y continuar con reinicio de Nginx efímero, repetición del navegador y restauración del esquema PG17 sintético. **No es un PASS antes de ejecutar.** `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` siguen activos.
