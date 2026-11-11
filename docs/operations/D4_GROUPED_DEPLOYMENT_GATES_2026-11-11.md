@@ -365,3 +365,30 @@ D4F_HOST_DOCKER_IMAGE_LOAD_EXECUTED=NO
 D4F_REAL_O5_COMPATIBILITY_VERIFIED=NO
 D4F_OPERATIONAL_ROLLBACK_VERIFIED=NO
 ```
+
+## D4-G PASS confirmado (11/11/2026)
+
+El operador confirmó `D4G_MAIN_CLEAN=PASS`, `D4G_ARCHIVE_CHECKSUM=PASS`, `D4G_LIVE_IMAGE_IDENTITY=PASS`, `D4G_INTERNAL_NETWORK=PASS`, `D4G_PG17_READY=PASS`, `D4G_DJANGO_PG17_READY_HTTP=PASS`, `D4G_WEB_HTTP_8080=PASS`, `D4G_WEB_TO_API_PRIVATE_HTTP=PASS`, `D4G_NO_HOST_PORTS=PASS`, `D4G_WEB_REVERSE_PROXY_HTTP=PASS`, `D4G_WEB_REVERSE_PROXY_JSON=PASS`, `D4G_WEB_REVERSE_PROXY_PATH_VERIFIED=YES`, `D4G_DEV_CONTAINERS_UNCHANGED=YES`, `D4G_EPHEMERAL_CLEANUP=DONE`, `D4G_RESULT=0`. D4G confirma Web Nginx→Django→PG17 **con datos sintéticos**, empleando imágenes ya presentes en Docker. El texto recibido está truncado antes del eco del exit shell; `D4G_SHELL_RESULT` no se presupone.
+
+## D4-H — Ensayo O5 real con las imágenes retenidas en Docker (preparado; no ejecutado)
+
+Se publica `scripts/main_d4h_retained_images_real_o5_pg17_isolated.sh` derivado del procedimiento exitoso D1-N, sin reconstruir imágenes. Selecciona con criterio de edad y etiqueta el snapshot PostgreSQL de restic O5, usa `restic --no-lock dump` directamente por streaming hacia `pg_restore` dentro de un PostgreSQL 17 efímero en red Docker `--internal`, con PGDATA en tmpfs y sin puertos, volúmenes ni montaje persistente. Verifica identidad de las tres imágenes retenidas en host Docker mediante `images.manifest`, y ejecuta `manage.py check`, paridad de modelos, migración 0019–0027 y rollback de migraciones a 0018 **solo dentro del laboratorio**, usando la imagen API retenida. Comprueba recuentos de entidades antes y después sin imprimir valores, elimina contenedor/red y verifica que los tres contenedores DEV siguen intactos. Secretos O5 accesibles solo mediante `sudo`, nunca se imprimen.
+
+**Alcance limitado:** este ensayo **no restaura las imágenes desde el tar** a un runtime nuevo y no demuestra que el export sea equivalente al ID Docker original; tampoco prueba Web contra datos reales O5. Demuestra compatibilidad de los dos componentes **ya retenidos en Docker host** con la restauración histórica real en un laboratorio aislado. No cerrar B1 ni B2 completos con ese resultado; tampoco arregla la discrepancia D3-B3.
+
+**Ejecutar solo tras revisar el script root y comprobar sintaxis:**
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+bash -n scripts/main_d4h_retained_images_real_o5_pg17_isolated.sh
+echo "D4H_SYNTAX=$?"
+sudo -v
+sudo bash scripts/main_d4h_retained_images_real_o5_pg17_isolated.sh /home/vencira/vencira-release-archives/pre-upgrade-82d5a9324f6141b67b5b55a7
+echo "D4H_SHELL_RESULT=$?"
+systemctl is-active docker
+git status --short
+```
+
+Condiciones relevantes: `D4H_RESTORE_REAL_O5_PG17=PASS`, `D4H_HOST_IMAGE_IDENTITY=PASS`, `D4H_MIGRATIONS_0019_0027=PASS`, `D4H_ROLLBACK_TO_0018=PASS`, `D4H_DEV_CONTAINERS_UNCHANGED=OK`, `D4H_RESULT=0`. Los marcadores `D4H_LIVE_RESTORE_EXECUTED=NO`, `D4H_LIVE_MIGRATIONS_EXECUTED=NO`, `D4H_ARCHIVE_EXPORT_EXECUTABLE_EQUIVALENCE_VERIFIED=NO` deben permanecer en su estado restrictivo.
