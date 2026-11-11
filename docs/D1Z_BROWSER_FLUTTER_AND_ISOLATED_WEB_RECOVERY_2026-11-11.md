@@ -217,3 +217,73 @@ El operador confirmó en Chromium `D1Z_CHROMIUM_FLUTTER_VIEW=PASS`, `D1Z_CHROMIU
 Inspección del código del test identificó fallo **determinista**: `expectedAuthDenialConsoleRoutes` se había declarado como objeto `{}`, pero el control accede a `.set()`, `.get()` y `.size` de `Map`. La excepción se absorbía en el `catch` de clasificación, lo que permitía contar dos denegaciones esperadas sin registrar los dos paths requeridos. No hay indicio de defecto Django por este marcador. **Corrección puntual:** inicializar `new Map()`, commit `3065e338`, sin relajar comprobaciones, abrir red externa ni cambiar frontend/backend.
 
 El próximo intento debe confirmar `D1Z_CHROMIUM_EXPECTED_ANONYMOUS_403=PASS`, `D1Z_CHROMIUM_RENDER_GATE=PASS` y continuar con reinicio de Nginx efímero, repetición del navegador y restauración del esquema PG17 sintético. **No es un PASS antes de ejecutar.** `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` siguen activos.
+
+
+## Resultado final del operador — D1-Z PASS con degradación tipográfica delimitada (11/11/2026)
+
+El operador ejecutó la versión corregida del gate en `main`, con los siguientes resultados:
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D1Z_RELEASE_AUTHORIZED=NO
+D1Z_DEPLOY_EXECUTED=NO
+D1Z_LIVE_MIGRATIONS_EXECUTED=NO
+D1Z_LIVE_RESTORE_EXECUTED=NO
+D1Z_PROBE_SYNTAX=PASS
+D1Z_DEV_IDENTITY=PASS
+D1Z_INTERNAL_NETWORK=PASS
+D1Z_PG17_TMPFS=PASS
+D1Z_CANDIDATE_IMAGE=PASS
+D1Z_SYNTHETIC_MIGRATIONS=PASS
+D1Z_GUNICORN_STARTED=YES
+D1Z_FLUTTER_RELEASE_BUILD=PASS
+D1Z_LOCAL_CANVASKIT_BUNDLED=PASS
+D1Z_BOOTSTRAP_LOCAL_CANVASKIT_CONFIG=PASS
+D1Z_NGINX_WEB_CONTAINER_STARTED=YES
+D1Z_CADDY_LAB_CONFIG_VALID=PASS
+D1Z_NO_HOST_PORTS=PASS
+D1Z_CADDY_SOCKET_READY=PASS
+D1Z_FLUTTER_WEB_ROOT_AND_ASSETS=PASS
+D1Z_CADDY_TLS_HTTP_CONTRACT=PASS
+D1Z_CSRF_SECURE_COOKIE=PASS
+D1Z_CSRF_POST_DENIED=PASS
+D1Z_UNTRUSTED_CA_DENIED=PASS
+D1Z_CADDY_HTTPS_PROBE=PASS
+D1Z_CADDY_PROXY_CANDIDATE_LAB=PASS
+D1Z_CHROMIUM_IMAGE_BUILD=PASS
+D1Z_CHROMIUM_SMOKE_SYNTAX=PASS
+D1Z_CHROMIUM_LAUNCH=PASS
+D1Z_CHROMIUM_SPANISH_LOCALE=PASS
+D1Z_CHROMIUM_INTL_DATE_LOCALE=PASS
+D1Z_CHROMIUM_DOCUMENT=PASS
+D1Z_CHROMIUM_FLUTTER_VIEW=PASS
+D1Z_CHROMIUM_SAME_ORIGIN_API=PASS
+D1Z_CHROMIUM_PAGE_ERRORS=0
+D1Z_CHROMIUM_OTHER_CONSOLE_ERRORS=0
+D1Z_CHROMIUM_EXPECTED_AUTH_DENIAL_CONSOLE=2
+D1Z_CHROMIUM_EXPECTED_ANONYMOUS_403=PASS
+D1Z_CHROMIUM_APP_JS_ERRORS=NONE
+D1Z_CHROMIUM_FONT_NETWORK_DEGRADED=YES
+D1Z_CHROMIUM_FONT_FIDELITY_VERIFIED=NO
+D1Z_CHROMIUM_SMOKE=PASS_WITH_FONT_DEGRADATION
+D1Z_CHROMIUM_RENDER_GATE=PASS
+D1Z_WEB_RECOVERY_RESTART=PASS
+D1Z_CHROMIUM_AFTER_WEB_RESTART=PASS
+D1Z_SYNTHETIC_SCHEMA_BACKUP_RESTORE=PASS
+D1Z_OPERATIONAL_IMAGE_AND_DB_ROLLBACK_VERIFIED=NO
+D1Z_FLUTTER_ARTIFACT_BEHIND_CADDY_TESTED=YES
+D1Z_CADDY_PRODUCTION_CONFIG_VERIFIED=NO
+D1Z_ROLLBACK_EXECUTED=NO
+D1Z_ROLLBACK_VERIFIED=NO
+D1Z_FLUTTER_CADDY_CHROMIUM_WEB_RESTART_AND_SYNTHETIC_RESTORE_GATE=PASS
+D1Z_DEV_CONTAINERS_UNCHANGED=OK
+D1Z_EPHEMERAL_CLEANUP=DONE
+D1Z_RESULT=0
+```
+
+El **segundo** smoke Chromium tras recrear el contenedor Nginx efímero volvió a confirmar `CHROMIUM_LAUNCH=PASS`, `SPANISH_LOCALE=PASS`, `INTL_DATE_LOCALE=PASS`, `DOCUMENT=PASS`, `FLUTTER_VIEW=PASS`, `SAME_ORIGIN_API=PASS`, `PAGE_ERRORS=0`, `OTHER_CONSOLE_ERRORS=0`, `EXPECTED_AUTH_DENIAL_CONSOLE=2`, `EXPECTED_ANONYMOUS_403=PASS`, `APP_JS_ERRORS=NONE`, `FONT_NETWORK_DEGRADED=YES`, `FONT_FIDELITY_VERIFIED=NO`, `SMOKE=PASS_WITH_FONT_DEGRADATION`.
+
+**Cierre formal: D1-Z PASS únicamente en laboratorio efímero, con advertencia tipográfica explícita.** Se validan build Flutter, motor CanvasKit servido localmente, Caddy TLS sintético y política de CA, protección CSRF/sesión, arranque real Chromium es-ES, API same-origin, reinicio Nginx del laboratorio, doble browser smoke, backup/restore de schema sintético PostgreSQL 17 y aislamiento de los contenedores DEV. Las dos respuestas 403 corresponden a endpoints `/api/v1/me/` y `/api/v1/workspaces/` sin sesión, no a fallos funcionales de rutas públicas.
+
+**No validado:** fuentes/representación gráfica visual, flujos de usuario autenticados, Caddy de producción exacto, rollback de imágenes antiguas y datos persistentes, MFA operativo, migraciones o despliegue real. El warning `Wasm dry run succeeded` es informativo. Continuar con gates independientes y autorización expresa antes de cualquier operación DEV. No requiere volver a ejecutar D1-Z sin cambios relevantes en su alcance o artefactos.
