@@ -80,3 +80,12 @@ git merge --ff-only origin/main
 bash scripts/main_d2e_browser_gui_isolated.sh
 echo "D2E_SHELL_RESULT=$?"
 ```
+
+
+## Segundo ensayo: control de accesibilidad presente, clic ordinario agota timeout
+
+El operador confirmó de nuevo `D2E_RESULT=8`, `D2E_GUI_FAILURE_STAGE=ACCESSIBILITY_ENABLE`, `D2E_GUI_FAILURE_TYPE=TIMEOUT`, `D2E_GUI_PAGE_ERROR_COUNT=0`. `D2E_FLUTTER_VIEW_ATTACHED=PASS`, `D2E_FLUTTER_SHADOW_ROOT=NO`, `D2E_FLUTTER_PLACEHOLDER_COUNT=1`, `D2E_FLUTTER_SEMANTICS_COUNT_BEFORE=0`, `D2E_FLUTTER_SEMANTICS_HOST_COUNT=2`, `D2E_FLUTTER_PLACEHOLDER_FOUND=YES`. Todos los controles de laboratorio/backend/TLS/login PASS, contenedores DEV intactos y cleanup DONE. **No se puede afirmar aún que Flutter Web tenga árbol accesible operativo**; solo se localizaron nodos estructurales. No se inició ninguna edición.
+
+El commit `4155896f` añade diagnóstico de geometría/visibilidad del placeholder sin registrar DOM ni datos sensibles. Si el elemento tiene geometría positiva y está dentro de la ventana, utiliza `Playwright locator.click({force:true})`, que sigue emitiendo **un evento de puntero de navegador real** sin inyectar `dispatchEvent`, alterar estilos ni efectuar escrituras por API. Si su geometría impide clic, lo registra como `NOT_POSSIBLE` y mantiene obligatoria la detección posterior de contenido real de semántica de la anotación, por lo que no puede emitir PASS basándose solo en un host vacío. El marker `D2E_FLUTTER_SEMANTICS_CONTAINER_ATTACHED=PASS` distingue la mera existencia estructural del contenedor del éxito end-to-end, que solo llega tras editar desde GUI y verificar persistencia en PG17. Sintaxis V8 PASS; **tercer ensayo pendiente del operador**. Sin cambio del código Flutter ni relajación de requisitos del gate.
+
+Nuevo comando: actualizar `origin/main` con `git fetch`, merge `--ff-only`, luego `bash scripts/main_d2e_browser_gui_isolated.sh`. Se mantiene `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
