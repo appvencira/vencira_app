@@ -93,3 +93,17 @@ Se añadió `scripts/main_d3c_caddy_readonly_preflight.sh` (commit `b3459035`) a
 Si el despliegue usa otra topología (por ejemplo Caddy en contenedor), el preflight informa UNVERIFIED; no inventa una configuración del host. Nunca aplica `reload`, `restart`, modifica Caddyfile, abre puertos, visita endpoints privados ni ejecuta migraciones. Aunque pase, no certifica rutas de producción, dominio `vencira.es`, funcionamiento de MFA ni release.
 
 **La ejecución agrupada continua con D3-A y después D3-C.** D3-C fallido queda explícito como `D3_D3C_CADDY_READONLY_PREFLIGHT=UNVERIFIED`; la salida `D3_RESULT=0` significa únicamente que el orquestador terminó con recuperación DB sintética PASS y declaración de bloqueos, no que Caddy/producción esté autorizado. Los marcadores `D3_PRODUCTION_CADDY_CONFIG_VERIFIED=NO` y `D3_PUBLIC_RELEASE_AUTHORIZED=NO` siguen forzados. Ninguno de los dos scripts se ha ejecutado aún en VPS.
+
+
+## Primer ensayo D3: fallo de preflight de rama — corregido
+
+El operador ejecutó D3 y obtuvo `D3_MAIN_REQUIRED=FAIL`, `D3_SHELL_RESULT=2`. Ocurrió **antes de iniciar PostgreSQL o comprobaciones de Caddy**; no es un fallo de restauración. La condición anterior rechazaba el checkout local cuando `git branch --show-current` no era `main`. El directorio de validación puede estar en HEAD desacoplado o con otro nombre de rama, pese a señalar exactamente el commit de `origin/main`.
+
+**Correcciones en main:** `03b375bf` (orquestador D3) y `1a602505` (D3-A). Eliminan exclusivamente la comprobación por **nombre de rama**, pero mantienen:
+- `HEAD` exactamente idéntico a `refs/remotes/origin/main`.
+- `git status --porcelain` vacío (sin cambios rastreados o no rastreados).
+- Comprobación de identidad de los tres contenedores DEV y ausencia de deploy/migraciones operativas.
+
+No se crea otra rama ni se ejecutan `checkout`, `reset` o acciones sobre los datos. El nuevo script **no está todavía validado por el operador**. Repetir `git fetch`, `git merge --ff-only origin/main`, `bash scripts/main_d3_grouped_release_preflight.sh` y registrar `D3_SHELL_RESULT`.
+
+Progreso D3: **0 gates verificados; primer intento bloqueado por preflight de rama**. D1-Z→D2-E permanece 6/6 PASS.
