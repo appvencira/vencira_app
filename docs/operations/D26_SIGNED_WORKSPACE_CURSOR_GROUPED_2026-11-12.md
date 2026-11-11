@@ -92,3 +92,37 @@ La salida aportada contiene `D25_ANALYZE=PASS`, `D25_SERVER_ISSUED_SYNTHETIC_FIX
 **Criterio actualizado para PASS:** observar `D26_FLUTTER_TEMP_CAPACITY=PASS`, `D26_FLUTTER_TEST_PROCESS=PASS`, `D26_FLUTTER_TEST_OUTPUT=PASS`, `D26_REAL_FLUTTER_TLS_CURSOR_AND_CONTRACT=PASS`, `D25_DEV_CONTAINERS_UNCHANGED=OK`, `D25_BOUNDARY_RESULT=0`, `D26_CURSOR_REAL_TLS_FLUTTER=PASS` y `D26_RESULT=0`, sin errores de compilación ni interrupciones. Los subgates PG17 deben mantenerse PASS. No se declara PASS hasta revalidar.
 
 Mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## Reejecución VPS final — D26 PASS (12/11/2026)
+
+Una vez corregido el volumen temporal del compilador y la validación de la salida, la nueva ejecución reporta:
+
+```text
+D25_ANALYZE=PASS
+D25_SERVER_ISSUED_SYNTHETIC_FIXTURE=PASS
+D26_FLUTTER_TEMP_CAPACITY=PASS
+D25_TLS_UNTRUSTED_CA_AND_HOST_MISMATCH_DENIED=PASS
+D25_REAL_TLS_WORKSPACE_PAGINATION_75=PASS
+D26_REAL_TLS_SIGNED_CURSOR_PAGINATION_75=PASS
+D25_REAL_TLS_CROSS_WORKSPACE_DENIED=PASS
+00:00 +4: All tests passed!
+D26_FLUTTER_TEST_PROCESS=PASS
+D26_FLUTTER_TEST_OUTPUT=PASS
+D26_REAL_FLUTTER_TLS_CURSOR_AND_CONTRACT=PASS
+D25_REAL_TLS_NO_PUBLIC_PORTS=PASS
+D25_OPERATIONAL_ROUTES_ENABLED=NO
+D25_DEV_CONTAINERS_UNCHANGED=OK
+D25_DEPLOY_EXECUTED=NO
+D25_LIVE_MIGRATIONS_EXECUTED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D25_BOUNDARY_RESULT=0
+D26_CURSOR_REAL_TLS_FLUTTER=PASS
+D26_PUBLIC_CURSOR_ENDPOINT_ENABLED=NO
+D26_AUTH_PRODUCTION_ENABLED=NO
+D26_RESULT=0
+```
+
+**D26 PASS para el gate agrupado de laboratorio**: Flutter `analyze` terminó sin problemas; 4 pruebas (1 socket HTTPS real + 3 de contrato cursor) terminaron con `All tests passed!`; temporales Docker suficientes, sin ENOSPC, verificación de salida correcta; sin rutas operativas ni modificaciones DEV. Para llegar al tramo HTTPS, el script agrupado exige el subgate PG17 previo con salida cero; el recorte comunicado no incluye la cuenta final de tests Django ni `D26_SHELL_RESULT`, por lo que no deben atribuirse marcadores PG17 no observados literalmente.
+
+Las líneas históricas de error/falso PASS anteriores se conservan como auditoría y **quedan superadas por esta reejecución**, no borradas. El cursor no materializa un snapshot y no garantiza que las reasignaciones intermedias sean invisibles. Sigue prohibido desplegar, habilitar issuer real o migrar LIVE.
