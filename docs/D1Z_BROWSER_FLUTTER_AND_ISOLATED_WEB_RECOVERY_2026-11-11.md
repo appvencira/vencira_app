@@ -52,3 +52,33 @@ La primera ejecución obtuvo `D1Z_PG17_TMPFS=PASS`, `D1Z_SYNTHETIC_MIGRATIONS=PA
 El fallo puede corresponder a renderización, arranque Chromium, recursos externos inaccesibles u otro error: el mensaje original **no discrimina** y no hay prueba suficiente para atribuirlo a Flutter o a los certificados. Se cambió `scripts/main_d1z_chromium_smoke.js` en commit `74a32b76` para registrar etapas discretas (`LAUNCH`, `DOCUMENT`, `FLUTTER_VIEW_TIMEOUT`, `SAME_ORIGIN_API`, `JS_ERRORS`) y contadores de errores JS, peticiones fallidas internas y externas, sin imprimir direcciones, cookies, mensajes de consola, tokens ni cuerpos HTTP. El shell ahora ejecuta `node --check` en un contenedor sin red antes del smoke, commit `5df3987b`.
 
 Se requiere **una nueva ejecución D1-Z** sobre `main`. Solo publicar PASS si se obtienen `D1Z_CHROMIUM_SMOKE=PASS`, `D1Z_CHROMIUM_AFTER_WEB_RESTART=PASS`, `D1Z_EPHEMERAL_CLEANUP=DONE` y `D1Z_RESULT=0`. Si persiste el fallo, usar los nuevos marcadores como diagnóstico, no desactivar los controles ni reducir el alcance de la prueba para hacerla pasar. Mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## Segundo intento — fallo confirmado de arranque de Flutter, corrección de dependencia CDN (11/11/2026)
+
+El operador confirmó PG17/build Flutter/Nginx/Caddy/TLS y su contrato HTTP en PASS. El navegador llegó a `D1Z_CHROMIUM_LAUNCH=PASS` y `D1Z_CHROMIUM_DOCUMENT=PASS`, pero el bootstrap no generó un `flutter-view`:
+
+```text
+D1Z_CHROMIUM_BOOTSTRAP_TAG=YES
+D1Z_CHROMIUM_FLUTTER_VIEW_PRESENT=NO
+D1Z_CHROMIUM_CANVAS_PRESENT=NO
+D1Z_CHROMIUM_SCRIPT_TAGS_PRESENT=YES
+D1Z_CHROMIUM_FAILURE_STAGE=FLUTTER_VIEW_TIMEOUT
+D1Z_CHROMIUM_JS_ERRORS_COUNT=6
+D1Z_CHROMIUM_FAILED_INTERNAL_REQUESTS=0
+D1Z_CHROMIUM_FAILED_EXTERNAL_REQUESTS=3
+D1Z_CHROMIUM_RENDER_GATE=FAIL
+D1Z_DEV_CONTAINERS_UNCHANGED=OK
+D1Z_EPHEMERAL_CLEANUP=DONE
+D1Z_RESULT=8
+```
+
+Los tres fallos de recursos externos en una red `--internal` son compatibles con una dependencia del motor CanvasKit obtenida del CDN por defecto de Flutter; **no conocemos sus URLs y no afirmamos causalidad definitiva**. En la revisión del código `clients/flutter/web/index.html` se comprobó que la aplicación inserta el `flutter_bootstrap.js` generado. La documentación oficial Flutter Web permite personalizar el bootstrap e indicar `canvasKitBaseUrl`, y el build ya exporta `canvaskit/`.
+
+**Corrección candidata de código real publicada en `main`:**
+- `clients/flutter/web/flutter_bootstrap.js` (commit `289f3014`): bootstrap estándar con tokens `{{flutter_js}}` y `{{flutter_build_config}}`, configurando `_flutter.loader.load({config:{canvasKitBaseUrl:"/canvaskit/"}})`. El motor se servirá desde el mismo origen en vez de solicitarlo a un CDN externo.
+- `scripts/main_d1z_browser_web_recovery_isolated.sh` (commit `028e668b`): exige `canvaskit/canvaskit.js`, `canvaskit/canvaskit.wasm` y comprobación de la configuración generada antes de publicar `D1Z_LOCAL_CANVASKIT_BUNDLED=PASS` y `D1Z_BOOTSTRAP_LOCAL_CANVASKIT_CONFIG=PASS`.
+
+Este cambio afecta a Flutter Web en futuras compilaciones, pero **no hay deploy** ni modificación de los recursos web servidos ahora por DEV. Cualquier validación D1-W previa corresponde al artefacto anterior; D1-Z probará el nuevo build. Si Chromium vuelve a fallar, conservar FAIL y diagnosticar sin atribuir PASS. El aviso Flutter de `Wasm dry run succeeded` es informativo y no es la causa demostrada de este fallo.
+
+En todo momento `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D1Z_RELEASE_AUTHORIZED=NO`. Sigue sin certificarse el rollback operativo ni la navegación completa de la aplicación.
