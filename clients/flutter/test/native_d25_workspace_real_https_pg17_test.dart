@@ -7,6 +7,7 @@ import 'package:http/io_client.dart';
 import 'package:vencira/api/native_api_endpoint.dart';
 import 'package:vencira/api/native_api_transport.dart';
 import 'package:vencira/api/native_session_fence.dart';
+import 'package:vencira/api/native_workspace_cursor_read_port.dart';
 import 'package:vencira/api/native_workspace_read_port.dart';
 
 const _host = 'dev.vencira.es';
@@ -95,6 +96,24 @@ void main() {
       expect(ids, hasLength(75));
       expect(fence.ticket, isNotNull);
       print('D25_REAL_TLS_WORKSPACE_PAGINATION_75=PASS');
+
+      // D26 signed keyset pagination over the same real verified TLS socket.
+      final cursorReader = NativeWorkspaceCursorReadPort(NativeApiTransport(
+        endpoint: NativeApiEndpoint.parse('https://$_host'),
+        client: client, accessToken: () async => access, sessionFence: fence,
+      ));
+      final cursorFirst = await cursorReader.loadPage(workspace);
+      expect(cursorFirst.results, hasLength(50));
+      expect(cursorFirst.nextCursor, isNotNull);
+      final cursorSecond = await cursorReader.loadPage(
+          workspace, cursor: cursorFirst.nextCursor);
+      expect(cursorSecond.results, hasLength(25));
+      expect(cursorSecond.nextCursor, isNull);
+      expect({
+        ...cursorFirst.results.map((row) => row.id),
+        ...cursorSecond.results.map((row) => row.id),
+      }, hasLength(75));
+      print('D26_REAL_TLS_SIGNED_CURSOR_PAGINATION_75=PASS');
 
       // A wrong workspace cannot leak data. The server currently responds
       // 401 uniformly, which fences the caller's session.
