@@ -104,3 +104,31 @@ Cambios de diagnóstico publicados en `main`:
 - Commit `5f61089d`: prueba de control adicional **solo después del FAIL del navegador ordinario**; intercepta exclusivamente solicitudes a `fonts.googleapis.com` y responde una hoja CSS vacía en una nueva página del navegador del laboratorio. Publica `D1Z_CHROMIUM_FONT_DEPENDENCY_DIAGNOSTIC=VIEW_PRESENT_WITH_FONT_STUB` o `VIEW_ABSENT_OR_DIAGNOSTIC_FAILED`. **No constituye PASS del navegador sin alteraciones y nunca modifica la aplicación ni el proxy.** El diagnóstico puede discriminar causalidad; un resultado negativo no identifica por sí solo los dos errores JS restantes.
 
 El gate continuará FAIL hasta que la app real genere `flutter-view` y pase los demás controles sin respuestas sustituidas. No relajar aislamiento de Docker, no cambiar configuración Caddy operativa, no realizar deploy. Siguen `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## Quinto intento — Google Fonts no explica por sí solo la falta de Flutter view (11/11/2026)
+
+El operador comunicó:
+```text
+D1Z_CHROMIUM_FONT_DEPENDENCY_DIAGNOSTIC=VIEW_ABSENT_OR_DIAGNOSTIC_FAILED
+D1Z_CHROMIUM_FAILURE_STAGE=FLUTTER_VIEW_TIMEOUT
+D1Z_CHROMIUM_JS_ERRORS_COUNT=2
+D1Z_CHROMIUM_FAILED_INTERNAL_REQUESTS=0
+D1Z_CHROMIUM_FAILED_EXTERNAL_REQUESTS=1
+D1Z_CHROMIUM_DOCUMENT_HTTP_STATUS=200
+D1Z_CHROMIUM_SCRIPT_HTTP_STATUS=200
+D1Z_CHROMIUM_FAILED_REQUEST_TYPE_FETCH=1
+D1Z_CHROMIUM_FAILED_HOST_CLASS_GOOGLE_FONTS=1
+D1Z_CHROMIUM_ERROR_CLASS_LOAD_FAILURE=1
+D1Z_CHROMIUM_ERROR_CLASS_OTHER=1
+D1Z_CHROMIUM_EXCEPTION_TYPE_ERROR=1
+D1Z_CHROMIUM_RENDER_GATE=FAIL
+D1Z_DEV_CONTAINERS_UNCHANGED=OK
+D1Z_EPHEMERAL_CLEANUP=DONE
+D1Z_RESULT=8
+```
+El ensayo con CSS vacío es **inconcluso**, porque combina vista ausente y error del propio diagnóstico en un marcador; nunca fue una prueba de aceptación. La ausencia de un `flutter-view` con respuestas HTTP 200 de HTML/scripts apunta a una excepción durante el arranque o el render, pero **todavía no la identifica**. La solicitud Google Fonts restante puede ser secundaria al renderizado de fuentes de reserva de Flutter.
+
+Se publicó en `main` una síntesis de la primera línea de `pageerror` con eliminación de URLs, valores largos opacos y cadenas entrecomilladas (sin stack completo, cuerpos de respuesta ni tokens), en `scripts/main_d1z_chromium_smoke.js` (commits `585464a2`, `ec709087`). Los marcadores `D1Z_CHROMIUM_SAFE_EXCEPTION_1` y, si corresponde, `_2`, permitirán distinguir excepción Flutter del error de fuente. El runner existente ya ejecuta `node --check` antes de abrir Chromium.
+
+**D1-Z mantiene resultado FAIL** y solo la siguiente ejecución puede validar esta instrumentación. No se ha autorizado despliegue ni migraciones persistentes, y la causa exacta sigue pendiente.
