@@ -220,3 +220,11 @@ Operador confirmó `D4E_API_START=PASS`, `D4E_API_HEALTH_HTTP=PASS`, `D4E_WEB_ST
 La sonda `wget` no explica el fallo: el proceso contenedor Web deja de ejecutarse. Commit `8ba5e8cc` añade únicamente **diagnóstico seguro tras la salida del proceso**: `WEB_EXIT_CODE`, `WEB_OOM_KILLED`, `WEB_EXIT_DIAGNOSIS` según patrones de logs (sin imprimir su contenido); todo se guarda y elimina dentro del workspace privado. El gate HTTP permanece FAIL si no responde, sin rebajar aislamiento.
 
 Reejecutar D4-E una vez, ya con esta clasificación, para seleccionar una corrección basada en evidencia. No se ha identificado aún si es un problema de filesystem read-only, permisos, configuración, puertos u otra causa. No afirmar corrupción de imagen.
+
+### D4-E — Causa clasificada: escritura contra filesystem read-only
+
+Resultado del operador: `D4E_WEB_EXIT_CODE=1`, `D4E_WEB_OOM_KILLED=NO`, `D4E_WEB_EXIT_DIAGNOSIS=READONLY_FILESYSTEM`, `D4E_WEB_CONTAINER_STILL_RUNNING=NO`, `D4E_WEB_HTTP_LOCAL=FAIL`, `D4E_EPHEMERAL_STORAGE_REMOVED=YES`, `D4E_RESULT=7`. Se sabe que Nginx intenta escribir contra un sistema de archivos solo lectura, pero aún se desconoce la ruta exacta. No concluir fallo de imagen ni actualizar el gate a PASS.
+
+Commits `ebd7333a`, `f712b9f1`: diagnóstico clasifica, solo a partir de líneas de error de lectura restringida, la **familia** de la ruta afectada (por ejemplo ETC_NGINX_CONF_D, VAR_CACHE_NGINX, VAR_RUN_NGINX, RUN_NGINX, VAR_LOG_NGINX o UNKNOWN) sin imprimir rutas completas ni registros. No cambia el modo read-only ni los límites del laboratorio. Hacer un único retest D4-E y revisar `D4E_WEB_READONLY_PATH_FAMILY` antes de añadir un tmpfs puntual; si es UNKNOWN, no improvisar un montaje sobre /etc/nginx.
+
+No se han ejecutado despliegue, migraciones, restauración O5 ni rollback operativo.
