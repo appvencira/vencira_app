@@ -45,3 +45,11 @@ Una respuesta interrumpida o `D14_RESULT != 0` NO se debe marcar PASS.
 La restauración se hace en un laboratorio Docker aislado, pero ejecuta transitoriamente contenedores de prueba. No hace `docker load`, despliegue, restauración en la base operativa, migraciones de base viva, Caddy reload, DNS, pruebas del cliente Android, ni rollback con escrituras posteriores. No cierra identidad exacta de config SHA de export OCI versus ID Docker host ni acredita recuperar toda la pila desde un servidor vacío.
 
 Mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`. La siguiente fase prioritaria tras D14 PASS es el cierre de APK Android / HTTPS nativo y la revisión de activación pública, no la repetición de toda la regresión D5.
+
+## Primera ejecución — bloqueada en preflight; corrección de patrón (11/11/2026)
+
+El operador observó `D14_ARCHIVE_CHECKSUM=PASS`, `D14_ARCHIVE_MANIFEST=PASS`, `D14_HISTORICAL_API_0018_ONLY=FAIL`, `D14_O5_CREDENTIALS_ACCESSED=NO`, `D14_REAL_O5_RESTORE_EXECUTED=NO`, `D14_RESULT=8`. La prueba abortó **antes de leer O5, crear red de laboratorio o restaurar datos**.
+
+Revisión del código: el patrón Python `r"0018_[A-Za-z0-9_]+\\.py"` estaba **sobreescapado** en una cadena raw, por lo que buscaba un carácter `\` literal y no coincidía con el sufijo normal `.py`. El fallo del preflight era atribuible a ese defecto, no evidencia contra la imagen. Commit de reparación `22d981e3`: sustituye regex por comprobaciones explícitas `startswith("0018_")` y `suffix == ".py"`, con la misma exigencia de ausencia 0027. El preflight seguirá abortando si faltan archivos, la ruta es incorrecta o Docker falla; no afirmar PASS sin nueva ejecución.
+
+Se puede repetir únicamente D14 actualizada porque el intento no accedió a Restic/O5. Mantener los controles `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
