@@ -335,7 +335,8 @@ families=[
  ("TMP", r"/tmp/"),
  ("DOCKER_ENTRYPOINT", r"/docker-entrypoint"),
 ]
-matched=[label for label,pattern in families if re.search(pattern,msg)]
+problem_lines=[line for line in msg.splitlines() if re.search(r"read.only.file.system|filesystem is read.only|permission denied",line)]
+matched=[label for label,pattern in families if re.search(pattern,"\\n".join(problem_lines))]
 print("D4E_WEB_READONLY_PATH_FAMILY=" + (matched[0] if matched else "UNKNOWN"), flush=True)
 print("D4E_WEB_DIAGNOSTIC_TEXT_PRINTED=NO", flush=True)
 PY
