@@ -60,3 +60,21 @@ D2D_LIVE_RESTORE_EXECUTED=NO
 ```
 
 No ejecutar migraciones, despliegues ni MFA real.
+
+
+## Cierre D2-D validado por el operador (11/11/2026)
+
+El operador ejecutó `bash scripts/main_d2d_flutter_ui_grouped_isolated.sh` en `~/vencira-main-check-20261108`. **Resultado confirmado:** `D2D_RESULT=0`, `D2D_SHELL_RESULT=0`, `D2D_FLUTTER_EDITOR_DESKTOP_MOBILE_GROUP_GATE=PASS`.
+
+Evidencia:
+- `D2D_DEV_IDENTITY=PASS`.
+- `flutter analyze`: «No issues found»; `D2D_FLUTTER_ANALYZE=PASS`.
+- `test/d2d_real_editor_gestures_test.dart`: **4/4 tests PASS**: alta mediante gestos y validación/guardado a 390×844 y 1280×800, edición preservando referencia y vencimiento mientras cambia notas, y cancelación sin guardar. `D2D_REAL_EDITOR_GESTURES=PASS`.
+- `test/renewal_editor_test.dart`: **4/4 tests PASS**, alta sin referencia obligatoria y validación de nombre en ES/CA, selección Entrada/Modalidad en ES/CA. `D2D_EXISTING_EDITOR_REGRESSION=PASS`.
+- `D2D_FLUTTER_UI_GROUP=PASS`, `D2D_REAL_DEV_DATA_USED=NO`, `D2D_DEV_CONTAINERS_UNCHANGED=OK`, `D2D_DEPLOY_EXECUTED=NO`, `D2D_LIVE_MIGRATIONS_EXECUTED=NO`.
+
+El operador pegó después fragmentos del log en la terminal como texto de órdenes, pero el resultado del script y el código de salida se observaron correctamente como 0. No existen evidencias de intervención sobre DEV.
+
+**Cierre: D2-D PASS dentro del alcance de tests de widgets.** `D2D_REAL_CHROMIUM_GUI_CLICK_VERIFIED=NO` sigue vigente: aún no consta automatización integral de clics en Flutter Web compilado con la API real; ni fidelidad de fuentes externas, MFA real, Caddy de producción o rollback persistente.
+
+**Progreso del tramo D1-Z→D2-D: 5/5 gates cerrados (100 % del tramo, NO del producto completo).** A partir de aquí, abrir un tramo independiente para flujo E2E real Flutter Web→Django→PG17 sintético, revisión de UX/fonts y garantías operativas. Mantener `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
