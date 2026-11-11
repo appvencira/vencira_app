@@ -1,0 +1,57 @@
+# VENCIRA / D11 -- CANDIDATE ONLY. Never execute 'up' without release approval.
+# All three image references must be immutable image@sha256:... references.
+# VENCIRA_PROD_ENV_FILE must point to a root/operator-protected absolute file
+# OUTSIDE this repository. No DEV credentials, volume or service is reused.
+name: vencira_prod
+
+services:
+  db:
+    image: ${VENCIRA_PROD_DB_IMAGE:?approved immutable PG17 image required}
+    restart: unless-stopped
+    env_file:
+      - ${VENCIRA_PROD_ENV_FILE:?absolute protected prod env file required}
+    networks:
+      - prod_internal
+    volumes:
+      - prod_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    security_opt:
+      - no-new-privileges:true
+
+  api:
+    image: ${VENCIRA_PROD_API_IMAGE:?approved immutable API image required}
+    restart: unless-stopped
+    env_file:
+      - ${VENCIRA_PROD_ENV_FILE:?absolute protected prod env file required}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:18741:8000"
+    networks:
+      - prod_internal
+    security_opt:
+      - no-new-privileges:true
+
+  web:
+    image: ${VENCIRA_PROD_WEB_IMAGE:?approved immutable Web image required}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:18742:8080"
+    networks:
+      - prod_internal
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  prod_internal:
+    internal: true
+
+volumes:
+  prod_pgdata:
