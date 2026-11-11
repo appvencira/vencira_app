@@ -626,3 +626,13 @@ Tras D10 PASS (operador verificó sintaxis Caddy y exclusión de DEV con `D10_RE
 Commits: `fa3bcaa8` (Compose), `c08f6193` (gate), `62d9f008` (sudo/variables sintéticas), `d3b1d239` (contrato env), `c86cd11e` (runbook).
 
 **Estado D11: publicado y no ejecutado.** No acreditar PASS del script ni inferir que puertos/red/PG17 ya estén provisionados. Seguridad: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. D11 solamente prepara configuración de la infraestructura, mientras B1/B2/B3/B4-nativo/B5 y autorización operativa continúan pendientes.
+
+## D11 PASS; D12 copia externa cifrada preparada (11/11/2026)
+
+El operador confirmó `D11_MAIN_CLEAN=PASS`, `D11_DEV_ISOLATION=PASS`, `D11_SEPARATE_COMPOSE_PROJECT=PASS`, `D11_COMPOSE_PARSE=PASS`, `D11_PRIVATE_NETWORK_ONLY=PASS`, `D11_PG17_HOST_PORTS=NONE`, `D11_PG17_NAMED_VOLUME_SEPARATE=PASS`, `D11_HOST_LOOPBACK_PORTS=PASS`, `D11_PRODUCTION_COMPOSE_CANDIDATE=PASS`, `D11_PROPOSED_PORT_18741_NO_LISTENER_OBSERVED=YES`, `D11_PROPOSED_PORT_18742_NO_LISTENER_OBSERVED=YES`, `D11_PORTS_RESERVED=NO`, `D11_DEPLOY_AUTHORIZED=NO`, `D11_RESULT=0`, `D11_SHELL_RESULT=0`; Docker activo y Git limpio. D11 valida **exclusivamente** el Compose candidato, sin desplegar servicios ni reservar puertos.
+
+Se publica D12 con `scripts/main_d12_encrypted_offhost_archive_custody.sh` (commits `268837a7`, `8ffaa6a0`) y `docs/operations/D12_ENCRYPTED_OFFHOST_IMAGE_ARCHIVE_2026-11-11.md` (commit `74dc57d8`): backup real **cifrado vía Restic/rclone** del archivo histórico de imágenes a Google Drive y readback SHA256 desde un snapshot remoto etiquetado de forma única, sin plaintext a disco. D12 **sí escribe un snapshot en el repositorio externo**, aunque no modifica servicios, bases DEV, Docker, Caddy ni DNS. No ejecutado todavía; no marcar B3 PASS hasta ver `D12_RESULT=0` y todas las comprobaciones de lectura externa.
+
+D12 comparte proveedor/repositorio remoto con O5, por lo que la independencia de fallo frente al sistema externo O5 y la recuperación operativa desde un Docker limpio continúan sin demostrar. B1/B2/B4 Android/B5 producción no se cierran por una copia cifrada.
+
+Seguridad: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, no ejecución de despliegue, migración real ni rollback operativo.
