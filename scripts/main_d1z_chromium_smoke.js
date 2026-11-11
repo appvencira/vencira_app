@@ -9,6 +9,8 @@ const { chromium } = require("playwright");
   let pageErrors = 0;
   let fontConsoleErrors = 0;
   let otherConsoleErrors = 0;
+  const otherConsoleSamples = [];
+  const otherConsoleLocationTypes = {};
   const failedRequests = { internal: 0, external: 0 };
   const requestKinds = {};
   const failedHostCategories = {};
@@ -92,8 +94,21 @@ const { chromium } = require("playwright");
         const location = msg.location()?.url || "";
         const fontOrigin = /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\//i.test(location);
         const mentionsFont = /(?:fonts\.googleapis\.com|fonts\.gstatic\.com|failed to load font)/i.test(message);
-        if (fontOrigin || mentionsFont) fontConsoleErrors++;
-        else otherConsoleErrors++;
+        if (fontOrigin || mentionsFont) {
+          fontConsoleErrors++;
+        } else {
+          otherConsoleErrors++;
+          if (otherConsoleSamples.length < 3) {
+            otherConsoleSamples.push(safeExceptionSummary(message));
+          }
+          let originClass = "UNKNOWN";
+          try {
+            const url = new URL(location);
+            originClass = url.hostname === "d1z-proxy" ? "INTERNAL" :
+              externalHostCategory(url.hostname);
+          } catch (_) {}
+          tally(otherConsoleLocationTypes, originClass);
+        }
         tally(errorCategories, errorCategory(message));
       }
     });
@@ -221,6 +236,8 @@ const { chromium } = require("playwright");
     for (const [k, n] of Object.entries(errorCategories).sort()) console.log("D1Z_CHROMIUM_ERROR_CLASS_" + k + "=" + n);
     for (const [k, n] of Object.entries(exceptionTypes).sort()) console.log("D1Z_CHROMIUM_EXCEPTION_TYPE_" + k + "=" + n);
     safeErrorExamples.forEach((message, idx) => console.log("D1Z_CHROMIUM_SAFE_EXCEPTION_" + (idx + 1) + "=" + message));
+    otherConsoleSamples.forEach((message, idx) => console.log("D1Z_CHROMIUM_OTHER_CONSOLE_SAFE_" + (idx + 1) + "=" + message));
+    for (const [k, n] of Object.entries(otherConsoleLocationTypes).sort()) console.log("D1Z_CHROMIUM_OTHER_CONSOLE_ORIGIN_" + k + "=" + n);
     process.exitCode = 1;
   } finally {
     if (browser) await browser.close();
