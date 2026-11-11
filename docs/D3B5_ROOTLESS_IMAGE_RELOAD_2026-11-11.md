@@ -111,3 +111,14 @@ El operador ha aportado dos ejecuciones idénticas, ambas con `D3B5P_RESULT=0`, 
 `apt-get -s install podman uidmap` devuelve **0 upgraded, 15 newly installed, 0 to remove, 22 not upgraded** en Ubuntu 24.04. Candidatos: `podman 4.9.3+ds1-1ubuntu0.2`, `uidmap`, `fuse-overlayfs`, `slirp4netns`, `passt` y las demás dependencias de Podman/Buildah/Netavark. La simulación **no incluye eliminación o actualización de los paquetes Docker en uso**, pero no constituye prueba de que no haya efectos sobre systemd, espacio en disco o configuración operativa durante una instalación real.
 
 **Estado:** simulación satisfactoria; la instalación **no ha sido ejecutada**. La operación de instalar Podman debe distinguirse del deploy VENCIRA y evaluarse como cambio administrativo controlado; no autoriza despliegue, cambios de DB ni MFA. Tras una instalación autorizada, comprobar `podman --version`, `newuidmap`, `newgidmap`, espacio libre, identidades de contenedores DEV, y volver al gate D3-B5 de importación. No activar un socket Podman ni cambiar el runtime de Docker.
+
+
+## D3-B5 — Podman rootless instalado, almacén privado VFS no inicializa (11/11/2026)
+
+El operador confirma Podman 4.9.3, `newuidmap`/`newgidmap`, `podman info` normal con `Rootless=true`, `GraphDriver=overlay`, subuid/subgid 65536, Docker systemd activo, seis contenedores DEV/Preview healthy y 171 GiB libres. Ensayo D3-B5 en almacén privado VFS: `D3B5_MAIN_SYNC=PASS`, `D3B5_ARCHIVE_CHECKSUM=PASS`, `D3B5_STORAGE_CAPACITY=PASS`, **`D3B5_ROOTLESS_PODMAN_STORE=FAIL`**, `D3B5_EPHEMERAL_STORAGE_REMOVED=YES`, `D3B5_RESULT=4`. **No se intentó `podman load`**, ni se usó Docker operativo.
+
+La causa raíz **aún no está establecida**. El fallo del `podman info` con parámetros privados `--root`, `--runroot`, `--storage-driver vfs` debe diferenciarse de un problema de contenido del archivo. `podman info` rootless normal con `overlay` no prueba que VFS privado inicialice bajo el cambio temporal de HOME.
+
+Se integró en `main` commit `fa4df2ff` un clasificador cerrado del error `podman info` dentro de `scripts/main_d3b5_rootless_podman_reload_isolated.sh`. Solo imprime `D3B5_PODMAN_INFO_ERROR_CATEGORY` y `D3B5_PODMAN_INFO_EXIT_CODE`; nunca registra stderr bruto, variables o rutas. No cambia el modo de almacenamiento, no relaja la igualdad de `graphRoot` ni la prohibición de tocar Docker host.
+
+Repetir D3-B5 solo una vez tras actualizar `main` para obtener la categoría; **si el fallo se repite, detenerse**, no añadir `sudo podman` ni cambiar `storage.conf` o sysctls manualmente. D3-B5 sigue pendiente de importación, D3-B3 sigue sin identidad exacta, y `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` se mantienen.
