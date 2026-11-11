@@ -91,3 +91,16 @@ El operador volvió a ejecutar el build con CanvasKit local y confirmó `D1Z_LOC
 Para obtener información discriminatoria sin exponer URLs, cuerpos de respuesta, trazas completas ni secretos, el test Chromium registra en caso de fallo los contadores `D1Z_CHROMIUM_FAILED_REQUEST_TYPE_*` (tipo de recurso), `D1Z_CHROMIUM_FAILED_HOST_CLASS_*` (clases acotadas de servicios externos conocidos) y `D1Z_CHROMIUM_ERROR_CLASS_*` (categorías de mensajes de errores JS). Implementado en `scripts/main_d1z_chromium_smoke.js`, commit `d98be0fd`. Los nombres de clases están definidos estáticamente y otros hosts se agrupan bajo `OTHER_EXTERNAL`. **Es diagnóstica, no corrección ni PASS.**
 
 Repetir D1-Z únicamente cuando el operador quiera seguir con la comprobación; no modificar Caddy operativo ni permitir tráfico externo general a la red aislada para ocultar el error. Si la petición es una fuente remota se valorará sustituirla por un recurso local con procedencia clara. Si sigue fallando el render sin relación con recursos externos, revisar compatibilidad de Flutter/Chromium y errores de inicialización.
+
+
+## Cuarto intento — recurso externo identificado, causa de render aún sin demostrar (11/11/2026)
+
+La ejecución confirmó `D1Z_LOCAL_CANVASKIT_BUNDLED=PASS`, `D1Z_BOOTSTRAP_LOCAL_CANVASKIT_CONFIG=PASS`, `D1Z_CHROMIUM_LAUNCH=PASS`, `D1Z_CHROMIUM_DOCUMENT=PASS`; `D1Z_CHROMIUM_FLUTTER_VIEW_PRESENT=NO` y `D1Z_CHROMIUM_FAILURE_STAGE=FLUTTER_VIEW_TIMEOUT`. Persisten `D1Z_CHROMIUM_JS_ERRORS_COUNT=2`, `D1Z_CHROMIUM_FAILED_EXTERNAL_REQUESTS=1`, `D1Z_CHROMIUM_FAILED_REQUEST_TYPE_FETCH=1`, `D1Z_CHROMIUM_FAILED_HOST_CLASS_GOOGLE_FONTS=1`, `D1Z_CHROMIUM_ERROR_CLASS_OTHER=2`. No se registraron fallos de solicitudes internas; DEV intacto, limpieza DONE y **`D1Z_RESULT=8`**.
+
+El recurso externo no disponible procede de `fonts.googleapis.com` (no se capturaron URL completas). Los dos errores JS siguen clasificados como OTHER, por lo que **Google Fonts no es una causa demostrada del bloqueo del motor Flutter**. La aplicación no contiene una dependencia declarada de Google Fonts en `clients/flutter/pubspec.yaml`.
+
+Cambios de diagnóstico publicados en `main`:
+- Commit `000fe419`: tipos de excepciones JS (`D1Z_CHROMIUM_EXCEPTION_TYPE_*`), clasificación adicional de errores y estado HTTP categorizado del bootstrap/main.dart.js, sin imprimir mensajes, rutas completas ni cookies.
+- Commit `5f61089d`: prueba de control adicional **solo después del FAIL del navegador ordinario**; intercepta exclusivamente solicitudes a `fonts.googleapis.com` y responde una hoja CSS vacía en una nueva página del navegador del laboratorio. Publica `D1Z_CHROMIUM_FONT_DEPENDENCY_DIAGNOSTIC=VIEW_PRESENT_WITH_FONT_STUB` o `VIEW_ABSENT_OR_DIAGNOSTIC_FAILED`. **No constituye PASS del navegador sin alteraciones y nunca modifica la aplicación ni el proxy.** El diagnóstico puede discriminar causalidad; un resultado negativo no identifica por sí solo los dos errores JS restantes.
+
+El gate continuará FAIL hasta que la app real genere `flutter-view` y pase los demás controles sin respuestas sustituidas. No relajar aislamiento de Docker, no cambiar configuración Caddy operativa, no realizar deploy. Siguen `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
