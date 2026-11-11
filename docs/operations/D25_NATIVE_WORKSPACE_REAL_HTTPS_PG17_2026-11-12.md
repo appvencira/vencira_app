@@ -62,3 +62,30 @@ D25_SHELL_RESULT=0
 `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`. No se despliega el emisor, no se añaden endpoints móviles operativos, no se hacen migraciones/restores reales, no se modifican contenedores DEV, no se activa firma de APK Android. El certificado del laboratorio **no es un certificado de producción**, y `dev.vencira.es` en la prueba **no contacta al dominio público**: es un alias DNS interno a Docker. Con resultado 0 se habrá validado TLS real contra la versión D22–D24 del endpoint de prueba, no la cadena de despliegue Android ni la topología proxy pública.
 
 Paginación offset D24 tiene límite 10000 y puede sufrir omisiones/repeticiones si los registros cambian entre páginas. El laboratorio prueba aislamiento por workspace pero no escrituras/adjuntos ni races de autorizaciones mientras los bytes salen por socket. No se debe interpretar como autorización de producción.
+
+## Ejecución VPS — D25 PASS (12/11/2026)
+
+El operador confirma que el gate completo `scripts/main_d25_native_workspace_grouped_tls_gate.sh` finalizó con `D25_RESULT=0`. Salida relevante del laboratorio: `flutter analyze` **No issues found!** (10,9 segundos), `D25_ANALYZE=PASS`, `D25_SERVER_ISSUED_SYNTHETIC_FIXTURE=PASS`; `flutter test` ejecutó el caso de integración HTTPS real y devolvió **1 test PASS, All tests passed!**.
+
+Evidencia directa:
+```text
+D25_TLS_UNTRUSTED_CA_AND_HOST_MISMATCH_DENIED=PASS
+D25_REAL_TLS_WORKSPACE_PAGINATION_75=PASS
+D25_REAL_TLS_CROSS_WORKSPACE_DENIED=PASS
+D25_REAL_FLUTTER_TLS_WORKSPACE_GATE=PASS
+D25_REAL_TLS_NO_PUBLIC_PORTS=PASS
+D25_OPERATIONAL_ROUTES_ENABLED=NO
+D25_DEV_CONTAINERS_UNCHANGED=OK
+D25_DEPLOY_EXECUTED=NO
+D25_LIVE_MIGRATIONS_EXECUTED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D25_BOUNDARY_RESULT=0
+D25_REAL_HTTPS_PG17_FLUTTER=PASS
+D25_PUBLIC_OPERATIONAL_ENDPOINT_ENABLED=NO
+D25_RESULT=0
+```
+
+**D25 PASS** para el lector workspace D22–D24 a través de un canal TLS de red real, con certificados temporales, cliente Flutter IOClient, token sintético emitido por servidor y 75 renovaciones de prueba distribuidas 50+25. La salida no incluye `D25_SHELL_RESULT` independiente, pero sí `D25_RESULT=0` y `D25_BOUNDARY_RESULT=0`. El dominio de prueba se resuelve internamente en Docker y no es el servicio público `dev.vencira.es`.
+
+**Bloqueos que permanecen:** todavía no hay acceso Android real ni emisor operativo; la paginación offset no ofrece estabilidad frente a escrituras entre páginas y está limitada a 10000; no se han verificado escrituras, adjuntos ni un reverse proxy de producción. No se autoriza despliegue ni migración LIVE.
