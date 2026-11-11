@@ -740,3 +740,7 @@ Published native startup integration **in `main`, tests still awaiting VPS**:
 - Runbook `docs/operations/D17B_ANDROID_NATIVE_STARTUP_INTEGRATION_2026-11-11.md`, commit `a1cc7504`.
 
 **D17-B not yet PASS**; requires local output `D17B_FLUTTER_GATE=PASS` and `D17B_RESULT=0`. This phase completes only safe startup inspection integration, NOT native issuance, full recovery, HTTPS mobile authentication, or release signing. Maintaining `MFA_RELEASE_AUTHORIZED=NO` and `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Next meaningful separate gate is audited native issuer + account-wide recovery and physical-device validation; do not remove the browser fallback or expose credentials until that gate passes.
+
+## D17-B — incidencia visual corregida; revalidación pendiente (11/11/2026)
+
+El primer gate Flutter de D17-B tuvo `flutter analyze` sin incidencias, I8-Q/I8-L sin fallos observados y **un test fallido**: aviso de recuperación Android largo provocó `RenderFlex overflowed by 28 pixels on the bottom` en `android_web_access_screen.dart`. `D17B_FLUTTER_GATE=FAIL`, `D17B_DEV_CONTAINERS_UNCHANGED=OK`, `D17B_RESULT=4`. Corrección en `main` `d9098499`: scroll vertical seguro de la vista web; regresión `847af3c3` en viewport 320x480 que comprueba ausencia de overflow y botón nativo inaccesible; documentación `1d7dcafb`. No modifica autenticación ni servidor. **No declarar D17-B PASS** hasta resultado de repetición del script `scripts/main_d17b_android_startup_boundary_gate.sh`. No repetir D16 ni compilar APK hasta confirmación.
