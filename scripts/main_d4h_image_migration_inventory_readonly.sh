@@ -29,7 +29,7 @@ mark API_IMAGE_IDENTIFIED PASS
 inspect='import os,re,sys
 from pathlib import Path
 p=Path(sys.argv[1])
-nums=sorted({int(m.group(1)) for f in p.glob("*.py") if (m:=re.fullmatch(r"(\\d{4})_[A-Za-z0-9_]+\\.py",f.name))})
+nums=sorted({int(m.group(1)) for f in p.glob("*.py") if (m:=re.fullmatch(r"(\d{4})_[A-Za-z0-9_]+\.py",f.name))})
 print("MIGRATION_NUMBERS="+",".join(str(n) for n in nums))
 '
 # The fixed paths below are repository and image build layout, not operator input.
