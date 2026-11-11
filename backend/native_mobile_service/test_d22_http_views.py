@@ -252,7 +252,7 @@ def workspace_cursor_renewals(request, workspace_id):
     cursor = request.GET.get("cursor")
     if cursor is not None and (
             len(cursor) > 1024 or len(cursor) < 10 or
-            any(char not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_:.": for char in cursor)):
+            any(char not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_:.\" for char in cursor)):
         return native_auth_denied(status=400)
     token = header[7:]
     try:
