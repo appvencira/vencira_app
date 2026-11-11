@@ -99,7 +99,8 @@ def main():
         mark("RESULT",2)
         return 2
     for cmd in ("git","curl","openssl"):
-        if run(["sh","-c","command -v "+cmd],timeout=5) is None:
+        check=run(["sh","-c","command -v "+cmd],timeout=5)
+        if check is None or check.returncode!=0:
             mark("PREREQUISITE","FAIL");mark("RESULT",2);return 2
     repo=Path(__file__).resolve().parent.parent
     a=run(["git","rev-parse","HEAD"],cwd=repo)
