@@ -495,3 +495,25 @@ git status --short
 **Próxima fase de cierre**, en lugar de más regresiones sintéticas: B1 y discrepancia D3-B3; B2 compatibilidad O5 con versión histórica, sin imponer migración 0027 a imagen 0018; B3 custodia off-host cifrada, integridad y recuperación real; B4 APK Android y validación nativa; B5 HTTPS/CSRF/cookies/dominio de publicación, plan operativo reversible y aprobación explícita. No afirmar preparación pública basándose únicamente en una respuesta HTTPS 200.
 
 La regresión D5 fue `PASS` para Django/PG17/Flutter web del `main` candidato probado; `D5_RESULT=4` proviene de los bloqueos. Continúan `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## D6 ejecutada — D7 diagnóstico conjunto de las dos causas pendientes (11/11/2026)
+
+Operador confirmó `D6_MAIN_CLEAN=PASS`, `D6_ARCHIVE_CHECKSUM=PASS`, `D6_ARCHIVE_CONFIG_IDS_FROM_D3B3=UNRESOLVED`, `D6_RUNNING_MANIFEST_IMAGE_ID_CHAIN=PASS`, `D6_ROLLBACK_BASELINE_INVENTORY=PASS`, `D6_DEV_CADDY_HTTPS_PREFLIGHT=PASS`, `D6_PUBLIC_APEX_TLS_HTTP_REACHABLE=NO`, `D6_B1_ARCHIVE_EXACT_ID_AND_RUNTIME_RECOVERY=VERIFIED_NO`, `D6_B2_EXPORT_RESTORED_IMAGE_REAL_O5_END_TO_END=VERIFIED_NO`, `D6_B3_OFF_HOST_ENCRYPTED_IMAGE_CUSTODY=VERIFIED_NO`, `D6_B4_MAIN_DJANGO_FLUTTER_WEB_D5_HISTORICAL=PASS_RECORDED`, `D6_B4_ANDROID_FINAL_APK_AND_DEVICE=VERIFIED_NO`, `D6_B5_PRODUCTION_CADDY_LOADED_CONFIG_COOKIES_CSRF=VERIFIED_NO`, `D6_B5_PUBLIC_APPROVAL=NO`, `D6_BLOCKERS_OPEN=5`, `D6_RELEASE_READINESS=BLOCKED`, `D6_RESULT=4`. El eco de salida del shell no se observa en la salida recibida.
+
+Los dos problemas concretos sin clasificar son: (a) ID de configuración en el archivo frente a IDs Docker retenidos, aun con SHA256, blobs y ejecución de imágenes aisladas verificadas; (b) HTTPS de dominio público apex no alcanzó el criterio del script D6, cuya causa real no se conoce (DNS, TCP, TLS o respuesta HTTP).
+
+**D7, prueba de causa raíz de una sola ejecución**, `scripts/main_d7_archive_tls_root_cause_readonly.py`, commits `6f8848d5` y `4ff63feb`. Comprueba otra vez checksum, pero no arranca contenedores, lee secretos ni restaura O5; utiliza D3-B3 y D3-B4 preexistentes para emitir solamente marcadores de comparación por rol, sin hashes o metadatos originales; DNS de `vencira.es` solo como booleano; curl con TLS verificado y sin imprimir datos de respuesta, direcciones IP, cabeceras o contenidos, emitiendo categoría del error, código de salida y estatus HTTP.
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+python3 -m py_compile scripts/main_d7_archive_tls_root_cause_readonly.py
+sudo -v
+python3 scripts/main_d7_archive_tls_root_cause_readonly.py
+echo "D7_SHELL_RESULT=$?"
+systemctl is-active docker
+git status --short
+```
+
+Se espera `D7_RESULT=4` mientras siga la prohibición pública; el diagnóstico solo es válido si los marcadores intermedios se emiten. Un TLS satisfactorio en apex no acredita cookies/CSRF, proxy Django, MFA ni aprobación. Una coincidencia parcial de rootfs tampoco acredita identidad exacta de la exportación. No repetir D5 ni D4-H por estos motivos. Se mantiene `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
