@@ -228,3 +228,11 @@ Resultado del operador: `D4E_WEB_EXIT_CODE=1`, `D4E_WEB_OOM_KILLED=NO`, `D4E_WEB
 Commits `ebd7333a`, `f712b9f1`: diagnóstico clasifica, solo a partir de líneas de error de lectura restringida, la **familia** de la ruta afectada (por ejemplo ETC_NGINX_CONF_D, VAR_CACHE_NGINX, VAR_RUN_NGINX, RUN_NGINX, VAR_LOG_NGINX o UNKNOWN) sin imprimir rutas completas ni registros. No cambia el modo read-only ni los límites del laboratorio. Hacer un único retest D4-E y revisar `D4E_WEB_READONLY_PATH_FAMILY` antes de añadir un tmpfs puntual; si es UNKNOWN, no improvisar un montaje sobre /etc/nginx.
 
 No se han ejecutado despliegue, migraciones, restauración O5 ni rollback operativo.
+
+### D4-E — Corrección acotada del arranque Nginx
+
+El operador confirmó `D4E_WEB_EXIT_CODE=1`, `D4E_WEB_OOM_KILLED=NO`, `D4E_WEB_EXIT_DIAGNOSIS=READONLY_FILESYSTEM`, `D4E_WEB_READONLY_PATH_FAMILY=ETC_NGINX`, `D4E_WEB_HTTP_LOCAL=FAIL`, `D4E_EPHEMERAL_STORAGE_REMOVED=YES`, `D4E_RESULT=7` y `D4E_PATH_DIAGNOSTIC_RESULT=7`. Docker continúa `active` y el árbol Git limpio.
+
+El archivo Nginx contiene configuración en `/etc/nginx`; ocultarlo con un `tmpfs` puede invalidar la configuración real. Para que la imagen original ejecute su entrypoint, commit `beb0637b` retira `--read-only` **solo del contenedor Web aislado**, permitiendo escribir únicamente en su capa rootfs VFS privada y eliminable; API sigue read-only. Se mantienen Podman rootless, `--network none`, `--security-opt no-new-privileges`, sin puertos, sin montajes, sin credenciales O5 y cleanup completo. La reducción del endurecimiento de rootfs se declara con `D4E_WEB_PRIVATE_EPHEMERAL_ROOTFS_WRITABLE=YES`: es una decisión del **laboratorio desechable**, no propuesta de configuración operativa.
+
+**Nuevo ensayo pendiente de ejecución:** misma orden D4-E y `D4E_RESULT=0` solo si API y Web responden HTTP. Un PASS no demuestra endurecimiento read-only de Nginx, comunicación interna entre servicios, ni compatibilidad O5. No cambia ni autoriza despliegue.
