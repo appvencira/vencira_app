@@ -636,3 +636,11 @@ Se publica D12 con `scripts/main_d12_encrypted_offhost_archive_custody.sh` (comm
 D12 comparte proveedor/repositorio remoto con O5, por lo que la independencia de fallo frente al sistema externo O5 y la recuperación operativa desde un Docker limpio continúan sin demostrar. B1/B2/B4 Android/B5 producción no se cierran por una copia cifrada.
 
 Seguridad: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, no ejecución de despliegue, migración real ni rollback operativo.
+
+## D12 PASS: custodia externa cifrada y readback de imágenes (11/11/2026)
+
+Resultado informado por operador: `D12_MAIN_CLEAN=PASS`, `D12_LOCAL_ARCHIVE_CHECKSUM=PASS`, `D12_REMOTE_REPOSITORY_CONFIG=PASS`, `D12_ENCRYPTED_OFF_HOST_SNAPSHOT_CREATED=YES`, `D12_UNIQUE_REMOTE_SNAPSHOT=PASS`, `D12_REMOTE_ARCHIVE_BYTES_EQUAL=PASS`, `D12_REMOTE_METADATA_BYTES_EQUAL=PASS`, `D12_REMOTE_PAYLOAD_VERIFIED=YES`, `D12_ENCRYPTED_OFF_HOST_ARCHIVE_CUSTODY=PASS`, `D12_RESULT=0`. D12 queda cerrado para custodia cifrada fuera del VPS y lectura integral validada; sus marcadores iniciales NO reflejan estado antes de la operación, no fallo final. No repetir D12 para evitar snapshots duplicados.
+
+Los límites permanecen `D12_REMOTE_RESTORE_TO_NEW_RUNTIME_VERIFIED=NO`, `D12_ARCHIVE_CONFIG_ID_EQUIVALENCE_VERIFIED=NO`, `D12_OPERATIONAL_ROLLBACK_VERIFIED=NO`. Restic está en el mismo proveedor/repositorio lógico de O5 y no prueba redundancia independiente.
+
+**Prioridad real siguiente:** ensayo de rehidratación del archivo desde custodia externa sobre runtime aislado, identificar diferencia exacta de hashes/config Docker antes de afirmar recuperación histórica; después probar coherencia de PostgreSQL/O5 con la imagen histórica de `0018` sin imponerle `0027`. Android final y la publicación permanecen pendientes. No modificar DEV, Caddy, DNS ni base viva. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
