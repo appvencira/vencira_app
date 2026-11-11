@@ -698,3 +698,11 @@ D14 fue superada en el VPS y demuestra restauración O5 + compatibilidad esquema
 Script `scripts/main_d15_real_o5_historical_stack_http_isolated.sh`, commit `2ec68fc5`. Runbook `docs/operations/D15_HISTORICAL_O5_API_WEB_HTTP_ISOLATED_2026-11-11.md`, commit `aecc4dad`. **D15 publicada y NO ejecutada**. Es un gate HTTP/infra, no una validación del conjunto de operaciones funcionales ni autorización de publicación. No cerrar mismatch IDs de Docker exportados, HTTPS/Caddy, Android ni reversión operativa sin pruebas propias.
 
 Controles: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## D15 PASS — API histórica + Nginx + PostgreSQL17 O5 real (11/11/2026)
+
+Validación operador: `D15_RESTORE_REAL_O5_PG17=PASS`, `D15_HISTORICAL_0018=PASS`, `D15_MODEL_MIGRATION_PARITY=PASS`, `D15_HISTORICAL_API_O5_COMPATIBILITY=PASS`, `D15_API_HTTP_START=PASS`, `D15_API_HTTP_HEALTH_WITH_O5=PASS`, `D15_API_DJANGO_DB_CHECK_AND_HTTP=PASS`, `D15_WEB_HTTP_START=PASS`, `D15_WEB_HTTP_STATIC=PASS`, `D15_WEB_API_HTTP_PROXY_WITH_O5=PASS`, `D15_RESTORED_HISTORICAL_STACK_HTTP=PASS`, `D15_HOST_PORTS_PUBLISHED=NO`, `D15_LIVE_DATA_HTTP_EXPOSED=NO`, `D15_DEV_CONTAINERS_UNCHANGED=OK`, `D15_LAB_CONTAINER_REMOVED=YES`, `D15_API_LAB_REMOVED=YES`, `D15_WEB_LAB_REMOVED=YES`, `D15_RESULT=0`. Ejecutaron contenedores PG/API/Web exclusivamente en red interna efímera; no hubo deploy, migración/restore vivo ni `docker load`.
+
+**D15 PASS** cierra la prueba **HTTP de la pila histórica retenida** con copia O5 real restaurada en laboratorio. No implica endpoints autenticados funcionales, recuperación exclusivamente desde archivo off-host ni identidad exacta del tar, ni HTTPS público. Detalle y marcadores adicionales en `docs/operations/D15_HISTORICAL_O5_API_WEB_HTTP_ISOLATED_2026-11-11.md`, commit `1d8a1ec1`. Se mantiene `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+El próximo trabajo de mayor impacto para publicación es el paquete Flutter/Android de release con conexiones HTTPS nativas/credenciales, y confirmar la intención y enrutamiento del dominio apex, sin tocar todavía producción. Evitar repetir D12–D15 salvo cambios materiales.
