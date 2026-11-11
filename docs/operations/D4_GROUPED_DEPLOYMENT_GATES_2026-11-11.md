@@ -236,3 +236,11 @@ El operador confirmó `D4E_WEB_EXIT_CODE=1`, `D4E_WEB_OOM_KILLED=NO`, `D4E_WEB_E
 El archivo Nginx contiene configuración en `/etc/nginx`; ocultarlo con un `tmpfs` puede invalidar la configuración real. Para que la imagen original ejecute su entrypoint, commit `beb0637b` retira `--read-only` **solo del contenedor Web aislado**, permitiendo escribir únicamente en su capa rootfs VFS privada y eliminable; API sigue read-only. Se mantienen Podman rootless, `--network none`, `--security-opt no-new-privileges`, sin puertos, sin montajes, sin credenciales O5 y cleanup completo. La reducción del endurecimiento de rootfs se declara con `D4E_WEB_PRIVATE_EPHEMERAL_ROOTFS_WRITABLE=YES`: es una decisión del **laboratorio desechable**, no propuesta de configuración operativa.
 
 **Nuevo ensayo pendiente de ejecución:** misma orden D4-E y `D4E_RESULT=0` solo si API y Web responden HTTP. Un PASS no demuestra endurecimiento read-only de Nginx, comunicación interna entre servicios, ni compatibilidad O5. No cambia ni autoriza despliegue.
+
+### D4-E — Permisos de escritura resueltos; fallo de configuración (11/11/2026)
+
+Operador: `D4E_WEB_PRIVATE_EPHEMERAL_ROOTFS_WRITABLE=YES`, `D4E_WEB_START=PASS`, `D4E_WEB_CONTAINER_STILL_RUNNING=NO`, `D4E_WEB_EXIT_CODE=1`, `D4E_WEB_OOM_KILLED=NO`, `D4E_WEB_EXIT_DIAGNOSIS=NGINX_CONFIGURATION`, `D4E_WEB_READONLY_PATH_FAMILY=UNKNOWN`, `D4E_WEB_HTTP_LOCAL=FAIL`, `D4E_RESULT=7`, `D4E_SHELL_RESULT=7`. El bloqueo previo del filesystem de solo lectura ya no es el diagnóstico dominante; la causa concreta de configuración no se conoce. Docker `active`.
+
+Commit `5c4c143c`: añade solo un marcador de causa fija `D4E_WEB_NGINX_CONFIG_CAUSE` a partir de logs privados dentro del laboratorio (DNS upstream, endpoint inválido, TLS, sintaxis, include ausente, bind, template u otro). No imprime hostname, rutas, valores, ni contenido de logs, no altera configuración ni red, y mantiene FAIL hasta que HTTP pase. No adjudicar a DNS ni a certificados sin nueva evidencia.
+
+Para el siguiente ensayo sincronizar `main` y ejecutar la misma D4-E una vez. Se reparará únicamente la causa clasificada; no cambiar permisos de Docker operativo, ni tocar DEV/O5.
