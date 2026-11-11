@@ -107,3 +107,18 @@ El operador ejecutó D3 y obtuvo `D3_MAIN_REQUIRED=FAIL`, `D3_SHELL_RESULT=2`. O
 No se crea otra rama ni se ejecutan `checkout`, `reset` o acciones sobre los datos. El nuevo script **no está todavía validado por el operador**. Repetir `git fetch`, `git merge --ff-only origin/main`, `bash scripts/main_d3_grouped_release_preflight.sh` y registrar `D3_SHELL_RESULT`.
 
 Progreso D3: **0 gates verificados; primer intento bloqueado por preflight de rama**. D1-Z→D2-E permanece 6/6 PASS.
+
+
+## Ejecución validada por operador: D3-A PASS + D3-C PASS (11/11/2026)
+
+El operador ha ejecutado `scripts/main_d3_grouped_release_preflight.sh` y ha aportado logs completos terminados en **`D3_RESULT=0`**; no es una inferencia de scripts sin ejecutar.
+
+**D3-A PASS**: `D3A_MAIN_CLEAN_SYNC=PASS`, `D3A_DEV_IDENTITY=PASS`, `D3A_NETWORK_INTERNAL=PASS`, `D3A_PG17_TMPFS=PASS`, `D3A_CANDIDATE_IMAGE=PASS`, `D3A_CANDIDATE_MIGRATIONS=PASS`, `D3A_SYNTHETIC_FIXTURE=PASS`, `D3A_INITIAL_STATE=PASS`, `D3A_FULL_DATABASE_SNAPSHOT=PASS`, `D3A_SYNTHETIC_FAULT_INJECTED=PASS`, `D3A_RENEWAL_ROLLBACK=PASS`, `D3A_AUTH_RESTORE=PASS`, `D3A_MEMBERSHIP_RESTORE=PASS`, `D3A_RESTORED_DJANGO_RUNTIME=PASS`, `D3A_FULL_SYNTHETIC_DB_ROLLBACK_GATE=PASS`, `D3A_DEV_CONTAINERS_UNCHANGED=OK`, `D3A_EPHEMERAL_CLEANUP=DONE`, `D3A_RESULT=0`. Cobertura: base **sintética completa** en PG17 tmpfs; no O5 real ni volumen persistente, ni rollback de imagen operativa.
+
+**D3-C PASS**: `D3C_CADDYFILE_PRESENT=YES`, `D3C_CONFIG_SYNTAX=PASS`, `D3C_SERVICE_ACTIVE=PASS`, `D3C_DEV_HTTPS_CERT_AND_CONNECT=PASS`, `D3C_REAL_CADDY_SYNTAX_AND_SERVICE_VERIFIED=PASS`, `D3C_RESULT=0`. Es verificación del **Caddy activo en host y TLS de dev.vencira.es**, exclusivamente de solo lectura y sin reload. **No** certifica configuración/enrutamiento del dominio público de producción `vencira.es`: `D3C_PRODUCTION_DOMAIN_ROUTING_VERIFIED=NO`.
+
+**Orquestador**: `D3_D3A_FULL_DATABASE_ROLLBACK_PASS=YES`, `D3_D3C_CADDY_READONLY_PREFLIGHT=PASS`, `D3_FULL_SYNTHETIC_DATABASE_RECOVERY=PASS`, `D3_RESULT=0`. Se mantiene `D3_OPERATIONAL_IMAGE_AND_PERSISTENT_DB_ROLLBACK_VERIFIED=NO`, `D3_PRODUCTION_CADDY_CONFIG_VERIFIED=NO`, `D3_MFA_RELEASE_AUTHORIZED=NO`, `D3_PUBLIC_RELEASE_AUTHORIZED=NO`, `D3_RELEASE_READINESS=GATED`. No se ha desplegado ni migrado live.
+
+**Balance de gates acotados:** 6 PASS D1-Z→D2-E más D3-A y D3-C = **8/8 PASS** de los gates ejecutados en ese tramo. No cuantifica el progreso global de VENCIRA.
+
+**Siguiente camino crítico y aceleración:** no repetir D2-E/D3-A/D3-C. Preparar D3-B: recuperación conjunta de imagen candidata anterior y backup O5 **en laboratorio aislado**, restaurando a almacenamiento efímero y sin leer secretos en logs ni modificar servicio DEV; después revisar enrutamiento y autorización de producción. Una prueba sintética de base NO es evidencia de backup O5 real.
