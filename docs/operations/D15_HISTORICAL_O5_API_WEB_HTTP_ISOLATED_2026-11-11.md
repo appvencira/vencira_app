@@ -60,3 +60,13 @@ D15_SHELL_RESULT=0
 `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. La ejecución transitoria de contenedores históricos en red `--internal` es laboratorio; **no es despliegue público ni autorización de release**. Ningún puerto de host expuesto; nada de cambios Caddy, DNS, certificados, volúmenes ni contenedores DEV.
 
 Además siguen pendientes: identidad exacta de IDs Docker de archivo exportado, instalación desde máquina limpia con copia externa, APK nativo final/HTTPS recuperación, activación segura dominio apex y procedimiento de rollback operativo.
+
+## Ejecución D15 — PASS (11/11/2026)
+
+Resultados comunicados por el operador VPS: `D15_ARCHIVE_CHECKSUM=PASS`, `D15_ARCHIVE_MANIFEST=PASS`, `D15_HISTORICAL_API_0018_ONLY=PASS`, `D15_CONFIG_MATCH=PASS`, `D15_DEV_IDENTITY=PASS`, `D15_HOST_IMAGE_IDENTITY=PASS`, `D15_RECENT_POSTGRESQL_SNAPSHOT=PASS`, `D15_LAB_NETWORK_INTERNAL=PASS`, `D15_PG17_NETWORK_ISOLATED=PASS`, `D15_PG17_TMPFS_READY=PASS`, `D15_RESTORE_REAL_O5_PG17=PASS`, `D15_HISTORICAL_0018=PASS`, `D15_BACKUP_PAYLOAD_PG_RESTORE_VERIFIED=YES`, `D15_REAL_BACKUP_RESTORED=PASS`, `D15_MODEL_MIGRATION_PARITY=PASS`, `D15_HISTORICAL_0018_MIGRATION_PLAN=PASS`, `D15_HISTORICAL_MIGRATION_SET=PASS`, `D15_CORE_COUNTS_UNCHANGED=PASS`, `D15_HISTORICAL_API_O5_COMPATIBILITY=PASS`, `D15_API_HTTP_START=PASS`, `D15_API_HTTP_HEALTH_WITH_O5=PASS`, `D15_API_DJANGO_DB_CHECK_AND_HTTP=PASS`, `D15_WEB_HTTP_START=PASS`, `D15_WEB_HTTP_STATIC=PASS`, `D15_WEB_API_HTTP_PROXY_WITH_O5=PASS`, `D15_RESTORED_HISTORICAL_STACK_HTTP=PASS`, `D15_HOST_PORTS_PUBLISHED=NO`, `D15_LIVE_DATA_HTTP_EXPOSED=NO`, `D15_DEV_CONTAINERS_UNCHANGED=OK`, `D15_LAB_CONTAINER_REMOVED=YES`, `D15_API_LAB_REMOVED=YES`, `D15_WEB_LAB_REMOVED=YES`, `D15_RESULT=0`.
+
+`D15_CONTAINER_RUN_EXECUTED=YES` señala únicamente la ejecución del laboratorio temporal (PG17/API/Web) y no despliegue. `D15_HOST_DOCKER_IMAGE_LOAD_EXECUTED=NO`, `D15_LIVE_RESTORE_EXECUTED=NO`, `D15_LIVE_MIGRATIONS_EXECUTED=NO`, `D15_DEPLOY_EXECUTED=NO`. No figura un `D15_SHELL_RESULT` independiente en el fragmento de salida, pero el script finalizó con `D15_RESULT=0` y limpieza confirmada.
+
+**Conclusión D15 PASS**: prueba HTTP interna de las tres imágenes históricas retenidas Docker host con O5 real restaurado en laboratorio, sin puertos publicados. El proxy HTTP y la salud no son por sí solos una prueba de los flujos de negocio ni de autenticación/MFA, ni de recuperación desde tar exportado en un VPS limpio. No resolver B1 de IDs de Docker ni autorizar producción a partir de este resultado.
+
+Estado de restricciones: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D15_PUBLIC_RELEASE_AUTHORIZED=NO`. No repetir D15 salvo cambio de imagen, backup o lógica HTTP.
