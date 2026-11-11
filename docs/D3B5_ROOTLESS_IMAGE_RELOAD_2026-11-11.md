@@ -104,3 +104,10 @@ El operador ha aportado dos ejecuciones idénticas, ambas con `D3B5P_RESULT=0`, 
 **Clasificación:** PASS de *inventario de requisitos*, NO de Podman operativo. Un paquete candidato y namespaces habilitados no certifican ejecución rootless. El siguiente paso necesita una decisión operativa explícita sobre instalar `podman` y dependencias de UID/GID en el VPS o usar una máquina de laboratorio externa. No instalar ni modificar sysctl/subuid o paquetes por inferencia automática. Si se opta por VPS, primero verificar simulación APT (`apt-get -s install podman uidmap`) y efectos de dependencias; `fuse-overlayfs` no es obligatorio para VFS, ni `slirp4netns`/pasta para importación de imágenes sin ejecutar contenedores. Separar rigurosamente el alta de software base del ensayo de recuperación y auditar cualquier cambio.
 
 **El gate D3-B5 de importación continúa NO EJECUTADO** por falta de Podman; `D3B5P_RESULT=0` no desbloquea por sí solo `D3B5_ROOTLESS_IMAGE_IMPORT`. Persisten `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, sin alteraciones de Docker operativo, O5 o DEV.
+
+
+## APT simulación aportada por operador (11/11/2026)
+
+`apt-get -s install podman uidmap` devuelve **0 upgraded, 15 newly installed, 0 to remove, 22 not upgraded** en Ubuntu 24.04. Candidatos: `podman 4.9.3+ds1-1ubuntu0.2`, `uidmap`, `fuse-overlayfs`, `slirp4netns`, `passt` y las demás dependencias de Podman/Buildah/Netavark. La simulación **no incluye eliminación o actualización de los paquetes Docker en uso**, pero no constituye prueba de que no haya efectos sobre systemd, espacio en disco o configuración operativa durante una instalación real.
+
+**Estado:** simulación satisfactoria; la instalación **no ha sido ejecutada**. La operación de instalar Podman debe distinguirse del deploy VENCIRA y evaluarse como cambio administrativo controlado; no autoriza despliegue, cambios de DB ni MFA. Tras una instalación autorizada, comprobar `podman --version`, `newuidmap`, `newgidmap`, espacio libre, identidades de contenedores DEV, y volver al gate D3-B5 de importación. No activar un socket Podman ni cambiar el runtime de Docker.
