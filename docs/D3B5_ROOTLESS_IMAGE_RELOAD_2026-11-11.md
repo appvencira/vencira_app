@@ -67,3 +67,22 @@ D3B5_OPERATIONAL_ROLLBACK_VERIFIED=NO
 ```
 
 Antes de publicar: ensayo de arranque de imágenes y aplicación con O5 real en entorno aislado apto para servicios, custodia externa cifrada, prueba de reversión integrada con datos y ruta de producción verificada. Conservar los informes históricos: D3-B3 FAIL en la comparación estricta de IDs Docker; D3-B4 PASS únicamente en equivalencia de capas/plataforma/campos seleccionados.
+
+
+## Primer ensayo B5: Podman ausente, preflight B5P creado
+
+El operador ejecutó B5 y obtuvo `D3B5_PREREQUISITE_MISSING=podman`, `D3B5_RESULT=4`. El script terminó **antes de importar**; no hubo `docker load`, contenedor ejecutado, migración, restauración ni deploy. Es falta de herramienta, no evidencia de archivo corrupto.
+
+Se incorporó el preflight de solo lectura `scripts/main_d3b5p_rootless_prerequisites_readonly.sh` commit `afa237a6`. Evalúa disponibilidad de paquete Podman mediante `apt-cache policy`, `newuidmap`, `newgidmap`, `fuse-overlayfs`, `slirp4netns`, `pasta`, rango /etc/subuid-subgid para usuario actual y sysctls de namespaces. No hace `apt install`, `sysctl -w`, modificaciones de archivos, Docker calls ni `podman info` que pueda inicializar almacenamiento persistente.
+
+Comando Termius:
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+bash scripts/main_d3b5p_rootless_prerequisites_readonly.sh
+echo "D3B5P_SHELL_RESULT=$?"
+```
+
+El resultado del preflight tampoco autoriza una instalación: a partir de los indicadores se decidirá si el ensayo puede realizarse con Podman rootless existente, si debe solicitarse permiso para instalar dependencias en el host o si conviene una máquina de laboratorio separada. **B5 importación sigue pendiente**; guardas `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, release no autorizado.
