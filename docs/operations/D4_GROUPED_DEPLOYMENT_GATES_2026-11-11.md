@@ -539,3 +539,23 @@ git status --short
 ```
 
 El siguiente cambio operativo debe responder a un fallo concreto de transporte verificado; no modificar firewall, Caddy, DNS ni producción a ciegas. Siguen pendientes B1 identidad/export y recuperación, B2 O5 integrado, B3 custodia off-host, B4 Android final, B5 publicación y permiso expreso.
+
+## D8 — TLS DEV sano, apex IPv4 reset; D9 host/DNS/Caddy (11/11/2026)
+
+El operador confirmó `D8_MAIN_CLEAN=PASS`, `D8_DEV_DNS_IPV4=YES`, `D8_DEV_DNS_IPV6=NO`, `D8_DEV_IPV4_CURL_EXIT=0`, `D8_DEV_IPV4_HTTP_STATUS=200`, `D8_DEV_IPV4_TLS_VERIFY_CODE=0`, `D8_DEV_TLS12_OPENSSL=HANDSHAKE_OK`, `D8_DEV_TLS13_OPENSSL=HANDSHAKE_OK`; `D8_APEX_DNS_IPV4=YES`, `D8_APEX_DNS_IPV6=NO`, `D8_APEX_IPV4_CURL_EXIT=35`, `D8_APEX_IPV4_HTTP_STATUS=000`, `D8_APEX_IPV4_TLS_CLASS=TLS_PEER_RESET`, `D8_APEX_TLS12_OPENSSL=OTHER_OR_UNCLASSIFIED`, `D8_APEX_TLS13_OPENSSL=TCP_REFUSED`, `D8_RESULT=4` y `D8_SHELL_RESULT=4`. Docker `active` y Git limpio. La falta de IPv6 también afecta a DEV y **no explica** por sí sola el fallo exclusivo de apex. El handshake falla antes de HTTP y de cualquier control Django/CSRF/cookies. No se concluye aún si apex resuelve a otro destino, si falla el enrutamiento/filtrado externo o si el Caddy activo carece de host TLS para apex.
+
+**D9** `scripts/main_d9_apex_dns_caddy_sni_readonly.py` (commit `1c5ca23e`) compara los conjuntos de destinos IPv4 de apex y DEV **sin imprimir las IP**, inspecciona (si disponible) la configuración activa de Caddy mediante Admin API local en modo GET solo para identificar rutas explícitas de ambos dominios, y prueba HTTPS con SNI validado contra loopback Caddy usando curl `--resolve hostname:443:127.0.0.1`. Es solo lectura: no imprime material TLS, respuesta HTTP, secretos, configuración o direcciones; no modifica DNS, Caddy, Docker ni el proxy. La presencia de una ruta Caddy no acredita su estado real, y la ausencia de coincidencia explícita puede deberse a un catch-all: no marcarlo como causa definitiva sin más evidencia.
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+python3 -m py_compile scripts/main_d9_apex_dns_caddy_sni_readonly.py
+echo "D9_SYNTAX=$?"
+python3 scripts/main_d9_apex_dns_caddy_sni_readonly.py
+echo "D9_SHELL_RESULT=$?"
+systemctl is-active docker
+git status --short
+```
+
+**No repetir D4–D8 ni modificar la configuración pública a ciegas.** D9 categoriza cuál de DNS, ruta Caddy local o camino exterior requiere corrección; las cinco puertas de despliegue permanecen cerradas.
