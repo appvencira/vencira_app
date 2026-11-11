@@ -427,3 +427,36 @@ Operador confirmó `D4H2_API_IMAGE_IDENTIFIED=PASS`, `D4H2_IMAGE_0018_PRESENT=YE
 Corrección preventiva de D4-H en commits `83f81a29` y `8a381292`: un preflight sin red ni acceso a O5 inspecciona los archivos de migración de la imagen retenida antes de leer las credenciales de backup o recuperar datos. Si no existe `0027`, emite `D4H_TARGET_0027_PRESENT_IN_RETAINED_API=FAIL`, `D4H_O5_CREDENTIALS_ACCESSED=NO`, `D4H_REAL_O5_RESTORE_REEXECUTED=NO`, `D4H_MIGRATION_PLAN=PRECHECK_BLOCKED` y `D4H_RESULT=8`. **No se debe repetir D4-H**: el diagnóstico ya ha demostrado que el preflight lo bloqueará. La guarda conserva el procedimiento histórico, pero evita un costoso restore innecesario.
 
 B1 (rehidratar y ejecutar imágenes exportadas en un runtime independiente), B2 (compatibilidad integral real O5 con el ejecutable recuperado, y protocolo reversible), B3 (custodia cifrada fuera del VPS), B4 (regresión final) y B5 (producción/autorización) siguen abiertos. El antiguo hash mismatch de D3-B3 continúa sin cerrar.
+
+## D5 — Fase agrupada de aceleración de publicación (11/11/2026)
+
+**Decisión:** no repetir los ensayos D4-E/F/G de integración sintética, ni la restauración O5 D4-H que ya recuperó datos y falló únicamente al intentar exigir migraciones 0027 a una imagen histórica terminada en 0018. D4-H2 confirmó la causa. Priorizar una ejecución de regresión candidata de `main` seguida de un informe único de bloqueos.
+
+**Nuevo script:** `scripts/main_d5_grouped_final_candidate_regression.sh` (commit `5ae2913f`). Verifica `main` sincronizada y limpia, archivo privado y SHA256, y ejecuta una sola vez el procedimiento existente `scripts/main_d1o_candidate_integral_gate.sh`. Este crea su propia red Docker interna y PostgreSQL sintético en tmpfs, construye una **imagen candidata nueva desde main**, ejecuta `Django check --deploy`, integridad de migraciones, migraciones de laboratorio, pruebas HTTP/seguridad/Django, y Flutter `pub get`, `analyze`, `test`, `build web` en una copia temporal. El gate D1-O ya contiene cleanup y comprobación de IDs de contenedores DEV. No reescribe imágenes archivadas ni utiliza credenciales/restauración O5.
+
+El script D5 **no despliega ni aprueba publicación**. Si D1-O falla, `D5_CANDIDATE_REGRESSION=FAIL`, `D5_RESULT=5`; si D1-O supera los ensayos, `D5_CANDIDATE_REGRESSION=PASS`, `D5_B4_MAIN_DJANGO_FLUTTER_SYNTHETIC_GATE=PASS`, pero `D5_RESULT=4` y `D5_RELEASE_READINESS=BLOCKED` permanecen porque B1/B2/B3/B4 nativo/B5 y la discrepancia D3-B3 no están cerrados. No interpretar código 4 como error técnico de tests: es denegación intencional de autorización operativa.
+
+### Orden única de ejecución D5
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+bash -n scripts/main_d5_grouped_final_candidate_regression.sh
+echo "D5_SYNTAX=$?"
+sudo -v
+bash scripts/main_d5_grouped_final_candidate_regression.sh
+echo "D5_SHELL_RESULT=$?"
+systemctl is-active docker
+git status --short
+```
+
+### Plan de cierre sin falsos positivos
+
+- **B1**: recuperación desde imágenes del archivo en un almacén independiente, con servicios y datos de laboratorio ejecutándose conjuntamente; los hashes de configuración del tar no equivalen actualmente a los IDs originales de Docker/Containerd.
+- **B2**: restaurar O5 real en laboratorio funcional con un ejecutable compatible. La imagen histórica `0018` no debe realizar migraciones `0027`; la imagen nueva de `main` se prueba por separado para la actualización. Requiere rollback reversible ensayado.
+- **B3**: copia **cifrada y externa al VPS** del archivo completo + verificación de integridad y ejercicio de recuperación desde destino externo. Tener el archivo local y O5 DB en Google Drive no demuestra custodia externa de las imágenes.
+- **B4**: candidato `main` Django/Flutter con D5 y, todavía, Android nativo/HTTPS/seguridad del candidato final. El PASS de un build web no equivale a APK final validada.
+- **B5**: configuración pública de `vencira.es` (DNS, TLS, Caddy, CSRF, cookies, rollback operativo), aprobación expresa y ventana de despliegue. El preflight DEV de `dev.vencira.es` no suple estos controles.
+
+Hasta autorización explícita: `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D5_DEPLOY_EXECUTED=NO`, `D5_LIVE_RESTORE_EXECUTED=NO`, `D5_HOST_DOCKER_IMAGE_LOAD_EXECUTED=NO`.
