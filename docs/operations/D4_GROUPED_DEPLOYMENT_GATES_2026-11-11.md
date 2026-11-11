@@ -559,3 +559,21 @@ git status --short
 ```
 
 **No repetir D4–D8 ni modificar la configuración pública a ciegas.** D9 categoriza cuál de DNS, ruta Caddy local o camino exterior requiere corrección; las cinco puertas de despliegue permanecen cerradas.
+
+## D9 — DNS de apex distinto de DEV y ausencia de host Caddy (11/11/2026)
+
+El operador confirmó `D9_MAIN_CLEAN=PASS`, `D9_DEV_IPV4_DNS=YES`, `D9_APEX_IPV4_DNS=YES`, `D9_APEX_ALL_IPV4_DESTINATIONS_MATCH_DEV=NO`, `D9_APEX_ANY_IPV4_DESTINATION_SHARED_WITH_DEV=NO`, `D9_CADDY_LOADED_CONFIG_READ=PASS`, `D9_DEV_EXPLICIT_HOST_ROUTE_PRESENT=YES`, `D9_DEV_EXPLICIT_HOST_PROXY_PRESENT=YES`, `D9_APEX_EXPLICIT_HOST_ROUTE_PRESENT=NO`, `D9_APEX_EXPLICIT_HOST_PROXY_PRESENT=NO`, `D9_DEV_LOCAL_CADDY_SNI_CURL_EXIT=0`, `D9_DEV_LOCAL_CADDY_SNI_HTTP_STATUS=200`, `D9_DEV_LOCAL_CADDY_SNI_TLS_VERIFY=0`, `D9_APEX_LOCAL_CADDY_SNI_CURL_EXIT=35`, `D9_APEX_LOCAL_CADDY_SNI_HTTP_STATUS=000`, `D9_APEX_LOCAL_CADDY_SNI_TLS_VERIFY=1`, `D9_RELEASE_READINESS=BLOCKED`, `D9_RESULT=4` y `D9_SHELL_RESULT=4`. Docker `active` y Git limpio.
+
+**Hallazgo verificado:** los conjuntos de destinos IPv4 de apex y DEV son disjuntos; Caddy cargado en el VPS expone ruta explícita de `dev.vencira.es` y no expone ruta explícita de `vencira.es`. DEV satisface un handshake TLS validado en loopback, apex no. La combinación explica que el dominio de publicación no esté habilitado en este Caddy, pero **no** demuestra si el destino DNS de apex es erróneo: puede representar un servicio intencionado distinto. La comprobación no prueba la existencia o ausencia de una ruta catch-all ni que el fallo TLS público sea causado exclusivamente por Caddy del VPS, puesto que apex tiene otra ruta DNS.
+
+**Acción operativa pendiente B5, no autorizada:** decidir el destino final de apex y su tratamiento de contenido existente; preparar configuración de Caddy de producción con TLS automático, rutas backend/web, cookies Secure, ALLOWED_HOSTS, CSRF y verificación. Acordar ventana de cambio/rollback de DNS, comprobar propagación y TLS sin exponer el servicio antes de pruebas, y obtener aprobación expresa. No cambiar DNS, Caddy ni DEV ahora.
+
+**No repetir D7/D8/D9** para esta misma evidencia. D5 backend/web PASS no sustituye Android físico, archivo restaurado exacto, O5 ligado al binario archivado, custodia cifrada externa ni reversión. Se mantienen:
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D9_DEPLOY_EXECUTED=NO
+D9_CADDY_RELOAD_EXECUTED=NO
+D9_DNS_CHANGED=NO
+D9_PUBLIC_RELEASE_AUTHORIZED=NO
+```
