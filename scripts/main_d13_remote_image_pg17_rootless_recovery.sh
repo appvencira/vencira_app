@@ -13,10 +13,12 @@ mark CONTAINER_RUN_EXECUTED NO
 for t in git sudo podman python3 mktemp df sha256sum stat; do
   command -v "$t" >/dev/null 2>&1 || { mark PREREQUISITE_MISSING "$t"; exit 2; }
 done
-root="$(cd "$(dirname "$${BASH_SOURCE[0]}")/.." && pwd)"
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
-[[ "$(git rev-parse HEAD)" == "$(git rev-parse refs/remotes/origin/main)" &&
-   -z "$(git status --porcelain)" ]] || { mark MAIN_CLEAN FAIL; exit 2; }
+head="$(git rev-parse --verify HEAD 2>/dev/null)" || { mark MAIN_CLEAN FAIL; exit 2; }
+remote="$(git rev-parse --verify refs/remotes/origin/main 2>/dev/null)" || { mark MAIN_CLEAN FAIL; exit 2; }
+status="$(git status --porcelain 2>/dev/null)" || { mark MAIN_CLEAN FAIL; exit 2; }
+[[ "$head" == "$remote" && -z "$status" ]] || { mark MAIN_CLEAN FAIL; exit 2; }
 mark MAIN_CLEAN PASS
 helper="$root/scripts/main_d13_remote_image_archive_root_helper.sh"
 runtime="$root/scripts/main_d4c_pg17_archived_isolated_runtime.sh"
@@ -24,7 +26,7 @@ for path in "$helper" "$runtime"; do
   [[ -f "$path" && ! -L "$path" ]] || { mark SCRIPT_MISSING FAIL; exit 2; }
   bash -n "$path" || { mark SYNTAX FAIL; exit 2; }
 done
-[[ -n "$${XDG_RUNTIME_DIR:-}" && -d "$XDG_RUNTIME_DIR" &&
+[[ -n "${XDG_RUNTIME_DIR:-}" && -d "$XDG_RUNTIME_DIR" &&
    ! -L "$XDG_RUNTIME_DIR" &&
    "$(stat -c %u "$XDG_RUNTIME_DIR")" == "$(id -u)" ]] || {
   mark ROOTLESS_RUNTIME_PREREQUISITES FAIL; exit 3;
