@@ -244,3 +244,11 @@ Operador: `D4E_WEB_PRIVATE_EPHEMERAL_ROOTFS_WRITABLE=YES`, `D4E_WEB_START=PASS`,
 Commit `5c4c143c`: añade solo un marcador de causa fija `D4E_WEB_NGINX_CONFIG_CAUSE` a partir de logs privados dentro del laboratorio (DNS upstream, endpoint inválido, TLS, sintaxis, include ausente, bind, template u otro). No imprime hostname, rutas, valores, ni contenido de logs, no altera configuración ni red, y mantiene FAIL hasta que HTTP pase. No adjudicar a DNS ni a certificados sin nueva evidencia.
 
 Para el siguiente ensayo sincronizar `main` y ejecutar la misma D4-E una vez. Se reparará únicamente la causa clasificada; no cambiar permisos de Docker operativo, ni tocar DEV/O5.
+
+### D4-E — DNS de upstream irresoluble: laboratorio interno de API + Web
+
+El operador confirmó: `D4E_WEB_EXIT_CODE=1`, `D4E_WEB_OOM_KILLED=NO`, `D4E_WEB_EXIT_DIAGNOSIS=NGINX_CONFIGURATION`, `D4E_WEB_NGINX_CONFIG_CAUSE=UPSTREAM_DNS_UNRESOLVED`, `D4E_API_HEALTH_HTTP=PASS`, `D4E_EPHEMERAL_STORAGE_REMOVED=YES`, `D4E_RESULT=7`, Docker `active`, Git limpio. El contenedor Web requiere resolución del hostname upstream configurado; `--network none` bloquea la resolución de nombres de servicio. Este es un fallo del diseño aislado, no prueba de imagen defectuosa.
+
+Commit `71411071`: modifica exclusivamente D4-E para crear una red **Podman interna y privada** bajo el mismo almacenamiento VFS efímero, verifica `network inspect internal=true`, inicia API con alias `api` y Web con alias `web_preview`, sin puertos del host, sin Docker host, sin acceso a DEV, sin restauraciones O5. Ambos contenedores se eliminan antes de eliminar la red y el almacenamiento rootless. La red privada sustituye `--network none` para satisfacer el DNS de Compose, pero no permite egress exterior por `--internal`. No se ha verificado aún que el hostname concreto configurado en Web sea `api`; si no, se mantiene fallo sin degradar aislamiento.
+
+Condiciones de aceptación: `D4E_INTERNAL_NETWORK_ISOLATION=PASS`, `D4E_API_HEALTH_HTTP=PASS`, `D4E_WEB_HTTP_LOCAL=PASS`, `D4E_INTERNAL_NETWORK_REMOVED=YES`, `D4E_EPHEMERAL_STORAGE_REMOVED=YES`, `D4E_RESULT=0`; la respuesta HTTP local no demuestra todavía proxy API↔Web íntegro ni O5.
