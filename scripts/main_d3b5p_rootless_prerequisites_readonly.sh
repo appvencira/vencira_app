@@ -22,7 +22,14 @@ else
   mark PODMAN_INSTALLED NO
 fi
 if command -v apt-cache >/dev/null 2>&1; then
-  candidate="$(apt-cache policy podman 2>/dev/null | awk '/^[[:space:]]*Candidate:/ {print $2; exit}')"
+  # Read the entire producer stream: early awk exit can send SIGPIPE (141)
+  # to apt-cache when pipefail is enabled. Do not mark an apt failure as absent.
+  if candidate="$(apt-cache policy podman 2>/dev/null | awk '/^[[:space:]]*Candidate:/ && !found {print $2; found=1}')"; then
+    :
+  else
+    candidate=""
+    mark PODMAN_APT_QUERY ERROR
+  fi
   if [[ -n "$candidate" && "$candidate" != "(none)" ]]; then
     mark PODMAN_APT_CANDIDATE AVAILABLE
   else
