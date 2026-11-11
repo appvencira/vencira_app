@@ -24,7 +24,7 @@ bash -n scripts/main_d25_native_workspace_real_https_pg17_isolated.sh || {
   mark RESULT 2
   exit 2
 }
-python3 -m py_compile scripts/native_i8k_https_server.py || {
+python3 -c 'import ast, pathlib; ast.parse(pathlib.Path("scripts/native_i8k_https_server.py").read_text())' || {
   mark SERVER_SYNTAX FAIL
   mark RESULT 2
   exit 2
