@@ -159,3 +159,14 @@ Inspección: Django DRF `RenewalSerializer` admite `notes`, `GET /renewals/` usa
 Marcadores nuevos: `D2E_GUI_PATCH_FIXTURE_TARGET`, `D2E_GUI_PATCH_RETURNED_NOTES_MATCH`, `D2E_GUI_PATCH_RETURNED_NOTES_FIELD`, `D2E_READONLY_DETAIL_PERSISTENCE`.
 
 Se mantienen `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D2E_RELEASE_AUTHORIZED=NO`.
+
+
+## Noveno ensayo — PATCH correcto, pero contenido distinto del esperado (11/11/2026)
+
+Resultado del operador: `D2E_INITIAL_ROUTE=AGENDA`, vuelta al dashboard PASS, anotación visible PASS, edición GUI PASS, clic Guardar PASS. `D2E_GUI_PATCH_COUNT=1`, `D2E_GUI_PATCH_STATUS=200`, `D2E_GUI_PATCH_FIXTURE_TARGET=YES`, `D2E_GUI_PATCH_RETURNED_NOTES_MATCH=NO`, `D2E_GUI_PATCH_RETURNED_NOTES_FIELD=YES`, `D2E_READONLY_DETAIL_PERSISTENCE=DETAIL_NOTES_DIFFERENT`, `D2E_RESULT=8`. Se demuestra PATCH real sobre la anotación correcta y respuesta 200, pero el valor en la respuesta y detalle no es la cadena esperada. No afirmar corrupción de base de datos ni gate aprobado.
+
+Código verificado: `renewal_editor.dart` crea `TextEditingController(text: existing.notes)`, muestra `TextFormField(key: renewal-notes, controller: _notes)`, devuelve `notes: _notes.text.trim()`; `VenciraRenewalInput.toJson()` envía `notes.trim()` a Django y `RenewalSerializer` guarda/serializa `notes`. La hipótesis principal pendiente es que `Playwright locator.fill()` cambie el elemento de texto accesible sin actualizar el controlador interno de Flutter Web CanvasKit, o que el campo accesible seleccionado no corresponda al `TextFormField` previsto. No hay prueba definitiva sin clasificar el cuerpo de la petición.
+
+**Commit `e8591fd5`**: test reemplaza `notes.fill(...)` por clic real, combinación teclado seleccionar todo `ControlOrMeta+A`, escritura por `page.keyboard.type` y pérdida de foco mediante Tab; no modifica DOM ni hace peticiones de escritura. Instrumenta únicamente metadatos categóricos del texto sintético de las notas en **request PATCH** y **response PATCH** (`EXPECTED`, `UNCHANGED`, `CONTAINS_EXPECTED`, `CONTAINS_ORIGINAL`, `EMPTY`, `OTHER`, `MISSING`, `PARSE_ERROR`), sin imprimir textos ni cuerpo de peticiones/respuestas. Clasifica igualmente el valor visible del campo de entrada si `inputValue()` está disponible. JS V8 parse PASS. No modifica implementación de producción.
+
+En el siguiente ensayo observar `D2E_GUI_NOTES_ACCESSIBLE_INPUT_STATE`, `D2E_GUI_PATCH_SENT_NOTES_CLASS`, `D2E_GUI_PATCH_RETURNED_NOTES_CLASS`, `D2E_GUI_PATCH_STATUS`, `D2E_READONLY_DETAIL_PERSISTENCE` y `D2E_RESULT`. Sigue pendiente que cada pase (antes/después de reinicio efímero de Nginx) tenga su valor distinto persistido. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, DEV intacto.
