@@ -853,3 +853,11 @@ Correcciones **ya publicadas en main**: `d17756a2` extiende `NativeApiTransport.
 Después de arreglar el offset HTTP y pasar a la fase Flutter, una ejecución comunicó `flutter analyze` **163 issues** y `D24_RESULT=5`; DEV intacto `D24_DEV_CONTAINERS_UNCHANGED=OK`. La revisión de `clients/flutter/lib/api/native_api_transport.dart` en GitHub identificó corrupción por fragmentos **duplicados/intercalados** de `getJson`, expresiones regulares truncadas y clases de error repetidas (273 líneas). El commit **`a8b313f3`** reconstruye un único transporte completo (132 líneas verificadas tras guardar) con control de query `offset` sin relajar `resolveApiPath`, control de sesión y bloqueo de redirects. Evidencia y límites documentados en `docs/operations/D24_NATIVE_WORKSPACE_PAGINATION_CONCURRENCY_2026-11-11.md`, commit `a6630e72`.
 
 **D24 pendiente de revalidar**; no declarar PASS por reparación textual hasta nuevo `flutter analyze`, Flutter tests y PG17 con `D24_RESULT=0`. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## D24 cuarto gate FAIL — comando Flutter con barras de escape incorrectas, corregido (12/11/2026)
+
+Tras reconstruir `native_api_transport.dart` (`a8b313f3`), el VPS informa `flutter analyze`: **No issues found**. La ejecución de `flutter test` no cargó ningún test por argumento literal `\\` tratado como ruta (`Failed to load "/tmp/vencira-d24-flutter/\\": Does not exist`), no por fallo de lógica Flutter. `D24_FLUTTER_PAGINATION_GATE=FAIL`, `D24_DEV_CONTAINERS_UNCHANGED=OK`, `D24_RESULT=5`.
+
+El script agrupado incluía continuación de líneas con **dobles barras invertidas** dentro del `sh -euc`, lo que `bash -n` externo no detecta. Corregido en `main` **commit `43011416`** con una única línea explícita `flutter test --reporter expanded test/native_workspace_read_port_test.dart test/native_api_transport_test.dart test/native_api_endpoint_test.dart`. Runbook actualizado commit `d868520c`.
+
+**D24 sigue pendiente de reejecución completa** PG17 y Flutter. `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
