@@ -69,7 +69,18 @@ cleanup(){
   case "$runtime_lab" in "$XDG_RUNTIME_DIR"/d3b5-runroot.*) ;; *) mark CLEANUP_PATH FAIL; exit 9;; esac
   cleanup_ok=YES
   if [[ -d "$lab" && ! -L "$lab" ]]; then
-    rm -rf -- "$lab" || cleanup_ok=NO
+    # VFS layers may contain subordinate-UID ownership and read-only dirs.
+    # Only operate on the fresh, validated D3-B5 private storage directory.
+    if podman unshare sh -c '
+      target="$1"
+      test -d "$target" && test ! -L "$target" || exit 1
+      find "$target" -type d -exec chmod u+rwx -- {} + || exit 1
+      rm -rf -- "$target"
+    ' sh "$lab"; then
+      [[ ! -e "$lab" ]] || cleanup_ok=NO
+    else
+      cleanup_ok=NO
+    fi
   else
     cleanup_ok=NO
   fi
