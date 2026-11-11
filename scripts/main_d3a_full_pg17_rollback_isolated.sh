@@ -119,7 +119,7 @@ django makemigrations --check --dry-run --noinput >/dev/null 2>&1 || {
 }
 django migrate --noinput >/dev/null 2>&1 || { mark INITIAL_MIGRATE FAIL; exit 5; }
 mark CANDIDATE_MIGRATIONS PASS
-synthetic_username="d3a-synthetic-$nonce"
+synthetic_username="d2e-synthetic-$nonce"
 synthetic_password="$(openssl rand -hex 20)"
 D run --rm --network "$net" --env-file "$tmp/env" \
   -e D2E_SYNTHETIC_USER="$synthetic_username" \
@@ -155,7 +155,7 @@ D exec "$db" pg_restore -U d3a -d d3a --exit-on-error /tmp/d3a-full.dump >"$tmp/
 }
 mark RENEWAL_ROLLBACK PASS
 auth_count="$(D exec "$db" psql -U d3a -d d3a -At -v ON_ERROR_STOP=1 \
-  -c "SELECT COUNT(*) FROM auth_user WHERE username LIKE 'd3a-synthetic-%';")"
+  -c "SELECT COUNT(*) FROM auth_user WHERE username LIKE 'd2e-synthetic-%';")"
 [[ "$auth_count" == 1 ]] || { mark AUTH_RESTORE FAIL; exit 7; }
 mark AUTH_RESTORE PASS
 member_count="$(D exec "$db" psql -U d3a -d d3a -At -v ON_ERROR_STOP=1 \
