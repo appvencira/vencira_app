@@ -45,10 +45,9 @@ if docker run --rm --pull never --network none --read-only \
     --security-opt no-new-privileges --pids-limit 32 --memory 128m \
     --entrypoint python "${image_ids[api]}" -c '
 from pathlib import Path
-from re import fullmatch
 p=Path("/app/reminders/migrations")
-has18=any(fullmatch(r"0018_[A-Za-z0-9_]+\\.py", x.name) for x in p.glob("0018_*.py"))
-has27=any(fullmatch(r"0027_[A-Za-z0-9_]+\\.py", x.name) for x in p.glob("0027_*.py"))
+has18=any(x.is_file() and x.name.startswith("0018_") and x.suffix==".py" for x in p.glob("0018_*.py"))
+has27=any(x.is_file() and x.name.startswith("0027_") and x.suffix==".py" for x in p.glob("0027_*.py"))
 raise SystemExit(0 if has18 and not has27 else 1)
 ' >/dev/null 2>&1; then
   mark HISTORICAL_API_0018_ONLY PASS
