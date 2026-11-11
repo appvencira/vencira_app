@@ -9,10 +9,13 @@ const { chromium } = require("playwright");
   let pageErrors = 0;
   let fontConsoleErrors = 0;
   let otherConsoleErrors = 0;
+  let expectedAuthConsoleDenials = 0;
+  const expectedAuthDenialConsoleRoutes = {};
   const otherConsoleSamples = [];
   const otherConsoleLocationTypes = {};
   const internalHttpErrors = {};
   const internalForbiddenRoutes = {};
+  const internalResponseStatusByUrl = new Map();
   function safeRouteClass(path) {
     if (path === "/api/v1/me/") return "AUTH_ME";
     if (path === "/api/v1/workspaces/") return "WORKSPACES";
@@ -110,6 +113,27 @@ const { chromium } = require("playwright");
         if (fontOrigin || mentionsFont) {
           fontConsoleErrors++;
         } else {
+          // A Chromium resource console 403 is expected ONLY if it maps
+          // exactly to a recorded anonymous 403 on one of two auth endpoints.
+          // Generic "403" messages or unknown routes remain gate failures.
+          let expectedAuth403 = false;
+          try {
+            const loc = new URL(location);
+            const expectedPath = loc.pathname === "/api/v1/me/" ||
+              loc.pathname === "/api/v1/workspaces/";
+            expectedAuth403 = loc.hostname === "d1z-proxy" && expectedPath &&
+              internalResponseStatusByUrl.get(loc.href) === 403 &&
+              /failed to load resource: the server responded with a status of 403/i.test(message);
+            if (expectedAuth403) {
+              expectedAuthDenialConsoleRoutes.set(loc.pathname,
+                (expectedAuthDenialConsoleRoutes.get(loc.pathname) || 0) + 1);
+            }
+          } catch (_) { /* denied only if positively verified */ }
+          if (expectedAuth403) {
+            expectedAuthConsoleDenials++;
+            tally(errorCategories, "EXPECTED_AUTH_DENIAL");
+            return;
+          }
           otherConsoleErrors++;
           if (otherConsoleSamples.length < 3) {
             otherConsoleSamples.push(safeExceptionSummary(message));
@@ -130,6 +154,7 @@ const { chromium } = require("playwright");
         const loc = new URL(response.url());
         if (loc.hostname !== "d1z-proxy") return;
         if (response.status() >= 400) {
+          internalResponseStatusByUrl.set(loc.href, response.status());
           const routeClass = safeRouteClass(loc.pathname);
           tally(internalHttpErrors, String(response.status()));
           if (response.status() === 403) tally(internalForbiddenRoutes, routeClass);
@@ -219,10 +244,21 @@ const { chromium } = require("playwright");
     console.log("D1Z_CHROMIUM_PAGE_ERRORS=" + pageErrors);
     console.log("D1Z_CHROMIUM_FONT_CONSOLE_ERRORS=" + fontConsoleErrors);
     console.log("D1Z_CHROMIUM_OTHER_CONSOLE_ERRORS=" + otherConsoleErrors);
+    console.log("D1Z_CHROMIUM_EXPECTED_AUTH_DENIAL_CONSOLE=" + expectedAuthConsoleDenials);
     const allExternalAreFonts = failedRequests.external ===
       (failedHostCategories.GOOGLE_FONTS || 0);
+    const authDenialsMatch = (internalForbiddenRoutes.AUTH_ME || 0) === 1 &&
+      (internalForbiddenRoutes.WORKSPACES || 0) === 1 &&
+      (internalHttpErrors["403"] || 0) === 2 &&
+      Object.keys(internalHttpErrors).every(status => status === "403") &&
+      expectedAuthConsoleDenials === 2 &&
+      expectedAuthDenialConsoleRoutes.size === 2 &&
+      expectedAuthDenialConsoleRoutes.get("/api/v1/me/") === 1 &&
+      expectedAuthDenialConsoleRoutes.get("/api/v1/workspaces/") === 1;
+    console.log("D1Z_CHROMIUM_EXPECTED_ANONYMOUS_403=" +
+      (authDenialsMatch ? "PASS" : "FAIL"));
     if (pageErrors || otherConsoleErrors || failedRequests.internal ||
-        !allExternalAreFonts) throw Error("BROWSER_JS_ERRORS");
+        !allExternalAreFonts || !authDenialsMatch) throw Error("BROWSER_JS_ERRORS");
     console.log("D1Z_CHROMIUM_APP_JS_ERRORS=NONE");
     if (fontConsoleErrors || failedRequests.external) {
       console.log("D1Z_CHROMIUM_FONT_NETWORK_DEGRADED=YES");
@@ -245,6 +281,7 @@ const { chromium } = require("playwright");
     console.log("D1Z_CHROMIUM_PAGE_ERRORS=" + pageErrors);
     console.log("D1Z_CHROMIUM_FONT_CONSOLE_ERRORS=" + fontConsoleErrors);
     console.log("D1Z_CHROMIUM_OTHER_CONSOLE_ERRORS=" + otherConsoleErrors);
+    console.log("D1Z_CHROMIUM_EXPECTED_AUTH_DENIAL_CONSOLE=" + expectedAuthConsoleDenials);
     console.log("D1Z_CHROMIUM_FAILED_INTERNAL_REQUESTS=" + failedRequests.internal);
     console.log("D1Z_CHROMIUM_FAILED_EXTERNAL_REQUESTS=" + failedRequests.external);
     console.log("D1Z_CHROMIUM_DOCUMENT_HTTP_STATUS=" + browserDocumentStatus);
