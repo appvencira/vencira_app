@@ -265,25 +265,57 @@ const { chromium } = require("playwright");
     // dispatchEvent substitutes.
     const notes=page.getByRole("textbox",{name:/notas|observaciones/i}).last();
     await notes.waitFor({state:"visible",timeout:20000});
-    await notes.fill(changedNotes);
+    // Flutter Web text editing may keep a separate editing state from the
+    // semantics DOM input; use genuine focus + keyboard events (not DOM .value
+    // mutation or synthetic input events). This also replaces old notes.
+    await notes.click({timeout:20000});
+    await notes.press("ControlOrMeta+A");
+    await page.keyboard.type(changedNotes,{delay:25});
+    await notes.press("Tab");
+    let domInputState="UNAVAILABLE";
+    try {
+      const value=await notes.inputValue({timeout:2000});
+      domInputState=value===changedNotes?"MATCH":
+        value==="Before D2E"?"UNCHANGED":"DIFFERENT";
+    } catch(_){}
+    console.log("D2E_GUI_NOTES_ACCESSIBLE_INPUT_STATE="+domInputState);
     console.log("D2E_GUI_NOTES_TYPED=PASS");
     stage="SAVE_CLICK";
     // Observe only metadata about actual Flutter-originating HTTP writes.
     // No response bodies, request payloads, URLs with IDs or credentials.
     const writes=[];
     const writeResponses=[];
+    const requestStates=[];
     page.on("response",response=>{
       const request=response.request();
       if(request.method()==="PATCH" &&
         /\/api\/v1\/workspaces\/[^/]+\/renewals\/[^/]+\/$/.test(
           new URL(response.url()).pathname)){
         writes.push({status:response.status(),method:request.method()});
+        try{
+          const sent=JSON.parse(request.postData()||"{}");
+          const field=sent.notes;
+          requestStates.push(
+            field===changedNotes?"EXPECTED":
+            field==="Before D2E"?"UNCHANGED":
+            typeof field!=="string"?"MISSING":
+            field.includes(changedNotes)?"CONTAINS_EXPECTED":
+            field.includes("Before D2E")?"CONTAINS_ORIGINAL":
+            field===""?"EMPTY":"OTHER"
+          );
+        }catch(_){requestStates.push("PARSE_ERROR");}
         // Only classify fixed synthetic fixture and notes equality;
         // do not log response bodies, request bodies, tokens or UUIDs.
         writeResponses.push(response.json().then(body=>({
           targetFixture:body?.customer_reference==="D2E-EDIT",
           returnedNotesMatch:body?.notes===changedNotes,
-          returnedNotesPresent:typeof body?.notes==="string"
+          returnedNotesPresent:typeof body?.notes==="string",
+          returnedNotesClass:body?.notes===changedNotes?"EXPECTED":
+            body?.notes==="Before D2E"?"UNCHANGED":
+            typeof body?.notes!=="string"?"MISSING":
+            body.notes.includes(changedNotes)?"CONTAINS_EXPECTED":
+            body.notes.includes("Before D2E")?"CONTAINS_ORIGINAL":
+            body.notes===""?"EMPTY":"OTHER"
         })).catch(()=>({parseError:true})));
       }
     });
@@ -297,6 +329,8 @@ const { chromium } = require("playwright");
     console.log("D2E_GUI_PATCH_COUNT="+writes.length);
     console.log("D2E_GUI_PATCH_STATUS="+
       (writes.length===0?"NONE":writes.map(x=>x.status).join(",")));
+    console.log("D2E_GUI_PATCH_SENT_NOTES_CLASS="+
+      (requestStates.length?requestStates.join(","):"NONE"));
     const writeBodies=await Promise.all(writeResponses);
     console.log("D2E_GUI_PATCH_FIXTURE_TARGET="+
       (writeBodies.some(x=>x.targetFixture)?"YES":"NO"));
@@ -304,6 +338,8 @@ const { chromium } = require("playwright");
       (writeBodies.some(x=>x.returnedNotesMatch)?"YES":"NO"));
     console.log("D2E_GUI_PATCH_RETURNED_NOTES_FIELD="+
       (writeBodies.some(x=>x.returnedNotesPresent)?"YES":"NO"));
+    console.log("D2E_GUI_PATCH_RETURNED_NOTES_CLASS="+
+      (writeBodies.length?writeBodies.map(x=>x.returnedNotesClass||"PARSE_ERROR").join(","):"NONE"));
     console.log("D2E_GUI_EDITOR_STILL_OPEN="+
       ((await page.getByRole("button",{name:/guardar/i}).count())>0?"YES":"NO"));
     stage="PERSISTENCE";
