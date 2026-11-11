@@ -149,7 +149,7 @@ D run --rm \
   -v "$flutter_volume:/work" -v "$pub_volume:/pub" \
   -e PUB_CACHE=/pub -w /work \
   ghcr.io/cirruslabs/flutter:3.44.0 \
-  sh -c 'cp -a /source/. /work/ && flutter pub get && flutter analyze test/native_d25_workspace_real_https_pg17_test.dart test/native_d26_workspace_cursor_test.dart' 
+  sh -c 'cp -a /source/. /work/ && flutter pub get && flutter analyze' 
 echo "D25_ANALYZE=PASS"
 
 fixture="$(cat <<'PY'
