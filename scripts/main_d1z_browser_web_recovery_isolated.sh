@@ -157,12 +157,18 @@ D run --rm --memory 4g --tmpfs /tmp:rw,size=3g,mode=1777 \
     test -s build/web/index.html
     test -s build/web/main.dart.js
     test -s build/web/flutter_bootstrap.js
+    test -s build/web/canvaskit/canvaskit.js
+    test -s build/web/canvaskit/canvaskit.wasm
+    grep -Fq "canvasKitBaseUrl" build/web/flutter_bootstrap.js
+    grep -Fq "/canvaskit/" build/web/flutter_bootstrap.js
     cp -a build/web/. /export/
   ' || { mark FLUTTER_RELEASE_BUILD FAIL; exit 6; }
 [[ -s "$work/web/index.html" && -s "$work/web/main.dart.js" ]] || {
   mark FLUTTER_RELEASE_ARTIFACT FAIL; exit 6;
 }
 mark FLUTTER_RELEASE_BUILD PASS
+mark LOCAL_CANVASKIT_BUNDLED PASS
+mark BOOTSTRAP_LOCAL_CANVASKIT_CONFIG PASS
 # Nginx serves the actual candidate artifacts on the same isolated network.
 D run -d --name "$web" --network "$net" --network-alias d1z-web \
   --security-opt no-new-privileges --pids-limit 128 --memory 256m \
