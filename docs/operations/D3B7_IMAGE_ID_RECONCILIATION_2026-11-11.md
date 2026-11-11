@@ -32,3 +32,11 @@ D3B7_HOST_DOCKER_IMAGE_LOAD_EXECUTED=NO
 D3B7_CONTAINER_RUN_EXECUTED=NO
 D3B7_LIVE_RESTORE_EXECUTED=NO
 ```
+
+## Confirmación de almacén containerd (11/11/2026)
+
+El operador verificó Docker Engine cliente/servidor 29.9.2 (API 1.56), Ubuntu 24.04.5 LTS, x86_64, driver `overlayfs` y `DriverStatus=[["driver-type","io.containerd.snapshotter.v1"]`. Es confirmación del almacén de imágenes basado en containerd, conforme a https://docs.docker.com/engine/storage/containerd/ .
+
+Esto justifica investigar las representaciones de imagen Docker/configuración/manifest en la exportación, pero **no prueba** que containerd explique los tres IDs históricos discordantes. D3-B3 sigue FAIL. Próximo control: cotejo sanitizado de descriptores/identificadores, sin imprimir el resultado crudo de `docker inspect`, sin alterar imágenes ni daemon.
+
+`D3B7_CONTAINERD_STORE=CONFIRMED`; `D3B7_EXACT_HISTORICAL_IMAGE_ID_VERIFIED=NO`; `D3B7_OPERATIONAL_ROLLBACK_VERIFIED=NO`.
