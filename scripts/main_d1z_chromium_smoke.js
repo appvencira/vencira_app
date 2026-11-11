@@ -10,6 +10,9 @@ const { chromium } = require("playwright");
   const requestKinds = {};
   const failedHostCategories = {};
   const errorCategories = {};
+  const exceptionTypes = {};
+  let browserDocumentStatus = "UNKNOWN";
+  let sameOriginScriptStatus = "UNKNOWN";
   function tally(target, key) { target[key] = (target[key] || 0) + 1; }
   function externalHostCategory(host) {
     // Known public infrastructure only; unknown domains are not printed.
@@ -29,6 +32,13 @@ const { chromium } = require("playwright");
     if (s.includes("fetch") || s.includes("network")) return "NETWORK";
     if (s.includes("content security policy") || s.includes("csp")) return "CSP";
     if (s.includes("script")) return "SCRIPT";
+    if (s.includes("undefined") || s.includes("null")) return "NULL_OR_UNDEFINED";
+    if (s.includes("is not a function")) return "NOT_A_FUNCTION";
+    if (s.includes("not defined")) return "NOT_DEFINED";
+    if (s.includes("unexpected token")) return "INVALID_SCRIPT";
+    if (s.includes("failed to load")) return "LOAD_FAILURE";
+    if (s.includes("permission")) return "PERMISSION";
+    if (s.includes("timeout")) return "TIMEOUT";
     return "OTHER";
   }
   try {
@@ -41,12 +51,23 @@ const { chromium } = require("playwright");
     page.on("pageerror", err => {
       errors.push("PAGE_ERROR");
       tally(errorCategories, errorCategory(err && err.message));
+      const type = String(err?.name || "UNKNOWN").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 30);
+      tally(exceptionTypes, type || "UNKNOWN");
     });
     page.on("console", msg => {
       if (msg.type() === "error") {
         errors.push("CONSOLE_ERROR");
         tally(errorCategories, errorCategory(msg.text()));
       }
+    });
+    page.on("response", response => {
+      try {
+        const loc = new URL(response.url());
+        if (loc.hostname !== "d1z-proxy") return;
+        if (loc.pathname === "/flutter_bootstrap.js") sameOriginScriptStatus = String(response.status());
+        if (loc.pathname === "/main.dart.js") sameOriginScriptStatus =
+          response.ok() && sameOriginScriptStatus !== "ERROR" ? "200" : "ERROR";
+      } catch (_) { /* do not log request content */ }
     });
     page.on("requestfailed", req => {
       try {
@@ -64,6 +85,7 @@ const { chromium } = require("playwright");
       waitUntil: "domcontentloaded", timeout: 45000
     });
     if (!response || response.status() !== 200) throw Error("ROOT_HTTP");
+    browserDocumentStatus = "200";
     console.log("D1Z_CHROMIUM_DOCUMENT=PASS");
     stage = "FLUTTER_VIEW";
     try {
@@ -112,9 +134,12 @@ const { chromium } = require("playwright");
     console.log("D1Z_CHROMIUM_JS_ERRORS_COUNT=" + errors.length);
     console.log("D1Z_CHROMIUM_FAILED_INTERNAL_REQUESTS=" + failedRequests.internal);
     console.log("D1Z_CHROMIUM_FAILED_EXTERNAL_REQUESTS=" + failedRequests.external);
+    console.log("D1Z_CHROMIUM_DOCUMENT_HTTP_STATUS=" + browserDocumentStatus);
+    console.log("D1Z_CHROMIUM_SCRIPT_HTTP_STATUS=" + sameOriginScriptStatus);
     for (const [k, n] of Object.entries(requestKinds).sort()) console.log("D1Z_CHROMIUM_FAILED_REQUEST_TYPE_" + k + "=" + n);
     for (const [k, n] of Object.entries(failedHostCategories).sort()) console.log("D1Z_CHROMIUM_FAILED_HOST_CLASS_" + k + "=" + n);
     for (const [k, n] of Object.entries(errorCategories).sort()) console.log("D1Z_CHROMIUM_ERROR_CLASS_" + k + "=" + n);
+    for (const [k, n] of Object.entries(exceptionTypes).sort()) console.log("D1Z_CHROMIUM_EXCEPTION_TYPE_" + k + "=" + n);
     process.exitCode = 1;
   } finally {
     if (browser) await browser.close();
