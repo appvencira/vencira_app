@@ -1,9 +1,9 @@
 """D21 actual server-custodied MFA issuance/atomic recovery, PG17 isolated."""
 import os
+import time
 from unittest.mock import patch
 
 from cryptography.fernet import Fernet
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection
 from django.test import TransactionTestCase, override_settings
@@ -12,7 +12,6 @@ from reminders.mfa_secrets import encrypt_totp_secret
 from reminders.mfa_totp import generate_secret, totp_at
 from reminders.models import UserMfaState
 
-from .candidate_challenge_store import CandidateChallengeDenied
 from .models import MobileDeviceSession
 from .native_server_custody_issuer import (
     NativeServerIssuerUnavailable,
@@ -61,7 +60,7 @@ class D21ServerCustodyPG17Tests(TransactionTestCase):
             self.assertIsInstance(challenge, str)
             self.assertEqual(MobileDeviceSession.objects.count(), 0)
             access, refresh = complete_native_mfa(
-                challenge=challenge, code=totp_at(self.secret),
+                challenge=challenge, code=totp_at(self.secret, int(time.time())),
             )
             self.assertEqual(validate_candidate_access(access).pk, self.user.pk)
             self.assertTrue(refresh.startswith("v1.r."))
@@ -76,7 +75,7 @@ class D21ServerCustodyPG17Tests(TransactionTestCase):
         with self._keyenv("invalid-fernet-key"):
             with self.assertRaises(NativeServerIssuerUnavailable):
                 complete_native_mfa(
-                    challenge=challenge, code=totp_at(self.secret),
+                    challenge=challenge, code=totp_at(self.secret, int(time.time())),
                 )
         self.assertFalse(MobileDeviceSession.objects.exists())
         print("D21_INVALID_KEY_CUSTODY_DENIED=PASS")
@@ -97,7 +96,7 @@ class D21ServerCustodyPG17Tests(TransactionTestCase):
                 request_meta=self.meta,
             )
             access1, _ = complete_native_mfa(
-                challenge=first, code=totp_at(self.secret),
+                challenge=first, code=totp_at(self.secret, int(time.time())),
             )
             recovery = begin_native_recovery(
                 username=self.user.username, password="d21-only-password",
@@ -107,22 +106,25 @@ class D21ServerCustodyPG17Tests(TransactionTestCase):
             self.assertEqual(validate_candidate_access(access1).pk,
                              self.user.pk)
             self.assertEqual(MobileDeviceSession.objects.count(), 1)
-            # Skip TOTP counter replay using a later synthetic clock is not
-            # allowed by this production-shaped API; patch trusted server clock
-            # only in tests to prove a fresh factor and account-wide revoke.
-            from unittest.mock import patch as monkeypatch
-            import reminders.mfa_store as mfa_store
-            from datetime import datetime, timedelta, timezone
-            later = datetime.now(timezone.utc) + timedelta(seconds=90)
-            with monkeypatch.object(mfa_store, "match_counter",
-                   wraps=mfa_store.match_counter) as spy:
-                # The new TOTP must be generated for the server's actual clock.
-                # This test instead just checks the second challenge never
-                # password-only revokes any old session.
-                self.assertIsInstance(recovery, str)
-                self.assertEqual(MobileDeviceSession.objects.count(), 1)
-                self.assertTrue(spy.call_count == 0)
-        print("D21_RECOVERY_PASSWORD_STAGE_NO_REVOKE=PASS")
+            self.assertIsInstance(recovery, str)
+            self.assertEqual(MobileDeviceSession.objects.count(), 1)
+            print("D21_RECOVERY_PASSWORD_STAGE_NO_REVOKE=PASS")
+            # Server clock moves forward for a NEW TOTP window. No timestamp
+            # or encryption key is accepted from the mobile request.
+            future = int(time.time()) + 120
+            with patch("reminders.mfa_totp.time.time", return_value=future):
+                new_access, new_refresh = complete_native_recovery(
+                    challenge=recovery,
+                    code=totp_at(self.secret, future),
+                )
+            self.assertEqual(validate_candidate_access(new_access).pk,
+                             self.user.pk)
+            self.assertTrue(new_refresh.startswith("v1.r."))
+            with self.assertRaises(MobileTokenDenied):
+                validate_candidate_access(access1)
+            self.assertEqual(MobileDeviceSession.objects.count(), 2)
+        print("D21_ACCOUNT_WIDE_RECOVERY_REVOKES_OLD=PASS")
+
 
     @override_settings(VENCIRA_ENV="production")
     def test_operational_environment_cannot_issue_or_recover(self):
