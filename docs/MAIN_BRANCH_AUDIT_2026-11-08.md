@@ -1777,3 +1777,12 @@ El procedimiento completo `docs/D1Z_BROWSER_FLUTTER_AND_ISOLATED_WEB_RECOVERY_20
 La primera ejecución de D1-Z validó PG17 sintético, Flutter release, Nginx, Caddy, contratos TLS/HTTP y la imagen Playwright Chromium (todos PASS), pero la prueba de navegador informó `D1Z_CHROMIUM_FAILURE_STAGE=RENDER_OR_BROWSER`, `D1Z_CHROMIUM_RENDER_GATE=FAIL` y `D1Z_RESULT=8`. Contenedores DEV intactos, limpieza del laboratorio DONE. **No declarar D1-Z PASS**. El marcador original no permite afirmar si el error procede del navegador, los recursos Flutter o el render.
 
 Se publicó análisis por etapas y contadores sin exponer URLs ni secretos en `scripts/main_d1z_chromium_smoke.js` (commit `74a32b76`), más `node --check` antes del browser (commit `5df3987b`). Documento D1-Z actualizado en `docs/D1Z_BROWSER_FLUTTER_AND_ISOLATED_WEB_RECOVERY_2026-11-11.md` (commit `350bb071`). D1-Z requiere repetición para diagnóstico o PASS. No se toca DEV; `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## DI. 11/11/2026 — D1-Z Chromium render sin Flutter view; autohospedaje CanvasKit candidato
+
+El segundo intento D1-Z confirmó `D1Z_CHROMIUM_LAUNCH=PASS`, `D1Z_CHROMIUM_DOCUMENT=PASS`, `D1Z_CHROMIUM_BOOTSTRAP_TAG=YES`, pero `D1Z_CHROMIUM_FLUTTER_VIEW_PRESENT=NO`, `D1Z_CHROMIUM_CANVAS_PRESENT=NO`, `D1Z_CHROMIUM_FAILURE_STAGE=FLUTTER_VIEW_TIMEOUT`, `D1Z_CHROMIUM_JS_ERRORS_COUNT=6`, `D1Z_CHROMIUM_FAILED_INTERNAL_REQUESTS=0`, `D1Z_CHROMIUM_FAILED_EXTERNAL_REQUESTS=3`, `D1Z_CHROMIUM_RENDER_GATE=FAIL` y `D1Z_RESULT=8`. Toda la parte Flutter build/HTTP/TLS y aislamiento DEV pasó, limpieza DONE. No consta causa exacta de las solicitudes externas fallidas.
+
+Se incorporó `clients/flutter/web/flutter_bootstrap.js` (commit `289f3014`) con tokens de generación oficiales y `canvasKitBaseUrl: "/canvaskit/"`, para evitar una dependencia externa del motor web. El runner D1-Z ahora exige CanvasKit JS/WASM embebido y opción generada en el bootstrap antes de la prueba Chromium (commit `028e668b`). Documentación D1-Z actualizada commit `85ce983f`. **D1-Z sigue FAIL** hasta repetir el build y Chromium: la explicación CDN es una hipótesis fundada, no una causa demostrada.
+
+No hay despliegue DEV ni migración o restauración persistente. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
