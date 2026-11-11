@@ -1786,3 +1786,10 @@ El segundo intento D1-Z confirmó `D1Z_CHROMIUM_LAUNCH=PASS`, `D1Z_CHROMIUM_DOCU
 Se incorporó `clients/flutter/web/flutter_bootstrap.js` (commit `289f3014`) con tokens de generación oficiales y `canvasKitBaseUrl: "/canvaskit/"`, para evitar una dependencia externa del motor web. El runner D1-Z ahora exige CanvasKit JS/WASM embebido y opción generada en el bootstrap antes de la prueba Chromium (commit `028e668b`). Documentación D1-Z actualizada commit `85ce983f`. **D1-Z sigue FAIL** hasta repetir el build y Chromium: la explicación CDN es una hipótesis fundada, no una causa demostrada.
 
 No hay despliegue DEV ni migración o restauración persistente. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## DJ. 11/11/2026 — D1-Z CanvasKit local reduce fallos pero render Chromium continúa FAIL
+
+El tercer intento confirmó que el nuevo bootstrap CanvasKit local está incluido: `D1Z_LOCAL_CANVASKIT_BUNDLED=PASS`, `D1Z_BOOTSTRAP_LOCAL_CANVASKIT_CONFIG=PASS`. Error JS de 6 a 2; solicitudes externas fallidas de 3 a 1, internas 0. Pero `D1Z_CHROMIUM_FLUTTER_VIEW_PRESENT=NO`, `D1Z_CHROMIUM_FAILURE_STAGE=FLUTTER_VIEW_TIMEOUT`, `D1Z_CHROMIUM_RENDER_GATE=FAIL`, `D1Z_RESULT=8`. DEV intacto y limpieza DONE. **D1-Z no cerrado**.
+
+Se introdujo clasificación sin exponer URLs ni secretos de tipos de peticiones fallidas, categorías de destinos externos conocidos y categorías de error JS (commit `d98be0fd`), documentado en `docs/D1Z_BROWSER_FLUTTER_AND_ISOLATED_WEB_RECOVERY_2026-11-11.md` (commit `12af42ff`). Próxima ejecución D1-Z aportará evidencias para identificar dependencia remota o excepción concreta. No se modifica Caddy operativo ni se reduce aislamiento. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
