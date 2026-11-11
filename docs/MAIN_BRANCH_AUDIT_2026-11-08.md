@@ -2040,3 +2040,10 @@ Following 6/6 PASS D1-Z→D2-E, the operator requested acceleration and grouping
 - Details, exact Termius command and expected markers: `docs/D3_GROUPED_RELEASE_READINESS_2026-11-11.md` commit `489f072e`.
 
 **Estado D3: scripts committed, NOT EXECUTED on VPS; result unknown.** Do not assign PASS or date of production. Must still validate persistent image+DB/O5 operational rollback, production Caddy topology, security/MFA and explicitly authorize a controlled pilot or production rollout. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, no actual deploy or operational migrations.
+
+
+## EQ. 11/11/2026 — D3 primer ensayo detenido por nombre de rama; guardas por commit conservadas
+
+El operador aportó `D3_MAIN_REQUIRED=FAIL`, `D3_SHELL_RESULT=2`. No se ejecutaron D3-A (PG17 full synthetic restore) ni D3-C (Caddy read-only). Era un requisito innecesario que exigía `git branch --show-current == main` en un checkout de laboratorio, aunque HEAD puede estar desacoplado y ser idéntico a `origin/main`.
+
+Commits correctivos directos en `main`: `03b375bf` en `scripts/main_d3_grouped_release_preflight.sh` y `1a602505` en `scripts/main_d3a_full_pg17_rollback_isolated.sh`. Eliminan la dependencia del **nombre** de rama sin relajar `HEAD==refs/remotes/origin/main`, clean tree, identidad de contenedores DEV o `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Documentación D3 actualizada `8b04e3a1`. Se requiere retest local. D3 sigue 0 gates verificados, D1-Z→D2-E 6/6 PASS.
