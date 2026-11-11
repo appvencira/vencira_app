@@ -292,6 +292,46 @@ for _ in $(seq 1 25); do
   sleep 1
 done
 if [[ "$web_ok" != YES ]]; then
+  # Diagnostic only. Distinguish application/port/runtime failures from a
+  # missing wget utility; never print response bodies or container logs.
+  state="$("${P[@]}" inspect --format '{{.State.Running}}' "$web_name" 2>/dev/null || true)"
+  mark WEB_CONTAINER_STILL_RUNNING "$([[ "$state" == true ]] && echo YES || echo NO)"
+  if [[ "$state" == true ]]; then
+    if "${P[@]}" exec "$web_name" sh -c 'command -v wget >/dev/null 2>&1'; then
+      mark WEB_WGET_AVAILABLE YES
+    else
+      mark WEB_WGET_AVAILABLE NO
+    fi
+    if "${P[@]}" exec "$web_name" nginx -t >"$lab/nginx-test.out" 2>"$lab/nginx-test.err"; then
+      mark WEB_NGINX_CONFIG_TEST PASS
+    else
+      mark WEB_NGINX_CONFIG_TEST FAIL
+    fi
+    # /proc/net/tcp contains only sockets here; test 80/8080 by port
+    # without printing addresses, process details or config.
+    if "${P[@]}" exec "$web_name" sh -c 'grep -Eq ":[0]*0050[[:space:]].*[[:space:]]0A[[:space:]]" /proc/net/tcp'; then
+      mark WEB_TCP80_LISTEN YES
+    else
+      mark WEB_TCP80_LISTEN NOT_VERIFIED
+    fi
+    if "${P[@]}" exec "$web_name" sh -c 'grep -Eq ":[0]*1F90[[:space:]].*[[:space:]]0A[[:space:]]" /proc/net/tcp'; then
+      mark WEB_TCP8080_LISTEN YES
+    else
+      mark WEB_TCP8080_LISTEN NOT_VERIFIED
+    fi
+    # Probe only status metadata; output stays private inside ephemeral lab.
+    if "${P[@]}" exec "$web_name" sh -c 'command -v wget >/dev/null && wget -S -O /dev/null -T 2 http://127.0.0.1:80/' >"$lab/web-probe.out" 2>"$lab/web-probe.err"; then
+      mark WEB_HTTP80_WGET_EXIT SUCCESS
+    else
+      mark WEB_HTTP80_WGET_EXIT FAILURE
+    fi
+    python3 - "$lab/web-probe.err" <<'PY'
+import pathlib, re, sys
+data=pathlib.Path(sys.argv[1]).read_text(errors="replace")
+codes=re.findall(r"HTTP/1(?:\\.[01])?\\s+([1-5][0-9][0-9])", data)
+print("D4E_WEB_HTTP80_RESPONSE_CODE=" + (codes[-1] if codes else "NOT_OBSERVED"))
+PY
+  fi
   mark WEB_HTTP_LOCAL FAIL
   exit 7
 fi
