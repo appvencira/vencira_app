@@ -72,7 +72,7 @@ void main() {
       return http.Response('{}', 200);
     });
     final port = reader(client, fence);
-    for (final cursor in ['', 'x', 'unsafe&other=true', 'x' * 1025]) {
+    for (final cursor in ['', 'x', 'unsafe&other=true', List<String>.filled(1025, 'x').join()]) {
       await expectLater(port.loadPage(ws, cursor: cursor),
           throwsA(isA<NativeWorkspacePayloadInvalid>()));
     }
