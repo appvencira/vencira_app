@@ -122,3 +122,14 @@ El operador confirma `D2E_RESULT=8`, `D2E_GUI_FAILURE_STAGE=DASHBOARD_LIST`, `D2
 Commit `29446299` instrumenta el caso de fallo sin modificar la aplicación ni simular acciones. Dentro del contexto Chromium, una consulta **solo GET** a `workspaces` y `renewals?q=D2E-EDIT` clasifica si la fixture está visible por la API; los contadores DOM identifican coincidencia con texto sintético en `textContent`, `aria-label` y `flt-semantics-label` y existencia de roles; consulta CDP `Accessibility.getFullAXTree` y emite únicamente número de nodos y presencia booleana del nombre de fixture y del botón Volver. No escribe por API, no revela bodies, cookies, URL privadas, datos de clientes ni el árbol AX. La etapa continúa **FAIL** hasta comprobar navegación y escritura con gestos GUI reales. Sintaxis V8 verificada; reejecución local pendiente.
 
 Se mantiene el cierre de los cinco gates anteriores, `D2E_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## Sexto ensayo (11/11/2026) — GUI Flutter real completa hasta Guardar, pero sin persistencia
+
+Operador reporta `D2E_RESULT=8` con `D2E_GUI_RETURN_FROM_AGENDA=PASS`, `D2E_GUI_SYNTHETIC_RENEWAL_VISIBLE=PASS`, `D2E_GUI_EDIT_CLICK=PASS`, `D2E_GUI_NOTES_TYPED=PASS`, `D2E_GUI_SAVE_CLICK=PASS`. La lectura posterior `GET` de la renovación ficticia no confirmó las notas nuevas: `D2E_GUI_FAILURE_STAGE=NOT_PERSISTED`. No hay errores JS (`D2E_GUI_PAGE_ERROR_COUNT=0`), y el laboratorio terminó `D2E_DEV_CONTAINERS_UNCHANGED=OK`, `D2E_EPHEMERAL_CLEANUP=DONE`. No se autoriza a marcar E2E PASS: un clic en Guardar no certifica que Django aceptase el PATCH.
+
+Revisión de Flutter: `dashboard_screen.dart::_editRenewal` llama a `_api.updateRenewal(...)` y atrapa genéricamente cualquier excepción mostrando `saveError`; `vencira_api.dart::_write` obtiene CSRF y realiza HTTP PATCH, exige 200. El fallo puede provenir de petición ausente, respuesta 4xx/5xx, error cliente previo a PATCH o UI en estado no guardado; la causa concreta sigue sin observarse.
+
+**Commit `c7526af7`** añade observación pasiva de **metadatos** de las respuestas PATCH originadas por Flutter dentro de Playwright (método, código HTTP y cuenta), además de contar el control Guardar antes/después del clic, sin almacenar bodies, URLs con UUID, cookies ni credenciales. La prueba permanece estricta y exige actualización real de notas y persistencia en PostgreSQL. Siguiente resultado a recopilar: `D2E_GUI_PATCH_COUNT`, `D2E_GUI_PATCH_STATUS`, `D2E_GUI_EDITOR_STILL_OPEN`, `D2E_GUI_FAILURE_STAGE`, `D2E_RESULT`. Código JS parseado con V8; nuevo ensayo VPS pendiente. Sin modificar código productivo.
+
+Se mantienen `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1` y cinco gates previos PASS.
