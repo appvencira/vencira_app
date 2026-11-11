@@ -64,7 +64,10 @@ def main():
                 "VENCIRA_PROD_DB_IMAGE":"postgres@sha256:"+("1"*64),
                 "VENCIRA_PROD_API_IMAGE":"candidate-api@sha256:"+("2"*64),
                 "VENCIRA_PROD_WEB_IMAGE":"candidate-web@sha256:"+("3"*64)}
-            proc=cmd(["sudo","-n","docker","compose","-f",str(p),"config","--format","json"],env=env)
+            values=[k+"="+env[k] for k in ("VENCIRA_PROD_ENV_FILE","VENCIRA_PROD_DB_IMAGE",
+                        "VENCIRA_PROD_API_IMAGE","VENCIRA_PROD_WEB_IMAGE")]
+            proc=cmd(["sudo","-n","env",*values,"docker","compose","-f",str(p),
+                      "config","--format","json"])
             if proc.returncode!=0:
                 mark("COMPOSE_PARSE","FAIL");return 4
             obj=json.loads(proc.stdout)
