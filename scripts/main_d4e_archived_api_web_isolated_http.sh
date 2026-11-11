@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# D4-E: isolated API+Web runtime test from archived images, with synthetic environment.
-# No host Docker socket, sudo, network access, host mounts, live O5 or user data.
+# D4-E: isolated API+Web runtime with private INTERNAL-ONLY Podman network.
+# No host Docker socket, sudo, external network, host mounts, live O5 or user data.
 set -Eeuo pipefail
 set +x
 umask 077
@@ -74,6 +74,10 @@ cleanup(){
       "${P[@]}" rm -f --ignore "$cname" >/dev/null 2>&1 || cleanup_ok=NO
     done
   fi
+  if [[ "$network_created" == YES ]]; then
+    "${P[@]}" network rm "$network_name" >/dev/null 2>&1 || cleanup_ok=NO
+  fi
+  mark INTERNAL_NETWORK_REMOVED "$([[ "$network_created" == YES && "$cleanup_ok" == YES ]] && echo YES || echo NOT_VERIFIED)"
   if [[ -d "$lab" && ! -L "$lab" ]]; then
     # VFS layers may contain subordinate-UID ownership and read-only dirs.
     # Only operate on the fresh, validated D4-E private storage directory.
@@ -105,6 +109,8 @@ cleanup(){
   exit "$rc"
 }
 executed=NO
+network_created=NO
+network_name=""
 container_names=()
 P=()
 trap cleanup EXIT
@@ -164,6 +170,29 @@ if not graph or str(pathlib.Path(graph).resolve()) != expected:
 PY
 mark ROOTLESS_PRIVATE_STORE PASS
 mark HOST_DOCKER_SOCKET_MOUNTED NO
+# Create an internal-only, short-lived Podman bridge in this private store.
+# All services receive network aliases on the private bridge; no host ports
+# or connection to Docker's network namespace are permitted.
+network_name="d4e-internal-$(basename "$lab" | tr -cd 'a-zA-Z0-9')"
+if ! "${P[@]}" network create --internal "$network_name" >"$lab/network.out" 2>"$lab/network.err"; then
+  mark INTERNAL_NETWORK_CREATE FAIL
+  exit 5
+fi
+network_created=YES
+if ! "${P[@]}" network inspect "$network_name" >"$lab/network-info.json" 2>"$lab/network.err"; then
+  mark INTERNAL_NETWORK_INSPECT FAIL
+  exit 5
+fi
+if ! python3 - "$lab/network-info.json" <<'PY'
+import json,sys
+o=json.load(open(sys.argv[1]))
+if not isinstance(o,list) or len(o)!=1 or o[0].get("internal") is not True: raise SystemExit(1)
+PY
+then
+  mark INTERNAL_NETWORK_ISOLATION FAIL
+  exit 5
+fi
+mark INTERNAL_NETWORK_ISOLATION PASS
 if ! "${P[@]}" load --quiet --input "$archive" >"$lab/load.out" 2>"$lab/error.log"; then
   mark ROOTLESS_IMAGE_IMPORT FAIL
   exit 5
@@ -229,14 +258,14 @@ if [[ "$api_count" -ne 1 || "$web_count" -ne 1 || "$api_id" == "$web_id" ]]; the
 fi
 mark UNIQUE_API_WEB_ROLES PASS
 
-# API service runs in a network-less namespace with a synthetically generated
+# API service runs in private internal-only network with a synthetic
 # SECRET_KEY. SQLite remains inaccessible because the root FS is readonly;
 # /api/health/ never queries a database. This gate is not a DB integration test.
 secret="$(openssl rand -hex 32)"
 api_name="d4e-api-$(basename "$lab" | tr -cd 'a-zA-Z0-9')"
 container_names+=("$api_name")
 if ! "${P[@]}" run -d --name "$api_name" --pull never \
-    --network none --read-only --security-opt no-new-privileges \
+    --network "$network_name" --network-alias api --read-only --security-opt no-new-privileges \
     --pids-limit 96 --memory 512m \
     --tmpfs /tmp:rw,size=64m,mode=1777 \
     -e VENCIRA_ENV=test -e DJANGO_DEBUG=0 \
@@ -251,7 +280,7 @@ executed=YES
 mark API_START PASS
 
 # Use Python inside the archived API image to query its own local HTTP port.
-# No host port mappings or shared networks.
+# No host port mappings, and network can only reach isolated lab containers.
 api_ok=NO
 for _ in $(seq 1 30); do
   if "${P[@]}" exec "$api_name" python -c '
@@ -267,6 +296,8 @@ if [[ "$api_ok" != YES ]]; then mark API_HEALTH_HTTP FAIL; exit 6; fi
 mark API_HEALTH_HTTP PASS
 
 # The archived web image starts with its actual ENTRYPOINT and CMD.
+# Its upstream API hostname resolves on the private DNS if it uses the
+# expected Compose alias; no external DNS or DEV service is attached.
 web_name="d4e-web-$(basename "$lab" | tr -cd 'a-zA-Z0-9')"
 container_names+=("$web_name")
 # The archived nginx entrypoint writes its configuration under /etc/nginx.
@@ -275,7 +306,7 @@ container_names+=("$web_name")
 # Do not hide /etc/nginx with tmpfs: it contains the original configuration.
 mark WEB_PRIVATE_EPHEMERAL_ROOTFS_WRITABLE YES
 if ! "${P[@]}" run -d --name "$web_name" --pull never \
-    --network none --security-opt no-new-privileges \
+    --network "$network_name" --network-alias web_preview --security-opt no-new-privileges \
     --pids-limit 96 --memory 256m \
     --tmpfs /tmp:rw,size=64m,mode=1777 \
     --tmpfs /var/cache/nginx:rw,size=64m,mode=1777 \
@@ -401,6 +432,7 @@ fi
 mark WEB_HTTP_LOCAL PASS
 mark NO_EXTERNAL_NETWORK YES
 mark NO_HOST_DOCKER_SOCKET YES
+mark INTERNAL_NETWORK_SERVICE_DNS TESTED_BY_WEB_HTTP
 mark API_WEB_ISOLATED_RUNTIME PASS
 mark DATABASE_INTEGRATION_VERIFIED NO
 mark REAL_O5_COMPATIBILITY_VERIFIED NO
