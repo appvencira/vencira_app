@@ -269,8 +269,13 @@ mark API_HEALTH_HTTP PASS
 # The archived web image starts with its actual ENTRYPOINT and CMD.
 web_name="d4e-web-$(basename "$lab" | tr -cd 'a-zA-Z0-9')"
 container_names+=("$web_name")
+# The archived nginx entrypoint writes its configuration under /etc/nginx.
+# Give ONLY this isolated, disposable Web container a writable private VFS
+# layer. No mounts, host port bindings or network; rootless store is deleted.
+# Do not hide /etc/nginx with tmpfs: it contains the original configuration.
+mark WEB_PRIVATE_EPHEMERAL_ROOTFS_WRITABLE YES
 if ! "${P[@]}" run -d --name "$web_name" --pull never \
-    --network none --read-only --security-opt no-new-privileges \
+    --network none --security-opt no-new-privileges \
     --pids-limit 96 --memory 256m \
     --tmpfs /tmp:rw,size=64m,mode=1777 \
     --tmpfs /var/cache/nginx:rw,size=64m,mode=1777 \
