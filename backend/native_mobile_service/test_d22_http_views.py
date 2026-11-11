@@ -207,7 +207,9 @@ def workspace_renewals(request, workspace_id):
     ):
         return native_auth_denied(status=400)
     offset = int(page_raw)
-    if offset > 10000:
+    # Pagination shape is a transport error, not a missing permission.
+    # Reject it before any bearer/tenant lookup or database authorization.
+    if offset > 10000 or offset % 50 != 0:
         return native_auth_denied(status=400)
     token = header[7:]
     try:
