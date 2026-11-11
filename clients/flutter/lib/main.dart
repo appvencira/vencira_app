@@ -11,7 +11,7 @@ import 'notifications/device_notice_revocation.dart';
 import 'notifications/device_notice_startup_gate.dart';
 import 'l10n/app_localizations.dart';
 import 'ui/dashboard_screen.dart';
-import 'ui/android_web_access_screen.dart';
+import 'ui/native_android_startup_boundary.dart';
 import 'ui/vencira_theme.dart';
 import 'ui/vencira_preferences.dart';
 
@@ -157,7 +157,7 @@ class _VenciraAppState extends State<VenciraApp> {
               ? NativeLabLoginShell(coordinator: widget.nativeLoginLab!)
               : widget.api == null && !kIsWeb &&
                       defaultTargetPlatform == TargetPlatform.android
-                  ? const AndroidWebAccessScreen()
+                  ? const NativeAndroidStartupBoundary()
                   : VenciraDashboardScreen(
             api: widget.api,
             openTodayOnLoad: widget.api == null,
