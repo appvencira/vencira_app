@@ -320,3 +320,33 @@ D27_OPERATIONAL_HTTP_ISSUER_ENABLED=NO
 D28_ANDROID_MAIN_AUTH_ENABLED=NO
 D27D28_RELEASE_AUTHORIZED=NO
 ```
+
+## D27/D28 — IOClient HTTPS + PG17 real LAB PASS (12/11/2026)
+
+El operador confirma la ejecución de `scripts/main_d27_flutter_real_https_pg17_isolated.sh`. Evidencias recibidas:
+
+```text
+No issues found! (ran in 9.9s)
+D27_REAL_TLS_ANALYZE=PASS
+D27_REAL_TLS_FIXTURE_READY=PASS
+D27_REAL_TLS_CA_AND_HOSTNAME=PASS
+D27_FLUTTER_REAL_TLS_FIRST_ISSUANCE=PASS
+D27_FLUTTER_REAL_TLS_RECOVERY_AND_REVOKE=PASS
+D27_FLUTTER_REAL_TLS_DEVICE_REVOKE=PASS
+All tests passed! (1 test)
+D27_REAL_TLS_REAL_CLIENT=PASS
+D27_REAL_TLS_PG17_RECOVERY_AND_LOGOUT=PASS
+D27_REAL_TLS_INTEGRATION_GATE=PASS
+D27_REAL_TLS_DEV_CONTAINERS_UNCHANGED=OK
+D27_REAL_TLS_DEPLOY_EXECUTED=NO
+D27_REAL_TLS_LIVE_MIGRATIONS_EXECUTED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D27_REAL_TLS_BOUNDARY_RESULT=0
+```
+
+**Cierre:** transporte candidato Flutter–Django con IOClient, CA/hostname verificados, protocolo `oc1/or1` y ciclo de sesión/revocación autenticado en PG17 **aislado PASS**. Este gate está respaldado por sockets HTTPS y un servidor WSGI temporal, no exclusivamente por `secure=True` del cliente Django. No se observó en el extracto el eco externo `D27_D28_REAL_TLS_RESULT` ni el `git status` final.
+
+**Aún NO operativo:** rutas públicas Django, integración de `main.dart`, Android físico con el contrato D27, identidad de IP/proxy en Caddy, gestión y rotación de claves reales y autorización de despliegue. La CA temporal no acredita el TLS operativo.
+
+**Siguiente corte:** validar integración controlada en Android LAB, interrupción física de transporte y persistencia del marcador en Keystore sin habilitar login normal ni abrir rutas de producción. Separar esta fase del cierre D4 de backups/rollback.
