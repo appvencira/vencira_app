@@ -25,7 +25,16 @@ if (settings.VENCIRA_ENV != "test"
         or settings.VENCIRA_NATIVE_BEARER_ENABLED
         or "native_mobile_service" not in settings.INSTALLED_APPS):
     raise SystemExit("NATIVE_I8K_SETTINGS_GUARD=DENIED")
-if os.getenv("VENCIRA_D25_WORKSPACE_TLS_LAB") == "1":
+if os.getenv("VENCIRA_D27_REAL_TLS_LAB") == "1":
+    if not (os.getenv("VENCIRA_I8M_FLUTTER_INTERNAL_ONLY") == "1"
+            and os.getenv("VENCIRA_D27_HTTP_LAB") == "1"
+            and os.getenv("VENCIRA_D27_CORE_AUDIT_KEY")
+            and os.getenv("VENCIRA_D27_CORE_ABUSE_KEY")):
+        raise SystemExit("D27_REAL_TLS_LAB_GUARD=DENIED")
+    settings.VENCIRA_D27_CORE_AUDIT_KEY = os.environ["VENCIRA_D27_CORE_AUDIT_KEY"]
+    settings.VENCIRA_D27_CORE_ABUSE_KEY = os.environ["VENCIRA_D27_CORE_ABUSE_KEY"]
+    settings.ROOT_URLCONF = "native_mobile_service.test_d27_http_urls"
+elif os.getenv("VENCIRA_D25_WORKSPACE_TLS_LAB") == "1":
     if not (os.getenv("VENCIRA_D22_HTTP_LAB") == "1"
             and os.getenv("VENCIRA_I8M_FLUTTER_INTERNAL_ONLY") == "1"):
         raise SystemExit("D25_WORKSPACE_LAB_GUARD=DENIED")
@@ -38,7 +47,8 @@ django_application = get_wsgi_application()
 
 def app(environ, start_response):
     environ["wsgi.url_scheme"] = "https"
-    environ["HTTP_X_FORWARDED_PROTO"] = "https"
+    if os.getenv("VENCIRA_D27_REAL_TLS_LAB") != "1":
+        environ["HTTP_X_FORWARDED_PROTO"] = "https"
     return django_application(environ, start_response)
 
 
