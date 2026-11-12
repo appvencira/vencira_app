@@ -142,3 +142,34 @@ D27_OPERATIONAL_HTTP_ISSUER_ENABLED=NO
 D28_ANDROID_MAIN_AUTH_ENABLED=NO
 D27D28_RELEASE_AUTHORIZED=NO
 ```
+
+## D27 HTTP-LAB fase inicial — código publicado, gate PG17 pendiente (12/11/2026)
+
+En `main` se han incorporado `backend/native_mobile_service/test_d27_http_views.py` y `test_d27_http_urls.py`. Son rutas HTTP **solo para el URLconf de pruebas**, no incluidas en `config.urls`. Exigen `VENCIRA_ENV=test`, `VENCIRA_D27_HTTP_LAB=1`, app candidata activa, bearer operacional desactivado, HTTPS, ausencia de cookies, `Origin`, `Referer` y cabeceras proxy aportadas por el cliente. La IP es únicamente `REMOTE_ADDR` directo del laboratorio. El contrato JSON estricto reutiliza `native_http_contract`.
+
+El puente consume el núcleo D27 independiente para contraseña/MFA, recuperación `or1`, validación access, refresh y revocación. **No es un transporte de producción** ni sustituye el diseño de IP/proxy, custodia, auditoría y fallos de respuesta.
+
+Se añadió `test_d27_http_pg17.py` al runner `scripts/native_i8k_recovery_http_pg17_isolated.sh`, con casos de emisión–refresh–logout, recuperación global y rechazo de HTTP no seguro/metadatos/JSON duplicado/rutas operativas. **No se ha ejecutado todavía en VPS**; no declarar PASS por la mera integración en `main`.
+
+### Gate agrupado del candidato
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+git status --short
+sudo -v
+bash scripts/main_d27_independent_issuer_pg17_grouped_gate.sh
+echo "D27_HTTP_LAB_RECHECK_RESULT=$?"
+git status --short
+```
+
+Exigir `D27_LAB_HTTP_ISSUE_ROTATE_REVOKE_PG17=PASS`, `D27_LAB_HTTP_ACCOUNT_RECOVERY_PG17=PASS`, `D27_LAB_HTTP_TLS_AND_PUBLIC_ROUTE_FENCES_PG17=PASS`, `NATIVE_I8K_LOCAL_RESULT=0` y `D27_P2_RESULT=0`. No avanzar a integración Android si falla alguno.
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D27_OPERATIONAL_HTTP_ISSUER_ENABLED=NO
+D28_ANDROID_MAIN_AUTH_ENABLED=NO
+D27D28_RELEASE_AUTHORIZED=NO
+```
