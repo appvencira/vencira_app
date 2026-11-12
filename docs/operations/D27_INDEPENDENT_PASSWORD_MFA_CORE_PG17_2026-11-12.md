@@ -96,3 +96,29 @@ D27_BAD_PASSWORD_AND_MFA_DENIED_PG17=PASS
 Marcadores globales: `NATIVE_I8K_D27_INDEPENDENT_PASSWORD_MFA_CORE_PG17=PASS`, `NATIVE_I8K_D26_SIGNED_WORKSPACE_CURSOR_PG17=PASS`, `NATIVE_I8K_PG17_HTTP_RECOVERY_GATE=PASS`, `NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK`, `NATIVE_I8K_LOCAL_RESULT=0`, `D27_P2_PG17_ISSUER_AND_SECURITY=PASS`, `D27_P2_INDEPENDENT_CORE_VALIDATED=YES`, `D27_P2_RESULT=0`. La salida no incluye el `D27_P2_RECHECK_RESULT` independiente ni un `git status --short` final; no inferir esos valores.
 
 **Cierre: D27 FASE 2 PASS SOLO EN LABORATORIO.** `D27_P2_PRODUCTION_ISSUER_ENABLED=NO`, `D27_P2_ANDROID_MAIN_AUTH_ENABLED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Siguientes bloqueos sustantivos: recuperación de cuenta en el núcleo independiente, transporte HTTP autorizado con claves reales, aislamiento esquema/entorno final, integración Android y pruebas físicas. No desplegar ni migrar LIVE.
+
+## D27 fase 3 — recuperación independiente, grupos grandes (12/11/2026)
+
+**Código publicado en `main`; NO verificado todavía por el operador.** Se amplió el mismo núcleo `backend/native_mobile_service/native_operational_issuer_core.py` (`642497dd`) con:
+
+- `begin_recovery_password`: contraseña y admisión por cuenta/IP con auditoría propia, reto **`or1`** independiente del `oc1` de primer acceso; el resumen del secreto del reto de recuperación está separado criptográficamente por dominio. La fase contraseña no revoca nada ni emite tokens.
+- `complete_recovery_mfa`: exige TOTP válido bajo bloqueo usuario/MFA/reto, verifica versión y generación; en la misma transacción PG17 incrementa `MobileAccountFence.generation`, revoca todas las sesiones existentes, consume el reto, emite nuevo access/refresh y registra `account_revoke` y `auth_verified`. Si falla auditoría o base de datos, toda la transacción revierte, incluido TOTP, retos y revocaciones.
+- Se comparten primitivas internas con la emisión regular, **sin importar las funciones `candidate_*`** y sin registrar URL de producción. No se cambia `native_operational_issuer_gate.assert_operational_issuer_unavailable()`.
+
+Pruebas nuevas `test_d27_operational_core_pg17.py` (`ef345db3`, ajuste de contadores TOTP `2ce85f88`): (a) la recuperación completa invalida access/refresh antiguos y no acepta retos intercambiados, (b) falla la escritura de auditoría y se comprueba rollback de la revocación y del reto, (c) contraseña incorrecta no revoca. En total, **9 pruebas independientes D27** dentro del mismo runner I8-K ya validado en fase 2. El marcador `NATIVE_I8K_D27_INDEPENDENT_ACCOUNT_RECOVERY_PG17=PASS` (`b95518e7`) solo aparecerá si termina correctamente **toda** la suite PostgreSQL.
+
+### Validación agrupada del bloque de recuperación
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+sudo -v
+bash scripts/main_d27_independent_issuer_pg17_grouped_gate.sh
+echo "D27_P3_RECOVERY_RESULT=$?"
+git status --short
+```
+
+Marcadores que deben aparecer, **no observados aún**: `D27_ACCOUNT_RECOVERY_REVOKES_OLD_PG17=PASS`, `D27_RECOVERY_AUDIT_FAILURE_ROLLBACK_PG17=PASS`, `D27_RECOVERY_PASSWORD_ONLY_NO_REVOKE_PG17=PASS`, `NATIVE_I8K_D27_INDEPENDENT_ACCOUNT_RECOVERY_PG17=PASS`, `D27_P2_PG17_ISSUER_AND_SECURITY=PASS`, `D27_P2_RESULT=0` y `D27_P3_RECOVERY_RESULT=0`. La etiqueta `P2` del runner heredado se mantiene por compatibilidad; la incorporación de los nuevos tests constituye la **fase 3**.
+
+**No completar D27 ni conectar Android antes de validar recuperación y revisar el contrato HTTP del nuevo reto `or1`**. Falta transport HTTPS de la implementación nueva, custodia operacional, middleware y firma de publicación. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
