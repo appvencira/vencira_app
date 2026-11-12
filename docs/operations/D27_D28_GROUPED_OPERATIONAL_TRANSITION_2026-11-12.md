@@ -112,3 +112,33 @@ Causa directa verificada en el script anterior: la etapa que resolvía paquetes 
 Tras corregir resolución de dependencias `pub.dev` y caché, el operador confirma: `flutter analyze` → **No issues found** (14.0s); `flutter test` → **16/16 All tests passed!**. Incluye las 4 nuevas pruebas de `native_d28_mobile_entry_router_test.dart`, las pruebas de `native_android_startup_boundary_test.dart` y regresiones HTTP/recovery existentes. Marcadores finales `D27D28_P1_FLUTTER_ROUTER_REGRESSION=PASS`, `D27D28_P1_NATIVE_FIRST_VS_RECOVERY_ROUTING_CANDIDATE=YES`, `D27D28_P1_OPERATIONAL_ISSUER_ENABLED=NO`, `D27D28_P1_ANDROID_MAIN_AUTH_ENABLED=NO`, `D27D28_P1_DEV_CONTAINERS_UNCHANGED=OK`, `D27D28_P1_RELEASE_AUTHORIZED=NO`, `D27D28_P1_RESULT=0`. El extracto aportado no incluye `D27D28_P1_RECHECK_RESULT` independiente ni el marcador de resolución de dependencias; no se inventan.
 
 **D28 fase 1 CERRADA PASS (router candidato), pero D28 operacional NO cerrada.** No hay login conectado a `main.dart`; D27 issuer operacional tampoco implementado. Siguiente prioridad: implementación segura de D27 y validación en staging aislado sin rutas públicas. Guardas `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+
+## Sincronización de continuidad — D27 fase 3 (12/11/2026)
+
+Se incorpora aquí el estado de D27 posterior al PASS del router D28, para evitar que este documento dé a entender que el núcleo independiente aún no existe. La fuente primaria de resultados y límites es [D27 núcleo independiente](D27_INDEPENDENT_PASSWORD_MFA_CORE_PG17_2026-11-12.md).
+
+- **Código en `main`:** `native_operational_issuer_core.py` implementa contraseña→reto `oc1`→MFA→tokens opacos, validación de acceso, refresh one-time, revocación por replay/dispositivo y reto de recuperación `or1` con revocación atómica de cuenta.
+- **Evidencia registrada por el operador:** gate PG17 desechable **92/92 tests PASS** (9 pruebas D27) en la fase 3. Esta es validación del núcleo en test, no HTTP ni producción.
+- **Restricciones verificables por código:** `_context()` exige `VENCIRA_ENV=test`, app candidata habilitada, bearer operacional desactivado, custodia sintética configurada y MFA disponible. El módulo no expone rutas operativas.
+- **D28:** selector Flutter candidato PASS 16/16 en fase 1. `main.dart` sigue sin conectar autenticación nativa operativa.
+
+### Siguiente corte agrupado: contrato HTTPS de laboratorio, sin activar rutas
+
+Antes de implementar transporte, revisar el contrato de cuatro operaciones de emisión/recuperación (`begin_verified_password`, `complete_verified_mfa`, `begin_recovery_password`, `complete_recovery_mfa`) y las tres operaciones de sesión (`validate_verified_access`, `rotate_verified_refresh`, `revoke_verified_device`). El contrato debe especificar y probar:
+
+1. Negación uniforme y no enumeración de cuentas; límites de tamaños, métodos, cuerpo JSON, respuestas HTTP y ausencia de datos sensibles en logs.
+2. HTTPS verificado de extremo a extremo, CSRF/cookies si aplican, `Origin`/host, y tratamiento seguro de IP del proxy *sin confiar en X-Forwarded-For del cliente*.
+3. Reutilización de retos, expiración, fallos después del commit (respuesta perdida), refresh repetido y revocación de cuenta/dispositivo sin crear sesiones ambiguas.
+4. Custodia de secretos y migraciones únicamente en PG17 aislado; auditoría, retención, concurrencia y limpieza del laboratorio.
+5. Validación de contrato Flutter contra una implementación exclusivamente LAB. No registrar `urls.py` productiva ni conectar `main.dart` hasta disponer de gates independientes de operación y release.
+
+**Criterio de cierre siguiente:** código + tests del transporte LAB + gate del SHA final con pruebas HTTP/PG17, fallos de red y barreras de publicación. Un diseño o preflight por sí solos no cuenta como PASS funcional.
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D27_OPERATIONAL_HTTP_ISSUER_ENABLED=NO
+D28_ANDROID_MAIN_AUTH_ENABLED=NO
+D27D28_RELEASE_AUTHORIZED=NO
+```
