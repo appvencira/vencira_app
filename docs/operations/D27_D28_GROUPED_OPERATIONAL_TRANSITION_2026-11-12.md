@@ -206,3 +206,15 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 **Cierre delimitado:** adaptador HTTP D27 exclusivo del URLconf LAB y sus tres tests pasan PG17 en el runner agrupado. La salida compartida no contiene el eco externo `D27_HTTP_LAB_RECHECK_RESULT` ni el `git status --short` final; no inferirlos. No se ejecutó Flutter en este gate (`NATIVE_I8K_FLUTTER_GATE=NOT_RUN_SEPARATE`). El núcleo sigue sin ruta operacional, custodia productiva ni login Android conectado.
 
 **Siguiente trabajo (aún NO validado):** simular pérdida de respuesta tras commit en emisión, refresh y recovery y comprobar conciliación del cliente sin reutilizar refresh ni crear sesiones ambiguas. Separar pruebas de transporte de pruebas de lógica transaccional. Mantener el bloqueo de publicación y no activar rutas de `config.urls`.
+
+## D27 pérdida de respuesta posterior al commit — tres pruebas nuevas, pendientes de VPS (12/11/2026)
+
+La suite `test_d27_http_pg17.py` amplía D27 HTTP-LAB con tres casos PG17, sin modificar backend operacional ni URLconf pública:
+
+- `D27_LAB_HTTP_LOST_ISSUE_RESPONSE_FAIL_CLOSED_PG17`: emisión confirmada en servidor, respuesta descartada, segundo uso del reto rechazado y una única sesión registrada (puede quedar **huérfana** si el cliente no recibió tokens).
+- `D27_LAB_HTTP_LOST_REFRESH_REPLAY_REVOKES_PG17`: refresh rotado, respuesta descartada, reintento con refresh gastado denegado y dispositivo revocado (fail-closed, pero exige recuperación en cliente).
+- `D27_LAB_HTTP_LOST_RECOVERY_RESPONSE_OLD_REVOKED_PG17`: recuperación global confirmada, respuesta descartada, reto consumido sin reemisión y sesiones previas revocadas; queda una sesión nueva inaccesible al cliente hasta una recuperación posterior.
+
+Las pruebas simulan **pérdida de respuesta en el test HTTP tras finalizar la petición**; no simulan corte TCP/TLS físico ni prueban reconexión Android. El comportamiento es deliberadamente conservador: no inventar idempotencia ni responder con credenciales nuevas ante reintentos ambiguos. Queda pendiente diseñar conciliación explícita y segura en Flutter.
+
+Con estas tres pruebas, el runner I8-K debería detectar **98 tests** si el resto de la suite no cambia. Esta cifra es expectativa, **no PASS observado**. Repetir `scripts/main_d27_independent_issuer_pg17_grouped_gate.sh` sobre `main` limpio y exigir salida cero y los tres marcadores. La autorización de producción sigue denegada.
