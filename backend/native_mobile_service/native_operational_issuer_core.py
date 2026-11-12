@@ -16,6 +16,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 
 from reminders.mfa_key_config import load_mfa_keys
@@ -134,16 +135,23 @@ def _mfa_state(user):
     return state
 
 
-def _issue_wire():
+def _recovery_digest(digest):
+    return hashlib.sha256(
+        b"vencira:d27:account-recovery:challenge:v1:" + bytes.fromhex(digest)
+    ).hexdigest()
+
+
+def _issue_wire(*, recovery=False):
     challenge_id = uuid.uuid4()
     random = secrets.token_bytes(32)
     encoded = base64.urlsafe_b64encode(random).decode("ascii").rstrip("=")
-    return f"oc1.{challenge_id.hex}.{encoded}", challenge_id, hashlib.sha256(random).hexdigest()
+    return (f"{'or1' if recovery else 'oc1'}.{challenge_id.hex}.{encoded}",
+            challenge_id, hashlib.sha256(random).hexdigest())
 
 
-def _parse_wire(wire):
+def _parse_wire(wire, *, recovery=False):
     if (type(wire) is not str or len(wire) != 80
-            or not wire.startswith("oc1.")):
+            or not wire.startswith("or1." if recovery else "oc1.")):
         raise OperationalCoreDenied()
     parts = wire.split(".")
     if (len(parts) != 3 or len(parts[1]) != 32
@@ -162,6 +170,17 @@ def _parse_wire(wire):
 
 
 def begin_verified_password(*, username, password, remote_addr):
+    return _begin_password(username=username, password=password,
+                           remote_addr=remote_addr, recovery=False)
+
+
+def begin_recovery_password(*, username, password, remote_addr):
+    """Issue distinct recovery-only challenge after fresh password verification."""
+    return _begin_password(username=username, password=password,
+                           remote_addr=remote_addr, recovery=True)
+
+
+def _begin_password(*, username, password, remote_addr, recovery):
     """Return an opaque challenge, or None; NEVER return tokens at this stage.
 
     Authentication is checked only after account/IP antiabuse and audit custody.
@@ -194,7 +213,9 @@ def begin_verified_password(*, username, password, remote_addr):
         generation = MobileAccountFence.objects.filter(
             user_id=user.pk,
         ).values_list("generation", flat=True).first() or 0
-        wire, challenge_id, digest = _issue_wire()
+        wire, challenge_id, digest = _issue_wire(recovery=recovery)
+        if recovery:
+            digest = _recovery_digest(digest)
         MobilePendingChallenge.objects.create(
             id=challenge_id, user=user, secret_digest=digest,
             credential_version=mobile_credential_version(user),
@@ -205,6 +226,16 @@ def begin_verified_password(*, username, password, remote_addr):
 
 
 def complete_verified_mfa(*, challenge, code):
+    return _complete_mfa(challenge=challenge, code=code, recovery=False)
+
+
+def complete_recovery_mfa(*, challenge, code):
+    """Atomically revoke every old device and issue a fresh MFA session."""
+    return _complete_mfa(challenge=challenge, code=code, recovery=True)
+
+
+def _complete_mfa(*, challenge, code, recovery):
+
     """Verify authoritative MFA and atomically issue digested opaque tokens.
 
     No HTTP route invokes this. Wrong codes retain anti-replay state in MFA
@@ -214,7 +245,9 @@ def complete_verified_mfa(*, challenge, code):
     if (type(code) is not str or len(code) != 6 or not code.isascii()
             or not code.isdecimal()):
         raise OperationalCoreDenied()
-    challenge_id, expected_digest = _parse_wire(challenge)
+    challenge_id, expected_digest = _parse_wire(challenge, recovery=recovery)
+    if recovery:
+        expected_digest = _recovery_digest(expected_digest)
     with transaction.atomic():
         user_id = MobilePendingChallenge.objects.filter(
             pk=challenge_id,
@@ -248,6 +281,21 @@ def complete_verified_mfa(*, challenge, code):
             asserted_mfa_epoch=state.session_epoch,
             asserted_credential_version=row.credential_version,
         )
+        # Recovery revokes all previous device credentials in the SAME commit
+        # as TOTP consumption, challenge retirement, session creation and audit.
+        if recovery:
+            MobileAccountFence.objects.get_or_create(
+                user_id=user.pk, defaults={"generation": 0},
+            )
+            MobileAccountFence.objects.filter(user_id=user.pk).update(
+                generation=F("generation") + 1,
+            )
+            generation += 1
+            MobileDeviceSession.objects.filter(
+                user_id=user.pk, revoked_at__isnull=True,
+            ).update(
+                revoked_at=now, access_digest="", refresh_digest="",
+            )
         row.consumed_at = now
         row.save(update_fields=["consumed_at"])
         session = MobileDeviceSession(
@@ -263,6 +311,8 @@ def complete_verified_mfa(*, challenge, code):
         session.access_digest = native_token_digest(access, kind="a")
         session.refresh_digest = native_token_digest(refresh, kind="r")
         session.save(force_insert=True)
+        if recovery:
+            _event(audit, "account_revoke", user.username)
         _event(audit, "auth_verified", user.username)
         return access, refresh
 
