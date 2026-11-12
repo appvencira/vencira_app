@@ -963,3 +963,9 @@ Las **6 pruebas** D27 PG17 `test_d27_operational_core_pg17.py` (commits `e1b5715
 ## D27 fase 2 primer gate — SyntaxError antes de PostgreSQL, corregido (12/11/2026)
 
 El gate VPS `main_d27_independent_issuer_pg17_grouped_gate.sh` confirmó `D27_P2_MAIN_CLEAN=PASS`, pero AST falló en `backend/native_mobile_service/native_operational_issuer_core.py:27` por secuencias literales `\\n` insertadas dentro de `from reminders.native_mobile_token_primitives import (...)`; `D27_P2_RECHECK_RESULT=1` y checkout limpio. **La suite PG17 NO se ejecutó**. Se corrigió el import en `main` (`67a9ec24`) y la forma de regex raw del test `oc1` (`e8065941`); runbook D27 actualizado `840fae5d`. **D27 fase 2 permanece PENDIENTE de revalidación**, sin autorizar rutas, issuer, Android ni desplegar.
+
+## D27 fase 2 PASS — núcleo independiente contraseña/MFA/sesión validado PG17 (12/11/2026)
+
+El operador confirmó imagen desechable, red Docker interna y PG17 efímero, `D27_P2_INDEPENDENT_AST_AND_LAB_FENCE=PASS`, `D27_P2_RELEASE_BARRIERS=PASS`, **89 tests OK**, incluidos seis D27: `D27_INDEPENDENT_PASSWORD_MFA_SESSION_PG17`, `D27_BAD_PASSWORD_AND_MFA_DENIED_PG17`, `D27_PRODUCTION_AND_KEY_GUARDS`, `D27_INDEPENDENT_ANTIBRUTEFORCE_AND_IP`, `D27_REFRESH_ROTATION_REPLAY_REVOKES_PG17`, `D27_DEVICE_LOGOUT_SERVER_REVOKED_PG17` todos **PASS**. `NATIVE_I8K_LOCAL_RESULT=0`, `D27_P2_PG17_ISSUER_AND_SECURITY=PASS`, `D27_P2_INDEPENDENT_CORE_VALIDATED=YES`, `D27_P2_RESULT=0`, DEV sin cambios. Registro detallado `docs/operations/D27_INDEPENDENT_PASSWORD_MFA_CORE_PG17_2026-11-12.md` commit `85359a73`.
+
+**D27 fase 2 PASS de laboratorio, no emisor operativo listo.** Producción issuer `NO`, Android `main.dart` auth `NO`, release `NO`. Bloqueo sustantivo siguiente: recovery account-wide y transporte/issuer operativo independiente de test con secretos y seguridad revisados; mantener sin deploy, migraciones LIVE ni cambios a servicios DEV.
