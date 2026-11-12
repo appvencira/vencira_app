@@ -350,3 +350,37 @@ D27_REAL_TLS_BOUNDARY_RESULT=0
 **Aún NO operativo:** rutas públicas Django, integración de `main.dart`, Android físico con el contrato D27, identidad de IP/proxy en Caddy, gestión y rotación de claves reales y autorización de despliegue. La CA temporal no acredita el TLS operativo.
 
 **Siguiente corte:** validar integración controlada en Android LAB, interrupción física de transporte y persistencia del marcador en Keystore sin habilitar login normal ni abrir rutas de producción. Separar esta fase del cierre D4 de backups/rollback.
+
+## D27 Android físico — ensayo PG17/HTTPS/Keystore preparado, SIN RESULTADO aún (12/11/2026)
+
+Se ha añadido `scripts/main_d27_android_ssh_https_pg17_lab.sh`, adaptación **independiente** del runner físico I8-P, que conserva el mismo punto de entrada **Android DEBUG** `clients/flutter/lib/main_i8p_android_https_lab.dart`, misma CA pública temporal incorporada al APK y mismo relay cifrado `127.0.0.1:18743` por SSH autenticado. Las banderas y el código de ese punto de entrada siguen denominadas **I8-P** por compatibilidad; los resultados del runner nuevo se marcan **D27_ANDROID**.
+
+Diferencia importante respecto de I8-P: el servidor Django usa `VENCIRA_D27_REAL_TLS_LAB=1`, `VENCIRA_D27_HTTP_LAB=1`, `test_d27_http_urls` y claves sintéticas D27; el usuario `i8p-recovery` es nuevo en la PG17 desechable y **no hay emisión previa por el candidato antiguo**. Android parte de refresh sintético huérfano, exige autenticación completa contraseña+`or1`, guarda en Keystore y revoca el nuevo dispositivo vía HTTPS; el postcheck de PG17 exige **una sesión, revocada**, con generación de recuperación 1.
+
+**Alcance correcto:** demuestra recuperación `or1` sobre el dispositivo físico, verificación TLS/hostname, Keystore y revocación; **NO prueba primer acceso `oc1` físico, reinicio físico, desconexiones de red durante MFA ni refresh rotado en Android**. Esos escenarios requieren futuras fases y pruebas independientes. Sin despliegues, migraciones live ni puertos públicos. La prueba requiere un operador con móvil Android, Termux/SSH y APK debug; no se ha ejecutado todavía.
+
+Preflight:
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+git status --short
+bash -n scripts/main_d27_android_ssh_https_pg17_lab.sh
+python3 -m py_compile scripts/native_i8k_https_server.py scripts/main_i8p_ssh_tls_loopback_relay.py
+sudo -v
+bash scripts/main_d27_android_ssh_https_pg17_lab.sh
+echo "D27_ANDROID_OPERATOR_RESULT=$?"
+git status --short
+```
+
+El runner queda interactivo hasta que el operador termine la prueba en el móvil; **no pulsar ENTER antes de la verificación**. El APK se genera bajo `~/vencira-d27-android-phone/`; se instala solamente como DEBUG I8-P (`es.vencira.vencira.i8plab`), no como aplicación operativa. Conectar Termux al VPS usando el túnel `ssh -N -L 127.0.0.1:18743:127.0.0.1:18743` hacia el host SSH habitual. Comprobar los mensajes `I8P_ANDROID_...` en la pantalla del APK, luego pulsar ENTER para el postcheck PG17 y cierre del laboratorio.
+
+Esperado al completar: `D27_ANDROID_PG17_SYNTHETIC_ACCOUNT=PASS`, `D27_ANDROID_SSH_RELAY_LOOPBACK_ONLY=PASS`, `D27_ANDROID_APK_DEBUG_BUILD=PASS`, `D27_ANDROID_PG17_RECOVERED_SESSION_REVOKED=PASS`, `D27_ANDROID_TLS_MFA_KEYSTORE_GATE=PASS`, `D27_ANDROID_DEV_CONTAINERS_UNCHANGED=OK` y `D27_ANDROID_LAB_RESULT=0`. Ninguno ha sido confirmado aún.
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D27D28_RELEASE_AUTHORIZED=NO
+D28_ANDROID_MAIN_AUTH_ENABLED=NO
+```
