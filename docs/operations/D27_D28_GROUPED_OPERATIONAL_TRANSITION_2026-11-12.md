@@ -405,3 +405,23 @@ D27_ANDROID_LAB_RESULT=0
 **Cierre del alcance:** D27 en Android físico con recuperación `or1`, verificación de certificado/hostname, Keystore, revocación HTTP 401 y PG17 aislado **PASS**. No se ejecutó despliegue ni migración persistente; contenedores DEV inalterados.
 
 **No inferir:** primer acceso `oc1` físico, rotación de refresh tras caída del transporte, ensayo de reinicio real, configuración de proxy operacional, publicación ni MFA productivo. Conservar `D27D28_RELEASE_AUTHORIZED=NO` y revisar estos bloqueos antes de otra fase. No repetir el ensayo PASS para justificar activación en `main.dart`.
+
+## D28 Android físico — emisión oc1, respuesta perdida y reinicio (12/11/2026)
+
+**Código publicado en `main`, no ejecutado todavía:**
+
+- `clients/flutter/lib/main_d28_android_response_loss_lab.dart`: punto de entrada Android DEBUG independiente con namespace de Keystore propio `vencira_d28_mobile_tls_lab_v1`, CA sintética de una ejecución y túnel SSH `127.0.0.1:18743` cifrado extremo a extremo, sin modificar `main.dart`. Usa `NativeMobileEntryRouter`, `NativeFirstIssuanceEntry`, `NativeSessionCoordinator` y `NativeMobileRecoveryEntry` existentes.
+- **Fase 1:** sobre un almacén realmente limpio, inicia contraseña+`oc1` vía HTTPS; el wrapper de prueba `_LoseMfaResponse` descarta la respuesta **solo después de recibir credenciales válidas del servidor**. El journal ya estaba armado antes de la primera petición. Comprueba que el refresh no se persiste, el marcador sí y el fence permanece inactivo. Muestra `D28_ANDROID_OC1_ISSUED_RESPONSE_LOST=PASS` y `D28_ANDROID_DURABLE_MARKER=PASS`.
+- **Fase 2:** tras cerrar por completo la aplicación y reiniciar Android, el router deberá seleccionar `fullReauthentication` por el marcador en Keystore; contraseña+`or1` produce nueva credencial que revoca la primera. Tras revocar también la sesión recién recuperada, el bearer debe devolver 401. Muestra `D28_ANDROID_RECOVERY_AFTER_RESTART=PASS`, `D28_ANDROID_KEYSTORE_RECOVERY=PASS`, `D28_ANDROID_REVOKE_401=PASS` y `D28_ANDROID_LAB_CLEANUP=PASS`.
+- `scripts/main_d28_android_response_loss_pg17_lab.sh`: adapta el runner Android D27 aislado con credenciales sintéticas del usuario `d28-android`. Genera APK DEBUG (paquete de laboratorio compatible `es.vencira.vencira.i8plab`), servidor D27 con PG17 `tmpfs`, red Docker interna y relay en loopback. Mantiene el servidor temporal hasta completar ambas fases. Postcheck exige generación de recuperación 1, exactamente **dos sesiones revocadas** y ninguna activa. El script no abre puertos públicos ni modifica DEV.
+
+**Alcance de la simulación:** la pérdida de respuesta se inyecta dentro de Dart después de una respuesta HTTPS auténtica y un commit de emisión; no corta físicamente Wi-Fi/LTE ni prueba la rotación del refresh bajo desconexión. El reinicio real del teléfono requiere la acción y evidencia del operador; el backend solo puede verificar sesiones y revocaciones, no certificar que el móvil efectivamente reinició.
+
+**Procedimiento recomendado:** sincronizar `main` limpio, comprobar sintaxis del runner, ejecutar `bash scripts/main_d28_android_response_loss_pg17_lab.sh` en sesión persistente, instalar APK DEBUG separado, conectar el túnel SSH desde Termux, completar fase 1, reiniciar Android, reabrir Termux y el túnel, completar fase 2; **solo entonces** pulsar ENTER en el runner. Capturar pantalla en cada fase. Confirmar `D28_ANDROID_PG17_RECOVERED_SESSION_REVOKED=PASS`, `D28_ANDROID_TWO_STAGE_RESPONSE_LOSS_GATE=PASS`, `D28_ANDROID_DEV_CONTAINERS_UNCHANGED=OK`, `D28_ANDROID_LAB_RESULT=0`. Estos son resultados **esperados, NO verificados**.
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D27D28_RELEASE_AUTHORIZED=NO
+D28_ANDROID_MAIN_AUTH_ENABLED=NO
+```
