@@ -102,6 +102,7 @@ django test \
   native_mobile_service.test_d24_workspace_pagination_pg17 \
   native_mobile_service.test_d26_workspace_cursor_pg17 \
   native_mobile_service.test_d27_operational_core_pg17 \
+  native_mobile_service.test_d27_http_pg17 \
   native_mobile_service.test_i8d_http_pg17 \
   native_mobile_service.test_i8i_non_mfa_recovery_policy_pg17 \
   native_mobile_service.test_i8j_recovery_pg17 \
