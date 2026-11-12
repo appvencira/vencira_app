@@ -50,3 +50,9 @@ D27D28_CONTRACT_RESULT=0
 **D28 integración real:** construir coordinador de sesiones y login MFA desde `main.dart` solo después de completar D27 y ensayar credenciales de staging. Conservar Keystore/vault protegido, journaling, revocación, detección de reinicio, no-replay y cursor de D26. Gate final del macrogrupo con Flutter analyze, tests y HTTPS real. No distribuir APK ni migrar DB LIVE.
 
 **No hay todavía aprobación del macrogrupo D27–D28 para release.** `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## Gate VPS fase 0 — PASS (12/11/2026)
+
+El operador ejecutó `scripts/main_d27d28_grouped_contract_gate.sh` desde checkout limpio y observó `Ran 5 tests in 0.016s; OK`, `D27D28_MUTATION_FENCES=PASS`, `D27D28_OPERATIONAL_FENCE_INVARIANTS=PASS`, `D27D28_CANDIDATE_BACKEND_REUSED_FOR_PRODUCTION=NO`, `D27D28_CODE_AUDIT=PASS`, `D18_STATIC_FENCE_GATE=PASS`, `D27D28_LEGACY_RELEASE_FENCE=PASS`, `D27D28_PHASE0_CONTRACT=PASS`, `D27D28_RESULT=0`, `D27D28_CONTRACT_RESULT=0`. `git status --short` vacío. Se confirman expresamente `D27D28_OPERATIONAL_ISSUER_IMPLEMENTED=NO`, `D27D28_ANDROID_NATIVE_LOGIN_CONNECTED=NO`, `D27D28_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+**Cierre: solo FASE 0 PASS (contrato/mutaciones)**. Sigue pendiente implementar y validar D27 emisor operacional y D28 Android real. No asignar un estado PASS a la macrofase completa.
