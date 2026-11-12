@@ -79,3 +79,32 @@ Salida que se espera **solo tras verificarla en VPS**: `JOINT_B_MAIN_CLEAN=PASS`
 **`JOINT_B_RESULT=0` significa que el inventario de bloqueos se ha ejecutado correctamente y el release permanece bloqueado. Nunca equivale a RELEASE PASS.** Se debe conservar una separación inequívoca entre resultados de diagnóstico y autorización operativa.
 
 Guardas vigentes: `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## Primer preflight VPS — PASS de inventario, no de release (12/11/2026)
+
+El operador ejecutó `scripts/main_joint_web_android_release_readiness_readonly.sh` contra `main` sincronizada y limpia, y comunicó los marcadores:
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+JOINT_B_DEPLOY_EXECUTED=NO
+JOINT_B_LIVE_MIGRATIONS_EXECUTED=NO
+JOINT_B_LIVE_RESTORE_EXECUTED=NO
+JOINT_B_ANDROID_SIGNED=NO
+JOINT_B_OPERATIONAL_ISSUER_ENABLED=NO
+JOINT_B_MAIN_CLEAN=PASS
+JOINT_B_SOURCE_INVENTORY=PASS
+JOINT_B_PRODUCTION_AUTH_HARD_FENCE=PASS
+JOINT_B_REAL_NATIVE_LOGIN_IN_MAIN=NO
+JOINT_B_OPERATIONAL_ISSUER_READY=NO
+JOINT_B_PRODUCTION_MOBILE_ROUTES=NO
+JOINT_B_RELEASE_BLOCKERS_VERIFIED=PASS
+JOINT_B_JOINT_RELEASE_AUTHORIZED=NO
+JOINT_B_READ_ONLY_PREFLIGHT=PASS
+JOINT_B_RESULT=0
+JOINT_B_PREFLIGHT_EXIT=0
+```
+
+`git status --short` no reportó cambios. **Preflight read-only PASS, publicación web+Android NO autorizada.** D27–D32 continúan pendientes de implementación/validación. No repetir este inventario salvo cambio de las barreras examinadas.
+
+**Siguiente ejecución sustantiva:** D27–D28, emisor operacional nuevo e integración Android con autenticación no-lab, sin reutilizar `test_d22_urls` ni desbloquear las barreras de release. El alcance de D27 deberá verificarse en un laboratorio con claves sintéticas y sin rutas públicas; D28 debe conservar fail-closed.
