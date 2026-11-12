@@ -152,7 +152,7 @@ echo 'D27_ANDROID_TLS_SERVER_INTERNAL_READY=PASS'
 # Bind relay ONLY to localhost of VPS; remote TCP/HTTP exposure forbidden.
 peer="$(D inspect -f "{{(index .NetworkSettings.Networks \"$network\").IPAddress}}" "$server")"
 if [[ -z "$peer" ]]; then echo 'D27_ANDROID_DOCKER_PRIVATE_PEER_MISSING' >&2; exit 7; fi
-VENCIRA_D27_ANDROID_DISPOSABLE_ACK=1 python3 \
+VENCIRA_I8P_DISPOSABLE_ACK=1 python3 \
   "$root/scripts/main_i8p_ssh_tls_loopback_relay.py" "$peer" \
   > "$tmp/relay.log" 2>&1 &
 relay_pid=$!
@@ -182,24 +182,24 @@ chmod 700 "$out"
 ca_b64="$(base64 -w0 "$tmp/cert.pem")"
 D run --rm \
   -v "$root/clients/flutter:/source:ro" -v "$out:/output" \
-  -e D27_ANDROID_PUBLIC_CA_B64="$ca_b64" \
+  -e I8P_PUBLIC_CA_B64="$ca_b64" \
   ghcr.io/cirruslabs/flutter:3.44.0 sh -euc '
     cp -a /source /tmp/vencira-flutter
     cd /tmp/vencira-flutter
     flutter pub get
     flutter analyze lib/main_i8p_android_https_lab.dart
-    VENCIRA_D27_ANDROID_LAB_BUILD=1 flutter build apk --debug \
+    VENCIRA_I8P_LAB_BUILD=1 flutter build apk --debug \
       --target lib/main_i8p_android_https_lab.dart \
-      --dart-define=VENCIRA_D27_ANDROID_ANDROID_LAB=true \
-      --dart-define=VENCIRA_D27_ANDROID_PUBLIC_CA_B64="$D27_ANDROID_PUBLIC_CA_B64"
+      --dart-define=VENCIRA_I8P_ANDROID_LAB=true \
+      --dart-define=VENCIRA_I8P_PUBLIC_CA_B64="$I8P_PUBLIC_CA_B64"
     cp build/app/outputs/flutter-apk/app-debug.apk \
       /output/VENCIRA-D27-Android-HTTPS-debug.apk
-    chmod 644 /output/VENCIRA-D27_ANDROID-Android-HTTPS-debug.apk
+    chmod 644 /output/VENCIRA-D27-Android-HTTPS-debug.apk
   '
-test -s "$out/VENCIRA-D27_ANDROID-Android-HTTPS-debug.apk"
-echo 'D27_ANDROID_ANDROID_APK_DEBUG_BUILD=PASS'
-echo 'D27_ANDROID_ANDROID_PACKAGE=es.vencira.vencira.i8plab'
-echo "D27_ANDROID_ANDROID_APK_PATH=$out/VENCIRA-D27_ANDROID-Android-HTTPS-debug.apk"
+test -s "$out/VENCIRA-D27-Android-HTTPS-debug.apk"
+echo 'I8P_ANDROID_APK_DEBUG_BUILD=PASS'
+echo 'I8P_ANDROID_PACKAGE=es.vencira.vencira.i8plab'
+echo "I8P_ANDROID_APK_PATH=$out/VENCIRA-D27-Android-HTTPS-debug.apk"
 echo 'D27_ANDROID_RELEASE_AUTHORIZED=NO'
 echo 'D27_ANDROID_PHONE_TEST_RUNNING=YES'
 
