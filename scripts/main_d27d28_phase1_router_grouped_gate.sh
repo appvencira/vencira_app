@@ -112,7 +112,7 @@ sudo -n docker run --rm --network none --user 0 -v "$temp:/tmp" \
 if sudo -n docker run --rm --network none \
   -v "$temp:/tmp" -v "$work:/work" -v "$cache:/pub" \
   -e PUB_CACHE=/pub -w /work ghcr.io/cirruslabs/flutter:3.44.0 \
-  sh -euc 'flutter analyze --no-pub; flutter test --no-pub --reporter expanded test/native_d28_mobile_entry_router_test.dart test/native_android_startup_boundary_test.dart test/native_i8l_http_recovery_integration_test.dart'; then
+  sh -euc 'flutter analyze --no-pub; flutter test --no-pub --reporter expanded test/native_d28_mobile_entry_router_test.dart test/native_android_startup_boundary_test.dart test/native_i8l_http_recovery_integration_test.dart test/native_first_issuance_entry_test.dart test/native_recovery_login_gateway_test.dart'; then
   mark FLUTTER_ROUTER_REGRESSION PASS
 else
   mark FLUTTER_ROUTER_REGRESSION FAIL
