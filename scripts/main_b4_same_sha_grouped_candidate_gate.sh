@@ -19,10 +19,17 @@ for c in git docker sudo python3 sha256sum; do
 done
 head="$(git rev-parse --verify HEAD)"
 remote="$(git rev-parse --verify refs/remotes/origin/main)"
-if [[ "$(git branch --show-current)" != main || "$head" != "$remote" ||
-      -n "$(git status --porcelain)" ]]; then
-  echo B4_MAIN_CLEAN=FAIL; exit 2
+branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
+status="$(git status --porcelain)"
+if [[ "$head" != "$remote" || -n "$status" ||
+      ( -n "$branch" && "$branch" != main ) ]]; then
+  echo "B4_BRANCH=${branch:-DETACHED_HEAD}"
+  echo "B4_SHA_MATCH=$([[ "$head" == "$remote" ]] && echo YES || echo NO)"
+  echo "B4_WORKTREE_CLEAN=$([[ -z "$status" ]] && echo YES || echo NO)"
+  echo B4_MAIN_CLEAN=FAIL
+  exit 2
 fi
+echo "B4_BRANCH=${branch:-DETACHED_HEAD}"
 echo "B4_CANDIDATE_SHA=$head"
 echo B4_MAIN_CLEAN=PASS
 for file in \
