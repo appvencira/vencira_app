@@ -285,3 +285,38 @@ D27D28_P1_RESULT=0
 No constan en el extracto aportado `D28_RESTART_CONTRACT_RESULT` ni `git status --short` final; no se presuponen. **D28 fase de contrato y recuperación candidata PASS en Flutter**, pero **D28 operacional NO**: no existe aún un puerto HTTP D27 integrado y probado extremo a extremo ni autenticación principal Android. Las pruebas de reinicio reutilizan almacenamiento simulado, no implican ensayo físico de TLS/reinicio del dispositivo. Mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
 
 **Siguiente ingeniería:** comparar el contrato Dart del adaptador HTTP existente con el wire JSON D27 y añadir un adaptador específico LAB con certificados validados; impedir cualquier conexión a `main.dart` o dependencia de rutas operativas hasta superar tests y auditoría independientes.
+
+## D27/D28 — puente Flutter IOClient HTTPS real con D27 PG17 aislado (12/11/2026)
+
+Implementación publicada directamente en `main`, **sin ejecución confirmada en VPS**:
+
+- `scripts/native_i8k_https_server.py` admite un modo nuevo `VENCIRA_D27_REAL_TLS_LAB=1` que selecciona exclusivamente `native_mobile_service.test_d27_http_urls`, exige flags de laboratorio, inyecta las claves de auditoría/antiabuso sintéticas en `settings` y evita insertar la cabecera de proxy `X-Forwarded-Proto` (prohibida por el contrato D27). El modo heredado I8-M/I8-K conserva su comportamiento anterior.
+- `clients/flutter/test/native_d27_real_https_pg17_test.dart` reutiliza `NativeHttpAuthPort` y `NativeRecoveryLoginGateway` sobre IOClient con CA temporal de confianza exclusiva. Comprueba rechazo TLS con CA no confiable y hostname incorrecto, `oc1` por primer acceso, `or1` por recuperación con journal y vault, revocación del access anterior y logout por HTTPS.
+- `scripts/main_d27_flutter_real_https_pg17_isolated.sh` crea red Docker `--internal`, PG17 `tmpfs`, Django de prueba con URLconf D27, certificado y claves sintéticas, contenedores Flutter efímeros. El test Flutter no recibe contraseña DB ni clave privada TLS y no publica puertos al host. El script comprueba tras el test el estado de revocación en PG17 y que los contenedores DEV conserven identidad, y limpia al salir.
+
+**Estado:** código y runner publicados, NO PASS todavía. Solo habilitaría un contrato real TLS de **laboratorio**, no servicio público ni release. No sustituye pruebas de fallo físico/reinicio Android o la revisión de custodia y proxy operacional. El runner I8-M histórico permanece separado; no repetir sus suites salvo regresión material.
+
+### Ejecución única
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+git status --short
+bash -n scripts/main_d27_flutter_real_https_pg17_isolated.sh
+python3 -m py_compile scripts/native_i8k_https_server.py
+sudo -v
+bash scripts/main_d27_flutter_real_https_pg17_isolated.sh
+echo "D27_D28_REAL_TLS_RESULT=$?"
+git status --short
+```
+
+Exigir `D27_REAL_TLS_CA_AND_HOSTNAME=PASS`, `D27_FLUTTER_REAL_TLS_FIRST_ISSUANCE=PASS`, `D27_FLUTTER_REAL_TLS_RECOVERY_AND_REVOKE=PASS`, `D27_FLUTTER_REAL_TLS_DEVICE_REVOKE=PASS`, `D27_REAL_TLS_PG17_RECOVERY_AND_LOGOUT=PASS`, `D27_REAL_TLS_INTEGRATION_GATE=PASS`, `D27_REAL_TLS_DEV_CONTAINERS_UNCHANGED=OK`, `D27_REAL_TLS_BOUNDARY_RESULT=0` y resultado del comando `0`. Si falla, recoger el primer marcador FAIL; no desactivar TLS ni relajar aislamiento.
+
+```text
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D27_OPERATIONAL_HTTP_ISSUER_ENABLED=NO
+D28_ANDROID_MAIN_AUTH_ENABLED=NO
+D27D28_RELEASE_AUTHORIZED=NO
+```
