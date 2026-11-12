@@ -243,9 +243,9 @@ class _ScreenState extends State<_Screen> {
             await first.accessToken() != null) {
           throw StateError('D28 uncertain first issuance not fenced');
         }
-        _emit('D28_ANDROID_TLS_HOSTNAME=PASS\\n'
-            'D28_ANDROID_OC1_ISSUED_RESPONSE_LOST=PASS\\n'
-            'D28_ANDROID_DURABLE_MARKER=PASS\\n'
+        _emit('D28_ANDROID_TLS_HOSTNAME=PASS\n'
+            'D28_ANDROID_OC1_ISSUED_RESPONSE_LOST=PASS\n'
+            'D28_ANDROID_DURABLE_MARKER=PASS\n'
             'FASE 1 LISTA. Cierra completamente la aplicación, '
             'reinicia Android y vuelve a abrirla. Pulsa otra vez el botón.');
       } else if (disposition == NativeStartupDisposition.fullReauthentication) {
@@ -268,8 +268,8 @@ class _ScreenState extends State<_Screen> {
             await lab.journal.requiresReauthentication()) {
           throw StateError('D28 recovery commit not verified');
         }
-        _emit('D28_ANDROID_RECOVERY_AFTER_RESTART=PASS\\n'
-            'D28_ANDROID_KEYSTORE_RECOVERY=PASS\\n'
+        _emit('D28_ANDROID_RECOVERY_AFTER_RESTART=PASS\n'
+            'D28_ANDROID_KEYSTORE_RECOVERY=PASS\n'
             'Comprobando revocación...');
         lab.fence.revoke();
         await real.revoke(refresh: refresh);
@@ -287,10 +287,10 @@ class _ScreenState extends State<_Screen> {
         if (await lab.vault.read() != null || lab.fence.ticket != null) {
           throw StateError('D28 local cleanup not verified');
         }
-        _emit('D28_ANDROID_TLS_HOSTNAME=PASS\\n'
-            'D28_ANDROID_RECOVERY_AFTER_RESTART=PASS\\n'
-            'D28_ANDROID_KEYSTORE_RECOVERY=PASS\\n'
-            'D28_ANDROID_REVOKE_401=PASS\\n'
+        _emit('D28_ANDROID_TLS_HOSTNAME=PASS\n'
+            'D28_ANDROID_RECOVERY_AFTER_RESTART=PASS\n'
+            'D28_ANDROID_KEYSTORE_RECOVERY=PASS\n'
+            'D28_ANDROID_REVOKE_401=PASS\n'
             'D28_ANDROID_LAB_CLEANUP=PASS');
       } else {
         throw StateError('D28 startup locked');
@@ -298,7 +298,7 @@ class _ScreenState extends State<_Screen> {
     } catch (_) {
       lab.fence.revoke();
       // No tokens or exception details in UI.
-      _emit('D28_ANDROID_GATE=FAIL\\n'
+      _emit('D28_ANDROID_GATE=FAIL\n'
           'Laboratorio bloqueado. No reintentar emisión ni refresh. '
           'Comprobar túnel, certificado y marcador seguro.');
     } finally {
