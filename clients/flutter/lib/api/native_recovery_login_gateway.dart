@@ -53,7 +53,7 @@ class NativeRecoveryLoginGateway implements NativeLoginGateway {
   Completer<void>? _finished;
 
   static final RegExp _challengePattern =
-      RegExp(r'^lc1\.[0-9a-f]{32}\.([A-Za-z0-9_-]{43})$');
+      RegExp(r'^(?:lc1|or1)\.[0-9a-f]{32}\.([A-Za-z0-9_-]{43})$');
 
   static bool _validChallenge(String value) {
     final match = _challengePattern.firstMatch(value);
