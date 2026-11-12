@@ -267,3 +267,21 @@ bash scripts/main_d27d28_phase1_router_grouped_gate.sh
 echo "D28_RESTART_CONTRACT_RESULT=$?"
 git status --short
 ```
+
+## D28 — Flutter 48/48 PASS con marcadores de reinicio y retos D27 (12/11/2026)
+
+El operador confirmó la ejecución de `scripts/main_d27d28_phase1_router_grouped_gate.sh`: `flutter analyze` → **No issues found** (15.3 s), `flutter test` → **48/48 All tests passed**, incluyendo tres escenarios de marcador durable/reinicio tras pérdida de respuesta y cuatro casos nuevos de separación de dominios MFA (`oc1` emisión, `or1` recuperación). Los resultados de la ejecución son:
+
+```text
+D27D28_P1_FLUTTER_ROUTER_REGRESSION=PASS
+D27D28_P1_NATIVE_FIRST_VS_RECOVERY_ROUTING_CANDIDATE=YES
+D27D28_P1_OPERATIONAL_ISSUER_ENABLED=NO
+D27D28_P1_ANDROID_MAIN_AUTH_ENABLED=NO
+D27D28_P1_DEV_CONTAINERS_UNCHANGED=OK
+D27D28_P1_RELEASE_AUTHORIZED=NO
+D27D28_P1_RESULT=0
+```
+
+No constan en el extracto aportado `D28_RESTART_CONTRACT_RESULT` ni `git status --short` final; no se presuponen. **D28 fase de contrato y recuperación candidata PASS en Flutter**, pero **D28 operacional NO**: no existe aún un puerto HTTP D27 integrado y probado extremo a extremo ni autenticación principal Android. Las pruebas de reinicio reutilizan almacenamiento simulado, no implican ensayo físico de TLS/reinicio del dispositivo. Mantener `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+**Siguiente ingeniería:** comparar el contrato Dart del adaptador HTTP existente con el wire JSON D27 y añadir un adaptador específico LAB con certificados validados; impedir cualquier conexión a `main.dart` o dependencia de rutas operativas hasta superar tests y auditoría independientes.
