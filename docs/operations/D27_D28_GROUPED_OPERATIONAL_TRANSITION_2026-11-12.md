@@ -446,3 +446,26 @@ D28_ANDROID_LAB_RESULT=0
 **Resultado del gate D28 Android físico: PASS** para emisión D27 `oc1` con respuesta descartada tras commit, persistencia del marcador en Keystore, recuperación `or1` en segunda ejecución y revocación final de ambas sesiones en PG17 aislado. La evidencia visual y del runner es coherente; la acción física de reiniciar el teléfono depende de la declaración del operador y no puede acreditarse únicamente con el marcador final.
 
 **Restricciones intactas:** ningún despliegue, migración live ni activación de `main.dart`. La pérdida es **inyección de respuesta descartada**, no corte TCP/radio físico. Siguen pendientes pruebas de caída real durante refresh, diseño del proxy/IP de confianza, custodia de claves productivas y puertas de publicación D4. No declarar MFA operacional autorizado.
+
+## Aceleración operativa — gate maestro D27/D28 (12/11/2026)
+
+Se evita el ciclo de múltiples peticiones manuales al operador para cada test. Añadido `scripts/main_d27d28_single_gate.sh` directamente a `main`, con un único preflight del SHA limpio en `main`, scripts Bash validados sintácticamente y fallo temprano si cualquier subgate falla. Mantiene explícitas las prohibiciones de despliegue, migraciones live, MFA release y Android operativo.
+
+Modos:
+
+```bash
+# Solo cuando haya cambios materiales a validar en toda la integración automática:
+bash scripts/main_d27d28_single_gate.sh --automated
+
+# Solo cuando exista un nuevo escenario físico Android pendiente:
+bash scripts/main_d27d28_single_gate.sh --phone
+
+# Cierre de macrofase: automático y después una sola sesión física:
+bash scripts/main_d27d28_single_gate.sh --all
+```
+
+`--automated` ejecuta secuencialmente los gates D27 PG17, D28 Flutter (analyze/test), D27-D28 Flutter IOClient TLS real. `--phone` y `--all` incluyen **el ensayo Android D28 ya existente**, con pausa manual para el operador, no un nuevo ensayo de refresh físico. **La nueva rotación de refresh bajo corte físico sigue pendiente de implementación** y no debe declararse cubierta por este wrapper.
+
+El script no elimina el coste de construir imágenes o preparar laboratorios en cada subgate; solo elimina la intervención repetida y proporciona un único resultado `D27D28_MASTER_RESULT=0` si todos pasan. No se requiere volver a ejecutar gates históricos por cambios solo de documentación. La ejecución completa `--all` tampoco equivale a autorización de producción ni al cierre de bloqueos D4 (recuperación de backup, rollback, imagen final, identidades operativas y liberación).
+
+El nuevo script ha sido publicado, **sin ejecución confirmada** en VPS. Para comprobarlo, `bash -n scripts/main_d27d28_single_gate.sh`; los subgates están validados en ejecuciones individuales previas, pero no como master conjunto.
