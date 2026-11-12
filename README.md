@@ -20,11 +20,13 @@ Aplicación de gestión de vencimientos, anotaciones y seguimiento de seguros. N
 
 **Precaución:** los PASS anteriores son evidencias registradas por el operador y en los runbooks; no constituyen una nueva ejecución ni una auditoría integral del estado operativo del VPS. Revisar las secciones más recientes del documento D4, que acumula una cronología de ensayos y no debe interpretarse por su primera entrada.
 
-## Bloqueos vigentes
+## Estado de cierre: evidencias frente a bloqueos reales
 
-El programa **D4** agrupa cinco criterios de cierre: **B1** imágenes archivadas y servicios, **B2** reversión con backup O5, **B3** retención cifrada fuera del VPS, **B4** regresión del SHA candidato final y **B5** preflight y autorización de producción. No confundir pruebas de arranque aisladas con recuperación operacional demostrada.
+La matriz original D4 se redactó antes de las validaciones posteriores. **No reiniciar automáticamente B1–B3**: D12 confirmó custodia externa cifrada y readback del archivo; D13-R arrancó PostgreSQL archivado desde un archivo equivalente al remoto; D14 restauró O5 real con la API histórica 0018; D15 arrancó PG17/API/Nginx con HTTP y proxy en red interna aislada. Son **PASS de alcance limitado**, no un rollback operacional completo. Siguen abiertos el encadenamiento end-to-end exclusivamente desde copia off-host, la discrepancia de identidad exacta de imágenes Docker y la reversión real controlada.
 
-La transición **D27–D28** necesita contrato y transporte HTTPS para los retos `oc1/or1`, custodia real de secretos, control de identidad IP/proxy, aislamiento y migraciones revisadas, integración Flutter/Android, pruebas físicas y autorización diferenciada. No activar el núcleo quitando sus restricciones de laboratorio.
+**D27–D28, validaciones nuevas:** D27 backend PG17 **98/98**, D28 Flutter **48/48** y TLS real Flutter–Django en laboratorio **PASS**; los ensayos físicos Android D27 recuperación y D28 emisión `oc1` con pérdida simulada de respuesta seguida de reinicio/recuperación `or1` también **PASS**. Ninguno habilita las rutas operativas de Django o el login nativo de `main.dart`. Persisten custodia de secretos, identidad IP/proxy confiable, pruebas de corte físico de comunicación/refresh y aprobación de release.
+
+**Prioridad ahora:** B4 debe validar **un único SHA final** con recorridos funcionales de web y APK normal, no más apps LAB independientes; B5 debe separar piloto DEV reversible de autorización productiva. Los riesgos residuales de B1–B3 se documentarán y se resolverán únicamente si impiden la recuperación o el lanzamiento. Mantener los bloqueos operativos.
 
 ## Restricciones obligatorias
 
@@ -37,10 +39,10 @@ La transición **D27–D28** necesita contrato y transporte HTTPS para los retos
 
 ## Próximos trabajos priorizados
 
-1. D27–D28: revisar contrato `oc1/or1`, construir transporte HTTPS **solo en laboratorio** y verificar seguridad de emisión, custodia y antiabuso; no enlazar aún el login Android normal.
-2. D4 B1–B3: cerrar ejecución y recuperación **conjunta** de imágenes archivadas con O5 en un entorno aislado, y acreditar una copia externa recuperable.
-3. D4 B4: ejecutar regresión backend/PG17 y Flutter `analyze/test/build` sobre un mismo SHA final; después, recorridos funcionales y visuales de APK.
-4. D4 B5: preparar piloto DEV reversible y, posteriormente, un preflight de producción distinto.
+1. **B4 — candidato final:** compilar y validar web/Flutter `main.dart` y backend sobre el mismo SHA, más pruebas funcionales/visuales reales; un único gate de cierre, no reejecuciones repetitivas por documentación.
+2. **B5 — decisión operativa:** preflight independiente de configuración HTTPS, secretos, backups/rollback, observabilidad y plan de piloto DEV. Producción requiere una autorización separada.
+3. **Riesgos de DR:** completar trazabilidad de identidad de imágenes históricas, recuperación desde archivo exclusivamente remoto y reversión controlada si el análisis de riesgo exige su cierre para publicar.
+4. **Android nativo:** cerrar cortes reales de transporte y rotación refresh; no conectar el login normal hasta superar custodia, proxy/IP y política operativa.
 
 ## Documentación de referencia
 
