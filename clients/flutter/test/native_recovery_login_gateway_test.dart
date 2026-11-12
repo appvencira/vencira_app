@@ -258,4 +258,34 @@ void main() {
     expect(await gateway.accessToken(), isNull);
     expect(port.passwordCalls, 0);
   });
+  test('D27 or1 recovery challenge accepted after durable checkpoint',
+      () async {
+    await initUncertain();
+    expect(await gateway.requiresRecovery(), isTrue);
+    port.passwordResponse = NativePasswordMfaRequired(
+      challenge.replaceFirst('lc1.', 'or1.'),
+    );
+    expect(await gateway.verifyPassword(username: 'agent', password: 'synthetic'),
+        NativePasswordDecision.mfaRequired);
+    expect(fence.ticket, isNull);
+    await gateway.verifyTotp('123456');
+    expect(await vault.read(), freshRefresh);
+    expect(await journal.requiresReauthentication(), isFalse);
+    expect(fence.ticket, isNotNull);
+  });
+
+  test('D27 oc1 cannot be used as recovery challenge', () async {
+    await initUncertain();
+    port.passwordResponse = NativePasswordMfaRequired(
+      challenge.replaceFirst('lc1.', 'oc1.'),
+    );
+    await expectLater(
+      gateway.verifyPassword(username: 'agent', password: 'synthetic'),
+      throwsStateError,
+    );
+    expect(port.mfaCalls, 0);
+    expect(fence.ticket, isNull);
+    expect(await journal.requiresReauthentication(), isTrue);
+  });
+
 }
