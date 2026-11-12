@@ -61,6 +61,7 @@ class _AuthPort implements NativeAuthPort {
   int mfaCalls = 0;
   int revokeCalls = 0;
   bool issueMfa = false;
+  String challengeWire = _challenge;
   bool rejectPassword = false;
   bool rejectRevoke = false;
   bool losePasswordResponse = false;
@@ -81,7 +82,7 @@ class _AuthPort implements NativeAuthPort {
     if (rejectPassword || losePasswordResponse) {
       throw StateError('Synthetic failed or lost password response');
     }
-    if (issueMfa) return const NativePasswordMfaRequired(_challenge);
+    if (issueMfa) return NativePasswordMfaRequired(challengeWire);
     return const NativePasswordGranted(
       NativeIssuedTokens(access: _access, refresh: _refresh),
     );
@@ -372,4 +373,27 @@ void main() {
     expect(fence.ticket, isNull);
     expect(await vault.read(), isNull);
   });
+  test('D27 oc1 first-issuance challenge accepted but recovery or1 rejected',
+      () async {
+    port.issueMfa = true;
+    port.challengeWire = _challenge.replaceFirst('lc1.', 'oc1.');
+    expect(await entry.inspect(), NativeStartupDisposition.cleanLogin);
+    expect(await entry.verifyPassword(username: 'u', password: 'p'),
+        NativePasswordDecision.mfaRequired);
+    await entry.verifyTotp('123456');
+    expect(await vault.read(), _refresh);
+    expect(fence.ticket, isNotNull);
+  });
+
+  test('D27 recovery or1 cannot enter first-issuance MFA flow', () async {
+    port.issueMfa = true;
+    port.challengeWire = _challenge.replaceFirst('lc1.', 'or1.');
+    expect(await entry.inspect(), NativeStartupDisposition.cleanLogin);
+    await expectLater(
+      entry.verifyPassword(username: 'u', password: 'p'), throwsStateError,
+    );
+    expect(await journal.requiresReauthentication(), isTrue);
+    expect(fence.ticket, isNull);
+  });
+
 }
