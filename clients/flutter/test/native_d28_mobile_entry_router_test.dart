@@ -132,4 +132,55 @@ void main() {
     expect(() => broken.gateway, throwsStateError);
     expect(h.fence.ticket, isNull);
   });
+
+  test('lost first issuance response leaves durable recovery after restart',
+      () async {
+    final store = _Store();
+    final initial = _Harness(store);
+    expect(await initial.router.inspect(), NativeStartupDisposition.cleanLogin);
+    await initial.journal.arm(); // Persist BEFORE HTTP that may issue tokens.
+    final restarted = _Harness(store);
+    expect(await restarted.router.inspect(),
+        NativeStartupDisposition.fullReauthentication);
+    expect(restarted.router.gateway, same(restarted.recovery));
+    expect(await restarted.journal.requiresReauthentication(), isTrue);
+    expect(restarted.fence.ticket, isNull);
+    expect(store.values['vencira.mobile.dev.uncertain.v1'],
+        'full-reauth-required-v1');
+  });
+
+  test('lost refresh response and orphan credential never select first login',
+      () async {
+    final store = _Store();
+    final before = _Harness(store);
+    await before.journal.arm(); // Refresh sent; result may have committed.
+    store.values['vencira.mobile.dev.refresh.v1'] =
+        'v1.r.0123456789abcdef0123456789abcdef.'
+        'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+    final after = _Harness(store);
+    expect(await after.router.inspect(),
+        NativeStartupDisposition.fullReauthentication);
+    expect(after.router.gateway, same(after.recovery));
+    expect(after.fence.ticket, isNull);
+    expect(await after.journal.requiresReauthentication(), isTrue);
+  });
+
+  test('lost account recovery response requires recovery again on cold start',
+      () async {
+    final store = _Store();
+    final first = _Harness(store);
+    await first.journal.arm(); // Account-wide recovery may have committed.
+    final restart = _Harness(store);
+    expect(await restart.router.inspect(),
+        NativeStartupDisposition.fullReauthentication);
+    expect(restart.router.gateway, same(restart.recovery));
+    expect(restart.fence.ticket, isNull);
+    // A second cold restart must not silently downgrade to normal issuance.
+    final another = _Harness(store);
+    expect(await another.router.inspect(),
+        NativeStartupDisposition.fullReauthentication);
+    expect(another.router.gateway, same(another.recovery));
+    expect(await another.journal.requiresReauthentication(), isTrue);
+  });
+
 }
