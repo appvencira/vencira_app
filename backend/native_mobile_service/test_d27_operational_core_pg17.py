@@ -1,6 +1,7 @@
 """D27 PG17 isolated independent issuer core: real Django password/TOTP."""
 import os
 import time
+import uuid
 from unittest.mock import patch
 
 from cryptography.fernet import Fernet
@@ -150,7 +151,7 @@ class D27IndependentIssuerCorePG17Tests(TransactionTestCase):
     def test_account_wide_recovery_revokes_old_device_and_rejects_replay(self):
         normal = self.begin()
         old_access, old_refresh = complete_verified_mfa(
-            challenge=normal, code=totp_at(self.secret, int(time.time())),
+            challenge=normal, code=totp_at(self.secret, int(time.time()) - 30),
         )
         self.assertEqual(validate_verified_access(old_access).pk, self.user.pk)
         challenge = begin_recovery_password(
@@ -166,7 +167,7 @@ class D27IndependentIssuerCorePG17Tests(TransactionTestCase):
         with self.assertRaises(OperationalCoreDenied):
             complete_recovery_mfa(challenge=normal, code="000000")
         fresh_access, fresh_refresh = complete_recovery_mfa(
-            challenge=challenge, code=totp_at(self.secret, int(time.time()) + 30),
+            challenge=challenge, code=totp_at(self.secret, int(time.time())),
         )
         with self.assertRaises(OperationalCoreDenied):
             validate_verified_access(old_access)
@@ -188,7 +189,7 @@ class D27IndependentIssuerCorePG17Tests(TransactionTestCase):
     def test_account_recovery_audit_failure_rolls_back_revocation(self):
         normal = self.begin()
         old_access, _ = complete_verified_mfa(
-            challenge=normal, code=totp_at(self.secret, int(time.time())),
+            challenge=normal, code=totp_at(self.secret, int(time.time()) - 30),
         )
         challenge = begin_recovery_password(
             username="d27-reader", password="d27-synthetic-password",
@@ -206,19 +207,19 @@ class D27IndependentIssuerCorePG17Tests(TransactionTestCase):
             with self.assertRaises(RuntimeError):
                 complete_recovery_mfa(
                     challenge=challenge,
-                    code=totp_at(self.secret, int(time.time()) + 30),
+                    code=totp_at(self.secret, int(time.time())),
                 )
         self.assertEqual(validate_verified_access(old_access).pk, self.user.pk)
         self.assertEqual(MobileDeviceSession.objects.count(), 1)
         self.assertIsNone(MobilePendingChallenge.objects.get(
-            pk=__import__("uuid").UUID(hex=challenge.split(".")[1]),
+            pk=uuid.UUID(hex=challenge.split(".")[1]),
         ).consumed_at)
         print("D27_RECOVERY_AUDIT_FAILURE_ROLLBACK_PG17=PASS")
 
     def test_wrong_password_never_revokes_existing_sessions(self):
         normal = self.begin()
         old_access, _ = complete_verified_mfa(
-            challenge=normal, code=totp_at(self.secret, int(time.time())),
+            challenge=normal, code=totp_at(self.secret, int(time.time()) - 30),
         )
         denied = begin_recovery_password(
             username="d27-reader", password="wrong-password",
