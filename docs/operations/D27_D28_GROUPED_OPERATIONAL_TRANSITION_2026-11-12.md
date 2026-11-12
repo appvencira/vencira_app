@@ -218,3 +218,30 @@ La suite `test_d27_http_pg17.py` amplía D27 HTTP-LAB con tres casos PG17, sin m
 Las pruebas simulan **pérdida de respuesta en el test HTTP tras finalizar la petición**; no simulan corte TCP/TLS físico ni prueban reconexión Android. El comportamiento es deliberadamente conservador: no inventar idempotencia ni responder con credenciales nuevas ante reintentos ambiguos. Queda pendiente diseñar conciliación explícita y segura en Flutter.
 
 Con estas tres pruebas, el runner I8-K debería detectar **98 tests** si el resto de la suite no cambia. Esta cifra es expectativa, **no PASS observado**. Repetir `scripts/main_d27_independent_issuer_pg17_grouped_gate.sh` sobre `main` limpio y exigir salida cero y los tres marcadores. La autorización de producción sigue denegada.
+
+## D27 pérdida de respuesta: 98/98 PASS en PG17 aislado (12/11/2026)
+
+El operador confirmó el nuevo gate `scripts/main_d27_independent_issuer_pg17_grouped_gate.sh` con `Found 98 test(s)`, `Ran 98 tests in 57.249s`, `OK` y los siguientes resultados:
+
+```text
+D27_LAB_HTTP_LOST_ISSUE_RESPONSE_FAIL_CLOSED_PG17=PASS
+D27_LAB_HTTP_LOST_REFRESH_REPLAY_REVOKES_PG17=PASS
+D27_LAB_HTTP_LOST_RECOVERY_RESPONSE_OLD_REVOKED_PG17=PASS
+D27_LAB_HTTP_ISSUE_ROTATE_REVOKE_PG17=PASS
+D27_LAB_HTTP_ACCOUNT_RECOVERY_PG17=PASS
+D27_LAB_HTTP_TLS_AND_PUBLIC_ROUTE_FENCES_PG17=PASS
+NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK
+NATIVE_I8K_LOCAL_RESULT=0
+D27_P2_INDEPENDENT_CORE_VALIDATED=YES
+D27_P2_RESULT=0
+D27_P2_PRODUCTION_ISSUER_ENABLED=NO
+D27_P2_ANDROID_MAIN_AUTH_ENABLED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
+
+No se aportaron los ecos independientes posteriores `D27_RESPONSE_LOSS_RESULT` ni `git status --short`. El runner se cerró correctamente según sus propios marcadores.
+
+**Alcance:** simulación en test HTTP de pérdida de respuesta **después del commit**. No valida interrupciones TCP/TLS físicas, reconexión Flutter, custodia real, transporte operacional ni publicación.
+
+**Siguiente bloque de ingeniería:** revisar la política de conciliación ya existente en Flutter; ante respuesta incierta nunca reintentar un refresh gastado ni dar por recuperada una sesión sin evidencia. Añadir pruebas sobre el almacenamiento local duradero, reinicio y decisión explícita entre primera emisión y recuperación, sin conectar `main.dart` ni rutas públicas. El PASS de Flutter deberá demostrarse por un gate separado.
