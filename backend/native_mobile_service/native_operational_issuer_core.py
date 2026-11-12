@@ -24,7 +24,10 @@ from reminders.models import MfaAdministrativeRecoveryCase, UserMfaState
 from reminders.native_mobile_identity_gate import (
     mobile_credential_version, require_mobile_identity_gate,
 )
-from reminders.native_mobile_token_primitives import (\n    NativeMobileTokenInvalid, make_native_token, matches_native_token,\n    native_token_digest, parse_native_token,\n)
+from reminders.native_mobile_token_primitives import (
+    NativeMobileTokenInvalid, make_native_token, matches_native_token,
+    native_token_digest, parse_native_token,
+)
 
 from .models import (
     MobileAccountFence, MobileAuthAttemptBucket, MobileAuthAuditEvent,
