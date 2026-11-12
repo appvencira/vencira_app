@@ -75,22 +75,19 @@ if ! sudo -n docker run --rm --network bridge \
     -e VENCIRA_ANDROID_KEY_ALIAS= \
     -e VENCIRA_ANDROID_KEY_PASSWORD= \
     ghcr.io/cirruslabs/flutter:3.44.0 sh -euc '
-      cp -a /source /tmp/vencira-d16-candidate
-      cd /tmp/vencira-d16-candidate
+      cp -a /source /tmp/vencira-b4-candidate
+      cd /tmp/vencira-b4-candidate
       flutter pub get
       flutter analyze
-      flutter test --reporter compact \
-        test/native_i8q_recovery_fault_matrix_test.dart \
-        test/native_i8l_http_recovery_integration_test.dart \
-        test/native_http_auth_port_test.dart \
-        test/native_api_endpoint_test.dart
+      flutter test --reporter compact
       flutter build apk --debug --target lib/main.dart
       flutter build web --release --target lib/main.dart
       cp build/app/outputs/flutter-apk/app-debug.apk \
         /output/VENCIRA-main-candidate-debug.apk
       chmod 644 /output/VENCIRA-main-candidate-debug.apk
       cp -a build/web /output/web
-      chmod -R go-rwx /output/web
+      find /output/web -type d -exec chmod 755 {} +
+      find /output/web -type f -exec chmod 644 {} +
     '; then
   mark FLUTTER_ANALYZE_TEST_BUILD FAIL
   exit 5
