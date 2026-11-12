@@ -143,15 +143,15 @@ void main() {
       await gateway.verifyTotp(
           _totpAt(DateTime.now().millisecondsSinceEpoch ~/ 1000));
       final fresh = await gateway.accessToken();
-      expect(fresh, isNotNull);
+      final confirmedAccess = fresh ?? (throw StateError('Missing recovered access'));
       expect(await _me(raw, issued.access), 401);
-      expect(await _me(raw, fresh!), 200);
+      expect(await _me(raw, confirmedAccess), 200);
       expect(await journal.requiresReauthentication(), isFalse);
       expect(await vault.read(), isNot(issued.refresh));
       print('D27_FLUTTER_REAL_TLS_RECOVERY_AND_REVOKE=PASS');
 
       await port.revoke(refresh: (await vault.read())!);
-      expect(await _me(raw, fresh), 401);
+      expect(await _me(raw, confirmedAccess), 401);
       print('D27_FLUTTER_REAL_TLS_DEVICE_REVOKE=PASS');
     } finally {
       client.close();
