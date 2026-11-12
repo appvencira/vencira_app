@@ -173,3 +173,36 @@ D27_OPERATIONAL_HTTP_ISSUER_ENABLED=NO
 D28_ANDROID_MAIN_AUTH_ENABLED=NO
 D27D28_RELEASE_AUTHORIZED=NO
 ```
+
+## D27 HTTP-LAB — PG17 95/95 PASS informado por operador (12/11/2026)
+
+Tras incorporar `test_d27_http_pg17.py` al runner I8-K, el operador ejecutó el gate agrupado sobre `main` y aportó:
+
+```text
+D27_P2_MAIN_CLEAN=PASS
+D27_P2_INDEPENDENT_AST_AND_LAB_FENCE=PASS
+D27D28_PHASE0_CONTRACT=PASS
+D27_P2_RELEASE_BARRIERS=PASS
+NATIVE_I8K_PG17_READY=OK
+NATIVE_I8K_MIGRATION_PARITY=OK
+NATIVE_I8K_DISPOSABLE_SCHEMA=OK
+Found 95 test(s).
+Ran 95 tests in 56.760s
+OK
+D27_LAB_HTTP_TLS_AND_PUBLIC_ROUTE_FENCES_PG17=PASS
+D27_LAB_HTTP_ISSUE_ROTATE_REVOKE_PG17=PASS
+D27_LAB_HTTP_ACCOUNT_RECOVERY_PG17=PASS
+NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK
+NATIVE_I8K_LOCAL_RESULT=0
+D27_P2_PG17_ISSUER_AND_SECURITY=PASS
+D27_P2_INDEPENDENT_CORE_VALIDATED=YES
+D27_P2_RESULT=0
+D27_P2_PRODUCTION_ISSUER_ENABLED=NO
+D27_P2_ANDROID_MAIN_AUTH_ENABLED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+```
+
+**Cierre delimitado:** adaptador HTTP D27 exclusivo del URLconf LAB y sus tres tests pasan PG17 en el runner agrupado. La salida compartida no contiene el eco externo `D27_HTTP_LAB_RECHECK_RESULT` ni el `git status --short` final; no inferirlos. No se ejecutó Flutter en este gate (`NATIVE_I8K_FLUTTER_GATE=NOT_RUN_SEPARATE`). El núcleo sigue sin ruta operacional, custodia productiva ni login Android conectado.
+
+**Siguiente trabajo (aún NO validado):** simular pérdida de respuesta tras commit en emisión, refresh y recovery y comprobar conciliación del cliente sin reutilizar refresh ni crear sesiones ambiguas. Separar pruebas de transporte de pruebas de lógica transaccional. Mantener el bloqueo de publicación y no activar rutas de `config.urls`.
