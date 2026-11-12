@@ -79,3 +79,20 @@ El operador ejecutó `scripts/main_d27_independent_issuer_pg17_grouped_gate.sh` 
 Corrección publicada directamente en `main` **`67a9ec24`**: reemplaza exactamente esas secuencias por saltos de línea, sin alterar la lógica transaccional. Revisión adicional detectó una regex de prueba raw con `\\\\.` en vez de `\\.`; corregida en **`e8065941`** para verificar correctamente la forma del reto `oc1`. Comprobado contra el código remoto que no quedan secuencias literales `\\n` en el módulo. El gate **no llegó a ejecutar PG17**, así que D27 fase 2 continúa **NO VALIDADA**. Resultado original: `D27_P2_RECHECK_RESULT=1` y `git status --short` vacío.
 
 Repetir el mismo gate agrupado al actualizar `main`. Ninguna migración, ruta pública, contenedor operativo ni autenticación Android ha sido activada.
+
+## Validación final D27 fase 2 — PASS en VPS (12/11/2026)
+
+Resultado aportado por operador desde `main`: `D27_P2_MAIN_CLEAN=PASS`, `D27_P2_INDEPENDENT_AST_AND_LAB_FENCE=PASS`, `D27_P2_SOURCE_GATE=PASS`, `D27_P2_RELEASE_BARRIERS=PASS`. Imagen Django desechable, red interna, PG17 efímero, paridad de migraciones y esquema temporal listos. Se ejecutaron **89 tests en 49.179 segundos: OK**; incluyen **las seis pruebas D27**:
+
+```text
+D27_PRODUCTION_AND_KEY_GUARDS=PASS
+D27_INDEPENDENT_PASSWORD_MFA_SESSION_PG17=PASS
+D27_INDEPENDENT_ANTIBRUTEFORCE_AND_IP=PASS
+D27_REFRESH_ROTATION_REPLAY_REVOKES_PG17=PASS
+D27_DEVICE_LOGOUT_SERVER_REVOKED_PG17=PASS
+D27_BAD_PASSWORD_AND_MFA_DENIED_PG17=PASS
+```
+
+Marcadores globales: `NATIVE_I8K_D27_INDEPENDENT_PASSWORD_MFA_CORE_PG17=PASS`, `NATIVE_I8K_D26_SIGNED_WORKSPACE_CURSOR_PG17=PASS`, `NATIVE_I8K_PG17_HTTP_RECOVERY_GATE=PASS`, `NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK`, `NATIVE_I8K_LOCAL_RESULT=0`, `D27_P2_PG17_ISSUER_AND_SECURITY=PASS`, `D27_P2_INDEPENDENT_CORE_VALIDATED=YES`, `D27_P2_RESULT=0`. La salida no incluye el `D27_P2_RECHECK_RESULT` independiente ni un `git status --short` final; no inferir esos valores.
+
+**Cierre: D27 FASE 2 PASS SOLO EN LABORATORIO.** `D27_P2_PRODUCTION_ISSUER_ENABLED=NO`, `D27_P2_ANDROID_MAIN_AUTH_ENABLED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Siguientes bloqueos sustantivos: recuperación de cuenta en el núcleo independiente, transporte HTTP autorizado con claves reales, aislamiento esquema/entorno final, integración Android y pruebas físicas. No desplegar ni migrar LIVE.
