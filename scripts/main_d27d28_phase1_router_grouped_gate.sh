@@ -32,7 +32,7 @@ mark DEV_IDENTITY PASS
 
 tag="vencira-d28-router-$$"
 work="$tag-work"
-cache="$tag-cache"
+cache="vencira-d27d28-public-pubcache-flutter344"
 temp="$tag-temp"
 created=()
 cleanup() {
@@ -55,7 +55,7 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-for volume in "$work" "$cache" "$temp"; do
+for volume in "$work" "$temp"; do
   sudo -n docker volume create "$volume" >/dev/null
   created+=("$volume")
 done
@@ -67,12 +67,57 @@ available="$(sudo -n docker run --rm --network none -v "$temp:/tmp" \
   exit 4
 }
 mark FLUTTER_TEMP_CAPACITY PASS
+# Public pub-cache persists across attempts to avoid re-downloading packages.
+# It contains ONLY dependencies fetched from pub.dev, never private auth data.
+sudo -n docker volume create "$cache" >/dev/null
+mark PUBLIC_PUBCACHE_PERSISTENT YES
+
+# Stage 1: materialize read-only source into disposable work volume.
 sudo -n docker run --rm --network none \
   -v "$root/clients/flutter:/source:ro" -v "$work:/work" \
-  -v "$cache:/pub" -e PUB_CACHE=/pub -w /work \
-  ghcr.io/cirruslabs/flutter:3.44.0 \
-  sh -euc 'cp -a /source/. /work/; flutter pub get; flutter analyze; flutter test --reporter expanded test/native_d28_mobile_entry_router_test.dart test/native_android_startup_boundary_test.dart test/native_i8l_http_recovery_integration_test.dart'
-mark FLUTTER_ROUTER_REGRESSION PASS
+  -w /work ghcr.io/cirruslabs/flutter:3.44.0 \
+  sh -euc 'cp -a /source/. /work/'
+mark SOURCE_STAGED PASS
+
+# Stage 2: offline resolution first, then bounded online retries.
+# The default isolated network has NO access to pub.dev; public dependency
+# bootstrap is the only stage allowed to use Docker bridge networking.
+if sudo -n docker run --rm --network none \
+  -v "$work:/work" -v "$cache:/pub" -e PUB_CACHE=/pub -w /work \
+  ghcr.io/cirruslabs/flutter:3.44.0 flutter pub get --offline; then
+  mark DEPENDENCY_RESOLUTION OFFLINE_PASS
+else
+  mark DEPENDENCY_OFFLINE_CACHE INCOMPLETE
+  dependency_ok=NO
+  for attempt in 1 2 3; do
+    if sudo -n docker run --rm --network bridge \
+      -v "$work:/work" -v "$cache:/pub" -e PUB_CACHE=/pub -w /work \
+      ghcr.io/cirruslabs/flutter:3.44.0 flutter pub get; then
+      dependency_ok=YES
+      break
+    fi
+    mark DEPENDENCY_FETCH_RETRY "$attempt"
+  done
+  if [[ "$dependency_ok" != YES ]]; then
+    mark DEPENDENCY_RESOLUTION FAIL_NETWORK_OR_PUBDEV
+    exit 69
+  fi
+  mark DEPENDENCY_RESOLUTION ONLINE_PASS
+fi
+
+# Stage 3: tests run strictly offline using already-resolved dependencies.
+# A dedicated disposable scratch volume prevents Flutter compiler ENOSPC.
+sudo -n docker run --rm --network none --user 0 -v "$temp:/tmp" \
+  --entrypoint chmod ghcr.io/cirruslabs/flutter:3.44.0 1777 /tmp
+if sudo -n docker run --rm --network none \
+  -v "$temp:/tmp" -v "$work:/work" -v "$cache:/pub" \
+  -e PUB_CACHE=/pub -w /work ghcr.io/cirruslabs/flutter:3.44.0 \
+  sh -euc 'flutter analyze --no-pub; flutter test --no-pub --reporter expanded test/native_d28_mobile_entry_router_test.dart test/native_android_startup_boundary_test.dart test/native_i8l_http_recovery_integration_test.dart'; then
+  mark FLUTTER_ROUTER_REGRESSION PASS
+else
+  mark FLUTTER_ROUTER_REGRESSION FAIL
+  exit 70
+fi
 mark NATIVE_FIRST_VS_RECOVERY_ROUTING_CANDIDATE YES
 mark OPERATIONAL_ISSUER_ENABLED NO
 mark ANDROID_MAIN_AUTH_ENABLED NO
