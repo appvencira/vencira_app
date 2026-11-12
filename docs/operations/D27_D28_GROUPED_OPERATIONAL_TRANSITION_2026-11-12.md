@@ -384,3 +384,24 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 D27D28_RELEASE_AUTHORIZED=NO
 D28_ANDROID_MAIN_AUTH_ENABLED=NO
 ```
+
+## D27 Android físico — PG17 HTTPS MFA Keystore PASS (12/11/2026)
+
+El operador aportó captura del teléfono Android con los cinco marcadores visibles de la aplicación debug I8-P: `I8P_ANDROID_TLS_HOSTNAME=PASS`, `I8P_ANDROID_RECOVERY_MFA_KEYSTORE=PASS`, `I8P_ANDROID_REMOTE_REVOKE=PASS`, `I8P_ANDROID_ACCESS_AFTER_REVOKE_401=PASS`, `I8P_ANDROID_LAB_CLEANUP=PASS`. El nombre I8-P corresponde al punto de entrada reutilizado; por sí sola, la captura no identifica el backend.
+
+Después de pulsar ENTER para cerrar `scripts/main_d27_android_ssh_https_pg17_lab.sh`, el operador compartió los siguientes marcadores del runner **D27**:
+
+```text
+D27_ANDROID_PG17_RECOVERED_SESSION_REVOKED=PASS
+D27_ANDROID_TLS_MFA_KEYSTORE_GATE=PASS
+D27_ANDROID_DEV_CONTAINERS_UNCHANGED=OK
+D27_ANDROID_DEPLOY_EXECUTED=NO
+D27_ANDROID_LIVE_MIGRATIONS_EXECUTED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D27_ANDROID_LAB_RESULT=0
+```
+
+**Cierre del alcance:** D27 en Android físico con recuperación `or1`, verificación de certificado/hostname, Keystore, revocación HTTP 401 y PG17 aislado **PASS**. No se ejecutó despliegue ni migración persistente; contenedores DEV inalterados.
+
+**No inferir:** primer acceso `oc1` físico, rotación de refresh tras caída del transporte, ensayo de reinicio real, configuración de proxy operacional, publicación ni MFA productivo. Conservar `D27D28_RELEASE_AUTHORIZED=NO` y revisar estos bloqueos antes de otra fase. No repetir el ensayo PASS para justificar activación en `main.dart`.
