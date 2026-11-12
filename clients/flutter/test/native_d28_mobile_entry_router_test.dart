@@ -97,7 +97,7 @@ void main() {
     expect(h.router.gateway, same(h.first));
     expect(h.router.disposition, NativeStartupDisposition.cleanLogin);
     expect(h.fence.ticket, isNull);
-    expect(() => h.router.inspect(), throwsStateError);
+    await expectLater(h.router.inspect(), throwsStateError);
   });
 
   test('orphan refresh opens recovery only and leaves marker durable', () async {
