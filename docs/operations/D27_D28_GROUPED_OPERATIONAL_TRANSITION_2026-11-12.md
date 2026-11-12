@@ -96,3 +96,13 @@ D27D28_P1_RECHECK_RESULT=0
 ```
 
 **Límites:** el router no implementa endpoints operativos, MFA de producción ni login real en `main.dart`. La autorización de publicación se mantiene denegada. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## Primera ejecución D28 fase 1 — error de dependencias `pub.dev` (12/11/2026)
+
+El operador informa `D27D28_P1_HARD_RELEASE_FENCES=PASS`, `D27D28_P1_DEV_IDENTITY=PASS`, `D27D28_P1_FLUTTER_TEMP_CAPACITY=PASS` y `D27D28_P1_DEV_CONTAINERS_UNCHANGED=OK`. La prueba **no** llegó a `flutter analyze` ni a los tests de navegación nuevos: `flutter pub get` terminó `Got socket error trying to find package flutter_local_notifications at https://pub.dev`, salida `D27D28_P1_RESULT=69`.
+
+Causa directa verificada en el script anterior: la etapa que resolvía paquetes Flutter arrancaba con Docker `--network none` y un caché `/pub` recién creado, una combinación que impide cualquier descarga. Este fallo no prueba un problema con la dependencia `flutter_local_notifications` ni con el código del router.
+
+**Corrección publicada en `main`, commit `daa735e3`:** se separan tres etapas. 1) Copia del código desde montaje de origen solo lectura a volumen efímero sin red. 2) `flutter pub get --offline` usando volumen público persistente `vencira-d27d28-public-pubcache-flutter344`; si falta un paquete, se permite a **este paso exclusivamente** Docker bridge con tres intentos acotados para completar dependencias públicas. Si todas las descargas fallan, código 69 y `D27D28_P1_DEPENDENCY_RESOLUTION=FAIL_NETWORK_OR_PUBDEV`, sin aparentar pruebas PASS. 3) `flutter analyze --no-pub` y `flutter test --no-pub` exclusivamente sin red, sobre volumen temporal de compilación ≥1 GiB. Solo el volumen público de caché de paquetes persiste; los volúmenes de trabajo y `/tmp` se eliminan al finalizar. Las credenciales de producción, claves MFA y tokens no participan en el gate.
+
+**D28 fase 1 permanece PENDIENTE.** Repetir el mismo gate agrupado tras actualizar `main`. Exigir `D27D28_P1_DEPENDENCY_RESOLUTION=OFFLINE_PASS` o `ONLINE_PASS`, `D27D28_P1_FLUTTER_ROUTER_REGRESSION=PASS` y `D27D28_P1_RESULT=0`. Hasta entonces no se ha validado la nueva lógica Flutter.
