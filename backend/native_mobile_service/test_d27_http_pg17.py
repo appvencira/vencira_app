@@ -119,3 +119,37 @@ class D27LabHttpPG17Tests(TransactionTestCase):
         with patch.dict(os.environ, {"VENCIRA_D27_HTTP_LAB": "0"}):
             self.assertEqual(self.post("auth/password/", payload).status_code, 404)
         print("D27_LAB_HTTP_TLS_AND_PUBLIC_ROUTE_FENCES_PG17=PASS")
+
+    def test_recovery_http_revokes_old_account_sessions(self):
+        initial = self.post("auth/password/", {
+            "username": self.user.username,
+            "password": "d27-http-synthetic-password",
+        })
+        self.assertEqual(initial.status_code, 200)
+        old = self.post("auth/mfa/", {
+            "challenge": initial.json()["challenge"],
+            "code": totp_at(self.secret, int(time.time()) - 30),
+        })
+        self.assertEqual(old.status_code, 200)
+        recovery = self.post("auth/recover/password/", {
+            "username": self.user.username,
+            "password": "d27-http-synthetic-password",
+        })
+        self.assertEqual(recovery.status_code, 200)
+        self.assertTrue(recovery.json()["challenge"].startswith("or1."))
+        self.assertEqual(MobileDeviceSession.objects.filter(
+            revoked_at__isnull=True).count(), 1)
+        fresh = self.post("auth/recover/mfa/", {
+            "challenge": recovery.json()["challenge"],
+            "code": totp_at(self.secret, int(time.time())),
+        })
+        self.assertEqual(fresh.status_code, 200)
+        self.assertEqual(self.client.get(
+            "/api/v1/mobile/me/", secure=True,
+            HTTP_AUTHORIZATION="Bearer " + old.json()["access"],
+        ).status_code, 401)
+        self.assertEqual(self.client.get(
+            "/api/v1/mobile/me/", secure=True,
+            HTTP_AUTHORIZATION="Bearer " + fresh.json()["access"],
+        ).status_code, 200)
+        print("D27_LAB_HTTP_ACCOUNT_RECOVERY_PG17=PASS")
