@@ -20,6 +20,7 @@ from .models import (
 )
 from .native_operational_issuer_core import (
     OperationalCoreDenied, begin_verified_password, complete_verified_mfa,
+    validate_verified_access, rotate_verified_refresh, revoke_verified_device,
 )
 
 
@@ -111,6 +112,39 @@ class D27IndependentIssuerCorePG17Tests(TransactionTestCase):
         self.assertEqual(MobilePendingChallenge.objects.count(), 0)
         self.assertEqual(MobileDeviceSession.objects.count(), 0)
         print("D27_PRODUCTION_AND_KEY_GUARDS=PASS")
+
+    def test_refresh_rotation_replay_revokes_device_and_stale_access(self):
+        wire = self.begin()
+        access, refresh = complete_verified_mfa(
+            challenge=wire, code=totp_at(self.secret, int(time.time())),
+        )
+        self.assertEqual(validate_verified_access(access).pk, self.user.pk)
+        next_access, next_refresh = rotate_verified_refresh(refresh)
+        with self.assertRaises(OperationalCoreDenied):
+            validate_verified_access(access)
+        self.assertEqual(validate_verified_access(next_access).pk, self.user.pk)
+        with self.assertRaises(OperationalCoreDenied):
+            rotate_verified_refresh(refresh)
+        with self.assertRaises(OperationalCoreDenied):
+            validate_verified_access(next_access)
+        with self.assertRaises(OperationalCoreDenied):
+            rotate_verified_refresh(next_refresh)
+        self.assertIsNotNone(MobileDeviceSession.objects.get().revoked_at)
+        print("D27_REFRESH_ROTATION_REPLAY_REVOKES_PG17=PASS")
+
+    def test_verified_logout_revokes_access_and_refresh(self):
+        wire = self.begin()
+        access, refresh = complete_verified_mfa(
+            challenge=wire, code=totp_at(self.secret, int(time.time())),
+        )
+        revoke_verified_device(refresh)
+        with self.assertRaises(OperationalCoreDenied):
+            validate_verified_access(access)
+        with self.assertRaises(OperationalCoreDenied):
+            rotate_verified_refresh(refresh)
+        with self.assertRaises(OperationalCoreDenied):
+            revoke_verified_device(refresh)
+        print("D27_DEVICE_LOGOUT_SERVER_REVOKED_PG17=PASS")
 
     def test_rate_limit_consumed_before_password_and_ip_bound(self):
         for _ in range(4):
