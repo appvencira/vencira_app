@@ -425,3 +425,24 @@ NO_DEPLOY_NO_LIVE_MIGRATION=1
 D27D28_RELEASE_AUTHORIZED=NO
 D28_ANDROID_MAIN_AUTH_ENABLED=NO
 ```
+
+## D28 Android físico — dos fases oc1 → reinicio → or1, PASS (12/11/2026)
+
+El operador aportó capturas separadas del dispositivo: **fase 1** con `D28_ANDROID_TLS_HOSTNAME=PASS`, `D28_ANDROID_OC1_ISSUED_RESPONSE_LOST=PASS`, `D28_ANDROID_DURABLE_MARKER=PASS` y el aviso de cerrar/reiniciar; **fase 2** con `D28_ANDROID_TLS_HOSTNAME=PASS`, `D28_ANDROID_RECOVERY_AFTER_RESTART=PASS`, `D28_ANDROID_KEYSTORE_RECOVERY=PASS`, `D28_ANDROID_REVOKE_401=PASS`, `D28_ANDROID_LAB_CLEANUP=PASS`.
+
+Tras completar ambos pasos, el operador aportó el cierre del runner en VPS:
+
+```text
+D28_ANDROID_PG17_RECOVERED_SESSION_REVOKED=PASS
+D28_ANDROID_TWO_STAGE_RESPONSE_LOSS_GATE=PASS
+D28_ANDROID_DEV_CONTAINERS_UNCHANGED=OK
+D28_ANDROID_DEPLOY_EXECUTED=NO
+D28_ANDROID_LIVE_MIGRATIONS_EXECUTED=NO
+MFA_RELEASE_AUTHORIZED=NO
+NO_DEPLOY_NO_LIVE_MIGRATION=1
+D28_ANDROID_LAB_RESULT=0
+```
+
+**Resultado del gate D28 Android físico: PASS** para emisión D27 `oc1` con respuesta descartada tras commit, persistencia del marcador en Keystore, recuperación `or1` en segunda ejecución y revocación final de ambas sesiones en PG17 aislado. La evidencia visual y del runner es coherente; la acción física de reiniciar el teléfono depende de la declaración del operador y no puede acreditarse únicamente con el marcador final.
+
+**Restricciones intactas:** ningún despliegue, migración live ni activación de `main.dart`. La pérdida es **inyección de respuesta descartada**, no corte TCP/radio físico. Siguen pendientes pruebas de caída real durante refresh, diseño del proxy/IP de confianza, custodia de claves productivas y puertas de publicación D4. No declarar MFA operacional autorizado.
