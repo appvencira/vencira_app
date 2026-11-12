@@ -24,11 +24,11 @@ from reminders.models import MfaAdministrativeRecoveryCase, UserMfaState
 from reminders.native_mobile_identity_gate import (
     mobile_credential_version, require_mobile_identity_gate,
 )
-from reminders.native_mobile_token_primitives import make_native_token, native_token_digest
+from reminders.native_mobile_token_primitives import (\n    NativeMobileTokenInvalid, make_native_token, matches_native_token,\n    native_token_digest, parse_native_token,\n)
 
 from .models import (
     MobileAccountFence, MobileAuthAttemptBucket, MobileAuthAuditEvent,
-    MobileDeviceSession, MobilePendingChallenge,
+    MobileDeviceSession, MobilePendingChallenge, MobileSpentRefresh,
 )
 
 _TTL = timedelta(minutes=5)
@@ -262,3 +262,121 @@ def complete_verified_mfa(*, challenge, code):
         session.save(force_insert=True)
         _event(audit, "auth_verified", user.username)
         return access, refresh
+
+
+def _locked_device(token, kind):
+    """Acquire account lock BEFORE device lock to avoid recovery deadlocks."""
+    try:
+        session_id = parse_native_token(token, kind=kind)
+    except NativeMobileTokenInvalid as exc:
+        raise OperationalCoreDenied() from exc
+    user_id = MobileDeviceSession.objects.filter(
+        pk=session_id,
+    ).values_list("user_id", flat=True).first()
+    if user_id is None:
+        raise OperationalCoreDenied()
+    user = get_user_model().objects.select_for_update().filter(
+        pk=user_id, is_active=True,
+    ).first()
+    if user is None:
+        raise OperationalCoreDenied()
+    device = MobileDeviceSession.objects.select_for_update(of=("self",)).filter(
+        pk=session_id, user_id=user.pk,
+    ).first()
+    if device is None:
+        raise OperationalCoreDenied()
+    return user, device
+
+
+def _check_device_identity(user, device):
+    generation = MobileAccountFence.objects.filter(
+        user_id=user.pk,
+    ).values_list("generation", flat=True).first() or 0
+    if device.auth_generation != generation:
+        raise OperationalCoreDenied()
+    require_mobile_identity_gate(
+        user=user, verified_mfa=device.verified_mfa,
+        asserted_mfa_epoch=device.mfa_epoch,
+        asserted_credential_version=device.credential_version,
+    )
+
+
+def validate_verified_access(token):
+    """Server-side validation, including live MFA, password and revocation."""
+    _context()
+    with transaction.atomic():
+        user, device = _locked_device(token, "a")
+        now = timezone.now()
+        if (device.revoked_at is not None
+                or device.access_expires_at <= now
+                or device.refresh_expires_at <= now
+                or not matches_native_token(
+                    token, kind="a", stored_digest=device.access_digest,
+                )):
+            raise OperationalCoreDenied()
+        _check_device_identity(user, device)
+        return user
+
+
+def rotate_verified_refresh(token):
+    """One-time refresh rotation: replay revokes the device and commits."""
+    _context()
+    replay = False
+    issued = None
+    with transaction.atomic():
+        user, device = _locked_device(token, "r")
+        now = timezone.now()
+        if device.revoked_at is not None or device.refresh_expires_at <= now:
+            raise OperationalCoreDenied()
+        digest = native_token_digest(token, kind="r")
+        if not matches_native_token(
+            token, kind="r", stored_digest=device.refresh_digest,
+        ):
+            if not MobileSpentRefresh.objects.filter(
+                session=device, digest=digest,
+            ).exists():
+                raise OperationalCoreDenied()
+            device.revoked_at = now
+            device.access_digest = ""
+            device.refresh_digest = ""
+            device.save(update_fields=[
+                "revoked_at", "access_digest", "refresh_digest",
+            ])
+            replay = True
+        else:
+            _check_device_identity(user, device)
+            MobileSpentRefresh.objects.create(
+                session=device, digest=device.refresh_digest,
+            )
+            access = make_native_token(kind="a", session_id=device.pk)
+            refresh = make_native_token(kind="r", session_id=device.pk)
+            device.access_digest = native_token_digest(access, kind="a")
+            device.refresh_digest = native_token_digest(refresh, kind="r")
+            device.access_expires_at = min(now + _ACCESS, device.refresh_expires_at)
+            device.rotation_generation += 1
+            device.save(update_fields=[
+                "access_digest", "refresh_digest", "access_expires_at",
+                "rotation_generation",
+            ])
+            issued = access, refresh
+    if replay:
+        raise OperationalCoreDenied()
+    return issued
+
+
+def revoke_verified_device(token):
+    """Revoke one device using its refresh credential, never just a UUID."""
+    _context()
+    with transaction.atomic():
+        _, device = _locked_device(token, "r")
+        if (device.revoked_at is not None
+                or not matches_native_token(
+                    token, kind="r", stored_digest=device.refresh_digest,
+                )):
+            raise OperationalCoreDenied()
+        device.revoked_at = timezone.now()
+        device.access_digest = ""
+        device.refresh_digest = ""
+        device.save(update_fields=[
+            "revoked_at", "access_digest", "refresh_digest",
+        ])
