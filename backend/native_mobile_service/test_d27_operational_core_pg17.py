@@ -21,6 +21,7 @@ from .models import (
 from .native_operational_issuer_core import (
     OperationalCoreDenied, begin_verified_password, complete_verified_mfa,
     validate_verified_access, rotate_verified_refresh, revoke_verified_device,
+    begin_recovery_password, complete_recovery_mfa,
 )
 
 
@@ -145,6 +146,90 @@ class D27IndependentIssuerCorePG17Tests(TransactionTestCase):
         with self.assertRaises(OperationalCoreDenied):
             revoke_verified_device(refresh)
         print("D27_DEVICE_LOGOUT_SERVER_REVOKED_PG17=PASS")
+
+    def test_account_wide_recovery_revokes_old_device_and_rejects_replay(self):
+        normal = self.begin()
+        old_access, old_refresh = complete_verified_mfa(
+            challenge=normal, code=totp_at(self.secret, int(time.time())),
+        )
+        self.assertEqual(validate_verified_access(old_access).pk, self.user.pk)
+        challenge = begin_recovery_password(
+            username="d27-reader", password="d27-synthetic-password",
+            remote_addr="198.51.100.77",
+        )
+        self.assertTrue(challenge.startswith("or1."))
+        self.assertIsNone(
+            MobileDeviceSession.objects.filter(revoked_at__isnull=False).first(),
+        )
+        with self.assertRaises(OperationalCoreDenied):
+            complete_verified_mfa(challenge=challenge, code="000000")
+        with self.assertRaises(OperationalCoreDenied):
+            complete_recovery_mfa(challenge=normal, code="000000")
+        fresh_access, fresh_refresh = complete_recovery_mfa(
+            challenge=challenge, code=totp_at(self.secret, int(time.time()) + 30),
+        )
+        with self.assertRaises(OperationalCoreDenied):
+            validate_verified_access(old_access)
+        with self.assertRaises(OperationalCoreDenied):
+            rotate_verified_refresh(old_refresh)
+        self.assertEqual(validate_verified_access(fresh_access).pk, self.user.pk)
+        self.assertEqual(MobileDeviceSession.objects.count(), 2)
+        self.assertEqual(MobileDeviceSession.objects.filter(
+            revoked_at__isnull=False,
+        ).count(), 1)
+        self.assertEqual(MobileAuthAuditEvent.objects.filter(
+            event_type="account_revoke",
+        ).count(), 1)
+        with self.assertRaises(OperationalCoreDenied):
+            complete_recovery_mfa(challenge=challenge, code="000000")
+        revoke_verified_device(fresh_refresh)
+        print("D27_ACCOUNT_RECOVERY_REVOKES_OLD_PG17=PASS")
+
+    def test_account_recovery_audit_failure_rolls_back_revocation(self):
+        normal = self.begin()
+        old_access, _ = complete_verified_mfa(
+            challenge=normal, code=totp_at(self.secret, int(time.time())),
+        )
+        challenge = begin_recovery_password(
+            username="d27-reader", password="d27-synthetic-password",
+            remote_addr="198.51.100.77",
+        )
+        from . import native_operational_issuer_core as core
+        original = core._event
+
+        def failed_recovery_audit(key, event_type, actor):
+            if event_type == "account_revoke":
+                raise RuntimeError("synthetic audit store failure")
+            return original(key, event_type, actor)
+
+        with patch.object(core, "_event", side_effect=failed_recovery_audit):
+            with self.assertRaises(RuntimeError):
+                complete_recovery_mfa(
+                    challenge=challenge,
+                    code=totp_at(self.secret, int(time.time()) + 30),
+                )
+        self.assertEqual(validate_verified_access(old_access).pk, self.user.pk)
+        self.assertEqual(MobileDeviceSession.objects.count(), 1)
+        self.assertIsNone(MobilePendingChallenge.objects.get(
+            pk=__import__("uuid").UUID(hex=challenge.split(".")[1]),
+        ).consumed_at)
+        print("D27_RECOVERY_AUDIT_FAILURE_ROLLBACK_PG17=PASS")
+
+    def test_wrong_password_never_revokes_existing_sessions(self):
+        normal = self.begin()
+        old_access, _ = complete_verified_mfa(
+            challenge=normal, code=totp_at(self.secret, int(time.time())),
+        )
+        denied = begin_recovery_password(
+            username="d27-reader", password="wrong-password",
+            remote_addr="198.51.100.77",
+        )
+        self.assertIsNone(denied)
+        self.assertEqual(validate_verified_access(old_access).pk, self.user.pk)
+        self.assertEqual(MobileDeviceSession.objects.filter(
+            revoked_at__isnull=True,
+        ).count(), 1)
+        print("D27_RECOVERY_PASSWORD_ONLY_NO_REVOKE_PG17=PASS")
 
     def test_rate_limit_consumed_before_password_and_ip_bound(self):
         for _ in range(4):
