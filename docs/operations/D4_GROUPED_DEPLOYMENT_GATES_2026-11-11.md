@@ -947,3 +947,7 @@ Con D27-D28 barreras heredadas PASS, DEV intacto y suficiente espacio temporal, 
 El runner se corrigió en `main` commit `daa735e3`: copiar fuentes sin red, resolver primero `flutter pub get --offline` con caché público persistente `vencira-d27d28-public-pubcache-flutter344`, en caso de miss probar `--network bridge` hasta tres veces para descargar **solo paquetes públicos** y ejecutar después `flutter analyze --no-pub` + `flutter test --no-pub` sin red. Los volúmenes trabajo/temp se limpian; los de caché público se conservan sin credenciales. Si falla la red, no se anuncia PASS. Runbook actualizado `d551ea4b`.
 
 **D28 fase 1: implementada, aún NO PASS**, pendiente de repetir gate y ver `D27D28_P1_FLUTTER_ROUTER_REGRESSION=PASS` y `D27D28_P1_RESULT=0`. `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## D28 fase 1 PASS — selector candidato Flutter (12/11/2026)
+
+Gate VPS revalidado tras corrección del bootstrap pub.dev: `flutter analyze` sin incidencias, `flutter test` **16/16** incluyendo estado limpio, refresh huérfano, marcador corrupto, dependencia incoherente, UI Android y regresiones de recuperación. Evidencias: `D27D28_P1_FLUTTER_ROUTER_REGRESSION=PASS`, `D27D28_P1_NATIVE_FIRST_VS_RECOVERY_ROUTING_CANDIDATE=YES`, `D27D28_P1_OPERATIONAL_ISSUER_ENABLED=NO`, `D27D28_P1_ANDROID_MAIN_AUTH_ENABLED=NO`, `D27D28_P1_DEV_CONTAINERS_UNCHANGED=OK`, `D27D28_P1_RELEASE_AUTHORIZED=NO`, `D27D28_P1_RESULT=0`. **PASS de fase 1 de selector candidato, no de login real ni issuer de producción.** Continuar D27 implementación sustantiva.
