@@ -245,3 +245,25 @@ No se aportaron los ecos independientes posteriores `D27_RESPONSE_LOSS_RESULT` n
 **Alcance:** simulación en test HTTP de pérdida de respuesta **después del commit**. No valida interrupciones TCP/TLS físicas, reconexión Flutter, custodia real, transporte operacional ni publicación.
 
 **Siguiente bloque de ingeniería:** revisar la política de conciliación ya existente en Flutter; ante respuesta incierta nunca reintentar un refresh gastado ni dar por recuperada una sesión sin evidencia. Añadir pruebas sobre el almacenamiento local duradero, reinicio y decisión explícita entre primera emisión y recuperación, sin conectar `main.dart` ni rutas públicas. El PASS de Flutter deberá demostrarse por un gate separado.
+
+## D28 — lote de conciliación por reinicio y contrato oc1/or1 publicado (12/11/2026)
+
+Se ha incorporado en `main` un lote único de pruebas Flutter, **pendiente del gate VPS**:
+
+- Tres nuevos casos en `native_d28_mobile_entry_router_test.dart`: emisión con respuesta perdida y marcador persistente; refresh incierto con credencial huérfana; recuperación global incierta con dos reinicios. Todos exigen `fullReauthentication`, gateway de recuperación y sesión inactiva, sin HTTP.
+- Se identificó una incompatibilidad real: D27 emite `oc1` (emisión) y `or1` (recuperación), mientras los gateways Flutter solo aceptaban `lc1`. Se ampliaron los validadores **candidatos** para aceptar `lc1|oc1` exclusivamente en primera emisión y `lc1|or1` exclusivamente en recuperación, preservando rechazo cruzado y validación de entropía/codificación canónica.
+- Dos tests nuevos por gateway comprueban aceptación del prefijo D27 correcto y rechazo del prefijo de la otra operación; no se altera `main.dart` ni se crea cliente HTTP.
+- El gate `scripts/main_d27d28_phase1_router_grouped_gate.sh` incorpora ahora también `native_first_issuance_entry_test.dart` y `native_recovery_login_gateway_test.dart` a su `flutter analyze` + `flutter test` agrupado.
+
+**No declarar PASS hasta ejecutar el gate sobre el SHA actualizado y observar `D27D28_P1_FLUTTER_ROUTER_REGRESSION=PASS`, `D27D28_P1_DEV_CONTAINERS_UNCHANGED=OK` y `D27D28_P1_RESULT=0`.** Las pruebas de reinicio no equivalen a TLS físico ni garantizan que la integración de puertos reales esté completa. `MFA_RELEASE_AUTHORIZED=NO`; `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+git status --short
+sudo -v
+bash scripts/main_d27d28_phase1_router_grouped_gate.sh
+echo "D28_RESTART_CONTRACT_RESULT=$?"
+git status --short
+```
