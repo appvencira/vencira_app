@@ -959,3 +959,7 @@ Con D28 router candidato PASS 16/16 y fase 0 contractual PASS, se ha implementad
 Las **6 pruebas** D27 PG17 `test_d27_operational_core_pg17.py` (commits `e1b5715b`, `ab75af3f`) están incorporadas al runner I8-K (`6495ad37`). Gate único `scripts/main_d27_independent_issuer_pg17_grouped_gate.sh` (`bf3430b2`) integra AST, política D18/D27–D28 y regresión PG17 sin despliegue. Runbook: `docs/operations/D27_INDEPENDENT_PASSWORD_MFA_CORE_PG17_2026-11-12.md` (`7235935b`).
 
 **D27 fase 2 IMPLEMENTADA, gate VPS PENDIENTE**; faltan recovery account-wide, custodia real, despliegue de schema revisado, issuer HTTP operacional, integración Android y pruebas físicas. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## D27 fase 2 primer gate — SyntaxError antes de PostgreSQL, corregido (12/11/2026)
+
+El gate VPS `main_d27_independent_issuer_pg17_grouped_gate.sh` confirmó `D27_P2_MAIN_CLEAN=PASS`, pero AST falló en `backend/native_mobile_service/native_operational_issuer_core.py:27` por secuencias literales `\\n` insertadas dentro de `from reminders.native_mobile_token_primitives import (...)`; `D27_P2_RECHECK_RESULT=1` y checkout limpio. **La suite PG17 NO se ejecutó**. Se corrigió el import en `main` (`67a9ec24`) y la forma de regex raw del test `oc1` (`e8065941`); runbook D27 actualizado `840fae5d`. **D27 fase 2 permanece PENDIENTE de revalidación**, sin autorizar rutas, issuer, Android ni desplegar.
