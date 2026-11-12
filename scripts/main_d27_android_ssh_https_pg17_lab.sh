@@ -197,9 +197,9 @@ D run --rm \
     chmod 644 /output/VENCIRA-D27-Android-HTTPS-debug.apk
   '
 test -s "$out/VENCIRA-D27-Android-HTTPS-debug.apk"
-echo 'I8P_ANDROID_APK_DEBUG_BUILD=PASS'
-echo 'I8P_ANDROID_PACKAGE=es.vencira.vencira.i8plab'
-echo "I8P_ANDROID_APK_PATH=$out/VENCIRA-D27-Android-HTTPS-debug.apk"
+echo 'D27_ANDROID_APK_DEBUG_BUILD=PASS'
+echo 'D27_ANDROID_PACKAGE=es.vencira.vencira.i8plab'
+echo "D27_ANDROID_APK_PATH=$out/VENCIRA-D27-Android-HTTPS-debug.apk"
 echo 'D27_ANDROID_RELEASE_AUTHORIZED=NO'
 echo 'D27_ANDROID_PHONE_TEST_RUNNING=YES'
 
