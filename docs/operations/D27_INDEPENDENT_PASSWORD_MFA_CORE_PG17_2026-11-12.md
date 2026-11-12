@@ -71,3 +71,11 @@ D27_DEVICE_LOGOUT_SERVER_REVOKED_PG17=PASS
 ```
 
 Sigue faltando recovery account-wide no-lab, custodia/proxy y tests operativos; ningún permiso de producción se modifica.
+
+## Primer gate D27 fase 2 — FAIL por sintaxis del import, corregido en main (12/11/2026)
+
+El operador ejecutó `scripts/main_d27_independent_issuer_pg17_grouped_gate.sh` en checkout limpio. Se observaron `D27_P2_MAIN_CLEAN=PASS`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`, `D27_P2_PRODUCTION_ISSUER_ENABLED=NO` y `D27_P2_ANDROID_MAIN_AUTH_ENABLED=NO`. La comprobación AST detuvo el gate antes de Docker/PG17: `SyntaxError: unexpected character after line continuation character` en línea 27 de `native_operational_issuer_core.py`. La causa era una sentencia `from reminders.native_mobile_token_primitives import (...) ` con secuencias literales `\\n` en lugar de saltos de línea reales, introducida al ampliar el módulo con refresh y revocación.
+
+Corrección publicada directamente en `main` **`67a9ec24`**: reemplaza exactamente esas secuencias por saltos de línea, sin alterar la lógica transaccional. Revisión adicional detectó una regex de prueba raw con `\\\\.` en vez de `\\.`; corregida en **`e8065941`** para verificar correctamente la forma del reto `oc1`. Comprobado contra el código remoto que no quedan secuencias literales `\\n` en el módulo. El gate **no llegó a ejecutar PG17**, así que D27 fase 2 continúa **NO VALIDADA**. Resultado original: `D27_P2_RECHECK_RESULT=1` y `git status --short` vacío.
+
+Repetir el mismo gate agrupado al actualizar `main`. Ninguna migración, ruta pública, contenedor operativo ni autenticación Android ha sido activada.
