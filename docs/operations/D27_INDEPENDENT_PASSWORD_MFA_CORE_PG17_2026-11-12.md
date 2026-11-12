@@ -122,3 +122,29 @@ git status --short
 Marcadores que deben aparecer, **no observados aún**: `D27_ACCOUNT_RECOVERY_REVOKES_OLD_PG17=PASS`, `D27_RECOVERY_AUDIT_FAILURE_ROLLBACK_PG17=PASS`, `D27_RECOVERY_PASSWORD_ONLY_NO_REVOKE_PG17=PASS`, `NATIVE_I8K_D27_INDEPENDENT_ACCOUNT_RECOVERY_PG17=PASS`, `D27_P2_PG17_ISSUER_AND_SECURITY=PASS`, `D27_P2_RESULT=0` y `D27_P3_RECOVERY_RESULT=0`. La etiqueta `P2` del runner heredado se mantiene por compatibilidad; la incorporación de los nuevos tests constituye la **fase 3**.
 
 **No completar D27 ni conectar Android antes de validar recuperación y revisar el contrato HTTP del nuevo reto `or1`**. Falta transport HTTPS de la implementación nueva, custodia operacional, middleware y firma de publicación. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## D27 fase 3 — recuperación global PASS, 92/92 pruebas PG17 (12/11/2026)
+
+El operador validó el gate agrupado en VPS, tras sincronización de `main`: `D27_P2_MAIN_CLEAN=PASS`, `D27_P2_INDEPENDENT_AST_AND_LAB_FENCE=PASS`, `D27_P2_SOURCE_GATE=PASS`, `D27_P2_RELEASE_BARRIERS=PASS`. Laboratorio con imagen desechable, red interna, PostgreSQL 17 efímero, plan de migraciones y esquema temporal OK. **92 pruebas ejecutadas en 53.955 s, todas OK**, entre ellas las 9 D27:
+
+```text
+D27_RECOVERY_AUDIT_FAILURE_ROLLBACK_PG17=PASS
+D27_ACCOUNT_RECOVERY_REVOKES_OLD_PG17=PASS
+D27_PRODUCTION_AND_KEY_GUARDS=PASS
+D27_INDEPENDENT_PASSWORD_MFA_SESSION_PG17=PASS
+D27_INDEPENDENT_ANTIBRUTEFORCE_AND_IP=PASS
+D27_REFRESH_ROTATION_REPLAY_REVOKES_PG17=PASS
+D27_DEVICE_LOGOUT_SERVER_REVOKED_PG17=PASS
+D27_BAD_PASSWORD_AND_MFA_DENIED_PG17=PASS
+D27_RECOVERY_PASSWORD_ONLY_NO_REVOKE_PG17=PASS
+NATIVE_I8K_D27_INDEPENDENT_ACCOUNT_RECOVERY_PG17=PASS
+NATIVE_I8K_DEV_CONTAINERS_UNCHANGED=OK
+NATIVE_I8K_LOCAL_RESULT=0
+D27_P2_PG17_ISSUER_AND_SECURITY=PASS
+D27_P2_INDEPENDENT_CORE_VALIDATED=YES
+D27_P2_RESULT=0
+```
+
+El nombre `D27_P2_*` del script se conserva por compatibilidad, pero las pruebas incluidas alcanzan ya el comportamiento de la fase 3. En el texto aportado no aparece el eco posterior de `D27_P3_RECOVERY_RESULT` ni el estado final `git status --short`; no se inventan.
+
+**Cierre D27 fase 3: PASS del núcleo transaccional aislado**, no de las rutas HTTP públicas ni del emisor operativo. `D27_P2_PRODUCTION_ISSUER_ENABLED=NO`, `D27_P2_ANDROID_MAIN_AUTH_ENABLED=NO`, `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`. Siguiente trabajo sustantivo: transporte HTTPS autorizado de laboratorio para el nuevo núcleo `oc1/or1`, revisión de custodia de claves/antiabuso y contrato Flutter; mantener bloqueo de producción.
