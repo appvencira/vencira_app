@@ -56,3 +56,43 @@ D27D28_CONTRACT_RESULT=0
 El operador ejecutó `scripts/main_d27d28_grouped_contract_gate.sh` desde checkout limpio y observó `Ran 5 tests in 0.016s; OK`, `D27D28_MUTATION_FENCES=PASS`, `D27D28_OPERATIONAL_FENCE_INVARIANTS=PASS`, `D27D28_CANDIDATE_BACKEND_REUSED_FOR_PRODUCTION=NO`, `D27D28_CODE_AUDIT=PASS`, `D18_STATIC_FENCE_GATE=PASS`, `D27D28_LEGACY_RELEASE_FENCE=PASS`, `D27D28_PHASE0_CONTRACT=PASS`, `D27D28_RESULT=0`, `D27D28_CONTRACT_RESULT=0`. `git status --short` vacío. Se confirman expresamente `D27D28_OPERATIONAL_ISSUER_IMPLEMENTED=NO`, `D27D28_ANDROID_NATIVE_LOGIN_CONNECTED=NO`, `D27D28_RELEASE_AUTHORIZED=NO`, `MFA_RELEASE_AUTHORIZED=NO` y `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
 
 **Cierre: solo FASE 0 PASS (contrato/mutaciones)**. Sigue pendiente implementar y validar D27 emisor operacional y D28 Android real. No asignar un estado PASS a la macrofase completa.
+
+## D28 primera implementación de composición nativa, sin habilitar la aplicación (12/11/2026)
+
+La fase 0 de seguridad ha sido validada en VPS (`D27D28_RESULT=0`, 5/5). En lugar de repetir auditorías, la siguiente entrega introduce **comportamiento Flutter reutilizable**:
+
+- `clients/flutter/lib/api/native_mobile_entry_router.dart`, commit `446df657`: selector de un solo uso de flujo de autenticación. Comparte estrictamente `NativeMobileStartupGate`, `NativeSessionFence`, vault, journal y los controladores G10/G9-B existentes. En dispositivo limpio selecciona solo `NativeFirstIssuanceEntry`; con refresh huérfano o marcador durable selecciona solo `NativeMobileRecoveryEntry`; ante corrupción, dependencias distintas o inspección duplicada bloquea y revoca la sesión, sin hacer fallback. No crea HTTP ni acepta claves de usuarios.
+- `clients/flutter/test/native_d28_mobile_entry_router_test.dart`, commit `4eec0b1a`: 4 tests de estado limpio, refresh huérfano, marcador corrupto y dependencia distinta. No simulan autorización del emisor; verifican selección local y cierre del fence antes de solicitudes.
+- `scripts/main_d27d28_phase1_router_grouped_gate.sh`, commit `8c0e171b`: valida `main` limpio, gate de seguridad D27–D28 anterior, compara identidades de contenedores DEV, comprueba capacidad de disco temporal y realiza `flutter analyze` junto con tests router, boundary Android y recuperación I8-L en Docker efímero, sin instalación de APK ni despliegue.
+
+**Estado:** código publicado pero **gate de fase 1 PENDIENTE DE VALIDACIÓN en VPS**. Ni `main.dart` ni `config.urls` se modifican, y los componentes no pueden iniciar una sesión por sí mismos. Emisor operativo D27 sigue pendiente.
+
+### Una única ejecución Termius para fase 1
+
+```bash
+cd ~/vencira-main-check-20261108
+git fetch origin refs/heads/main:refs/remotes/origin/main
+git merge --ff-only origin/main
+sudo -v
+bash scripts/main_d27d28_phase1_router_grouped_gate.sh
+echo "D27D28_P1_RECHECK_RESULT=$?"
+git status --short
+```
+
+Marcadores a obtener, **no observados todavía**:
+
+```text
+D27D28_P1_MAIN_CLEAN=PASS
+D27D28_P1_HARD_RELEASE_FENCES=PASS
+D27D28_P1_DEV_IDENTITY=PASS
+D27D28_P1_FLUTTER_TEMP_CAPACITY=PASS
+D27D28_P1_FLUTTER_ROUTER_REGRESSION=PASS
+D27D28_P1_NATIVE_FIRST_VS_RECOVERY_ROUTING_CANDIDATE=YES
+D27D28_P1_DEV_CONTAINERS_UNCHANGED=OK
+D27D28_P1_OPERATIONAL_ISSUER_ENABLED=NO
+D27D28_P1_ANDROID_MAIN_AUTH_ENABLED=NO
+D27D28_P1_RESULT=0
+D27D28_P1_RECHECK_RESULT=0
+```
+
+**Límites:** el router no implementa endpoints operativos, MFA de producción ni login real en `main.dart`. La autorización de publicación se mantiene denegada. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
