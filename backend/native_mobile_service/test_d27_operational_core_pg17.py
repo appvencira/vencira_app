@@ -58,7 +58,7 @@ class D27IndependentIssuerCorePG17Tests(TransactionTestCase):
 
     def test_password_mfa_issue_digested_tokens_and_deny_replay(self):
         wire = self.begin()
-        self.assertRegex(wire, r"^oc1\\.[0-9a-f]{32}\\.[A-Za-z0-9_-]{43}$")
+        self.assertRegex(wire, r"^oc1\.[0-9a-f]{32}\.[A-Za-z0-9_-]{43}$")
         self.assertEqual(MobileDeviceSession.objects.count(), 0)
         issued = complete_verified_mfa(
             challenge=wire, code=totp_at(self.secret, int(time.time())),
