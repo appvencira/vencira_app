@@ -951,3 +951,11 @@ El runner se corrigió en `main` commit `daa735e3`: copiar fuentes sin red, reso
 ## D28 fase 1 PASS — selector candidato Flutter (12/11/2026)
 
 Gate VPS revalidado tras corrección del bootstrap pub.dev: `flutter analyze` sin incidencias, `flutter test` **16/16** incluyendo estado limpio, refresh huérfano, marcador corrupto, dependencia incoherente, UI Android y regresiones de recuperación. Evidencias: `D27D28_P1_FLUTTER_ROUTER_REGRESSION=PASS`, `D27D28_P1_NATIVE_FIRST_VS_RECOVERY_ROUTING_CANDIDATE=YES`, `D27D28_P1_OPERATIONAL_ISSUER_ENABLED=NO`, `D27D28_P1_ANDROID_MAIN_AUTH_ENABLED=NO`, `D27D28_P1_DEV_CONTAINERS_UNCHANGED=OK`, `D27D28_P1_RELEASE_AUTHORIZED=NO`, `D27D28_P1_RESULT=0`. **PASS de fase 1 de selector candidato, no de login real ni issuer de producción.** Continuar D27 implementación sustantiva.
+
+## D27 fase 2 — núcleo independiente contraseña/MFA/token/revoke listo para PG17, no validado (12/11/2026)
+
+Con D28 router candidato PASS 16/16 y fase 0 contractual PASS, se ha implementado la primera lógica backend **independiente** de `candidate_two_step_issuer` y `session_store` en `backend/native_mobile_service/native_operational_issuer_core.py` (commits `de80edbf`, `65567867`). Ofrece verificación de contraseña con límite HMAC de intentos por cuenta/IP, reto aleatorio digest-only y MFA TOTP server-side, sesión con tokens opacos de 256 bits, validación de access revalidando contraseña/MFA/estado actual, rotación one-time de refresh y revocación por replay/dispositivo. Todo exige `VENCIRA_ENV=test` y bearer operativo deshabilitado; **NO** se añade URLconf ni se cambia `main.dart`. El nombre `operational_issuer_core` designa el destino arquitectónico, no disponibilidad para usuarios.
+
+Las **6 pruebas** D27 PG17 `test_d27_operational_core_pg17.py` (commits `e1b5715b`, `ab75af3f`) están incorporadas al runner I8-K (`6495ad37`). Gate único `scripts/main_d27_independent_issuer_pg17_grouped_gate.sh` (`bf3430b2`) integra AST, política D18/D27–D28 y regresión PG17 sin despliegue. Runbook: `docs/operations/D27_INDEPENDENT_PASSWORD_MFA_CORE_PG17_2026-11-12.md` (`7235935b`).
+
+**D27 fase 2 IMPLEMENTADA, gate VPS PENDIENTE**; faltan recovery account-wide, custodia real, despliegue de schema revisado, issuer HTTP operacional, integración Android y pruebas físicas. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
