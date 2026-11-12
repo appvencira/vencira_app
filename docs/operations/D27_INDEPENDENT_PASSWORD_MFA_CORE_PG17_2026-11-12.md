@@ -11,8 +11,8 @@
 
 ## Tests y gate agrupado
 
-- `backend/native_mobile_service/test_d27_operational_core_pg17.py` (`e1b5715b`): 4 pruebas PG17 de contraseña correcta+TOTP+credenciales HMAC+no-replay, contraseña errónea/formato MFA inválido, claves ausentes/entorno producción rechazados, cuotas cuenta/IP y origen inválido.
-- `scripts/native_i8k_recovery_http_pg17_isolated.sh` (`6495ad37`): incorpora estas cuatro pruebas a la suite de PG17 efímero, sin alterar DEV.
+- `backend/native_mobile_service/test_d27_operational_core_pg17.py` (`e1b5715b`): 6 pruebas PG17 de contraseña correcta+TOTP+credenciales HMAC+no-replay, contraseña errónea/formato MFA inválido, claves ausentes/entorno producción rechazados, cuotas cuenta/IP y origen inválido.
+- `scripts/native_i8k_recovery_http_pg17_isolated.sh` (`6495ad37`): incorpora estas seis pruebas a la suite de PG17 efímero, sin alterar DEV.
 - `scripts/main_d27_independent_issuer_pg17_grouped_gate.sh` (`bf3430b2`): un solo gate que exige `main` limpia, AST Python y dependencia aislada, D18 y D27-D28 hard fences, e I8-K PG17 completo. `D27_P2_RESULT=0` significa que el **núcleo aislado de laboratorio** pasó; no significa que el emisor operativo esté listo ni autoriza producción.
 
 ### Una sola ejecución Termius
@@ -49,6 +49,25 @@ D27_P2_RECHECK_RESULT=0
 
 ## Falta para convertirlo en emisor operativo
 
-**Este módulo NO está preparado para su activación en producción.** Falta implementar y revisar: refresh rotatorio bajo locks, validación access en cada request, revocación global y de dispositivo, recuperación tras pérdida de respuesta, auditoría duradera/retención, control IP tras proxy de confianza, claves de custodia externa reales, separación de la app candidata/test del esquema desplegado, migraciones PG17 ensayadas, pruebas de concurrencia y fallos, URLconf operacional, controles de middleware/CSRF/HTTPS, integración Flutter del reto `oc1` y del login de Android, tests sobre dispositivo físico y autorización de release.
+**Este módulo NO está preparado para su activación en producción.** Falta implementar y revisar: revocación global de cuenta, recuperación tras pérdida de respuesta, auditoría duradera/retención, control IP tras proxy de confianza, claves de custodia externa reales, separación de la app candidata/test del esquema desplegado, migraciones PG17 ensayadas, pruebas de concurrencia y fallos, URLconf operacional, controles de middleware/CSRF/HTTPS, integración Flutter del reto `oc1` y del login de Android, tests sobre dispositivo físico y autorización de release.
 
 **No transformar el gate de laboratorio en producción quitando un `if test`.** Los candados de release existentes permanecen. `MFA_RELEASE_AUTHORIZED=NO`, `NO_DEPLOY_NO_LIVE_MIGRATION=1`.
+
+## Ampliación del mismo grupo D27 — acceso, refresh y logout independientes
+
+Tras la primera implementación, `backend/native_mobile_service/native_operational_issuer_core.py` recibió `65567867` con tres funciones adicionales sin llamadas a `session_store`:
+
+1. `validate_verified_access`: parsea bearer estricto, toma locks usuario→dispositivo, valida digest HMAC, vencimientos, revocación, generación de cuenta, versión de contraseña y estado MFA/recovery real en cada lectura.
+2. `rotate_verified_refresh`: serializa por usuario y dispositivo, guarda digest gastado único, rota access/refresh de 256 bits y limita vencimientos. Si se vuelve a presentar un **refresh previamente gastado**, revoca el dispositivo y **confirma** la revocación antes de denegar, evitando rollback accidental.
+3. `revoke_verified_device`: revoca sesión con refresh válido, limpia digests y rechaza reiteraciones.
+
+`test_d27_operational_core_pg17.py` (`ab75af3f`) añade dos pruebas que verifican rotación, access antiguo rechazado, replay con revocación y logout con rechazo posterior. Son **6 pruebas D27 independientes** incluidas en I8-K, además de la regresión anterior.
+
+Los marcadores esperados adicionales, todavía no observados, son:
+
+```text
+D27_REFRESH_ROTATION_REPLAY_REVOKES_PG17=PASS
+D27_DEVICE_LOGOUT_SERVER_REVOKED_PG17=PASS
+```
+
+Sigue faltando recovery account-wide no-lab, custodia/proxy y tests operativos; ningún permiso de producción se modifica.
