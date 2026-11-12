@@ -153,3 +153,82 @@ class D27LabHttpPG17Tests(TransactionTestCase):
             HTTP_AUTHORIZATION="Bearer " + fresh.json()["access"],
         ).status_code, 200)
         print("D27_LAB_HTTP_ACCOUNT_RECOVERY_PG17=PASS")
+
+    def test_lost_issue_response_consumes_challenge_without_retry_issue(self):
+        first = self.post("auth/password/", {
+            "username": self.user.username,
+            "password": "d27-http-synthetic-password",
+        })
+        self.assertEqual(first.status_code, 200)
+        wire = first.json()["challenge"]
+        payload = {"challenge": wire, "code": totp_at(self.secret, int(time.time()))}
+        # Server committed the issue, but the client never receives its body.
+        discarded = self.post("auth/mfa/", payload)
+        self.assertEqual(discarded.status_code, 200)
+        del discarded
+        self.assertEqual(self.post("auth/mfa/", payload).status_code, 401)
+        self.assertEqual(MobileDeviceSession.objects.count(), 1)
+        self.assertEqual(MobileDeviceSession.objects.filter(
+            revoked_at__isnull=True).count(), 1)
+        print("D27_LAB_HTTP_LOST_ISSUE_RESPONSE_FAIL_CLOSED_PG17=PASS")
+
+    def test_lost_refresh_response_replay_revokes_device(self):
+        begin = self.post("auth/password/", {
+            "username": self.user.username,
+            "password": "d27-http-synthetic-password",
+        })
+        self.assertEqual(begin.status_code, 200)
+        initial = self.post("auth/mfa/", {
+            "challenge": begin.json()["challenge"],
+            "code": totp_at(self.secret, int(time.time())),
+        })
+        self.assertEqual(initial.status_code, 200)
+        original = initial.json()
+        # First refresh succeeds, but the new pair is not delivered.
+        discarded = self.post("token/refresh/", {"refresh": original["refresh"]})
+        self.assertEqual(discarded.status_code, 200)
+        del discarded
+        # Retrying the spent token is a replay and must revoke the session.
+        self.assertEqual(self.post(
+            "token/refresh/", {"refresh": original["refresh"]},
+        ).status_code, 401)
+        self.assertEqual(MobileDeviceSession.objects.count(), 1)
+        self.assertIsNotNone(MobileDeviceSession.objects.get().revoked_at)
+        self.assertEqual(self.client.get(
+            "/api/v1/mobile/me/", secure=True,
+            HTTP_AUTHORIZATION="Bearer " + original["access"],
+        ).status_code, 401)
+        print("D27_LAB_HTTP_LOST_REFRESH_REPLAY_REVOKES_PG17=PASS")
+
+    def test_lost_recovery_response_keeps_old_devices_revoked(self):
+        first = self.post("auth/password/", {
+            "username": self.user.username,
+            "password": "d27-http-synthetic-password",
+        })
+        self.assertEqual(first.status_code, 200)
+        initial = self.post("auth/mfa/", {
+            "challenge": first.json()["challenge"],
+            "code": totp_at(self.secret, int(time.time()) - 30),
+        })
+        self.assertEqual(initial.status_code, 200)
+        old_access = initial.json()["access"]
+        recovery = self.post("auth/recover/password/", {
+            "username": self.user.username,
+            "password": "d27-http-synthetic-password",
+        })
+        self.assertEqual(recovery.status_code, 200)
+        wire = recovery.json()["challenge"]
+        payload = {"challenge": wire, "code": totp_at(self.secret, int(time.time()))}
+        # Successful account recovery commits even if HTTP response is lost.
+        discarded = self.post("auth/recover/mfa/", payload)
+        self.assertEqual(discarded.status_code, 200)
+        del discarded
+        self.assertEqual(self.post("auth/recover/mfa/", payload).status_code, 401)
+        self.assertEqual(self.client.get(
+            "/api/v1/mobile/me/", secure=True,
+            HTTP_AUTHORIZATION="Bearer " + old_access,
+        ).status_code, 401)
+        self.assertEqual(MobileDeviceSession.objects.count(), 2)
+        self.assertEqual(MobileDeviceSession.objects.filter(
+            revoked_at__isnull=True).count(), 1)
+        print("D27_LAB_HTTP_LOST_RECOVERY_RESPONSE_OLD_REVOKED_PG17=PASS")
